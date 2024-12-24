@@ -28,7 +28,7 @@ const SignIn = () => {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Header />
-      <div className="flex-grow pt-16 pb-32 flex items-center justify-center">
+      <div className="flex-grow pt-32 pb-32 flex items-center justify-center">
         <div className="w-full max-w-md space-y-8 p-8 bg-white rounded-xl shadow-lg">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-[#111827]">Welcome back</h2>
