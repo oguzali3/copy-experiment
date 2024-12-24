@@ -14,50 +14,56 @@ const Index = () => {
         {/* Decorative Elements */}
         <div className="absolute inset-0 pointer-events-none">
           {/* Top left - Bar Chart */}
-          <div className="absolute top-12 left-10 w-12 h-8 flex items-end gap-0.5">
-            {[2,4,3,5,4,6].map((height, i) => (
-              <div 
-                key={i}
-                className="flex-1 bg-[#077dfa]/20 rounded-t"
-                style={{ height: `${height * 4}px` }}
-              />
-            ))}
+          <div className="absolute top-12 left-10 w-32 h-24 bg-gray-50/80 rounded-xl shadow-sm p-4 animate-fade-in">
+            <div className="h-full flex items-end gap-1">
+              {[4,6,5,7,6,8].map((height, i) => (
+                <div 
+                  key={i}
+                  className="flex-1 bg-[#077dfa]/60 rounded-t animate-[number-counter_0.5s_ease-out_forwards] delay-100"
+                  style={{ height: `${height * 8}px`, animationDelay: `${i * 0.1}s` }}
+                />
+              ))}
+            </div>
           </div>
           
           {/* Top right - Line Chart */}
-          <svg className="absolute top-16 right-20 w-16 h-8 text-[#111827]/10" viewBox="0 0 100 50">
-            <polyline
-              points="0,40 20,35 40,25 60,30 80,20 100,10"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-          </svg>
-          
-          {/* Middle left - Pie Chart */}
-          <svg className="absolute top-1/3 left-24 w-8 h-8 text-[#077dfa]/20 -rotate-12" viewBox="0 0 32 32">
-            <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="3"/>
-            <path d="M16 4 A12 12 0 0 1 28 16" fill="none" stroke="currentColor" strokeWidth="3"/>
-          </svg>
-          
-          {/* Middle right - Donut Chart */}
-          <svg className="absolute top-1/3 right-32 w-6 h-6 text-[#111827]/10 rotate-45" viewBox="0 0 32 32">
-            <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="4"/>
-            <circle cx="16" cy="16" r="6" fill="currentColor"/>
-          </svg>
-          
-          {/* Bottom - Scatter Plot */}
-          <div className="absolute bottom-12 left-1/4 w-12 h-12">
-            {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-1 h-1 rounded-full bg-[#077dfa]/20"
+          <div className="absolute top-16 right-20 w-40 h-28 bg-gray-50/80 rounded-xl shadow-sm p-4 animate-fade-in delay-200">
+            <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 100 50">
+              <path
+                d="M0,40 C20,35 40,25 60,30 S80,20 100,10"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                className="animate-[slide-in-right_1s_ease-out_forwards]"
+                strokeDasharray="200"
+                strokeDashoffset="200"
                 style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`
+                  animation: "slide-in-right 1s ease-out forwards, dash 2s ease-out forwards",
                 }}
               />
-            ))}
+            </svg>
+          </div>
+          
+          {/* Middle - Pie Chart */}
+          <div className="absolute top-1/3 left-24 w-36 h-36 bg-gray-50/80 rounded-xl shadow-sm p-4 animate-fade-in delay-300">
+            <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 32 32">
+              <circle 
+                cx="16" 
+                cy="16" 
+                r="12" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="3"
+                className="animate-[scale-in_1s_ease-out_forwards]"
+              />
+              <path 
+                d="M16 4 A12 12 0 0 1 28 16" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="3"
+                className="animate-[scale-in_1s_ease-out_forwards] delay-200"
+              />
+            </svg>
           </div>
         </div>
 

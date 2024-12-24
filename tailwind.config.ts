@@ -73,11 +73,16 @@ export default {
           "0%": { transform: "translateY(100%)" },
           "100%": { transform: "translateY(0)" },
         },
+        "dash": {
+          "0%": { strokeDashoffset: "200" },
+          "100%": { strokeDashoffset: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "number-counter": "number-counter 0.5s ease-out forwards",
+        "dash": "dash 2s ease-out forwards",
       },
     },
   },
