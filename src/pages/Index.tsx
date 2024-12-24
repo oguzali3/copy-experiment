@@ -23,55 +23,65 @@ const Index = () => {
         <div className="absolute inset-0 pointer-events-none">
           {/* Left side - Bar Chart */}
           <div className="absolute bottom-32 left-16 w-32 h-24 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] backdrop-blur-sm border border-gray-100">
-            <div className="h-full flex items-end gap-1">
-              {[4,6,5,7,6,8].map((height, i) => (
-                <div 
-                  key={i}
-                  className="flex-1 bg-[#077dfa]/60 rounded-t animate-[number-counter_0.5s_ease-out_forwards] hover:bg-[#077dfa]/80 transition-colors"
-                  style={{ height: `${height * 8}px`, animationDelay: `${i * 0.1}s` }}
-                />
-              ))}
+            <div className="h-full flex flex-col">
+              <div className="flex-1 flex items-end gap-1">
+                {[4,6,5,7,6,8].map((height, i) => (
+                  <div 
+                    key={i}
+                    className="flex-1 bg-[#077dfa]/60 rounded-t animate-[number-counter_0.5s_ease-out_forwards] hover:bg-[#077dfa]/80 transition-colors"
+                    style={{ height: `${height * 8}px`, animationDelay: `${i * 0.1}s` }}
+                  />
+                ))}
+              </div>
+              <div className="text-center text-xs text-gray-600 mt-2">Revenue</div>
             </div>
-            <div className="text-center text-xs text-gray-600 mt-2">Revenue</div>
           </div>
           
           {/* Right side - Line Chart */}
           <div className="absolute bottom-16 right-16 w-40 h-28 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] delay-200 backdrop-blur-sm border border-gray-100">
-            <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 100 50">
-              <path
-                d="M0,40 C20,35 40,25 60,30 S80,20 100,10"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                className="animate-dash hover:text-[#077dfa]/80 transition-colors"
-                strokeDasharray="200"
-                strokeDashoffset="200"
-              />
-            </svg>
-            <div className="text-center text-xs text-gray-600 mt-2">Return on Equity</div>
+            <div className="h-full flex flex-col">
+              <div className="flex-1">
+                <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 100 50">
+                  <path
+                    d="M0,40 C20,35 40,25 60,30 S80,20 100,10"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    className="animate-dash hover:text-[#077dfa]/80 transition-colors"
+                    strokeDasharray="200"
+                    strokeDashoffset="200"
+                  />
+                </svg>
+              </div>
+              <div className="text-center text-xs text-gray-600 mt-2">Return on Equity</div>
+            </div>
           </div>
           
           {/* Bottom left - Pie Chart */}
           <div className="absolute bottom-8 left-52 w-36 h-36 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] delay-300 backdrop-blur-sm border border-gray-100">
-            <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 32 32">
-              <circle 
-                cx="16" 
-                cy="16" 
-                r="12" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="3"
-                className="animate-[scale-in_1s_ease-out_forwards] hover:text-[#077dfa]/80 transition-colors"
-              />
-              <path 
-                d="M16 4 A12 12 0 0 1 28 16" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="3"
-                className="animate-[scale-in_1s_ease-out_forwards] delay-200 hover:text-[#077dfa]/80 transition-colors"
-              />
-            </svg>
-            <div className="text-center text-xs text-gray-600 mt-2">Market Share</div>
+            <div className="h-full flex flex-col">
+              <div className="flex-1">
+                <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 32 32">
+                  <circle 
+                    cx="16" 
+                    cy="16" 
+                    r="12" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="3"
+                    className="animate-[scale-in_1s_ease-out_forwards] hover:text-[#077dfa]/80 transition-colors"
+                  />
+                  <path 
+                    d="M16 4 A12 12 0 0 1 28 16" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="3"
+                    className="animate-[scale-in_1s_ease-out_forwards] delay-200 hover:text-[#077dfa]/80 transition-colors"
+                  />
+                </svg>
+              </div>
+              <div className="text-center text-xs text-gray-600 mt-2">Market Share</div>
+            </div>
           </div>
         </div>
 
