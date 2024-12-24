@@ -22,7 +22,7 @@ const Index = () => {
         {/* Decorative Elements */}
         <div className="absolute inset-0 pointer-events-none">
           {/* Left side - Bar Chart */}
-          <div className="absolute bottom-16 left-16 w-32 h-24 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] backdrop-blur-sm border border-gray-100">
+          <div className="absolute bottom-12 left-16 w-32 h-24 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] backdrop-blur-sm border border-gray-100">
             <div className="h-full flex items-end gap-1">
               {[4,6,5,7,6,8].map((height, i) => (
                 <div 
@@ -35,7 +35,7 @@ const Index = () => {
           </div>
           
           {/* Right side - Line Chart */}
-          <div className="absolute bottom-8 right-16 w-40 h-28 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] delay-200 backdrop-blur-sm border border-gray-100">
+          <div className="absolute bottom-16 right-16 w-40 h-28 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] delay-200 backdrop-blur-sm border border-gray-100">
             <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 100 50">
               <path
                 d="M0,40 C20,35 40,25 60,30 S80,20 100,10"
@@ -50,7 +50,7 @@ const Index = () => {
           </div>
           
           {/* Bottom left - Pie Chart */}
-          <div className="absolute bottom-20 left-52 w-36 h-36 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] delay-300 backdrop-blur-sm border border-gray-100">
+          <div className="absolute bottom-8 left-52 w-36 h-36 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] delay-300 backdrop-blur-sm border border-gray-100">
             <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 32 32">
               <circle 
                 cx="16" 
