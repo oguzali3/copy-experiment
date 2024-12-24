@@ -32,6 +32,7 @@ const Index = () => {
                 />
               ))}
             </div>
+            <div className="text-center text-xs text-gray-600 mt-2">Revenue</div>
           </div>
           
           {/* Right side - Line Chart */}
@@ -47,6 +48,7 @@ const Index = () => {
                 strokeDashoffset="200"
               />
             </svg>
+            <div className="text-center text-xs text-gray-600 mt-2">Return on Equity</div>
           </div>
           
           {/* Bottom left - Pie Chart */}
@@ -69,6 +71,7 @@ const Index = () => {
                 className="animate-[scale-in_1s_ease-out_forwards] delay-200 hover:text-[#077dfa]/80 transition-colors"
               />
             </svg>
+            <div className="text-center text-xs text-gray-600 mt-2">Market Share</div>
           </div>
         </div>
 
