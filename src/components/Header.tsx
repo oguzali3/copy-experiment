@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Link, useNavigate } from "react-router-dom";
 
 export const Header = () => {
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [show, setShow] = useState(true);
@@ -43,9 +45,9 @@ export const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center">
+          <Link to="/" className="flex items-center">
             <span className="text-2xl font-bold text-[#077dfa]">Logo</span>
-          </div>
+          </Link>
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-8">
@@ -62,10 +64,17 @@ export const Header = () => {
 
           {/* Auth Buttons */}
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" className="hidden md:inline-flex">
+            <Button 
+              variant="ghost" 
+              className="hidden md:inline-flex"
+              onClick={() => navigate("/signin")}
+            >
               Sign In
             </Button>
-            <Button className="bg-[#077dfa] hover:bg-[#077dfa]/90">
+            <Button 
+              className="bg-[#077dfa] hover:bg-[#077dfa]/90"
+              onClick={() => navigate("/signup")}
+            >
               Sign Up
             </Button>
           </div>
