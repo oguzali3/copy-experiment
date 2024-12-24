@@ -10,7 +10,7 @@ const Index = () => {
     <div className="min-h-screen bg-white text-gray-900">
       <Header />
       {/* Hero Section */}
-      <section className="container py-20 text-center">
+      <section className="container pt-32 pb-20 text-center">
         <h1 className="text-4xl md:text-6xl font-bold mb-6 text-[#111827] relative inline-block font-sans">
           Make Smarter Investment <span className="text-[#077dfa]">Decisions</span>
           <span className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-[#077dfa]/60 rounded-full transform skew-x-12"></span>
