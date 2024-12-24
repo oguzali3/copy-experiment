@@ -58,7 +58,7 @@ const Index = () => {
                 {[4,6,5,7,6,8].map((height, i) => (
                   <div 
                     key={i}
-                    className="flex-1 bg-[#077dfa]/90 rounded-t hover:bg-[#077dfa] transition-colors"
+                    className="flex-1 bg-[#077dfa]/90 rounded-t hover:bg-[#077dfa]/100 transition-colors"
                     style={{ height: `${height * 8}px` }}
                   />
                 ))}
@@ -77,7 +77,7 @@ const Index = () => {
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="3"
-                    className="hover:text-[#077dfa] transition-colors"
+                    className="hover:text-[#077dfa]/100 transition-colors"
                   />
                 </svg>
               </div>
@@ -97,14 +97,14 @@ const Index = () => {
                     fill="none" 
                     stroke="currentColor" 
                     strokeWidth="3"
-                    className="hover:text-[#077dfa] transition-colors"
+                    className="hover:text-[#077dfa]/100 transition-colors"
                   />
                   <path 
                     d="M16 4 A12 12 0 0 1 28 16" 
                     fill="none" 
                     stroke="currentColor" 
                     strokeWidth="3"
-                    className="hover:text-[#077dfa] transition-colors"
+                    className="hover:text-[#077dfa]/100 transition-colors"
                   />
                 </svg>
               </div>
