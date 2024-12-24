@@ -3,10 +3,12 @@ import { StockChart } from "@/components/StockChart";
 import { LiveStockData } from "@/components/LiveStockData";
 import { Testimonials } from "@/components/Testimonials";
 import { Button } from "@/components/ui/button";
+import { Header } from "@/components/Header";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-white text-gray-900">
+      <Header />
       {/* Hero Section */}
       <section className="container py-20 text-center">
         <h1 className="text-4xl md:text-6xl font-bold mb-6 text-[#111827] relative inline-block font-sans">
