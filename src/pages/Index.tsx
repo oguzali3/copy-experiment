@@ -169,7 +169,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-background border-t border-border/10">
+      <footer className="bg-[#181d25] border-t border-border/10">
         <div className="container py-16">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Logo and Description */}
