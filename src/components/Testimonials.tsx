@@ -26,17 +26,19 @@ export const Testimonials = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {testimonials.map((testimonial) => (
-        <Card key={testimonial.name} className="p-6 bg-white/5 border-white/10">
+        <Card key={testimonial.name} className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
           <div className="flex items-start space-x-4">
             <Avatar>
-              <AvatarFallback>{testimonial.avatar}</AvatarFallback>
+              <AvatarFallback className="bg-gradient-to-r from-purple-600 to-blue-500 text-white">
+                {testimonial.avatar}
+              </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold">{testimonial.name}</h3>
-              <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+              <h3 className="font-semibold text-gray-900">{testimonial.name}</h3>
+              <p className="text-sm text-gray-600">{testimonial.role}</p>
             </div>
           </div>
-          <p className="mt-4 text-sm leading-relaxed">{testimonial.content}</p>
+          <p className="mt-4 text-sm leading-relaxed text-gray-700">{testimonial.content}</p>
         </Card>
       ))}
     </div>
