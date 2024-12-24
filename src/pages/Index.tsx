@@ -4,7 +4,6 @@ import { LiveStockData } from "@/components/LiveStockData";
 import { Testimonials } from "@/components/Testimonials";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
-import { LineChart, TrendingUp, PieChart, BarChart3, CandlestickChart } from "lucide-react";
 
 const Index = () => {
   return (
@@ -14,17 +13,52 @@ const Index = () => {
       <section className="container pt-32 pb-20 text-center relative overflow-hidden">
         {/* Decorative Elements */}
         <div className="absolute inset-0 pointer-events-none">
-          {/* Top left */}
-          <LineChart className="absolute top-12 left-10 w-8 h-8 text-[#077dfa]/20 transform -rotate-12" />
-          <PieChart className="absolute top-24 left-32 w-6 h-6 text-[#111827]/10 transform rotate-12" />
+          {/* Top left - Bar Chart */}
+          <div className="absolute top-12 left-10 w-12 h-8 flex items-end gap-0.5">
+            {[2,4,3,5,4,6].map((height, i) => (
+              <div 
+                key={i}
+                className="flex-1 bg-[#077dfa]/20 rounded-t"
+                style={{ height: `${height * 4}px` }}
+              />
+            ))}
+          </div>
           
-          {/* Top right */}
-          <TrendingUp className="absolute top-16 right-20 w-8 h-8 text-[#077dfa]/20 transform rotate-12" />
-          <BarChart3 className="absolute top-28 right-40 w-6 h-6 text-[#111827]/10 transform -rotate-12" />
+          {/* Top right - Line Chart */}
+          <svg className="absolute top-16 right-20 w-16 h-8 text-[#111827]/10" viewBox="0 0 100 50">
+            <polyline
+              points="0,40 20,35 40,25 60,30 80,20 100,10"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+          </svg>
           
-          {/* Bottom decorations */}
-          <CandlestickChart className="absolute bottom-12 left-1/4 w-6 h-6 text-[#077dfa]/20 transform rotate-45" />
-          <LineChart className="absolute bottom-20 right-1/4 w-8 h-8 text-[#111827]/10 transform -rotate-45" />
+          {/* Middle left - Pie Chart */}
+          <svg className="absolute top-1/3 left-24 w-8 h-8 text-[#077dfa]/20 -rotate-12" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="3"/>
+            <path d="M16 4 A12 12 0 0 1 28 16" fill="none" stroke="currentColor" strokeWidth="3"/>
+          </svg>
+          
+          {/* Middle right - Donut Chart */}
+          <svg className="absolute top-1/3 right-32 w-6 h-6 text-[#111827]/10 rotate-45" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" strokeWidth="4"/>
+            <circle cx="16" cy="16" r="6" fill="currentColor"/>
+          </svg>
+          
+          {/* Bottom - Scatter Plot */}
+          <div className="absolute bottom-12 left-1/4 w-12 h-12">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-1 h-1 rounded-full bg-[#077dfa]/20"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`
+                }}
+              />
+            ))}
+          </div>
         </div>
 
         <h1 className="text-4xl md:text-6xl font-bold mb-6 text-[#111827] relative inline-block font-sans">
