@@ -49,7 +49,7 @@ const Index = () => {
           Advanced stock analysis and research tools powered by real-time data and AI insights
         </p>
         
-        {/* Decorative Elements - Adjusted opacity */}
+        {/* Decorative Elements */}
         <div ref={decorativeElementsRef} className="absolute inset-0 pointer-events-none">
           {/* Bar Chart */}
           <div className="absolute bottom-16 left-8 w-36 h-28 bg-white/95 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
@@ -58,7 +58,7 @@ const Index = () => {
                 {[4,6,5,7,6,8].map((height, i) => (
                   <div 
                     key={i}
-                    className="flex-1 bg-[#077dfa]/80 rounded-t hover:bg-[#077dfa]/90 transition-colors"
+                    className="flex-1 bg-[#077dfa]/90 rounded-t hover:bg-[#077dfa] transition-colors"
                     style={{ height: `${height * 8}px` }}
                   />
                 ))}
@@ -71,13 +71,13 @@ const Index = () => {
           <div className="absolute bottom-16 right-16 w-40 h-28 bg-white/95 rounded-xl shadow-lg p-4 backdrop-blur-sm border border-gray-100 transition-all duration-700">
             <div className="h-full flex flex-col">
               <div className="flex-1">
-                <svg className="w-full h-full text-[#077dfa]/80" viewBox="0 0 100 50">
+                <svg className="w-full h-full text-[#077dfa]/90" viewBox="0 0 100 50">
                   <path
                     d="M0,40 C20,35 40,25 60,30 S80,20 100,10"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="3"
-                    className="hover:text-[#077dfa]/90 transition-colors"
+                    className="hover:text-[#077dfa] transition-colors"
                   />
                 </svg>
               </div>
@@ -89,7 +89,7 @@ const Index = () => {
           <div className="absolute -bottom-8 left-52 w-36 h-36 bg-white/95 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
             <div className="h-full flex flex-col">
               <div className="flex-1 flex items-center justify-center">
-                <svg className="w-24 h-24 text-[#077dfa]/80" viewBox="0 0 32 32">
+                <svg className="w-24 h-24 text-[#077dfa]/90" viewBox="0 0 32 32">
                   <circle 
                     cx="16" 
                     cy="16" 
@@ -97,14 +97,14 @@ const Index = () => {
                     fill="none" 
                     stroke="currentColor" 
                     strokeWidth="3"
-                    className="hover:text-[#077dfa]/90 transition-colors"
+                    className="hover:text-[#077dfa] transition-colors"
                   />
                   <path 
                     d="M16 4 A12 12 0 0 1 28 16" 
                     fill="none" 
                     stroke="currentColor" 
                     strokeWidth="3"
-                    className="hover:text-[#077dfa]/90 transition-colors"
+                    className="hover:text-[#077dfa] transition-colors"
                   />
                 </svg>
               </div>
