@@ -19,9 +19,9 @@ const Index = () => {
           Advanced stock analysis and research tools powered by real-time data and AI insights
         </p>
         <div className="flex justify-center mb-12">
-          <div className="bg-[#111827] backdrop-blur-sm p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all">
-            <EmailSignup />
-          </div>
+          <Button size="lg" className="text-lg px-8 bg-[#111827] hover:bg-[#111827]/90 text-white font-sans">
+            Get Started
+          </Button>
         </div>
       </section>
 
