@@ -60,8 +60,8 @@ const Index = () => {
           {/* Bottom left - Pie Chart - Optimized size */}
           <div className="absolute bottom-8 left-52 w-36 h-36 bg-white/90 rounded-xl shadow-lg p-3 animate-[fade-in_0.5s,scale-in_0.5s] delay-300 backdrop-blur-sm border border-gray-100">
             <div className="h-full flex flex-col">
-              <div className="flex-1">
-                <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 32 32">
+              <div className="flex-1 flex items-center justify-center">
+                <svg className="w-24 h-24 text-[#077dfa]/60" viewBox="0 0 32 32">
                   <circle 
                     cx="16" 
                     cy="16" 
