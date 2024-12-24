@@ -4,13 +4,29 @@ import { LiveStockData } from "@/components/LiveStockData";
 import { Testimonials } from "@/components/Testimonials";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
+import { LineChart, TrendingUp, PieChart, BarChart3, CandlestickChart } from "lucide-react";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <Header />
       {/* Hero Section */}
-      <section className="container pt-32 pb-20 text-center">
+      <section className="container pt-32 pb-20 text-center relative overflow-hidden">
+        {/* Decorative Elements */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Top left */}
+          <LineChart className="absolute top-12 left-10 w-8 h-8 text-[#077dfa]/20 transform -rotate-12" />
+          <PieChart className="absolute top-24 left-32 w-6 h-6 text-[#111827]/10 transform rotate-12" />
+          
+          {/* Top right */}
+          <TrendingUp className="absolute top-16 right-20 w-8 h-8 text-[#077dfa]/20 transform rotate-12" />
+          <BarChart3 className="absolute top-28 right-40 w-6 h-6 text-[#111827]/10 transform -rotate-12" />
+          
+          {/* Bottom decorations */}
+          <CandlestickChart className="absolute bottom-12 left-1/4 w-6 h-6 text-[#077dfa]/20 transform rotate-45" />
+          <LineChart className="absolute bottom-20 right-1/4 w-8 h-8 text-[#111827]/10 transform -rotate-45" />
+        </div>
+
         <h1 className="text-4xl md:text-6xl font-bold mb-6 text-[#111827] relative inline-block font-sans">
           Make Smarter Investment <span className="text-[#077dfa]">Decisions</span>
           <span className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-[#077dfa]/60 rounded-full transform skew-x-12"></span>
