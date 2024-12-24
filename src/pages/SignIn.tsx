@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -25,9 +26,9 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white flex flex-col">
       <Header />
-      <div className="pt-16 flex items-center justify-center min-h-screen">
+      <div className="flex-grow pt-16 flex items-center justify-center">
         <div className="w-full max-w-md space-y-8 p-8 bg-white rounded-xl shadow-lg">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-[#111827]">Welcome back</h2>
@@ -84,6 +85,7 @@ const SignIn = () => {
           </form>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
