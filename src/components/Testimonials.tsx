@@ -26,10 +26,13 @@ export const Testimonials = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {testimonials.map((testimonial) => (
-        <Card key={testimonial.name} className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow">
+        <Card 
+          key={testimonial.name} 
+          className="p-6 bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 transform"
+        >
           <div className="flex items-start space-x-4">
             <Avatar>
-              <AvatarFallback className="bg-gradient-to-r from-purple-600 to-blue-500 text-white">
+              <AvatarFallback className="bg-gradient-to-r from-[#1EAEDB] to-[#33C3F0] text-white">
                 {testimonial.avatar}
               </AvatarFallback>
             </Avatar>
