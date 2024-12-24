@@ -21,10 +21,7 @@ const Index = () => {
         const rect = element.getBoundingClientRect();
         const elementTop = rect.top + scrollPosition;
         
-        // Calculate how far the element is from the viewport top
         const distanceFromTop = elementTop - scrollPosition;
-        
-        // Calculate opacity and transform based on scroll position
         const opacity = Math.max(0, Math.min(1, 1 - (scrollPosition - elementTop + windowHeight) / windowHeight));
         const translateY = Math.min(0, (distanceFromTop - windowHeight) * 0.2);
         
@@ -52,10 +49,10 @@ const Index = () => {
           Advanced stock analysis and research tools powered by real-time data and AI insights
         </p>
         
-        {/* Decorative Elements */}
+        {/* Decorative Elements - Adjusted positions */}
         <div ref={decorativeElementsRef} className="absolute inset-0 pointer-events-none">
-          {/* Left side - Bar Chart */}
-          <div className="absolute bottom-32 left-16 w-36 h-28 bg-white/90 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
+          {/* Left side - Bar Chart - Moved further left and down */}
+          <div className="absolute bottom-0 -left-16 w-36 h-28 bg-white/90 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
             <div className="h-full flex flex-col">
               <div className="flex-1 flex items-end gap-1">
                 {[4,6,5,7,6,8].map((height, i) => (
@@ -70,8 +67,8 @@ const Index = () => {
             </div>
           </div>
           
-          {/* Right side - Line Chart */}
-          <div className="absolute bottom-16 right-16 w-40 h-28 bg-white/90 rounded-xl shadow-lg p-4 backdrop-blur-sm border border-gray-100 transition-all duration-700">
+          {/* Right side - Line Chart - Moved further right */}
+          <div className="absolute bottom-16 -right-8 w-40 h-28 bg-white/90 rounded-xl shadow-lg p-4 backdrop-blur-sm border border-gray-100 transition-all duration-700">
             <div className="h-full flex flex-col">
               <div className="flex-1">
                 <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 100 50">
@@ -88,8 +85,8 @@ const Index = () => {
             </div>
           </div>
           
-          {/* Bottom left - Pie Chart */}
-          <div className="absolute bottom-8 left-52 w-36 h-36 bg-white/90 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
+          {/* Bottom left - Pie Chart - Moved further down */}
+          <div className="absolute -bottom-8 left-52 w-36 h-36 bg-white/90 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
             <div className="h-full flex flex-col">
               <div className="flex-1 flex items-center justify-center">
                 <svg className="w-24 h-24 text-[#077dfa]/60" viewBox="0 0 32 32">
