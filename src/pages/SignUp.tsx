@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { Header } from "@/components/Header";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -25,76 +26,79 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50/30">
-      <div className="w-full max-w-md space-y-8 p-8 bg-white rounded-xl shadow-lg">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-[#111827]">Create an account</h2>
-          <p className="mt-2 text-gray-600">Start your journey with us</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Full name
-              </label>
-              <Input
-                id="name"
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-1"
-                placeholder="Enter your full name"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <Input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1"
-                placeholder="Enter your email"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1"
-                placeholder="Create a password"
-              />
-            </div>
+    <div className="min-h-screen bg-white">
+      <Header />
+      <div className="pt-16 flex items-center justify-center min-h-screen">
+        <div className="w-full max-w-md space-y-8 p-8 bg-white rounded-xl shadow-lg">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-[#111827]">Create an account</h2>
+            <p className="mt-2 text-gray-600">Start your journey with us</p>
           </div>
 
-          <Button
-            type="submit"
-            className="w-full bg-[#077dfa] hover:bg-[#077dfa]/90"
-            disabled={loading}
-          >
-            {loading ? "Creating account..." : "Sign up"}
-          </Button>
+          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  Full name
+                </label>
+                <Input
+                  id="name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-1"
+                  placeholder="Enter your full name"
+                />
+              </div>
 
-          <p className="text-center text-sm text-gray-600">
-            Already have an account?{" "}
-            <Link to="/signin" className="text-[#077dfa] hover:underline">
-              Sign in
-            </Link>
-          </p>
-        </form>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email address
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-1"
+                  placeholder="Enter your email"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="mt-1"
+                  placeholder="Create a password"
+                />
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-[#077dfa] hover:bg-[#077dfa]/90"
+              disabled={loading}
+            >
+              {loading ? "Creating account..." : "Sign up"}
+            </Button>
+
+            <p className="text-center text-sm text-gray-600">
+              Already have an account?{" "}
+              <Link to="/signin" className="text-[#077dfa] hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </form>
+        </div>
       </div>
     </div>
   );
