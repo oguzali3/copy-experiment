@@ -21,8 +21,8 @@ const Index = () => {
         
         {/* Decorative Elements */}
         <div className="absolute inset-0 pointer-events-none">
-          {/* Left side - Bar Chart */}
-          <div className="absolute bottom-32 left-16 w-32 h-24 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] backdrop-blur-sm border border-gray-100">
+          {/* Left side - Bar Chart - Made wider and taller */}
+          <div className="absolute bottom-32 left-16 w-40 h-32 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] backdrop-blur-sm border border-gray-100">
             <div className="h-full flex flex-col">
               <div className="flex-1 flex items-end gap-1">
                 {[4,6,5,7,6,8].map((height, i) => (
@@ -33,7 +33,7 @@ const Index = () => {
                   />
                 ))}
               </div>
-              <div className="text-center text-xs text-gray-600 mt-2">Revenue</div>
+              <div className="text-center text-xs text-gray-600 mt-2 border-t border-gray-200 pt-2">Revenue</div>
             </div>
           </div>
           
@@ -53,12 +53,12 @@ const Index = () => {
                   />
                 </svg>
               </div>
-              <div className="text-center text-xs text-gray-600 mt-2">Return on Equity</div>
+              <div className="text-center text-xs text-gray-600 mt-2 border-t border-gray-200 pt-2">Return on Equity</div>
             </div>
           </div>
           
-          {/* Bottom left - Pie Chart */}
-          <div className="absolute bottom-8 left-52 w-36 h-36 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] delay-300 backdrop-blur-sm border border-gray-100">
+          {/* Bottom left - Pie Chart - Made wider and taller */}
+          <div className="absolute bottom-8 left-52 w-44 h-44 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] delay-300 backdrop-blur-sm border border-gray-100">
             <div className="h-full flex flex-col">
               <div className="flex-1">
                 <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 32 32">
@@ -80,7 +80,7 @@ const Index = () => {
                   />
                 </svg>
               </div>
-              <div className="text-center text-xs text-gray-600 mt-2">Market Share</div>
+              <div className="text-center text-xs text-gray-600 mt-2 border-t border-gray-200 pt-2">Market Share</div>
             </div>
           </div>
         </div>
