@@ -45,7 +45,7 @@ const Index = () => {
           Make Smarter Investment <span className="text-[#077dfa]">Decisions</span>
           <span className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-[#077dfa]/60 rounded-full transform skew-x-12"></span>
         </h1>
-        <p className="text-xl md:text-2xl mb-8 text-[#111827]/80 max-w-2xl mx-auto font-medium font-sans">
+        <p className="text-xl md:text-2xl mb-8 text-[#111827] max-w-2xl mx-auto font-sans">
           Advanced stock analysis and research tools powered by real-time data and AI insights
         </p>
         
