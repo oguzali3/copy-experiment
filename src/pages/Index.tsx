@@ -52,7 +52,7 @@ const Index = () => {
         {/* Decorative Elements - Adjusted positions */}
         <div ref={decorativeElementsRef} className="absolute inset-0 pointer-events-none">
           {/* Bar Chart - Repositioned next to pie chart but higher */}
-          <div className="absolute bottom-16 left-52 w-36 h-28 bg-white/90 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
+          <div className="absolute bottom-16 left-8 w-36 h-28 bg-white/90 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
             <div className="h-full flex flex-col">
               <div className="flex-1 flex items-end gap-1">
                 {[4,6,5,7,6,8].map((height, i) => (
