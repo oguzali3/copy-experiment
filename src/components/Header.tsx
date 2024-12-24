@@ -49,13 +49,13 @@ export const Header = () => {
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#product" className="text-foreground/90 hover:text-[#077dfa] transition-colors">
+            <a href="#product" className="text-black hover:text-[#077dfa] transition-colors">
               Product
             </a>
-            <a href="#pricing" className="text-foreground/90 hover:text-[#077dfa] transition-colors">
+            <a href="#pricing" className="text-black hover:text-[#077dfa] transition-colors">
               Pricing
             </a>
-            <a href="#about" className="text-foreground/90 hover:text-[#077dfa] transition-colors">
+            <a href="#about" className="text-black hover:text-[#077dfa] transition-colors">
               About Us
             </a>
           </nav>
