@@ -22,7 +22,7 @@ const Index = () => {
         {/* Decorative Elements */}
         <div className="absolute inset-0 pointer-events-none">
           {/* Left side - Bar Chart - Optimized size */}
-          <div className="absolute bottom-32 left-16 w-36 h-28 bg-white/90 rounded-xl shadow-lg p-3 animate-[fade-in_0.5s,scale-in_0.5s] backdrop-blur-sm border border-gray-100">
+          <div className="absolute bottom-32 left-16 w-36 h-28 bg-white/90 rounded-xl shadow-lg p-3 animate-[fade-in_0.5s,scale-in_0.5s] backdrop-blur-sm border border-gray-100 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 animate-float">
             <div className="h-full flex flex-col">
               <div className="flex-1 flex items-end gap-1">
                 {[4,6,5,7,6,8].map((height, i) => (
@@ -38,7 +38,7 @@ const Index = () => {
           </div>
           
           {/* Right side - Line Chart */}
-          <div className="absolute bottom-16 right-16 w-40 h-28 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] delay-200 backdrop-blur-sm border border-gray-100">
+          <div className="absolute bottom-16 right-16 w-40 h-28 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] delay-200 backdrop-blur-sm border border-gray-100 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 animate-float-delayed">
             <div className="h-full flex flex-col">
               <div className="flex-1">
                 <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 100 50">
@@ -58,7 +58,7 @@ const Index = () => {
           </div>
           
           {/* Bottom left - Pie Chart - Optimized size */}
-          <div className="absolute bottom-8 left-52 w-36 h-36 bg-white/90 rounded-xl shadow-lg p-3 animate-[fade-in_0.5s,scale-in_0.5s] delay-300 backdrop-blur-sm border border-gray-100">
+          <div className="absolute bottom-8 left-52 w-36 h-36 bg-white/90 rounded-xl shadow-lg p-3 animate-[fade-in_0.5s,scale-in_0.5s] delay-300 backdrop-blur-sm border border-gray-100 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 animate-float-more-delayed">
             <div className="h-full flex flex-col">
               <div className="flex-1 flex items-center justify-center">
                 <svg className="w-24 h-24 text-[#077dfa]/60" viewBox="0 0 32 32">
@@ -85,6 +85,7 @@ const Index = () => {
           </div>
         </div>
 
+        {/* CTA Button */}
         <div className="flex justify-center mb-12 relative z-10">
           <Button size="lg" className="text-lg px-8 bg-[#111827] hover:bg-[#111827]/90 text-white font-sans">
             Get Started
