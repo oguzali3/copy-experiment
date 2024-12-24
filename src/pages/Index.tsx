@@ -11,41 +11,46 @@ const Index = () => {
       <Header />
       {/* Hero Section */}
       <section className="container pt-32 pb-20 text-center relative overflow-hidden">
+        <h1 className="text-4xl md:text-6xl font-bold mb-6 text-[#111827] relative inline-block font-sans">
+          Make Smarter Investment <span className="text-[#077dfa]">Decisions</span>
+          <span className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-[#077dfa]/60 rounded-full transform skew-x-12"></span>
+        </h1>
+        <p className="text-xl md:text-2xl mb-8 text-[#111827]/80 max-w-2xl mx-auto font-medium font-sans">
+          Advanced stock analysis and research tools powered by real-time data and AI insights
+        </p>
+        
         {/* Decorative Elements */}
         <div className="absolute inset-0 pointer-events-none">
-          {/* Top left - Bar Chart */}
-          <div className="absolute top-12 left-10 w-32 h-24 bg-gray-50/80 rounded-xl shadow-sm p-4 animate-fade-in">
+          {/* Left side - Bar Chart */}
+          <div className="absolute bottom-8 left-1/4 w-32 h-24 bg-gray-50/80 rounded-xl shadow-sm p-4 animate-fade-in">
             <div className="h-full flex items-end gap-1">
               {[4,6,5,7,6,8].map((height, i) => (
                 <div 
                   key={i}
-                  className="flex-1 bg-[#077dfa]/60 rounded-t animate-[number-counter_0.5s_ease-out_forwards] delay-100"
+                  className="flex-1 bg-[#077dfa]/60 rounded-t animate-[number-counter_0.5s_ease-out_forwards]"
                   style={{ height: `${height * 8}px`, animationDelay: `${i * 0.1}s` }}
                 />
               ))}
             </div>
           </div>
           
-          {/* Top right - Line Chart */}
-          <div className="absolute top-16 right-20 w-40 h-28 bg-gray-50/80 rounded-xl shadow-sm p-4 animate-fade-in delay-200">
+          {/* Right side - Line Chart */}
+          <div className="absolute bottom-8 right-1/4 w-40 h-28 bg-gray-50/80 rounded-xl shadow-sm p-4 animate-fade-in delay-200">
             <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 100 50">
               <path
                 d="M0,40 C20,35 40,25 60,30 S80,20 100,10"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="3"
-                className="animate-[slide-in-right_1s_ease-out_forwards]"
+                className="animate-dash"
                 strokeDasharray="200"
                 strokeDashoffset="200"
-                style={{
-                  animation: "slide-in-right 1s ease-out forwards, dash 2s ease-out forwards",
-                }}
               />
             </svg>
           </div>
           
-          {/* Middle - Pie Chart */}
-          <div className="absolute top-1/3 left-24 w-36 h-36 bg-gray-50/80 rounded-xl shadow-sm p-4 animate-fade-in delay-300">
+          {/* Bottom center - Pie Chart */}
+          <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-36 h-36 bg-gray-50/80 rounded-xl shadow-sm p-4 animate-fade-in delay-300">
             <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 32 32">
               <circle 
                 cx="16" 
@@ -67,14 +72,7 @@ const Index = () => {
           </div>
         </div>
 
-        <h1 className="text-4xl md:text-6xl font-bold mb-6 text-[#111827] relative inline-block font-sans">
-          Make Smarter Investment <span className="text-[#077dfa]">Decisions</span>
-          <span className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-[#077dfa]/60 rounded-full transform skew-x-12"></span>
-        </h1>
-        <p className="text-xl md:text-2xl mb-8 text-[#111827]/80 max-w-2xl mx-auto font-medium font-sans">
-          Advanced stock analysis and research tools powered by real-time data and AI insights
-        </p>
-        <div className="flex justify-center mb-12">
+        <div className="flex justify-center mb-12 relative z-10">
           <Button size="lg" className="text-lg px-8 bg-[#111827] hover:bg-[#111827]/90 text-white font-sans">
             Get Started
           </Button>
