@@ -28,7 +28,7 @@ const SignIn = () => {
     <div className="min-h-screen bg-white">
       <Header />
       <div className="pt-16 flex items-center justify-center min-h-screen">
-        <div className="w-full max-w-md space-y-8 p-8 bg-white rounded-xl shadow-lg">
+        <div className="w-full max-w-md space-y-8 p-8 bg-white rounded-xl shadow-[0_20px_50px_rgba(8,_112,_184,_0.7)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(8,_112,_184,_0.8)] transform hover:-translate-y-1">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-[#111827]">Welcome back</h2>
             <p className="mt-2 text-gray-600">Sign in to your account</p>
