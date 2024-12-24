@@ -1,29 +1,48 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 const data = [
-  { time: "9:30", price: 150 },
-  { time: "10:00", price: 153 },
-  { time: "10:30", price: 151 },
-  { time: "11:00", price: 155 },
-  { time: "11:30", price: 158 },
-  { time: "12:00", price: 154 },
-  { time: "12:30", price: 156 },
-  { time: "13:00", price: 160 },
+  { time: "9:30", price: 150.25 },
+  { time: "10:00", price: 152.75 },
+  { time: "10:30", price: 151.50 },
+  { time: "11:00", price: 154.25 },
+  { time: "11:30", price: 153.75 },
+  { time: "12:00", price: 155.50 },
+  { time: "12:30", price: 154.25 },
+  { time: "13:00", price: 156.75 },
+  { time: "13:30", price: 158.25 },
+  { time: "14:00", price: 157.50 },
+  { time: "14:30", price: 159.75 },
+  { time: "15:00", price: 160.25 },
+  { time: "15:30", price: 162.50 },
+  { time: "16:00", price: 161.75 },
 ];
 
 export const StockChart = () => {
   return (
-    <div className="h-[200px] w-full">
+    <div className="h-[400px] w-full bg-white p-4 rounded-xl shadow-sm">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
-          <XAxis dataKey="time" stroke="#888888" />
-          <YAxis stroke="#888888" />
+          <XAxis 
+            dataKey="time" 
+            stroke="#888888"
+            fontSize={12}
+            tickLine={false}
+          />
+          <YAxis 
+            stroke="#888888"
+            fontSize={12}
+            tickLine={false}
+            domain={['auto', 'auto']}
+            tickFormatter={(value) => `$${value}`}
+          />
           <Tooltip
             contentStyle={{
-              backgroundColor: "#1A1F2C",
-              border: "none",
+              backgroundColor: "white",
+              border: "1px solid #e5e7eb",
               borderRadius: "8px",
+              boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
             }}
+            formatter={(value) => [`$${value}`, "Price"]}
           />
           <Line
             type="monotone"
@@ -31,6 +50,7 @@ export const StockChart = () => {
             stroke="#0EA5E9"
             strokeWidth={2}
             dot={false}
+            activeDot={{ r: 4 }}
           />
         </LineChart>
       </ResponsiveContainer>
