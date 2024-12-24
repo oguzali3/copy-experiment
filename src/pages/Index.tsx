@@ -4,8 +4,41 @@ import { LiveStockData } from "@/components/LiveStockData";
 import { Testimonials } from "@/components/Testimonials";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
+import { useEffect, useRef } from "react";
 
 const Index = () => {
+  const decorativeElementsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!decorativeElementsRef.current) return;
+      
+      const elements = decorativeElementsRef.current.children;
+      const scrollPosition = window.scrollY;
+      const windowHeight = window.innerHeight;
+      
+      Array.from(elements).forEach((element, index) => {
+        const rect = element.getBoundingClientRect();
+        const elementTop = rect.top + scrollPosition;
+        
+        // Calculate how far the element is from the viewport top
+        const distanceFromTop = elementTop - scrollPosition;
+        
+        // Calculate opacity and transform based on scroll position
+        const opacity = Math.max(0, Math.min(1, 1 - (scrollPosition - elementTop + windowHeight) / windowHeight));
+        const translateY = Math.min(0, (distanceFromTop - windowHeight) * 0.2);
+        
+        (element as HTMLElement).style.opacity = opacity.toString();
+        (element as HTMLElement).style.transform = `translateY(${translateY}px)`;
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial position
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <Header />
@@ -20,16 +53,16 @@ const Index = () => {
         </p>
         
         {/* Decorative Elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Left side - Bar Chart - Optimized size */}
-          <div className="absolute bottom-32 left-16 w-36 h-28 bg-white/90 rounded-xl shadow-lg p-3 animate-[fade-in_0.5s,scale-in_0.5s] backdrop-blur-sm border border-gray-100 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 animate-float">
+        <div ref={decorativeElementsRef} className="absolute inset-0 pointer-events-none">
+          {/* Left side - Bar Chart */}
+          <div className="absolute bottom-32 left-16 w-36 h-28 bg-white/90 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
             <div className="h-full flex flex-col">
               <div className="flex-1 flex items-end gap-1">
                 {[4,6,5,7,6,8].map((height, i) => (
                   <div 
                     key={i}
-                    className="flex-1 bg-[#077dfa]/60 rounded-t animate-[number-counter_0.5s_ease-out_forwards] hover:bg-[#077dfa]/80 transition-colors"
-                    style={{ height: `${height * 8}px`, animationDelay: `${i * 0.1}s` }}
+                    className="flex-1 bg-[#077dfa]/60 rounded-t hover:bg-[#077dfa]/80 transition-colors"
+                    style={{ height: `${height * 8}px` }}
                   />
                 ))}
               </div>
@@ -38,7 +71,7 @@ const Index = () => {
           </div>
           
           {/* Right side - Line Chart */}
-          <div className="absolute bottom-16 right-16 w-40 h-28 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] delay-200 backdrop-blur-sm border border-gray-100 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 animate-float-delayed">
+          <div className="absolute bottom-16 right-16 w-40 h-28 bg-white/90 rounded-xl shadow-lg p-4 backdrop-blur-sm border border-gray-100 transition-all duration-700">
             <div className="h-full flex flex-col">
               <div className="flex-1">
                 <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 100 50">
@@ -47,9 +80,7 @@ const Index = () => {
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="3"
-                    className="animate-dash hover:text-[#077dfa]/80 transition-colors"
-                    strokeDasharray="200"
-                    strokeDashoffset="200"
+                    className="hover:text-[#077dfa]/80 transition-colors"
                   />
                 </svg>
               </div>
@@ -57,8 +88,8 @@ const Index = () => {
             </div>
           </div>
           
-          {/* Bottom left - Pie Chart - Optimized size */}
-          <div className="absolute bottom-8 left-52 w-36 h-36 bg-white/90 rounded-xl shadow-lg p-3 animate-[fade-in_0.5s,scale-in_0.5s] delay-300 backdrop-blur-sm border border-gray-100 hover:shadow-xl transition-all duration-500 hover:-translate-y-1 animate-float-more-delayed">
+          {/* Bottom left - Pie Chart */}
+          <div className="absolute bottom-8 left-52 w-36 h-36 bg-white/90 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
             <div className="h-full flex flex-col">
               <div className="flex-1 flex items-center justify-center">
                 <svg className="w-24 h-24 text-[#077dfa]/60" viewBox="0 0 32 32">
@@ -69,14 +100,14 @@ const Index = () => {
                     fill="none" 
                     stroke="currentColor" 
                     strokeWidth="3"
-                    className="animate-[scale-in_1s_ease-out_forwards] hover:text-[#077dfa]/80 transition-colors"
+                    className="hover:text-[#077dfa]/80 transition-colors"
                   />
                   <path 
                     d="M16 4 A12 12 0 0 1 28 16" 
                     fill="none" 
                     stroke="currentColor" 
                     strokeWidth="3"
-                    className="animate-[scale-in_1s_ease-out_forwards] delay-200 hover:text-[#077dfa]/80 transition-colors"
+                    className="hover:text-[#077dfa]/80 transition-colors"
                   />
                 </svg>
               </div>
