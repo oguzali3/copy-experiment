@@ -22,7 +22,7 @@ const Index = () => {
         {/* Decorative Elements */}
         <div className="absolute inset-0 pointer-events-none">
           {/* Left side - Bar Chart */}
-          <div className="absolute bottom-24 left-16 w-32 h-24 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] backdrop-blur-sm border border-gray-100">
+          <div className="absolute bottom-32 left-16 w-32 h-24 bg-white/90 rounded-xl shadow-lg p-4 animate-[fade-in_0.5s,scale-in_0.5s] backdrop-blur-sm border border-gray-100">
             <div className="h-full flex items-end gap-1">
               {[4,6,5,7,6,8].map((height, i) => (
                 <div 
