@@ -51,8 +51,8 @@ const Index = () => {
         
         {/* Decorative Elements - Adjusted positions */}
         <div ref={decorativeElementsRef} className="absolute inset-0 pointer-events-none">
-          {/* Left side - Bar Chart - Moved further left and down */}
-          <div className="absolute bottom-0 -left-16 w-36 h-28 bg-white/90 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
+          {/* Bar Chart - Repositioned next to pie chart but higher */}
+          <div className="absolute bottom-16 left-52 w-36 h-28 bg-white/90 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
             <div className="h-full flex flex-col">
               <div className="flex-1 flex items-end gap-1">
                 {[4,6,5,7,6,8].map((height, i) => (
@@ -67,8 +67,8 @@ const Index = () => {
             </div>
           </div>
           
-          {/* Right side - Line Chart - Moved further right */}
-          <div className="absolute bottom-16 -right-8 w-40 h-28 bg-white/90 rounded-xl shadow-lg p-4 backdrop-blur-sm border border-gray-100 transition-all duration-700">
+          {/* Line Chart - Restored to original position */}
+          <div className="absolute bottom-16 right-16 w-40 h-28 bg-white/90 rounded-xl shadow-lg p-4 backdrop-blur-sm border border-gray-100 transition-all duration-700">
             <div className="h-full flex flex-col">
               <div className="flex-1">
                 <svg className="w-full h-full text-[#077dfa]/60" viewBox="0 0 100 50">
@@ -85,7 +85,7 @@ const Index = () => {
             </div>
           </div>
           
-          {/* Bottom left - Pie Chart - Moved further down */}
+          {/* Pie Chart - Kept in position */}
           <div className="absolute -bottom-8 left-52 w-36 h-36 bg-white/90 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
             <div className="h-full flex flex-col">
               <div className="flex-1 flex items-center justify-center">
