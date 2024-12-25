@@ -21,9 +21,9 @@ const Dashboard = () => {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="text-white hover:bg-[#077dfa] hover:text-[#077dfa]"
+              className="text-white hover:bg-[#077dfa] w-12 h-12"
             >
-              <UserCircle className="h-7 w-7" />
+              <UserCircle className="h-9 w-9 text-white" />
             </Button>
           </div>
         </div>
