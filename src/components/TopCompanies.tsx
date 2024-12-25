@@ -1,8 +1,9 @@
 import { Card } from "@/components/ui/card";
-import { ArrowUpIcon, ArrowDownIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { MetricsSearch } from "./MetricsSearch";
 import { CompanySearch } from "./CompanySearch";
+import { CompanyTableHeader } from "./CompanyTableHeader";
+import { CompanyTableRow } from "./CompanyTableRow";
 
 const initialCompanies = [
   { rank: 1, name: "Apple Inc.", ticker: "AAPL", marketCap: "3.02T", price: "192.53", change: "+2.41%", isPositive: true },
@@ -58,17 +59,6 @@ export const TopCompanies = () => {
     setCompanies(sortedCompanies);
   };
 
-  const getSortIcon = (field: SortField) => {
-    if (sortConfig.field !== field) {
-      return <ArrowDownIcon className="h-4 w-4 ml-1 inline-block text-gray-400" />;
-    }
-    return sortConfig.direction === "desc" ? (
-      <ArrowDownIcon className="h-4 w-4 ml-1 inline-block text-blue-600" />
-    ) : (
-      <ArrowUpIcon className="h-4 w-4 ml-1 inline-block text-blue-600" />
-    );
-  };
-
   const handleCompanySelect = (newCompany: any) => {
     if (!companies.find(c => c.ticker === newCompany.ticker)) {
       setCompanies(prev => [...prev, { ...newCompany, rank: prev.length + 1 }]);
@@ -89,65 +79,15 @@ export const TopCompanies = () => {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Rank</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Company</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Ticker</th>
-                <th 
-                  className="px-4 py-3 text-left text-sm font-semibold text-gray-600 cursor-pointer hover:text-blue-600"
-                  onClick={() => handleSort("marketCap")}
-                >
-                  Market Cap
-                  {getSortIcon("marketCap")}
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-sm font-semibold text-gray-600 cursor-pointer hover:text-blue-600"
-                  onClick={() => handleSort("price")}
-                >
-                  Price
-                  {getSortIcon("price")}
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-sm font-semibold text-gray-600 cursor-pointer hover:text-blue-600"
-                  onClick={() => handleSort("change")}
-                >
-                  Change
-                  {getSortIcon("change")}
-                </th>
-              </tr>
-            </thead>
+            <CompanyTableHeader sortConfig={sortConfig} onSort={handleSort} />
             <tbody className="divide-y divide-gray-200">
               {companies.map((company, index) => (
-                <tr key={company.ticker} className="hover:bg-gray-50 group">
-                  <td className="px-4 py-3 text-sm text-gray-500">
-                    <div className="flex items-center">
-                      {index + 1}
-                      <button
-                        onClick={() => handleRemoveCompany(company.ticker)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity ml-3 p-1 rounded-full hover:bg-gray-100"
-                      >
-                        <XIcon className="h-4 w-4 text-gray-400 hover:text-red-500" />
-                      </button>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">{company.name}</div>
-                  </td>
-                  <td className="px-4 py-3 text-sm font-medium text-blue-600">{company.ticker}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">${company.marketCap}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">${company.price}</td>
-                  <td className="px-4 py-3">
-                    <div className={`flex items-center ${company.isPositive ? 'text-success' : 'text-warning'}`}>
-                      {company.isPositive ? (
-                        <ArrowUpIcon className="h-4 w-4 mr-1" />
-                      ) : (
-                        <ArrowDownIcon className="h-4 w-4 mr-1" />
-                      )}
-                      <span>{company.change}</span>
-                    </div>
-                  </td>
-                </tr>
+                <CompanyTableRow
+                  key={company.ticker}
+                  company={company}
+                  index={index}
+                  onRemove={handleRemoveCompany}
+                />
               ))}
             </tbody>
           </table>
