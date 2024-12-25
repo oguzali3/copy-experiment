@@ -18,13 +18,16 @@ const Dashboard = () => {
             >
               Upgrade
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-white hover:bg-[#077dfa] w-12 h-12"
-            >
-              <UserCircle className="h-9 w-9 text-white" />
-            </Button>
+            <div className="flex flex-col items-center">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white hover:bg-[#077dfa] w-12 h-12 [&_svg]:!text-white hover:[&_svg]:!text-white"
+              >
+                <UserCircle className="h-9 w-9" />
+              </Button>
+              <span className="text-xs text-white/80 -mt-1">Profile</span>
+            </div>
           </div>
         </div>
         <main className="flex-1 p-6 space-y-6 overflow-auto">
