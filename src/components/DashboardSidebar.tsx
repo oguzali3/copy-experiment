@@ -42,7 +42,7 @@ export const DashboardSidebar = () => {
         className="p-4 flex items-center cursor-pointer" 
         onClick={toggleSidebar}
       >
-        <Building className="h-8 w-8 text-white" />
+        <Building className="h-8 w-8 text-white shrink-0" />
         <span className={`ml-2 text-lg font-semibold text-white transition-opacity duration-300 ${state === 'collapsed' ? 'opacity-0' : 'opacity-100'}`}>
           TradePro
         </span>
