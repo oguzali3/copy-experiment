@@ -5,7 +5,8 @@ import {
   Settings, 
   BookOpen, 
   Home,
-  Search
+  Search,
+  Building
 } from "lucide-react";
 import {
   Sidebar,
@@ -16,6 +17,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar
 } from "@/components/ui/sidebar";
 
 const menuItems = [
@@ -29,8 +31,17 @@ const menuItems = [
 ];
 
 export const DashboardSidebar = () => {
+  const { toggleSidebar } = useSidebar();
+
   return (
     <Sidebar className="bg-[#403E43] border-r-0">
+      <div 
+        className="p-4 flex items-center cursor-pointer" 
+        onClick={toggleSidebar}
+      >
+        <Building className="h-8 w-8 text-white" />
+        <span className="ml-2 text-lg font-semibold text-white">TradePro</span>
+      </div>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="text-white/70">Menu</SidebarGroupLabel>
