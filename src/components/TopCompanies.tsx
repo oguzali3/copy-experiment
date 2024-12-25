@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
+import { ArrowUpIcon, ArrowDownIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { MetricsSearch } from "./MetricsSearch";
 import { CompanySearch } from "./CompanySearch";
@@ -70,10 +70,13 @@ export const TopCompanies = () => {
   };
 
   const handleCompanySelect = (newCompany: any) => {
-    // Check if company already exists
     if (!companies.find(c => c.ticker === newCompany.ticker)) {
       setCompanies(prev => [...prev, { ...newCompany, rank: prev.length + 1 }]);
     }
+  };
+
+  const handleRemoveCompany = (tickerToRemove: string) => {
+    setCompanies(prev => prev.filter(company => company.ticker !== tickerToRemove));
   };
 
   return (
@@ -116,8 +119,18 @@ export const TopCompanies = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {companies.map((company, index) => (
-                <tr key={company.ticker} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
+                <tr key={company.ticker} className="hover:bg-gray-50 group">
+                  <td className="px-4 py-3 text-sm text-gray-500 relative">
+                    <div className="flex items-center">
+                      <button
+                        onClick={() => handleRemoveCompany(company.ticker)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity absolute -left-2 text-gray-400 hover:text-red-500"
+                      >
+                        <XIcon className="h-4 w-4" />
+                      </button>
+                      <span className="ml-6">{index + 1}</span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-gray-900">{company.name}</div>
                   </td>
