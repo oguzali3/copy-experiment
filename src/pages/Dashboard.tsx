@@ -1,4 +1,3 @@
-import { Header } from "@/components/Header";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { MarketIndices } from "@/components/MarketIndices";
 import { TopCompanies } from "@/components/TopCompanies";
@@ -6,7 +5,7 @@ import { SearchBar } from "@/components/SearchBar";
 
 const Dashboard = () => {
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="flex w-full">
       <DashboardSidebar />
       <div className="flex-1 flex flex-col">
         <div className="bg-[#221F26] h-16 flex items-center px-6">
