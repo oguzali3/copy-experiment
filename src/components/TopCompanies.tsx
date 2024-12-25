@@ -1,6 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 import { useState } from "react";
+import { MetricsSearch } from "./MetricsSearch";
+import { CompanySearch } from "./CompanySearch";
 
 const initialCompanies = [
   { rank: 1, name: "Apple Inc.", ticker: "AAPL", marketCap: "3.02T", price: "192.53", change: "+2.41%", isPositive: true },
@@ -67,9 +69,20 @@ export const TopCompanies = () => {
     );
   };
 
+  const handleCompanySelect = (newCompany: any) => {
+    // Check if company already exists
+    if (!companies.find(c => c.ticker === newCompany.ticker)) {
+      setCompanies(prev => [...prev, { ...newCompany, rank: prev.length + 1 }]);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-[#111827]">Top Companies by Market Cap</h2>
+      <h2 className="text-2xl font-bold text-[#111827]">Featured Companies</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <MetricsSearch />
+        <CompanySearch onCompanySelect={handleCompanySelect} />
+      </div>
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
