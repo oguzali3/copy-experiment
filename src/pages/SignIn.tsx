@@ -21,7 +21,7 @@ const SignIn = () => {
     
     // For demo purposes, just show success and redirect
     toast.success("Successfully signed in!");
-    navigate("/");
+    navigate("/dashboard");
     setLoading(false);
   };
 
