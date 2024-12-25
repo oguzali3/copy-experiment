@@ -3,7 +3,7 @@ import { MarketIndices } from "@/components/MarketIndices";
 import { TopCompanies } from "@/components/TopCompanies";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, UserCircle } from "lucide-react";
+import { UserCircle } from "lucide-react";
 
 const Dashboard = () => {
   return (
@@ -16,15 +16,14 @@ const Dashboard = () => {
             <Button 
               className="bg-[#077dfa] hover:bg-[#077dfa]/90 text-white"
             >
-              <ArrowUp className="h-4 w-4 mr-2" />
               Upgrade
             </Button>
             <Button 
               variant="ghost" 
               size="icon" 
-              className="text-white hover:bg-white/10"
+              className="text-white hover:bg-[#077dfa] hover:text-[#077dfa]"
             >
-              <UserCircle className="h-5 w-5" />
+              <UserCircle className="h-7 w-7" />
             </Button>
           </div>
         </div>
