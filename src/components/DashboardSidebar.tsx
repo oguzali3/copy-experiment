@@ -34,7 +34,10 @@ export const DashboardSidebar = () => {
   const { toggleSidebar, state } = useSidebar();
 
   return (
-    <Sidebar className="bg-[#403E43] border-r-0 transition-all duration-300">
+    <Sidebar 
+      className="bg-[#403E43] border-r-0 transition-all duration-300" 
+      collapsible="icon"
+    >
       <div 
         className="p-4 flex items-center cursor-pointer" 
         onClick={toggleSidebar}
