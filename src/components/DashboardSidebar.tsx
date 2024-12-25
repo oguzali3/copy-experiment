@@ -31,27 +31,36 @@ const menuItems = [
 ];
 
 export const DashboardSidebar = () => {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, state } = useSidebar();
 
   return (
-    <Sidebar className="bg-[#403E43] border-r-0">
+    <Sidebar className="bg-[#403E43] border-r-0 transition-all duration-300">
       <div 
         className="p-4 flex items-center cursor-pointer" 
         onClick={toggleSidebar}
       >
         <Building className="h-8 w-8 text-white" />
-        <span className="ml-2 text-lg font-semibold text-white">TradePro</span>
+        <span className={`ml-2 text-lg font-semibold text-white transition-opacity duration-300 ${state === 'collapsed' ? 'opacity-0' : 'opacity-100'}`}>
+          TradePro
+        </span>
       </div>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-white/70">Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className={`text-white/70 transition-opacity duration-300 ${state === 'collapsed' ? 'opacity-0' : 'opacity-100'}`}>
+            Menu
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton className="text-white/80 hover:text-white hover:bg-white/10">
+                  <SidebarMenuButton 
+                    className="text-white/80 hover:text-white hover:bg-white/10 transition-all duration-300"
+                    tooltip={state === 'collapsed' ? item.title : undefined}
+                  >
                     <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+                    <span className={`transition-opacity duration-300 ${state === 'collapsed' ? 'opacity-0' : 'opacity-100'}`}>
+                      {item.title}
+                    </span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
