@@ -5,7 +5,7 @@ import {
   Settings, 
   BookOpen, 
   Home,
-  Search,
+  Filter,
   Building
 } from "lucide-react";
 import {
@@ -23,7 +23,7 @@ import {
 const menuItems = [
   { title: "Dashboard", icon: Home },
   { title: "Charting", icon: LineChart },
-  { title: "Screening", icon: Search },
+  { title: "Screening", icon: Filter },
   { title: "Watchlists", icon: List },
   { title: "Market Analysis", icon: BarChart3 },
   { title: "Resources", icon: BookOpen },
