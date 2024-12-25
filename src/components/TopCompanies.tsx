@@ -120,15 +120,15 @@ export const TopCompanies = () => {
             <tbody className="divide-y divide-gray-200">
               {companies.map((company, index) => (
                 <tr key={company.ticker} className="hover:bg-gray-50 group">
-                  <td className="px-4 py-3 text-sm text-gray-500 relative">
+                  <td className="px-4 py-3 text-sm text-gray-500">
                     <div className="flex items-center">
+                      {index + 1}
                       <button
                         onClick={() => handleRemoveCompany(company.ticker)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity absolute -left-2 text-gray-400 hover:text-red-500"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity ml-3 p-1 rounded-full hover:bg-gray-100"
                       >
-                        <XIcon className="h-4 w-4" />
+                        <XIcon className="h-4 w-4 text-gray-400 hover:text-red-500" />
                       </button>
-                      <span className="ml-6">{index + 1}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3">
