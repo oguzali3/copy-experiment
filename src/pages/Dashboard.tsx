@@ -8,7 +8,7 @@ const Dashboard = () => {
     <div className="flex w-full">
       <DashboardSidebar />
       <div className="flex-1 flex flex-col">
-        <div className="bg-[#221F26] h-16 flex items-center px-6">
+        <div className="bg-black h-16 flex items-center px-6">
           <SearchBar />
         </div>
         <main className="flex-1 p-6 space-y-6 overflow-auto">
