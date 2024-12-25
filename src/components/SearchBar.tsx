@@ -8,7 +8,7 @@ export const SearchBar = () => {
       <Input 
         type="text"
         placeholder="Search stocks..."
-        className="pl-10 bg-white/10 border-none text-white placeholder:text-gray-400 focus-visible:ring-white/20"
+        className="pl-10 bg-white border-none text-black placeholder:text-gray-400 focus-visible:ring-white/20"
       />
     </div>
   );
