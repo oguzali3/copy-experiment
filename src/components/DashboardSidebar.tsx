@@ -35,7 +35,7 @@ export const DashboardSidebar = () => {
 
   return (
     <Sidebar 
-      className="bg-black border-r-0 transition-all duration-300" 
+      className="bg-[#191d25] border-r-0 transition-all duration-300" 
       collapsible="icon"
     >
       <div 

@@ -10,7 +10,7 @@ const Dashboard = () => {
     <div className="flex w-full">
       <DashboardSidebar />
       <div className="flex-1 flex flex-col">
-        <div className="bg-black h-16 flex items-center px-6 gap-4">
+        <div className="bg-[#191d25] h-16 flex items-center px-6 gap-4">
           <SearchBar />
           <div className="flex items-center gap-2 ml-auto">
             <Button 
