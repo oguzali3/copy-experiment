@@ -22,10 +22,10 @@ import {
 
 const menuItems = [
   { title: "Dashboard", icon: Home },
+  { title: "Analysis", icon: BarChart3 },
   { title: "Charting", icon: LineChart },
   { title: "Screening", icon: Filter },
   { title: "Watchlists", icon: List },
-  { title: "Market Analysis", icon: BarChart3 },
   { title: "Resources", icon: BookOpen },
   { title: "Settings", icon: Settings },
 ];
