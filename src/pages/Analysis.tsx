@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CompanyNewsContent } from "@/components/CompanyNewsContent";
 import { CompanyEventsContent } from "@/components/CompanyEventsContent";
+import { FinancialStatements } from "@/components/FinancialStatements";
 
 // Move stock data to a separate file to reduce complexity
 const defaultStock = {
@@ -145,6 +146,12 @@ const Analysis = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <CompanyNewsContent ticker={selectedStock.ticker} />
             <CompanyEventsContent ticker={selectedStock.ticker} />
+          </div>
+        );
+      case "financials":
+        return (
+          <div className="space-y-6">
+            <FinancialStatements ticker={selectedStock.ticker} />
           </div>
         );
       default:
