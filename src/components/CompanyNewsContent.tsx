@@ -12,11 +12,12 @@ import { useState } from "react";
 
 interface CompanyNewsContentProps {
   ticker?: string;
+  limit?: number;
 }
 
-export const CompanyNewsContent = ({ ticker }: CompanyNewsContentProps) => {
+export const CompanyNewsContent = ({ ticker, limit }: CompanyNewsContentProps) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const newsPerPage = 15;
+  const newsPerPage = limit || 15;
 
   const news = [
     {
@@ -192,34 +193,36 @@ export const CompanyNewsContent = ({ ticker }: CompanyNewsContentProps) => {
           </div>
         ))}
       </div>
-      <div className="mt-6">
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious 
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-              />
-            </PaginationItem>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <PaginationItem key={page}>
-                <PaginationLink
-                  onClick={() => setCurrentPage(page)}
-                  isActive={currentPage === page}
-                >
-                  {page}
-                </PaginationLink>
+      {!limit && (
+        <div className="mt-6">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                />
               </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext 
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    onClick={() => setCurrentPage(page)}
+                    isActive={currentPage === page}
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </Card>
   );
 };

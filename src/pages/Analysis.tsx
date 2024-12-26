@@ -125,7 +125,19 @@ const Analysis = () => {
                 <StockChart ticker={selectedStock.ticker} />
               </div>
             </div>
-            <CompanyNewsContent ticker={selectedStock.ticker} />
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-semibold">Latest News</h2>
+                <Button 
+                  variant="outline" 
+                  className="text-[#077dfa] hover:text-[#077dfa] hover:bg-blue-50"
+                  onClick={() => setActiveTab("news")}
+                >
+                  View All News →
+                </Button>
+              </div>
+              <CompanyNewsContent ticker={selectedStock.ticker} limit={5} />
+            </div>
           </div>
         );
       case "news":
