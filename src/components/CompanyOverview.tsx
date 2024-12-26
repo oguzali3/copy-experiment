@@ -19,7 +19,7 @@ interface CompanyOverviewProps {
 
 export const CompanyOverview = ({ companyData }: CompanyOverviewProps) => {
   return (
-    <Card className="p-6 h-[400px] overflow-y-auto">
+    <Card className="p-6 h-full overflow-y-auto"> {/* Changed to h-full */}
       <h2 className="text-lg font-semibold mb-4">Company Overview</h2>
       <div className="space-y-4">
         <p className="text-gray-600">{companyData.summary}</p>

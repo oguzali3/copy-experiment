@@ -154,9 +154,11 @@ const Analysis = () => {
 
           <div className="flex flex-col gap-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <CompanyOverview companyData={companyData} />
-              <div className="flex flex-col gap-4">
-                <div className="w-64 ml-auto">
+              <div className="h-[520px]"> {/* Adjusted height to match search + chart */}
+                <CompanyOverview companyData={companyData} />
+              </div>
+              <div className="flex flex-col gap-6">
+                <div className="w-full"> {/* Made search bar full width */}
                   <CompanySearch onCompanySelect={handleCompanySelect} />
                 </div>
                 <StockChart />
