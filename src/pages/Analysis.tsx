@@ -123,6 +123,12 @@ const Analysis = () => {
 
             {/* Stock Chart Card */}
             <Card className="shadow-sm">
+              <div className="p-4 border-b">
+                <CompanySearch onCompanySelect={(company) => {
+                  console.log('Selected company:', company);
+                  // Here you would update the company data and chart
+                }} />
+              </div>
               <StockChart />
             </Card>
           </div>
