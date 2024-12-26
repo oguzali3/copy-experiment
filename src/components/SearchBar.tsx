@@ -33,7 +33,7 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
 
   return (
     <div className="relative w-full">
-      <Command className="rounded-lg border shadow-md">
+      <Command className="relative rounded-lg border shadow-md">
         <div className="flex items-center border-b px-3">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <CommandInput 
@@ -41,14 +41,10 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
             value={searchQuery}
             onValueChange={setSearchQuery}
             onFocus={() => setOpen(true)}
-            onBlur={() => {
-              // Small delay to allow click events on items
-              setTimeout(() => setOpen(false), 200);
-            }}
             className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
-        <div className={`${!open || !searchQuery ? 'hidden' : ''}`}>
+        <div className={`absolute w-full bg-popover z-50 rounded-b-lg border-t-0 shadow-lg ${(!open || !searchQuery) ? 'hidden' : ''}`}>
           <CommandList>
             <CommandEmpty>No stocks found.</CommandEmpty>
             <CommandGroup heading="Stocks">
@@ -57,8 +53,8 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
                   key={stock.ticker}
                   onSelect={() => {
                     onStockSelect(stock);
-                    setOpen(false);
                     setSearchQuery("");
+                    setOpen(false);
                   }}
                   className="flex items-center justify-between px-4 py-2 hover:bg-accent cursor-pointer"
                 >
@@ -69,7 +65,7 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
                   <div className="text-right">
                     <p className="text-sm font-medium">${stock.price}</p>
                     <p className={`text-xs ${parseFloat(stock.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {stock.change} ({stock.changePercent}%)
+                      {stock.change} ({stock.changePercent})
                     </p>
                   </div>
                 </CommandItem>
