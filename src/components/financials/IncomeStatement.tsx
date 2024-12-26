@@ -1,10 +1,14 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useState } from "react";
 
 interface IncomeStatementProps {
   timeFrame: "annual" | "quarterly" | "ttm";
 }
 
 export const IncomeStatement = ({ timeFrame }: IncomeStatementProps) => {
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+
   const data = {
     annual: [
       { year: "2023", revenue: "60,922", revenueGrowth: "125.85%", costOfRevenue: "16,621", grossProfit: "44,301", sga: "2,654", researchDevelopment: "8,675", operatingExpenses: "11,329", operatingIncome: "32,972", interestExpense: "-257", investmentIncome: "866", otherIncome: "-1", ebt: "33,580", incomeTax: "4,058", netIncome: "29,760", eps: "1.21", epsDiluted: "1.19", sharesOutstanding: "24,690", sharesOutstandingDiluted: "24,940", ebitda: "34,480", ebitdaMargin: "56.60%", effectiveTaxRate: "12.00%" },
@@ -25,11 +29,45 @@ export const IncomeStatement = ({ timeFrame }: IncomeStatementProps) => {
 
   const currentData = data[timeFrame];
 
+  const metrics = [
+    { id: "revenue", label: "Revenue" },
+    { id: "revenueGrowth", label: "Revenue Growth" },
+    { id: "costOfRevenue", label: "Cost of Revenue" },
+    { id: "grossProfit", label: "Gross Profit" },
+    { id: "sga", label: "SG&A" },
+    { id: "researchDevelopment", label: "R&D" },
+    { id: "operatingExpenses", label: "Operating Expenses" },
+    { id: "operatingIncome", label: "Operating Income" },
+    { id: "interestExpense", label: "Interest Expense" },
+    { id: "investmentIncome", label: "Investment Income" },
+    { id: "otherIncome", label: "Other Income" },
+    { id: "ebt", label: "EBT" },
+    { id: "incomeTax", label: "Income Tax" },
+    { id: "netIncome", label: "Net Income" },
+    { id: "eps", label: "EPS" },
+    { id: "epsDiluted", label: "EPS (Diluted)" },
+    { id: "sharesOutstanding", label: "Shares Outstanding" },
+    { id: "sharesOutstandingDiluted", label: "Shares Outstanding (Diluted)" },
+    { id: "ebitda", label: "EBITDA" },
+    { id: "ebitdaMargin", label: "EBITDA Margin" },
+    { id: "effectiveTaxRate", label: "Effective Tax Rate" }
+  ];
+
+  const handleMetricToggle = (metricId: string) => {
+    setSelectedMetrics(prev => {
+      if (prev.includes(metricId)) {
+        return prev.filter(id => id !== metricId);
+      }
+      return [...prev, metricId];
+    });
+  };
+
   return (
     <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-[50px]"></TableHead>
             <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
             {currentData.map((row) => (
               <TableHead key={row.year} className="text-right min-w-[120px]">{row.year}</TableHead>
@@ -37,132 +75,23 @@ export const IncomeStatement = ({ timeFrame }: IncomeStatementProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">Revenue</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-revenue`} className="text-right">${row.revenue}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">Revenue Growth</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-growth`} className="text-right">{row.revenueGrowth}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">Cost of Revenue</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-cost`} className="text-right">${row.costOfRevenue}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">Gross Profit</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-gross`} className="text-right">${row.grossProfit}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">SG&A</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-sga`} className="text-right">${row.sga}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">R&D</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-rd`} className="text-right">${row.researchDevelopment}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">Operating Expenses</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-expenses`} className="text-right">${row.operatingExpenses}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">Operating Income</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-income`} className="text-right">${row.operatingIncome}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">Interest Expense</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-interest`} className="text-right">${row.interestExpense}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">Investment Income</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-investment`} className="text-right">${row.investmentIncome}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">Other Income</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-other`} className="text-right">${row.otherIncome}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">EBT</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-ebt`} className="text-right">${row.ebt}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">Income Tax</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-tax`} className="text-right">${row.incomeTax}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">Net Income</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-net`} className="text-right">${row.netIncome}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">EPS</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-eps`} className="text-right">${row.eps}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">EPS (Diluted)</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-eps-diluted`} className="text-right">${row.epsDiluted}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">Shares Outstanding</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-shares`} className="text-right">{row.sharesOutstanding}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">Shares Outstanding (Diluted)</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-shares-diluted`} className="text-right">{row.sharesOutstandingDiluted}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">EBITDA</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-ebitda`} className="text-right">${row.ebitda}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">EBITDA Margin</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-ebitda-margin`} className="text-right">{row.ebitdaMargin}</TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium bg-gray-50">Effective Tax Rate</TableCell>
-            {currentData.map((row) => (
-              <TableCell key={`${row.year}-tax-rate`} className="text-right">{row.effectiveTaxRate}</TableCell>
-            ))}
-          </TableRow>
+          {metrics.map((metric) => (
+            <TableRow key={metric.id}>
+              <TableCell className="w-[50px] pr-0">
+                <Checkbox
+                  id={`checkbox-${metric.id}`}
+                  checked={selectedMetrics.includes(metric.id)}
+                  onCheckedChange={() => handleMetricToggle(metric.id)}
+                />
+              </TableCell>
+              <TableCell className="font-medium bg-gray-50">{metric.label}</TableCell>
+              {currentData.map((row) => (
+                <TableCell key={`${row.year}-${metric.id}`} className="text-right">
+                  ${row[metric.id as keyof typeof row]}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>
