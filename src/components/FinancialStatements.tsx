@@ -6,13 +6,46 @@ import { BalanceSheet } from "./financials/BalanceSheet";
 import { CashFlow } from "./financials/CashFlow";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
+import { MetricsSearch } from "./MetricsSearch";
+import { Button } from "./ui/button";
+import { RefreshCcw, RotateCcw } from "lucide-react";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
+  const [startDate, setStartDate] = useState("June 30, 2015");
+  const [endDate, setEndDate] = useState("September 30, 2024");
 
   return (
     <Card className="p-6">
       <div className="space-y-6">
+        {/* Time Range Panel */}
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="bg-gray-100 px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
+              {startDate}
+              <button className="text-gray-400 hover:text-gray-600">×</button>
+            </div>
+            <div className="bg-gray-100 px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
+              {endDate}
+              <button className="text-gray-400 hover:text-gray-600">×</button>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <MetricsSearch />
+            
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" className="h-9 w-9">
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-9 w-9">
+                <RefreshCcw className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Existing Header */}
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Financial Statements</h2>
           <RadioGroup
