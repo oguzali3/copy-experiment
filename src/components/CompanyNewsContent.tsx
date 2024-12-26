@@ -26,7 +26,7 @@ export const CompanyNewsContent = ({ ticker, limit }: CompanyNewsContentProps) =
       date: "2024-03-15",
       source: "Financial Times",
       summary: `The company reported quarterly earnings that exceeded analyst expectations, driven by strong product sales and market expansion.`,
-      url: "#"
+      url: "https://example.com/news/1"
     },
     {
       id: 2,
@@ -34,7 +34,7 @@ export const CompanyNewsContent = ({ ticker, limit }: CompanyNewsContentProps) =
       date: "2024-03-14",
       source: "Reuters",
       summary: "A new strategic partnership has been formed to enhance market presence and develop cutting-edge technologies.",
-      url: "#"
+      url: "https://example.com/news/2"
     },
     {
       id: 3,
@@ -169,6 +169,12 @@ export const CompanyNewsContent = ({ ticker, limit }: CompanyNewsContentProps) =
   const totalPages = Math.ceil(news.length / newsPerPage);
   const currentNews = news.slice((currentPage - 1) * newsPerPage, currentPage * newsPerPage);
 
+  const handleReadMore = (url: string) => {
+    if (url && url.startsWith('http')) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <Card className="p-6 shadow-sm">
       <div className="flex justify-between items-center mb-6">
@@ -186,7 +192,11 @@ export const CompanyNewsContent = ({ ticker, limit }: CompanyNewsContentProps) =
             <p className="text-gray-600 mb-2">{item.summary}</p>
             <div className="flex items-center text-sm">
               <span className="text-gray-500">Source: {item.source}</span>
-              <Button variant="link" className="text-[#077dfa] p-0 h-auto ml-4">
+              <Button 
+                variant="link" 
+                className="text-[#077dfa] p-0 h-auto ml-4"
+                onClick={() => handleReadMore(item.url)}
+              >
                 Read More →
               </Button>
             </div>
