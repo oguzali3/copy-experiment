@@ -6,18 +6,30 @@ import { CompanyNewsContent } from "@/components/CompanyNewsContent";
 import { CompanyEventsContent } from "@/components/CompanyEventsContent";
 import { useParams, useNavigate } from "react-router-dom";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useState } from "react";
 
 const CompanyNews = () => {
   const { ticker } = useParams();
   const navigate = useNavigate();
 
   // Mock company data - in a real app, this would come from an API or state management
-  const companyData = {
+  const [companyData, setCompanyData] = useState({
     name: "Apple Inc.",
     ticker: "AAPL",
     price: 182.52,
     change: +1.25,
     changePercent: +0.69,
+  });
+
+  const handleStockSelect = (stock: any) => {
+    setCompanyData({
+      name: stock.name,
+      ticker: stock.ticker,
+      price: parseFloat(stock.price),
+      change: parseFloat(stock.change),
+      changePercent: parseFloat(stock.changePercent),
+    });
+    navigate(`/company/${stock.ticker}/news`);
   };
 
   const navItems = [
@@ -36,7 +48,7 @@ const CompanyNews = () => {
       <DashboardSidebar />
       <div className="flex-1 flex flex-col">
         <div className="bg-[#191d25] h-16 flex items-center px-6 gap-4">
-          <SearchBar />
+          <SearchBar onStockSelect={handleStockSelect} />
           <div className="flex items-center gap-2 ml-auto">
             <Button className="bg-[#077dfa] hover:bg-[#077dfa]/90 text-white">
               Upgrade
