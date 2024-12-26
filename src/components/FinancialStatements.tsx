@@ -57,7 +57,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
           {/* Time Range Slider */}
           <div className="px-2 py-4">
-            <div className="relative">
+            <div className="relative pb-8"> {/* Added pb-8 for more padding at the bottom */}
               <Slider
                 defaultValue={[0, 11]}
                 min={0}
@@ -65,11 +65,11 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
                 step={1}
                 value={sliderValue}
                 onValueChange={handleSliderChange}
-                className="w-full"
+                className="w-full mb-6" /* Added mb-6 margin to the slider */
               />
-              <div className="absolute -bottom-6 left-0 right-0 flex justify-between text-xs text-gray-500">
+              <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500">
                 {timePeriods.map((period, index) => (
-                  <span key={index}>{period}</span>
+                  <span key={index} className="transform -rotate-45 origin-top-left">{period}</span>
                 ))}
               </div>
             </div>
