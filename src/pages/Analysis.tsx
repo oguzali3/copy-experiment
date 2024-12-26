@@ -5,6 +5,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { UserCircle, LayoutGrid, Newspaper, ChartBar, DollarSign, LineChart, MessageSquare, FileText, Briefcase } from "lucide-react";
 import { CompanySearch } from "@/components/CompanySearch";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useState } from "react";
 
 const Analysis = () => {
@@ -31,7 +32,6 @@ const Analysis = () => {
   const [companyData, setCompanyData] = useState(defaultCompanyData);
 
   const handleCompanySelect = (selectedCompany: any) => {
-    // Create a new company data object based on the selected company
     const newCompanyData = {
       name: selectedCompany.name,
       ticker: selectedCompany.ticker,
@@ -88,7 +88,6 @@ const Analysis = () => {
         </div>
 
         <main className="flex-1 p-6 space-y-6 overflow-y-auto bg-gray-50">
-          {/* Company Header */}
           <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{companyData.name}</h1>
@@ -102,27 +101,28 @@ const Analysis = () => {
             </div>
           </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex gap-1 border-b">
-            {navItems.map((item) => (
-              <Button
-                key={item.label}
-                variant="ghost"
-                className={`flex items-center gap-2 px-4 py-2 rounded-none border-b-2 transition-colors ${
-                  item.isActive 
-                    ? 'border-[#077dfa] text-[#077dfa] bg-blue-50/50' 
-                    : 'border-transparent hover:border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </Button>
-            ))}
-          </div>
+          {/* Navigation Buttons with ScrollArea */}
+          <ScrollArea className="w-full whitespace-nowrap border-b">
+            <div className="flex w-max min-w-full">
+              {navItems.map((item) => (
+                <Button
+                  key={item.label}
+                  variant="ghost"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-none border-b-2 transition-colors ${
+                    item.isActive 
+                      ? 'border-[#077dfa] text-[#077dfa] bg-blue-50/50' 
+                      : 'border-transparent hover:border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </Button>
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
 
-          {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Company Info Card */}
             <Card className="p-6 shadow-sm">
               <h2 className="text-xl font-semibold mb-4 text-gray-900">Company Overview</h2>
               <div className="space-y-4">
@@ -177,7 +177,6 @@ const Analysis = () => {
               </div>
             </Card>
 
-            {/* Stock Chart Card */}
             <Card className="shadow-sm">
               <div className="p-4 border-b">
                 <CompanySearch onCompanySelect={handleCompanySelect} />
