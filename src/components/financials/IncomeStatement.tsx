@@ -26,61 +26,145 @@ export const IncomeStatement = ({ timeFrame }: IncomeStatementProps) => {
   const currentData = data[timeFrame];
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[150px]">Period</TableHead>
-          <TableHead>Revenue</TableHead>
-          <TableHead>Revenue Growth</TableHead>
-          <TableHead>Cost of Revenue</TableHead>
-          <TableHead>Gross Profit</TableHead>
-          <TableHead>SG&A</TableHead>
-          <TableHead>R&D</TableHead>
-          <TableHead>Operating Expenses</TableHead>
-          <TableHead>Operating Income</TableHead>
-          <TableHead>Interest Expense</TableHead>
-          <TableHead>Investment Income</TableHead>
-          <TableHead>Other Income</TableHead>
-          <TableHead>EBT</TableHead>
-          <TableHead>Income Tax</TableHead>
-          <TableHead>Net Income</TableHead>
-          <TableHead>EPS</TableHead>
-          <TableHead>EPS (Diluted)</TableHead>
-          <TableHead>Shares Outstanding</TableHead>
-          <TableHead>Shares Outstanding (Diluted)</TableHead>
-          <TableHead>EBITDA</TableHead>
-          <TableHead>EBITDA Margin</TableHead>
-          <TableHead>Effective Tax Rate</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {currentData.map((row) => (
-          <TableRow key={row.year}>
-            <TableCell className="font-medium">{row.year}</TableCell>
-            <TableCell>${row.revenue}</TableCell>
-            <TableCell>{row.revenueGrowth}</TableCell>
-            <TableCell>${row.costOfRevenue}</TableCell>
-            <TableCell>${row.grossProfit}</TableCell>
-            <TableCell>${row.sga}</TableCell>
-            <TableCell>${row.researchDevelopment}</TableCell>
-            <TableCell>${row.operatingExpenses}</TableCell>
-            <TableCell>${row.operatingIncome}</TableCell>
-            <TableCell>${row.interestExpense}</TableCell>
-            <TableCell>${row.investmentIncome}</TableCell>
-            <TableCell>${row.otherIncome}</TableCell>
-            <TableCell>${row.ebt}</TableCell>
-            <TableCell>${row.incomeTax}</TableCell>
-            <TableCell>${row.netIncome}</TableCell>
-            <TableCell>${row.eps}</TableCell>
-            <TableCell>${row.epsDiluted}</TableCell>
-            <TableCell>{row.sharesOutstanding}</TableCell>
-            <TableCell>{row.sharesOutstandingDiluted}</TableCell>
-            <TableCell>${row.ebitda}</TableCell>
-            <TableCell>{row.ebitdaMargin}</TableCell>
-            <TableCell>{row.effectiveTaxRate}</TableCell>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
+            {currentData.map((row) => (
+              <TableHead key={row.year} className="text-right min-w-[120px]">{row.year}</TableHead>
+            ))}
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Revenue</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-revenue`} className="text-right">${row.revenue}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Revenue Growth</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-growth`} className="text-right">{row.revenueGrowth}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Cost of Revenue</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-cost`} className="text-right">${row.costOfRevenue}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Gross Profit</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-gross`} className="text-right">${row.grossProfit}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">SG&A</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-sga`} className="text-right">${row.sga}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">R&D</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-rd`} className="text-right">${row.researchDevelopment}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Operating Expenses</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-expenses`} className="text-right">${row.operatingExpenses}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Operating Income</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-income`} className="text-right">${row.operatingIncome}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Interest Expense</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-interest`} className="text-right">${row.interestExpense}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Investment Income</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-investment`} className="text-right">${row.investmentIncome}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Other Income</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-other`} className="text-right">${row.otherIncome}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">EBT</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-ebt`} className="text-right">${row.ebt}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Income Tax</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-tax`} className="text-right">${row.incomeTax}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Net Income</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-net`} className="text-right">${row.netIncome}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">EPS</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-eps`} className="text-right">${row.eps}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">EPS (Diluted)</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-eps-diluted`} className="text-right">${row.epsDiluted}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Shares Outstanding</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-shares`} className="text-right">{row.sharesOutstanding}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Shares Outstanding (Diluted)</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-shares-diluted`} className="text-right">{row.sharesOutstandingDiluted}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">EBITDA</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-ebitda`} className="text-right">${row.ebitda}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">EBITDA Margin</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-ebitda-margin`} className="text-right">{row.ebitdaMargin}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Effective Tax Rate</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-tax-rate`} className="text-right">{row.effectiveTaxRate}</TableCell>
+            ))}
+          </TableRow>
+        </TableBody>
+      </Table>
+    </div>
   );
 };

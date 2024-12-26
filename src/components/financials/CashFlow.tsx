@@ -26,27 +26,43 @@ export const CashFlow = ({ timeFrame }: CashFlowProps) => {
   const currentData = data[timeFrame];
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[150px]">Period</TableHead>
-          <TableHead>Operating Cash Flow</TableHead>
-          <TableHead>Investing Cash Flow</TableHead>
-          <TableHead>Financing Cash Flow</TableHead>
-          <TableHead>Free Cash Flow</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {currentData.map((row) => (
-          <TableRow key={row.year}>
-            <TableCell className="font-medium">{row.year}</TableCell>
-            <TableCell>${row.operatingCashFlow}</TableCell>
-            <TableCell>${row.investingCashFlow}</TableCell>
-            <TableCell>${row.financingCashFlow}</TableCell>
-            <TableCell>${row.freeCashFlow}</TableCell>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
+            {currentData.map((row) => (
+              <TableHead key={row.year} className="text-right min-w-[120px]">{row.year}</TableHead>
+            ))}
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Operating Cash Flow</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-operating`} className="text-right">${row.operatingCashFlow}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Investing Cash Flow</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-investing`} className="text-right">${row.investingCashFlow}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Financing Cash Flow</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-financing`} className="text-right">${row.financingCashFlow}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Free Cash Flow</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-free`} className="text-right">${row.freeCashFlow}</TableCell>
+            ))}
+          </TableRow>
+        </TableBody>
+      </Table>
+    </div>
   );
 };

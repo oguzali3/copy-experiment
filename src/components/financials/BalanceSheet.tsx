@@ -26,25 +26,37 @@ export const BalanceSheet = ({ timeFrame }: BalanceSheetProps) => {
   const currentData = data[timeFrame];
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[150px]">Period</TableHead>
-          <TableHead>Total Assets</TableHead>
-          <TableHead>Total Liabilities</TableHead>
-          <TableHead>Total Equity</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {currentData.map((row) => (
-          <TableRow key={row.year}>
-            <TableCell className="font-medium">{row.year}</TableCell>
-            <TableCell>${row.totalAssets}</TableCell>
-            <TableCell>${row.totalLiabilities}</TableCell>
-            <TableCell>${row.totalEquity}</TableCell>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
+            {currentData.map((row) => (
+              <TableHead key={row.year} className="text-right min-w-[120px]">{row.year}</TableHead>
+            ))}
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Total Assets</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-assets`} className="text-right">${row.totalAssets}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Total Liabilities</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-liabilities`} className="text-right">${row.totalLiabilities}</TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-gray-50">Total Equity</TableCell>
+            {currentData.map((row) => (
+              <TableCell key={`${row.year}-equity`} className="text-right">${row.totalEquity}</TableCell>
+            ))}
+          </TableRow>
+        </TableBody>
+      </Table>
+    </div>
   );
 };
