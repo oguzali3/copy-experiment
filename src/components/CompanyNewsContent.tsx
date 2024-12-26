@@ -171,7 +171,7 @@ export const CompanyNewsContent = ({ ticker }: CompanyNewsContentProps) => {
   return (
     <Card className="p-6 shadow-sm">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Company News</h2>
+        <h2 className="text-xl font-semibold text-gray-900">Company News for {ticker}</h2>
       </div>
       <div className="space-y-6">
         {currentNews.map((item) => (

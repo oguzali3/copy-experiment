@@ -1,5 +1,9 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
+interface StockChartProps {
+  ticker?: string;
+}
+
 const data = [
   { time: "9:30", price: 150.25 },
   { time: "10:00", price: 152.75 },
@@ -17,7 +21,7 @@ const data = [
   { time: "16:00", price: 161.75 },
 ];
 
-export const StockChart = () => {
+export const StockChart = ({ ticker }: StockChartProps) => {
   return (
     <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm">
       <div className="flex gap-2 mb-4 flex-wrap px-2">
