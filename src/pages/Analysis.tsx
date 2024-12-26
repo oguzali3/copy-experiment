@@ -5,9 +5,10 @@ import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { UserCircle, LayoutGrid, Newspaper, ChartBar, DollarSign, LineChart, MessageSquare, FileText, Briefcase } from "lucide-react";
 import { CompanySearch } from "@/components/CompanySearch";
+import { useState } from "react";
 
 const Analysis = () => {
-  const companyData = {
+  const defaultCompanyData = {
     name: "Apple Inc.",
     ticker: "AAPL",
     price: 182.52,
@@ -25,6 +26,33 @@ const Analysis = () => {
       quickRatio: "0.92",
       returnOnEquity: "145.81%"
     }
+  };
+
+  const [companyData, setCompanyData] = useState(defaultCompanyData);
+
+  const handleCompanySelect = (selectedCompany: any) => {
+    // Create a new company data object based on the selected company
+    const newCompanyData = {
+      name: selectedCompany.name,
+      ticker: selectedCompany.ticker,
+      price: parseFloat(selectedCompany.price),
+      change: parseFloat(selectedCompany.change),
+      changePercent: parseFloat(selectedCompany.change),
+      summary: "This company is a leading player in its industry, focusing on innovation and sustainable growth.",
+      ceo: "John Doe",
+      website: `www.${selectedCompany.ticker.toLowerCase()}.com`,
+      founded: "2000",
+      ratios: {
+        peRatio: "25.4x",
+        pbRatio: "3.2x",
+        debtToEquity: "0.85",
+        currentRatio: "1.2",
+        quickRatio: "0.95",
+        returnOnEquity: "18.5%"
+      }
+    };
+
+    setCompanyData(newCompanyData);
   };
 
   const navItems = [
@@ -67,9 +95,9 @@ const Analysis = () => {
               <span className="text-gray-500">${companyData.ticker}</span>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-gray-900">${companyData.price}</div>
-              <div className={`flex items-center justify-end ${companyData.change > 0 ? 'text-success' : 'text-warning'}`}>
-                <span>{companyData.change > 0 ? '+' : ''}{companyData.change} ({companyData.changePercent}%)</span>
+              <div className="text-2xl font-bold text-gray-900">${companyData.price.toFixed(2)}</div>
+              <div className={`flex items-center justify-end ${companyData.change > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <span>{companyData.change > 0 ? '+' : ''}{companyData.change.toFixed(2)} ({companyData.changePercent.toFixed(2)}%)</span>
               </div>
             </div>
           </div>
@@ -152,10 +180,7 @@ const Analysis = () => {
             {/* Stock Chart Card */}
             <Card className="shadow-sm">
               <div className="p-4 border-b">
-                <CompanySearch onCompanySelect={(company) => {
-                  console.log('Selected company:', company);
-                  // Here you would update the company data and chart
-                }} />
+                <CompanySearch onCompanySelect={handleCompanySelect} />
               </div>
               <StockChart />
             </Card>
