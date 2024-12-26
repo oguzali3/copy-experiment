@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { UserCircle } from "lucide-react";
+import { CompanySearch } from "@/components/CompanySearch";
 
 const Analysis = () => {
   // Mock data - in a real app, this would come from an API

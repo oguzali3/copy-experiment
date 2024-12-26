@@ -20,6 +20,16 @@ const data = [
 export const StockChart = () => {
   return (
     <div className="h-[400px] w-full bg-white p-4 rounded-xl shadow-sm">
+      <div className="flex gap-2 mb-4">
+        {["5D", "1M", "3M", "6M", "YTD", "1Y", "3Y", "5Y", "MAX"].map((timeframe) => (
+          <button
+            key={timeframe}
+            className="px-3 py-1 text-sm rounded-md hover:bg-gray-100 transition-colors"
+          >
+            {timeframe}
+          </button>
+        ))}
+      </div>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
           <XAxis 
