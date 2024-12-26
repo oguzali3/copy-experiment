@@ -1,5 +1,4 @@
 import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import {
   Command,
   CommandDialog,
@@ -25,40 +24,54 @@ interface SearchBarProps {
 
 export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredStocks = stocksData.filter(stock => 
+    stock.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    stock.ticker.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="relative w-full">
       <Command className="rounded-lg border shadow-md">
         <div className="flex items-center border-b px-3">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-          <CommandInput placeholder="Search stocks..." />
+          <CommandInput 
+            placeholder="Search stocks..." 
+            onFocus={() => setOpen(true)}
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
         </div>
-        <CommandList>
-          <CommandEmpty>No stocks found.</CommandEmpty>
-          <CommandGroup heading="Stocks">
-            {stocksData.map((stock) => (
-              <CommandItem
-                key={stock.ticker}
-                onSelect={() => {
-                  onStockSelect(stock);
-                  setOpen(false);
-                }}
-                className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
-              >
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{stock.name}</p>
-                  <p className="text-xs text-muted-foreground">{stock.ticker}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium">${stock.price}</p>
-                  <p className={`text-xs ${parseFloat(stock.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {stock.change} ({stock.changePercent})
-                  </p>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </CommandList>
+        {open && searchQuery && (
+          <CommandList>
+            <CommandEmpty>No stocks found.</CommandEmpty>
+            <CommandGroup heading="Stocks">
+              {filteredStocks.map((stock) => (
+                <CommandItem
+                  key={stock.ticker}
+                  onSelect={() => {
+                    onStockSelect(stock);
+                    setOpen(false);
+                    setSearchQuery("");
+                  }}
+                  className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
+                >
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{stock.name}</p>
+                    <p className="text-xs text-muted-foreground">{stock.ticker}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium">${stock.price}</p>
+                    <p className={`text-xs ${parseFloat(stock.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {stock.change} ({stock.changePercent}%)
+                    </p>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        )}
       </Command>
     </div>
   );
