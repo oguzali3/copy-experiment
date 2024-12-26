@@ -6,10 +6,7 @@ import { BalanceSheet } from "./financials/BalanceSheet";
 import { CashFlow } from "./financials/CashFlow";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
-import { MetricsSearch } from "./MetricsSearch";
-import { Button } from "./ui/button";
-import { RefreshCcw, RotateCcw } from "lucide-react";
-import { Slider } from "./ui/slider";
+import { TimeRangePanel } from "./financials/TimeRangePanel";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
@@ -42,54 +39,14 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   return (
     <Card className="p-6">
       <div className="space-y-6">
-        {/* Time Range Panel */}
-        <div className="flex flex-col space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="bg-gray-100 px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
-              {startDate}
-              <button className="text-gray-400 hover:text-gray-600">×</button>
-            </div>
-            <div className="bg-gray-100 px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
-              {endDate}
-              <button className="text-gray-400 hover:text-gray-600">×</button>
-            </div>
-          </div>
+        <TimeRangePanel
+          startDate={startDate}
+          endDate={endDate}
+          sliderValue={sliderValue}
+          onSliderChange={handleSliderChange}
+          timePeriods={timePeriods}
+        />
 
-          {/* Time Range Slider */}
-          <div className="px-2 py-4">
-            <div className="relative pb-8"> {/* Added pb-8 for more padding at the bottom */}
-              <Slider
-                defaultValue={[0, 11]}
-                min={0}
-                max={11}
-                step={1}
-                value={sliderValue}
-                onValueChange={handleSliderChange}
-                className="w-full mb-6" /* Added mb-6 margin to the slider */
-              />
-              <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500">
-                {timePeriods.map((period, index) => (
-                  <span key={index} className="transform -rotate-45 origin-top-left">{period}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <MetricsSearch />
-            
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" className="h-9 w-9">
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-9 w-9">
-                <RefreshCcw className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Existing Header */}
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Financial Statements</h2>
           <RadioGroup
