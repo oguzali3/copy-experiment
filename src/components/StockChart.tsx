@@ -30,40 +30,46 @@ export const StockChart = () => {
           </button>
         ))}
       </div>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
-          <XAxis 
-            dataKey="time" 
-            stroke="#888888"
-            fontSize={12}
-            tickLine={false}
-          />
-          <YAxis 
-            stroke="#888888"
-            fontSize={12}
-            tickLine={false}
-            domain={['auto', 'auto']}
-            tickFormatter={(value) => `$${value}`}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "white",
-              border: "1px solid #e5e7eb",
-              borderRadius: "8px",
-              boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-            }}
-            formatter={(value) => [`$${value}`, "Price"]}
-          />
-          <Line
-            type="monotone"
-            dataKey="price"
-            stroke="#0EA5E9"
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <div className="h-[calc(100%-60px)]"> {/* Adjusted height to account for buttons and padding */}
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={data}
+            margin={{ top: 5, right: 5, left: 5, bottom: 20 }} {/* Added bottom margin for x-axis labels */}
+          >
+            <XAxis 
+              dataKey="time" 
+              stroke="#888888"
+              fontSize={12}
+              tickLine={false}
+              dy={10} {/* Adjusted vertical position of x-axis labels */}
+            />
+            <YAxis 
+              stroke="#888888"
+              fontSize={12}
+              tickLine={false}
+              domain={['auto', 'auto']}
+              tickFormatter={(value) => `$${value}`}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "white",
+                border: "1px solid #e5e7eb",
+                borderRadius: "8px",
+                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+              }}
+              formatter={(value) => [`$${value}`, "Price"]}
+            />
+            <Line
+              type="monotone"
+              dataKey="price"
+              stroke="#0EA5E9"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };
