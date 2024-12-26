@@ -31,6 +31,33 @@ const Analysis = () => {
 
   const [companyData, setCompanyData] = useState(defaultCompanyData);
 
+  const newsData = [
+    {
+      id: 1,
+      title: `${companyData.name} Reports Strong Q4 Earnings, Beats Market Expectations`,
+      date: "2024-03-15",
+      source: "Financial Times",
+      summary: `${companyData.name} reported quarterly earnings that exceeded analyst expectations, driven by strong product sales and market expansion. The company's revenue grew by 15% year-over-year.`,
+      url: "#"
+    },
+    {
+      id: 2,
+      title: `${companyData.name} Announces New Strategic Partnership`,
+      date: "2024-03-14",
+      source: "Reuters",
+      summary: "The company has entered into a strategic partnership to enhance its market presence and develop new technologies.",
+      url: "#"
+    },
+    {
+      id: 3,
+      title: `${companyData.name} Expands Operations in Asian Markets`,
+      date: "2024-03-13",
+      source: "Bloomberg",
+      summary: "The expansion plan includes opening new facilities and increasing workforce in key Asian markets.",
+      url: "#"
+    }
+  ];
+
   const handleCompanySelect = (selectedCompany: any) => {
     const newCompanyData = {
       name: selectedCompany.name,
@@ -184,6 +211,35 @@ const Analysis = () => {
               <StockChart />
             </Card>
           </div>
+
+          {/* News Section */}
+          <Card className="p-6 shadow-sm">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Recent News</h2>
+              <Button variant="ghost" className="text-[#077dfa]">
+                View All
+              </Button>
+            </div>
+            <div className="space-y-6">
+              {newsData.map((news) => (
+                <div key={news.id} className="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-medium text-gray-900 hover:text-[#077dfa] cursor-pointer">
+                      {news.title}
+                    </h3>
+                    <span className="text-sm text-gray-500 whitespace-nowrap ml-4">{news.date}</span>
+                  </div>
+                  <p className="text-gray-600 mb-2">{news.summary}</p>
+                  <div className="flex items-center text-sm">
+                    <span className="text-gray-500">Source: {news.source}</span>
+                    <Button variant="link" className="text-[#077dfa] p-0 h-auto ml-4">
+                      Read More →
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
         </main>
       </div>
     </div>
