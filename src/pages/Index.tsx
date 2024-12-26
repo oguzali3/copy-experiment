@@ -54,13 +54,13 @@ const Index = () => {
         {/* Decorative Elements */}
         <div ref={decorativeElementsRef} className="absolute inset-0 pointer-events-none">
           {/* Bar Chart */}
-          <div className="absolute bottom-16 left-8 w-36 h-28 bg-white/95 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
+          <div className="absolute bottom-16 left-8 w-36 h-28 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-3 backdrop-blur-sm border border-gray-100/50 transition-all duration-700 hover:shadow-[0_8px_30px_rgba(14,165,233,0.2)]">
             <div className="h-full flex flex-col">
               <div className="flex-1 flex items-end gap-1">
                 {[4,6,5,7,6,8].map((height, i) => (
                   <div 
                     key={i}
-                    className="flex-1 bg-[#0EA5E9] rounded-t hover:bg-[#0EA5E9]/90 transition-colors"
+                    className="flex-1 bg-[#0EA5E9] rounded-t hover:bg-[#0EA5E9] transition-transform hover:scale-105"
                     style={{ height: `${height * 8}px` }}
                   />
                 ))}
@@ -70,7 +70,7 @@ const Index = () => {
           </div>
           
           {/* Line Chart */}
-          <div className="absolute bottom-16 right-16 w-40 h-28 bg-white/95 rounded-xl shadow-lg p-4 backdrop-blur-sm border border-gray-100 transition-all duration-700">
+          <div className="absolute bottom-16 right-16 w-40 h-28 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-4 backdrop-blur-sm border border-gray-100/50 transition-all duration-700 hover:shadow-[0_8px_30px_rgba(139,92,246,0.2)]">
             <div className="h-full flex flex-col">
               <div className="flex-1">
                 <svg className="w-full h-full text-[#8B5CF6]" viewBox="0 0 100 50">
@@ -79,7 +79,7 @@ const Index = () => {
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="3"
-                    className="hover:text-[#8B5CF6]/90 transition-colors"
+                    className="hover:text-[#8B5CF6] transition-transform hover:scale-105"
                   />
                 </svg>
               </div>
@@ -88,7 +88,7 @@ const Index = () => {
           </div>
           
           {/* Pie Chart */}
-          <div className="absolute -bottom-8 left-52 w-36 h-36 bg-white/95 rounded-xl shadow-lg p-3 backdrop-blur-sm border border-gray-100 transition-all duration-700">
+          <div className="absolute -bottom-8 left-52 w-36 h-36 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-3 backdrop-blur-sm border border-gray-100/50 transition-all duration-700 hover:shadow-[0_8px_30px_rgba(249,115,22,0.2)]">
             <div className="h-full flex flex-col">
               <div className="flex-1 flex items-center justify-center">
                 <svg className="w-24 h-24 text-[#F97316]" viewBox="0 0 32 32">
@@ -99,14 +99,14 @@ const Index = () => {
                     fill="none" 
                     stroke="currentColor" 
                     strokeWidth="3"
-                    className="hover:text-[#F97316]/90 transition-colors"
+                    className="hover:text-[#F97316] transition-transform hover:scale-105"
                   />
                   <path 
                     d="M16 4 A12 12 0 0 1 28 16" 
                     fill="none" 
                     stroke="currentColor" 
                     strokeWidth="3"
-                    className="hover:text-[#F97316]/90 transition-colors"
+                    className="hover:text-[#F97316] transition-transform hover:scale-105"
                   />
                 </svg>
               </div>
