@@ -29,10 +29,10 @@ const Analysis = () => {
   };
 
   return (
-    <div className="flex w-full">
+    <div className="flex h-screen w-full overflow-hidden">
       <DashboardSidebar />
-      <div className="flex-1 flex flex-col">
-        <div className="bg-[#191d25] h-16 flex items-center px-6 gap-4">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="bg-[#191d25] h-16 flex items-center px-6 gap-4 flex-shrink-0">
           <SearchBar />
           <div className="flex items-center gap-2 ml-auto">
             <Button className="bg-[#077dfa] hover:bg-[#077dfa]/90 text-white">
@@ -49,7 +49,7 @@ const Analysis = () => {
           </div>
         </div>
 
-        <main className="flex-1 p-6 space-y-6 overflow-auto bg-gray-50">
+        <main className="flex-1 p-6 space-y-6 overflow-y-auto bg-gray-50">
           {/* Company Header */}
           <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
             <div>
