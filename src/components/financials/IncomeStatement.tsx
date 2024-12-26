@@ -66,24 +66,23 @@ export const IncomeStatement = ({ timeFrame }: IncomeStatementProps) => {
   const getChartData = (metricId: string) => {
     return currentData.map(row => ({
       period: row.year,
-      value: parseFloat(row[metricId as keyof typeof row].replace(/[^0-9.-]/g, '')),
+      value: parseFloat(row[metricId as keyof typeof row].replace(/,/g, '')),
     }));
   };
 
   return (
-    <div className="space-y-6">
-      {/* Charts Section */}
-      <div className="space-y-4">
-        {selectedMetrics.map(metricId => (
-          <MetricChart 
-            key={metricId}
-            data={getChartData(metricId)}
-            metric={metrics.find(m => m.id === metricId)?.label || ''}
-          />
-        ))}
-      </div>
-
-      {/* Table Section */}
+    <div className="flex flex-col space-y-6">
+      {selectedMetrics.length > 0 && (
+        <div className="space-y-4">
+          {selectedMetrics.map(metricId => (
+            <MetricChart 
+              key={metricId}
+              data={getChartData(metricId)}
+              metric={metrics.find(m => m.id === metricId)?.label || ''}
+            />
+          ))}
+        </div>
+      )}
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
