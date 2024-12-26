@@ -7,6 +7,7 @@ import { UserCircle, LayoutGrid, Newspaper, ChartBar, DollarSign, LineChart, Mes
 import { CompanySearch } from "@/components/CompanySearch";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Analysis = () => {
   const defaultCompanyData = {
@@ -92,6 +93,8 @@ const Analysis = () => {
     { icon: FileText, label: "Filings" },
     { icon: Briefcase, label: "Ownership" },
   ];
+
+  const navigate = useNavigate();
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
@@ -216,7 +219,11 @@ const Analysis = () => {
           <Card className="p-6 shadow-sm">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Recent News</h2>
-              <Button variant="ghost" className="text-[#077dfa]">
+              <Button 
+                variant="ghost" 
+                className="text-[#077dfa]"
+                onClick={() => navigate(`/company/${companyData.ticker}/news`)}
+              >
                 View All
               </Button>
             </div>

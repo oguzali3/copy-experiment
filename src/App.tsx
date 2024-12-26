@@ -9,6 +9,7 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import Analysis from "./pages/Analysis";
+import CompanyNews from "./pages/CompanyNews";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
               <Route path="/signup" element={<SignUp />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/analysis" element={<Analysis />} />
+              <Route path="/company/:ticker/news" element={<CompanyNews />} />
             </Routes>
           </BrowserRouter>
         </div>
