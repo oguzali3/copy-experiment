@@ -13,6 +13,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [startDate, setStartDate] = useState("June 30, 2015");
   const [endDate, setEndDate] = useState("September 30, 2024");
   const [sliderValue, setSliderValue] = useState([0, 11]);
+  const [selectedTab, setSelectedTab] = useState("income");
 
   // Define the available time periods
   const timePeriods = [
@@ -34,6 +35,20 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     setSliderValue(value);
     setStartDate(`June 30, 20${15 + value[0]}`);
     setEndDate(value[1] === 11 ? "June 30, 2026" : `June 30, 20${15 + value[1]}`);
+  };
+
+  // Function to render the appropriate component based on selected tab
+  const renderSelectedComponent = () => {
+    switch (selectedTab) {
+      case "income":
+        return <IncomeStatement timeFrame={timeFrame} />;
+      case "balance":
+        return <BalanceSheet timeFrame={timeFrame} />;
+      case "cashflow":
+        return <CashFlow timeFrame={timeFrame} />;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -61,6 +76,9 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
           </RadioGroup>
         </div>
 
+        {/* Charts will appear here, outside of the Tabs component */}
+        {renderSelectedComponent()}
+
         <TimeRangePanel
           startDate={startDate}
           endDate={endDate}
@@ -69,7 +87,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
           timePeriods={timePeriods}
         />
 
-        <Tabs defaultValue="income" className="w-full">
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
           <TabsList className="w-full justify-start mb-4">
             <TabsTrigger value="income">Income Statement</TabsTrigger>
             <TabsTrigger value="balance">Balance Sheet</TabsTrigger>
@@ -77,17 +95,17 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
           </TabsList>
           <TabsContent value="income">
             <div className="space-y-6">
-              <IncomeStatement timeFrame={timeFrame} />
+              {/* Table content will be here */}
             </div>
           </TabsContent>
           <TabsContent value="balance">
             <div className="space-y-6">
-              <BalanceSheet timeFrame={timeFrame} />
+              {/* Table content will be here */}
             </div>
           </TabsContent>
           <TabsContent value="cashflow">
             <div className="space-y-6">
-              <CashFlow timeFrame={timeFrame} />
+              {/* Table content will be here */}
             </div>
           </TabsContent>
         </Tabs>

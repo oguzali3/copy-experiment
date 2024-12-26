@@ -72,13 +72,18 @@ export const IncomeStatement = ({ timeFrame }: IncomeStatementProps) => {
 
   return (
     <div className="space-y-6">
-      {selectedMetrics.map(metricId => (
-        <MetricChart 
-          key={metricId}
-          data={getChartData(metricId)}
-          metric={metrics.find(m => m.id === metricId)?.label || ''}
-        />
-      ))}
+      {/* Charts Section */}
+      <div className="space-y-4">
+        {selectedMetrics.map(metricId => (
+          <MetricChart 
+            key={metricId}
+            data={getChartData(metricId)}
+            metric={metrics.find(m => m.id === metricId)?.label || ''}
+          />
+        ))}
+      </div>
+
+      {/* Table Section */}
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
