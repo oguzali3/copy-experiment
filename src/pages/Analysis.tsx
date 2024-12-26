@@ -3,11 +3,10 @@ import { StockChart } from "@/components/StockChart";
 import { Card } from "@/components/ui/card";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
-import { UserCircle } from "lucide-react";
+import { UserCircle, Grid, Newspaper, Bank, DollarSign, LineChart, MessageSquare, FileText, Briefcase } from "lucide-react";
 import { CompanySearch } from "@/components/CompanySearch";
 
 const Analysis = () => {
-  // Mock data - in a real app, this would come from an API
   const companyData = {
     name: "Apple Inc.",
     ticker: "AAPL",
@@ -27,6 +26,17 @@ const Analysis = () => {
       returnOnEquity: "145.81%"
     }
   };
+
+  const navItems = [
+    { icon: Grid, label: "Overview", isActive: true },
+    { icon: Newspaper, label: "News" },
+    { icon: Bank, label: "Financials" },
+    { icon: DollarSign, label: "Valuation" },
+    { icon: LineChart, label: "Estimates" },
+    { icon: MessageSquare, label: "Transcripts" },
+    { icon: FileText, label: "Filings" },
+    { icon: Briefcase, label: "Ownership" },
+  ];
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
@@ -62,6 +72,24 @@ const Analysis = () => {
                 <span>{companyData.change > 0 ? '+' : ''}{companyData.change} ({companyData.changePercent}%)</span>
               </div>
             </div>
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex gap-1 border-b">
+            {navItems.map((item) => (
+              <Button
+                key={item.label}
+                variant="ghost"
+                className={`flex items-center gap-2 px-4 py-2 rounded-none border-b-2 transition-colors ${
+                  item.isActive 
+                    ? 'border-[#077dfa] text-[#077dfa] bg-blue-50/50' 
+                    : 'border-transparent hover:border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <item.icon className="w-4 h-4" />
+                {item.label}
+              </Button>
+            ))}
           </div>
 
           {/* Main Content Grid */}
