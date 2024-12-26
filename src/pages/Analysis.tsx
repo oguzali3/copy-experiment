@@ -7,6 +7,8 @@ import { UserCircle, LayoutGrid, Newspaper, ChartBar, DollarSign, LineChart, Mes
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { CompanyNewsContent } from "@/components/CompanyNewsContent";
+import { CompanyEventsContent } from "@/components/CompanyEventsContent";
 
 // Move stock data to a separate file to reduce complexity
 const defaultStock = {
@@ -33,6 +35,7 @@ const defaultStock = {
 const Analysis = () => {
   const navigate = useNavigate();
   const [selectedStock, setSelectedStock] = useState(defaultStock);
+  const [activeTab, setActiveTab] = useState("overview");
 
   const handleStockSelect = (stock: any) => {
     setSelectedStock({
@@ -52,72 +55,20 @@ const Analysis = () => {
   };
 
   const navItems = [
-    { icon: LayoutGrid, label: "Overview", isActive: true },
-    { icon: Newspaper, label: "News", path: `/company/${selectedStock.ticker}/news` },
-    { icon: ChartBar, label: "Financials" },
-    { icon: DollarSign, label: "Valuation" },
-    { icon: LineChart, label: "Estimates" },
-    { icon: MessageSquare, label: "Transcripts" },
-    { icon: FileText, label: "Filings" },
-    { icon: Briefcase, label: "Ownership" },
+    { icon: LayoutGrid, label: "Overview", id: "overview" },
+    { icon: Newspaper, label: "News", id: "news" },
+    { icon: ChartBar, label: "Financials", id: "financials" },
+    { icon: DollarSign, label: "Valuation", id: "valuation" },
+    { icon: LineChart, label: "Estimates", id: "estimates" },
+    { icon: MessageSquare, label: "Transcripts", id: "transcripts" },
+    { icon: FileText, label: "Filings", id: "filings" },
+    { icon: Briefcase, label: "Ownership", id: "ownership" },
   ];
 
-  return (
-    <div className="flex h-screen w-full overflow-hidden">
-      <DashboardSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-[#191d25] h-16 flex items-center px-6 gap-4 flex-shrink-0">
-          <SearchBar onStockSelect={handleStockSelect} />
-          <div className="flex items-center gap-2 ml-auto">
-            <Button className="bg-[#077dfa] hover:bg-[#077dfa]/90 text-white">
-              Upgrade
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-white hover:bg-[#077dfa] w-12 h-16 flex flex-col items-center justify-center gap-1 [&_svg]:!text-white hover:[&_svg]:!text-white"
-            >
-              <UserCircle className="h-9 w-9" />
-              <span className="text-xs text-white/80">Profile</span>
-            </Button>
-          </div>
-        </div>
-
-        <main className="flex-1 p-6 space-y-6 overflow-y-auto bg-gray-50">
-          <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{selectedStock.name}</h1>
-              <span className="text-gray-500">${selectedStock.ticker}</span>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-gray-900">${selectedStock.price}</div>
-              <div className={`flex items-center justify-end ${parseFloat(selectedStock.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                <span>{selectedStock.change} ({selectedStock.changePercent})</span>
-              </div>
-            </div>
-          </div>
-
-          <ScrollArea className="w-full whitespace-nowrap border-b">
-            <div className="flex w-max min-w-full">
-              {navItems.map((item) => (
-                <Button
-                  key={item.label}
-                  variant="ghost"
-                  onClick={() => item.path && navigate(item.path)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-none border-b-2 transition-colors ${
-                    item.isActive 
-                      ? 'border-[#077dfa] text-[#077dfa] bg-blue-50/50' 
-                      : 'border-transparent hover:border-gray-200 text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
-                </Button>
-              ))}
-            </div>
-            <ScrollBar orientation="horizontal" />
-          </ScrollArea>
-
+  const renderContent = () => {
+    switch (activeTab) {
+      case "overview":
+        return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="p-6 h-[500px] overflow-y-auto">
               <h2 className="text-lg font-semibold mb-4">Company Overview</h2>
@@ -173,6 +124,80 @@ const Analysis = () => {
               <StockChart ticker={selectedStock.ticker} />
             </div>
           </div>
+        );
+      case "news":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CompanyNewsContent ticker={selectedStock.ticker} />
+            <CompanyEventsContent ticker={selectedStock.ticker} />
+          </div>
+        );
+      default:
+        return (
+          <div className="flex items-center justify-center h-[500px]">
+            <p className="text-gray-500">Content for {activeTab} is coming soon...</p>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="flex h-screen w-full overflow-hidden">
+      <DashboardSidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="bg-[#191d25] h-16 flex items-center px-6 gap-4 flex-shrink-0">
+          <SearchBar onStockSelect={handleStockSelect} />
+          <div className="flex items-center gap-2 ml-auto">
+            <Button className="bg-[#077dfa] hover:bg-[#077dfa]/90 text-white">
+              Upgrade
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-white hover:bg-[#077dfa] w-12 h-16 flex flex-col items-center justify-center gap-1 [&_svg]:!text-white hover:[&_svg]:!text-white"
+            >
+              <UserCircle className="h-9 w-9" />
+              <span className="text-xs text-white/80">Profile</span>
+            </Button>
+          </div>
+        </div>
+
+        <main className="flex-1 p-6 space-y-6 overflow-y-auto bg-gray-50">
+          <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{selectedStock.name}</h1>
+              <span className="text-gray-500">${selectedStock.ticker}</span>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900">${selectedStock.price}</div>
+              <div className={`flex items-center justify-end ${parseFloat(selectedStock.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <span>{selectedStock.change} ({selectedStock.changePercent})</span>
+              </div>
+            </div>
+          </div>
+
+          <ScrollArea className="w-full whitespace-nowrap border-b">
+            <div className="flex w-max min-w-full">
+              {navItems.map((item) => (
+                <Button
+                  key={item.id}
+                  variant="ghost"
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-none border-b-2 transition-colors ${
+                    activeTab === item.id
+                      ? 'border-[#077dfa] text-[#077dfa] bg-blue-50/50' 
+                      : 'border-transparent hover:border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </Button>
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+
+          {renderContent()}
         </main>
       </div>
     </div>
