@@ -30,18 +30,21 @@ export const StockChart = () => {
           </button>
         ))}
       </div>
-      <div className="h-[calc(100%-60px)]"> {/* Adjusted height to account for buttons and padding */}
+      {/* Adjusted height to account for buttons and padding */}
+      <div className="h-[calc(100%-60px)]">
         <ResponsiveContainer width="100%" height="100%">
+          {/* Added bottom margin for x-axis labels */}
           <LineChart
             data={data}
-            margin={{ top: 5, right: 5, left: 5, bottom: 20 }} {/* Added bottom margin for x-axis labels */}
+            margin={{ top: 5, right: 5, left: 5, bottom: 20 }}
           >
+            {/* Adjusted vertical position of x-axis labels */}
             <XAxis 
               dataKey="time" 
               stroke="#888888"
               fontSize={12}
               tickLine={false}
-              dy={10} {/* Adjusted vertical position of x-axis labels */}
+              dy={10}
             />
             <YAxis 
               stroke="#888888"
