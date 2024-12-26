@@ -31,6 +31,7 @@ const Analysis = () => {
   };
 
   const [companyData, setCompanyData] = useState(defaultCompanyData);
+  const navigate = useNavigate();
 
   const newsData = [
     {
@@ -94,8 +95,6 @@ const Analysis = () => {
     { icon: Briefcase, label: "Ownership" },
   ];
 
-  const navigate = useNavigate();
-
   return (
     <div className="flex h-screen w-full overflow-hidden">
       <DashboardSidebar />
@@ -131,7 +130,6 @@ const Analysis = () => {
             </div>
           </div>
 
-          {/* Navigation Buttons with ScrollArea */}
           <ScrollArea className="w-full whitespace-nowrap border-b">
             <div className="flex w-max min-w-full">
               {navItems.map((item) => (
@@ -143,6 +141,7 @@ const Analysis = () => {
                       ? 'border-[#077dfa] text-[#077dfa] bg-blue-50/50' 
                       : 'border-transparent hover:border-gray-200 text-gray-600 hover:bg-gray-50'
                   }`}
+                  onClick={() => item.path && navigate(item.path)}
                 >
                   <item.icon className="w-4 h-4" />
                   {item.label}
@@ -152,70 +151,6 @@ const Analysis = () => {
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-4 text-gray-900">Company Overview</h2>
-              <div className="space-y-4">
-                <p className="text-gray-600">{companyData.summary}</p>
-                
-                <div className="grid grid-cols-2 gap-4 mt-6">
-                  <div>
-                    <h3 className="font-medium text-gray-900">CEO</h3>
-                    <p className="text-gray-600">{companyData.ceo}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-900">Founded</h3>
-                    <p className="text-gray-600">{companyData.founded}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-900">Website</h3>
-                    <a href={`https://${companyData.website}`} className="text-[#077dfa] hover:underline" target="_blank" rel="noopener noreferrer">
-                      {companyData.website}
-                    </a>
-                  </div>
-                </div>
-
-                <div className="mt-6">
-                  <h3 className="font-medium text-gray-900 mb-3">Key Financial Ratios</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500">P/E Ratio</p>
-                      <p className="font-medium text-gray-900">{companyData.ratios.peRatio}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">P/B Ratio</p>
-                      <p className="font-medium text-gray-900">{companyData.ratios.pbRatio}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Debt/Equity</p>
-                      <p className="font-medium text-gray-900">{companyData.ratios.debtToEquity}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Current Ratio</p>
-                      <p className="font-medium text-gray-900">{companyData.ratios.currentRatio}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Quick Ratio</p>
-                      <p className="font-medium text-gray-900">{companyData.ratios.quickRatio}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">ROE</p>
-                      <p className="font-medium text-gray-900">{companyData.ratios.returnOnEquity}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="shadow-sm">
-              <div className="p-4 border-b">
-                <CompanySearch onCompanySelect={handleCompanySelect} />
-              </div>
-              <StockChart />
-            </Card>
-          </div>
-
-          {/* News Section */}
           <Card className="p-6 shadow-sm">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Recent News</h2>
