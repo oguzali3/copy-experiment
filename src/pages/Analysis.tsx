@@ -69,60 +69,63 @@ const Analysis = () => {
     switch (activeTab) {
       case "overview":
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="p-6 h-[500px] overflow-y-auto">
-              <h2 className="text-lg font-semibold mb-4">Company Overview</h2>
-              <div className="space-y-4">
-                <p className="text-gray-600">{selectedStock.summary}</p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">CEO</p>
-                    <p className="font-medium">{selectedStock.ceo}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Founded</p>
-                    <p className="font-medium">{selectedStock.founded}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Website</p>
-                    <p className="font-medium text-blue-600">{selectedStock.website}</p>
-                  </div>
-                </div>
-                <div className="border-t pt-4 mt-4">
-                  <h3 className="font-semibold mb-3">Key Ratios</h3>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="p-6 h-[500px] overflow-y-auto">
+                <h2 className="text-lg font-semibold mb-4">Company Overview</h2>
+                <div className="space-y-4">
+                  <p className="text-gray-600">{selectedStock.summary}</p>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-gray-500">P/E Ratio</p>
-                      <p className="font-medium">{selectedStock.ratios.peRatio}</p>
+                      <p className="text-sm text-gray-500">CEO</p>
+                      <p className="font-medium">{selectedStock.ceo}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">P/B Ratio</p>
-                      <p className="font-medium">{selectedStock.ratios.pbRatio}</p>
+                      <p className="text-sm text-gray-500">Founded</p>
+                      <p className="font-medium">{selectedStock.founded}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Debt/Equity</p>
-                      <p className="font-medium">{selectedStock.ratios.debtToEquity}</p>
+                      <p className="text-sm text-gray-500">Website</p>
+                      <p className="font-medium text-blue-600">{selectedStock.website}</p>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Current Ratio</p>
-                      <p className="font-medium">{selectedStock.ratios.currentRatio}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Quick Ratio</p>
-                      <p className="font-medium">{selectedStock.ratios.quickRatio}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">ROE</p>
-                      <p className="font-medium">{selectedStock.ratios.returnOnEquity}</p>
+                  </div>
+                  <div className="border-t pt-4 mt-4">
+                    <h3 className="font-semibold mb-3">Key Ratios</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500">P/E Ratio</p>
+                        <p className="font-medium">{selectedStock.ratios.peRatio}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">P/B Ratio</p>
+                        <p className="font-medium">{selectedStock.ratios.pbRatio}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Debt/Equity</p>
+                        <p className="font-medium">{selectedStock.ratios.debtToEquity}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Current Ratio</p>
+                        <p className="font-medium">{selectedStock.ratios.currentRatio}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Quick Ratio</p>
+                        <p className="font-medium">{selectedStock.ratios.quickRatio}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">ROE</p>
+                        <p className="font-medium">{selectedStock.ratios.returnOnEquity}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
+              </Card>
+              
+              <div className="h-[500px]">
+                <StockChart ticker={selectedStock.ticker} />
               </div>
-            </Card>
-            
-            <div className="h-[500px]">
-              <StockChart ticker={selectedStock.ticker} />
             </div>
+            <CompanyNewsContent ticker={selectedStock.ticker} />
           </div>
         );
       case "news":
