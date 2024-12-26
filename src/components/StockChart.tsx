@@ -20,7 +20,7 @@ const data = [
 export const StockChart = () => {
   return (
     <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm">
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 flex-wrap px-2">
         {["5D", "1M", "3M", "6M", "YTD", "1Y", "3Y", "5Y", "MAX"].map((timeframe) => (
           <button
             key={timeframe}
