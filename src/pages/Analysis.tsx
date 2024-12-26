@@ -32,7 +32,6 @@ const Analysis = () => {
   });
 
   const handleStockSelect = (stock: any) => {
-    // Update the selected stock with additional data
     setSelectedStock({
       ...stock,
       ceo: "John Doe", // Placeholder data
@@ -194,10 +193,8 @@ const Analysis = () => {
               </div>
             </Card>
             
-            <div className="space-y-6">
-              <div className="h-[850px]">
-                <StockChart />
-              </div>
+            <div className="h-[850px]">
+              <StockChart />
             </div>
           </div>
 
