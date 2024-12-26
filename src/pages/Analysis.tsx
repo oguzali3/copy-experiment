@@ -143,7 +143,7 @@ const Analysis = () => {
           </ScrollArea>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="p-6 h-[850px] overflow-y-auto">
+            <Card className="p-6 h-[500px] overflow-y-auto">
               <h2 className="text-lg font-semibold mb-4">Company Overview</h2>
               <div className="space-y-4">
                 <p className="text-gray-600">{selectedStock.summary}</p>
@@ -193,7 +193,7 @@ const Analysis = () => {
               </div>
             </Card>
             
-            <div className="h-[850px]">
+            <div className="h-[500px]">
               <StockChart />
             </div>
           </div>
