@@ -19,7 +19,7 @@ const data = [
 
 export const StockChart = () => {
   return (
-    <div className="h-[440px] w-full bg-white p-4 rounded-xl shadow-sm"> {/* Adjusted height */}
+    <div className="h-[400px] w-full bg-white p-4 rounded-xl shadow-sm">
       <div className="flex gap-2 mb-4">
         {["5D", "1M", "3M", "6M", "YTD", "1Y", "3Y", "5Y", "MAX"].map((timeframe) => (
           <button
@@ -30,12 +30,15 @@ export const StockChart = () => {
           </button>
         ))}
       </div>
+      {/* Adjusted height to account for buttons and padding */}
       <div className="h-[calc(100%-60px)]">
         <ResponsiveContainer width="100%" height="100%">
+          {/* Added bottom margin for x-axis labels */}
           <LineChart
             data={data}
             margin={{ top: 5, right: 5, left: 5, bottom: 20 }}
           >
+            {/* Adjusted vertical position of x-axis labels */}
             <XAxis 
               dataKey="time" 
               stroke="#888888"
