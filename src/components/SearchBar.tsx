@@ -43,9 +43,9 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
             onValueChange={setSearchQuery}
           />
         </div>
-        {open && searchQuery && (
-          <CommandList>
-            <CommandEmpty>No stocks found.</CommandEmpty>
+        <CommandList>
+          <CommandEmpty>No stocks found.</CommandEmpty>
+          {open && searchQuery && (
             <CommandGroup heading="Stocks">
               {filteredStocks.map((stock) => (
                 <CommandItem
@@ -70,8 +70,8 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
                 </CommandItem>
               ))}
             </CommandGroup>
-          </CommandList>
-        )}
+          )}
+        </CommandList>
       </Command>
     </div>
   );
