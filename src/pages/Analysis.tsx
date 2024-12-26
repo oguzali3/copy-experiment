@@ -7,6 +7,8 @@ import { UserCircle, LayoutGrid, Newspaper, ChartBar, DollarSign, LineChart, Mes
 import { CompanySearch } from "@/components/CompanySearch";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useState } from "react";
+import { CompanyNewsList } from "@/components/CompanyNewsList";
+import { NewsItem } from "@/types/news";
 
 const Analysis = () => {
   const defaultCompanyData = {
@@ -31,7 +33,7 @@ const Analysis = () => {
 
   const [companyData, setCompanyData] = useState(defaultCompanyData);
 
-  const newsData = [
+  const newsData: NewsItem[] = [
     {
       id: 1,
       title: `${companyData.name} Reports Strong Q4 Earnings, Beats Market Expectations`,
@@ -128,7 +130,6 @@ const Analysis = () => {
             </div>
           </div>
 
-          {/* Navigation Buttons with ScrollArea */}
           <ScrollArea className="w-full whitespace-nowrap border-b">
             <div className="flex w-max min-w-full">
               {navItems.map((item) => (
@@ -212,34 +213,7 @@ const Analysis = () => {
             </Card>
           </div>
 
-          {/* News Section */}
-          <Card className="p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Recent News</h2>
-              <Button variant="ghost" className="text-[#077dfa]">
-                View All
-              </Button>
-            </div>
-            <div className="space-y-6">
-              {newsData.map((news) => (
-                <div key={news.id} className="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-medium text-gray-900 hover:text-[#077dfa] cursor-pointer">
-                      {news.title}
-                    </h3>
-                    <span className="text-sm text-gray-500 whitespace-nowrap ml-4">{news.date}</span>
-                  </div>
-                  <p className="text-gray-600 mb-2">{news.summary}</p>
-                  <div className="flex items-center text-sm">
-                    <span className="text-gray-500">Source: {news.source}</span>
-                    <Button variant="link" className="text-[#077dfa] p-0 h-auto ml-4">
-                      Read More →
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <CompanyNewsList newsData={newsData} />
         </main>
       </div>
     </div>
