@@ -151,92 +151,97 @@ const Analysis = () => {
             <ScrollBar orientation="horizontal" />
           </ScrollArea>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[400px]">
-            <Card className="p-6 h-full">
-              <h2 className="text-lg font-semibold mb-4">Company Overview</h2>
-              <div className="space-y-4">
-                <p className="text-gray-600">{companyData.summary}</p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">CEO</p>
-                    <p className="font-medium">{companyData.ceo}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Founded</p>
-                    <p className="font-medium">{companyData.founded}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Website</p>
-                    <p className="font-medium text-blue-600">{companyData.website}</p>
-                  </div>
-                </div>
-                <div className="border-t pt-4 mt-4">
-                  <h3 className="font-semibold mb-3">Key Ratios</h3>
+          <div className="flex flex-col gap-6">
+            {/* Overview and Chart Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="p-6 h-[400px] overflow-y-auto">
+                <h2 className="text-lg font-semibold mb-4">Company Overview</h2>
+                <div className="space-y-4">
+                  <p className="text-gray-600">{companyData.summary}</p>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-gray-500">P/E Ratio</p>
-                      <p className="font-medium">{companyData.ratios.peRatio}</p>
+                      <p className="text-sm text-gray-500">CEO</p>
+                      <p className="font-medium">{companyData.ceo}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">P/B Ratio</p>
-                      <p className="font-medium">{companyData.ratios.pbRatio}</p>
+                      <p className="text-sm text-gray-500">Founded</p>
+                      <p className="font-medium">{companyData.founded}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Debt/Equity</p>
-                      <p className="font-medium">{companyData.ratios.debtToEquity}</p>
+                      <p className="text-sm text-gray-500">Website</p>
+                      <p className="font-medium text-blue-600">{companyData.website}</p>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Current Ratio</p>
-                      <p className="font-medium">{companyData.ratios.currentRatio}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Quick Ratio</p>
-                      <p className="font-medium">{companyData.ratios.quickRatio}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">ROE</p>
-                      <p className="font-medium">{companyData.ratios.returnOnEquity}</p>
+                  </div>
+                  <div className="border-t pt-4 mt-4">
+                    <h3 className="font-semibold mb-3">Key Ratios</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500">P/E Ratio</p>
+                        <p className="font-medium">{companyData.ratios.peRatio}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">P/B Ratio</p>
+                        <p className="font-medium">{companyData.ratios.pbRatio}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Debt/Equity</p>
+                        <p className="font-medium">{companyData.ratios.debtToEquity}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Current Ratio</p>
+                        <p className="font-medium">{companyData.ratios.currentRatio}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Quick Ratio</p>
+                        <p className="font-medium">{companyData.ratios.quickRatio}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">ROE</p>
+                        <p className="font-medium">{companyData.ratios.returnOnEquity}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
+              </Card>
+              
+              <div className="h-[400px]">
+                <StockChart />
+              </div>
+            </div>
+
+            {/* News Section - Full Width */}
+            <Card className="p-6 shadow-sm">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Recent News</h2>
+                <Button 
+                  variant="ghost" 
+                  className="text-[#077dfa]"
+                  onClick={() => navigate(`/company/${companyData.ticker}/news`)}
+                >
+                  View All
+                </Button>
+              </div>
+              <div className="space-y-6">
+                {newsData.map((news) => (
+                  <div key={news.id} className="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-medium text-gray-900 hover:text-[#077dfa] cursor-pointer">
+                        {news.title}
+                      </h3>
+                      <span className="text-sm text-gray-500 whitespace-nowrap ml-4">{news.date}</span>
+                    </div>
+                    <p className="text-gray-600 mb-2">{news.summary}</p>
+                    <div className="flex items-center text-sm">
+                      <span className="text-gray-500">Source: {news.source}</span>
+                      <Button variant="link" className="text-[#077dfa] p-0 h-auto ml-4">
+                        Read More →
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </Card>
-            <div className="h-full">
-              <StockChart />
-            </div>
           </div>
-
-          <Card className="p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Recent News</h2>
-              <Button 
-                variant="ghost" 
-                className="text-[#077dfa]"
-                onClick={() => navigate(`/company/${companyData.ticker}/news`)}
-              >
-                View All
-              </Button>
-            </div>
-            <div className="space-y-6">
-              {newsData.map((news) => (
-                <div key={news.id} className="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-medium text-gray-900 hover:text-[#077dfa] cursor-pointer">
-                      {news.title}
-                    </h3>
-                    <span className="text-sm text-gray-500 whitespace-nowrap ml-4">{news.date}</span>
-                  </div>
-                  <p className="text-gray-600 mb-2">{news.summary}</p>
-                  <div className="flex items-center text-sm">
-                    <span className="text-gray-500">Source: {news.source}</span>
-                    <Button variant="link" className="text-[#077dfa] p-0 h-auto ml-4">
-                      Read More →
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
         </main>
       </div>
     </div>
