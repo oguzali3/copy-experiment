@@ -15,12 +15,28 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
   const [startDate, setStartDate] = useState("June 30, 2015");
   const [endDate, setEndDate] = useState("September 30, 2024");
-  const [sliderValue, setSliderValue] = useState([0, 100]);
+  const [sliderValue, setSliderValue] = useState([0, 11]);
+
+  // Define the available time periods
+  const timePeriods = [
+    "Jun '15",
+    "Jun '16",
+    "Jun '17",
+    "Jun '18",
+    "Jun '19",
+    "Jun '20",
+    "Jun '21",
+    "Jun '22",
+    "Jun '23",
+    "LTM",
+    "Jun '24",
+    "Jun '26(E)",
+  ];
 
   const handleSliderChange = (value: number[]) => {
     setSliderValue(value);
-    // Here you would typically calculate the actual dates based on the slider values
-    // and update startDate and endDate accordingly
+    setStartDate(`June 30, 20${15 + value[0]}`);
+    setEndDate(value[1] === 11 ? "June 30, 2026" : `June 30, 20${15 + value[1]}`);
   };
 
   return (
@@ -43,21 +59,18 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
           <div className="px-2 py-4">
             <div className="relative">
               <Slider
-                defaultValue={[0, 100]}
-                max={100}
+                defaultValue={[0, 11]}
+                min={0}
+                max={11}
                 step={1}
                 value={sliderValue}
                 onValueChange={handleSliderChange}
                 className="w-full"
               />
               <div className="absolute -bottom-6 left-0 right-0 flex justify-between text-xs text-gray-500">
-                <span>Jun '15</span>
-                <span>Jun '17</span>
-                <span>Jun '19</span>
-                <span>Jun '21</span>
-                <span>Jun '23</span>
-                <span>LTM</span>
-                <span>Jun '26(E)</span>
+                {timePeriods.map((period, index) => (
+                  <span key={index}>{period}</span>
+                ))}
               </div>
             </div>
           </div>
