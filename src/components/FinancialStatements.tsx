@@ -13,7 +13,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   return (
     <Card className="p-6">
       <div className="space-y-6">
-        <div className="flex flex-col space-y-4">
+        <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Financial Statements</h2>
           <RadioGroup
             defaultValue="annual"
