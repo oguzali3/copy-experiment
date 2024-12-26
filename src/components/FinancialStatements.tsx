@@ -39,29 +39,6 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   return (
     <Card className="p-6">
       <div className="space-y-6">
-        <Tabs defaultValue="income" className="w-full">
-          <TabsList className="w-full justify-start mb-4">
-            <TabsTrigger value="income">Income Statement</TabsTrigger>
-            <TabsTrigger value="balance">Balance Sheet</TabsTrigger>
-            <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
-          </TabsList>
-          <TabsContent value="income">
-            <div className="space-y-6">
-              <IncomeStatement timeFrame={timeFrame} />
-            </div>
-          </TabsContent>
-          <TabsContent value="balance">
-            <div className="space-y-6">
-              <BalanceSheet timeFrame={timeFrame} />
-            </div>
-          </TabsContent>
-          <TabsContent value="cashflow">
-            <div className="space-y-6">
-              <CashFlow timeFrame={timeFrame} />
-            </div>
-          </TabsContent>
-        </Tabs>
-
         <TimeRangePanel
           startDate={startDate}
           endDate={endDate}
@@ -91,6 +68,23 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
             </div>
           </RadioGroup>
         </div>
+
+        <Tabs defaultValue="income" className="w-full">
+          <TabsList className="w-full justify-start mb-4">
+            <TabsTrigger value="income">Income Statement</TabsTrigger>
+            <TabsTrigger value="balance">Balance Sheet</TabsTrigger>
+            <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
+          </TabsList>
+          <TabsContent value="income">
+            <IncomeStatement timeFrame={timeFrame} />
+          </TabsContent>
+          <TabsContent value="balance">
+            <BalanceSheet timeFrame={timeFrame} />
+          </TabsContent>
+          <TabsContent value="cashflow">
+            <CashFlow timeFrame={timeFrame} />
+          </TabsContent>
+        </Tabs>
       </div>
     </Card>
   );
