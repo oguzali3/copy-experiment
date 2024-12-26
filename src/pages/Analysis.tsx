@@ -85,7 +85,7 @@ const Analysis = () => {
 
   const navItems = [
     { icon: LayoutGrid, label: "Overview", isActive: true },
-    { icon: Newspaper, label: "News" },
+    { icon: Newspaper, label: "News", path: `/company/${companyData.ticker}/news` },
     { icon: ChartBar, label: "Financials" },
     { icon: DollarSign, label: "Valuation" },
     { icon: LineChart, label: "Estimates" },
