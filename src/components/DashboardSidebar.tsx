@@ -19,15 +19,16 @@ import {
   SidebarMenuItem,
   useSidebar
 } from "@/components/ui/sidebar";
+import { Link } from "react-router-dom";
 
 const menuItems = [
-  { title: "Dashboard", icon: Home },
-  { title: "Analysis", icon: BarChart3 },
-  { title: "Charting", icon: LineChart },
-  { title: "Screening", icon: Filter },
-  { title: "Watchlists", icon: List },
-  { title: "Resources", icon: BookOpen },
-  { title: "Settings", icon: Settings },
+  { title: "Dashboard", icon: Home, path: "/dashboard" },
+  { title: "Analysis", icon: BarChart3, path: "/analysis" },
+  { title: "Charting", icon: LineChart, path: "/charting" },
+  { title: "Screening", icon: Filter, path: "/screening" },
+  { title: "Watchlists", icon: List, path: "/watchlists" },
+  { title: "Resources", icon: BookOpen, path: "/resources" },
+  { title: "Settings", icon: Settings, path: "/settings" },
 ];
 
 export const DashboardSidebar = () => {
@@ -59,11 +60,14 @@ export const DashboardSidebar = () => {
                   <SidebarMenuButton 
                     className="text-white/80 hover:text-white hover:bg-white/10 transition-all duration-300"
                     tooltip={state === 'collapsed' ? item.title : undefined}
+                    asChild
                   >
-                    <item.icon className="h-4 w-4" />
-                    <span className={`transition-opacity duration-300 ${state === 'collapsed' ? 'opacity-0' : 'opacity-100'}`}>
-                      {item.title}
-                    </span>
+                    <Link to={item.path}>
+                      <item.icon className="h-4 w-4" />
+                      <span className={`transition-opacity duration-300 ${state === 'collapsed' ? 'opacity-0' : 'opacity-100'}`}>
+                        {item.title}
+                      </span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
