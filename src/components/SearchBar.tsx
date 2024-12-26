@@ -9,6 +9,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { useState } from "react";
+import { Button } from "./ui/button";
 
 const stocksData = [
   { name: "Apple Inc.", ticker: "AAPL", price: "182.52", change: "+1.25", changePercent: "+0.69", marketCap: "2.85T", summary: "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide." },
@@ -33,18 +34,21 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
 
   return (
     <div className="relative w-full">
-      <Command className="relative rounded-lg border shadow-md">
-        <div className="flex items-center border-b px-3">
-          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+      <Button 
+        variant="outline" 
+        className="w-full justify-start text-left font-normal"
+        onClick={() => setOpen(true)}
+      >
+        <Search className="mr-2 h-4 w-4" />
+        <span>Search stocks...</span>
+      </Button>
+      <CommandDialog open={open} onOpenChange={setOpen}>
+        <Command className="rounded-lg border shadow-md">
           <CommandInput 
             placeholder="Search stocks..." 
             value={searchQuery}
             onValueChange={setSearchQuery}
-            onFocus={() => setOpen(true)}
-            className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
           />
-        </div>
-        <div className={`absolute w-full bg-popover z-50 rounded-b-lg border-t-0 shadow-lg ${(!open || !searchQuery) ? 'hidden' : ''}`}>
           <CommandList>
             <CommandEmpty>No stocks found.</CommandEmpty>
             <CommandGroup heading="Stocks">
@@ -72,8 +76,8 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
               ))}
             </CommandGroup>
           </CommandList>
-        </div>
-      </Command>
+        </Command>
+      </CommandDialog>
     </div>
   );
 };
