@@ -3,7 +3,7 @@ import { StockChart } from "@/components/StockChart";
 import { Card } from "@/components/ui/card";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
-import { UserCircle, Grid, Newspaper, Bank, DollarSign, LineChart, MessageSquare, FileText, Briefcase } from "lucide-react";
+import { UserCircle, LayoutGrid, Newspaper, ChartBar, DollarSign, LineChart, MessageSquare, FileText, Briefcase } from "lucide-react";
 import { CompanySearch } from "@/components/CompanySearch";
 
 const Analysis = () => {
@@ -28,9 +28,9 @@ const Analysis = () => {
   };
 
   const navItems = [
-    { icon: Grid, label: "Overview", isActive: true },
+    { icon: LayoutGrid, label: "Overview", isActive: true },
     { icon: Newspaper, label: "News" },
-    { icon: Bank, label: "Financials" },
+    { icon: ChartBar, label: "Financials" },
     { icon: DollarSign, label: "Valuation" },
     { icon: LineChart, label: "Estimates" },
     { icon: MessageSquare, label: "Transcripts" },
