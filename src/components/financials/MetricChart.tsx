@@ -31,23 +31,34 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
     return `$${value}`;
   };
 
-  const ChartContent = () => {
+  const renderChart = () => {
+    const commonProps = {
+      data,
+      margin: { top: 20, right: 30, left: 20, bottom: 5 }
+    };
+
+    const commonChildren = (
+      <>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="period" tick={{ fontSize: 12 }} />
+        <YAxis tickFormatter={formatYAxis} tick={{ fontSize: 12 }} />
+        <Tooltip 
+          formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]}
+          contentStyle={{
+            backgroundColor: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+          }}
+        />
+        <Legend />
+      </>
+    );
+
     if (chartType === 'bar') {
       return (
-        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="period" tick={{ fontSize: 12 }} />
-          <YAxis tickFormatter={formatYAxis} tick={{ fontSize: 12 }} />
-          <Tooltip 
-            formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]}
-            contentStyle={{
-              backgroundColor: 'white',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-            }}
-          />
-          <Legend />
+        <BarChart {...commonProps}>
+          {commonChildren}
           {metrics.map((metric, index) => (
             <Bar
               key={metric}
@@ -62,20 +73,8 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
     }
 
     return (
-      <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="period" tick={{ fontSize: 12 }} />
-        <YAxis tickFormatter={formatYAxis} tick={{ fontSize: 12 }} />
-        <Tooltip 
-          formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]}
-          contentStyle={{
-            backgroundColor: 'white',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-          }}
-        />
-        <Legend />
+      <LineChart {...commonProps}>
+        {commonChildren}
         {metrics.map((metric, index) => (
           <Line
             key={metric}
@@ -95,7 +94,7 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
     <div className="w-full bg-white p-4 rounded-lg border">
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <ChartContent />
+          {renderChart()}
         </ResponsiveContainer>
       </div>
     </div>
