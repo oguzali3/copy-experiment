@@ -48,6 +48,10 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
     !item.isEstimate && (index === arr.length - 1 || arr[index + 1]?.isEstimate)
   );
 
+  // Create segments for solid and dashed lines
+  const actualData = chartData?.slice(0, lastActualIndex + 1);
+  const estimateData = chartData?.slice(lastActualIndex);
+
   return (
     <div className="space-y-6">
       <div className="space-y-6 border rounded-xl p-6">
@@ -150,6 +154,7 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                     formatters.default)(value)
                 }
               />
+              {/* Solid line for actual data */}
               <Line
                 type="monotone"
                 dataKey="value"
@@ -157,12 +162,18 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                 strokeWidth={2}
                 dot={false}
                 connectNulls
-                strokeDasharray="0"
-                style={{
-                  strokeDasharray: (lastActualIndex !== undefined && lastActualIndex >= 0) ? 
-                    `${chartData?.map((_, i) => i > lastActualIndex ? "5,5" : "0").join(" ")}` : 
-                    "0"
-                }}
+                data={actualData}
+              />
+              {/* Dashed line for estimates */}
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="#2563eb"
+                strokeWidth={2}
+                dot={false}
+                connectNulls
+                strokeDasharray="5 5"
+                data={estimateData}
               />
             </LineChart>
           </ResponsiveContainer>
