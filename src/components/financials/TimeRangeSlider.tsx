@@ -13,7 +13,18 @@ export const TimeRangeSlider = ({
 }: TimeRangeSliderProps) => {
   return (
     <div className="px-2 py-4">
-      <div className="relative pb-8">
+      <div className="relative pb-6">
+        <div className="absolute w-full top-2.5">
+          {timePeriods.map((_, index) => (
+            <div
+              key={index}
+              className="absolute w-2 h-2 bg-white border-2 border-primary rounded-full -translate-x-1"
+              style={{
+                left: `${(index / 4) * 100}%`,
+              }}
+            />
+          ))}
+        </div>
         <Slider
           defaultValue={[0, 4]}
           min={0}
@@ -35,7 +46,7 @@ export const TimeRangeSlider = ({
               }}
             >
               <div className="h-2 w-0.5 bg-gray-300 mb-1"></div>
-              <span>{period}</span>
+              <span className="mt-1">{period}</span>
             </div>
           ))}
         </div>
