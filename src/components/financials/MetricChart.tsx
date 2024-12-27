@@ -23,13 +23,13 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
   });
 
   const getMetricColor = (index: number): string => {
-    // Fixed colors for first three metrics
-    if (index === 0) return '#0EA5E9'; // Blue
-    if (index === 1) return '#F97316'; // Orange
-    if (index === 2) return '#8B5CF6'; // Purple
+    // Use navy blue as primary color
+    if (index === 0) return '#1A1F2C'; // Navy blue
+    if (index === 1) return '#403E43'; // Secondary dark color
+    if (index === 2) return '#221F26'; // Tertiary dark color
     
-    // Random colors for subsequent metrics
-    return `hsl(${Math.random() * 360}, 70%, 50%)`;
+    // Random dark colors for subsequent metrics
+    return `hsl(${Math.random() * 360}, 30%, 25%)`;
   };
 
   const formatYAxis = (value: number) => {
@@ -54,9 +54,23 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
 
     const commonChildren = (
       <>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="period" tick={{ fontSize: 12 }} />
-        <YAxis tickFormatter={formatYAxis} tick={{ fontSize: 12 }} />
+        <CartesianGrid 
+          strokeDasharray="3 3" 
+          stroke="#E5E7EB" 
+          vertical={false}
+        />
+        <XAxis 
+          dataKey="period" 
+          tick={{ fontSize: 12, fill: '#6B7280' }}
+          axisLine={{ stroke: '#E5E7EB' }}
+          tickLine={false}
+        />
+        <YAxis 
+          tickFormatter={formatYAxis} 
+          tick={{ fontSize: 12, fill: '#6B7280' }}
+          axisLine={{ stroke: '#E5E7EB' }}
+          tickLine={false}
+        />
         <Tooltip 
           formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]}
           contentStyle={{
@@ -64,9 +78,17 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
             border: '1px solid #e5e7eb',
             borderRadius: '8px',
             boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+            padding: '12px'
+          }}
+          labelStyle={{ color: '#374151', fontWeight: 600, marginBottom: '4px' }}
+        />
+        <Legend 
+          wrapperStyle={{ 
+            paddingTop: '20px',
+            fontSize: '12px',
+            color: '#6B7280'
           }}
         />
-        <Legend />
       </>
     );
 
@@ -80,7 +102,8 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
               dataKey={metric}
               fill={getMetricColor(index)}
               name={metric}
-              radius={[4, 4, 0, 0]}
+              radius={[0, 0, 0, 0]} // Sharp edges
+              maxBarSize={50}
             />
           ))}
         </BarChart>
