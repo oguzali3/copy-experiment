@@ -90,33 +90,38 @@ const formatValue = (value: number | null) => {
 
 export const EstimatesTable = ({ metric }: EstimatesTableProps) => {
   const data = estimatesData[metric as keyof typeof estimatesData] || [];
+  const metrics = [
+    { key: "mean", label: "Mean" },
+    { key: "median", label: "Median" },
+    { key: "actual", label: "Actual" },
+    { key: "high", label: "High" },
+    { key: "low", label: "Low" },
+    { key: "stdDev", label: "Std Dev" },
+    { key: "estimates", label: "# of Estimates" },
+  ];
 
   return (
     <div className="rounded-lg border bg-white">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Period</TableHead>
-            <TableHead className="text-right">Mean</TableHead>
-            <TableHead className="text-right">Median</TableHead>
-            <TableHead className="text-right">Actual</TableHead>
-            <TableHead className="text-right">High</TableHead>
-            <TableHead className="text-right">Low</TableHead>
-            <TableHead className="text-right">Std Dev</TableHead>
-            <TableHead className="text-right"># of Estimates</TableHead>
+            <TableHead>Metric</TableHead>
+            {data.map((period) => (
+              <TableHead key={period.period} className="text-right">
+                {period.period}
+              </TableHead>
+            ))}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((row) => (
-            <TableRow key={row.period}>
-              <TableCell className="font-medium">{row.period}</TableCell>
-              <TableCell className="text-right">{formatValue(row.mean)}</TableCell>
-              <TableCell className="text-right">{formatValue(row.median)}</TableCell>
-              <TableCell className="text-right">{formatValue(row.actual)}</TableCell>
-              <TableCell className="text-right">{formatValue(row.high)}</TableCell>
-              <TableCell className="text-right">{formatValue(row.low)}</TableCell>
-              <TableCell className="text-right">{formatValue(row.stdDev)}</TableCell>
-              <TableCell className="text-right">{row.estimates}</TableCell>
+          {metrics.map((metricRow) => (
+            <TableRow key={metricRow.key}>
+              <TableCell className="font-medium">{metricRow.label}</TableCell>
+              {data.map((period) => (
+                <TableCell key={period.period} className="text-right">
+                  {formatValue(period[metricRow.key as keyof typeof period] as number)}
+                </TableCell>
+              ))}
             </TableRow>
           ))}
         </TableBody>
@@ -124,3 +129,5 @@ export const EstimatesTable = ({ metric }: EstimatesTableProps) => {
     </div>
   );
 };
+
+export { estimatesData };

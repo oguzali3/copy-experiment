@@ -2,7 +2,7 @@ import { useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { EstimatesTable } from "./EstimatesTable";
+import { EstimatesTable, estimatesData } from "./EstimatesTable";
 
 interface EstimatesChartProps {
   ticker?: string;
@@ -20,18 +20,10 @@ const metrics = [
   { id: "capex", label: "CapEx" },
 ];
 
-// Mock data - in a real app, this would come from an API
-const estimatesData = [
-  { year: "2023", value: 383285, min: 380000, max: 385000 },
-  { year: "2024", value: 395000, min: 390000, max: 400000 },
-  { year: "2025", value: 410000, min: 400000, max: 420000 },
-  { year: "2026", value: 425000, min: 415000, max: 435000 },
-];
-
 const formatters = {
   revenue: (value: number) => `$${(value / 1000).toFixed(2)}K`,
   eps: (value: number) => `$${value.toFixed(2)}`,
-  default: (value: number) => value.toString(), // Convert number to string
+  default: (value: number) => value.toString(),
 };
 
 export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
@@ -39,9 +31,17 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
   const [timeframe, setTimeframe] = useState("annual");
 
   const handleDownload = () => {
-    // Implement download functionality
     console.log("Downloading data...");
   };
+
+  // Transform estimates data for the chart
+  const chartData = estimatesData[selectedMetric as keyof typeof estimatesData]?.map(
+    (item) => ({
+      period: item.period,
+      value: item.actual || item.mean,
+      isEstimate: item.period.includes("(E)"),
+    })
+  );
 
   return (
     <div className="space-y-6">
@@ -117,11 +117,11 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
         <div className="h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={estimatesData}
+              data={chartData}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
               <XAxis
-                dataKey="year"
+                dataKey="period"
                 stroke="#6B7280"
                 tick={{ fill: "#374151" }}
               />
@@ -150,22 +150,7 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                 dataKey="value"
                 stroke="#2563eb"
                 strokeWidth={2}
-                dot={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="min"
-                stroke="#9CA3AF"
-                strokeDasharray="3 3"
-                strokeWidth={1}
-                dot={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="max"
-                stroke="#9CA3AF"
-                strokeDasharray="3 3"
-                strokeWidth={1}
+                strokeDasharray={(d: any) => (d.isEstimate ? "5 5" : "0")}
                 dot={false}
               />
             </LineChart>
