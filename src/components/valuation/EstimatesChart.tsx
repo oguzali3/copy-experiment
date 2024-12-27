@@ -34,23 +34,12 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
     console.log("Downloading data...");
   };
 
-  // Transform estimates data for the chart
   const chartData = estimatesData[selectedMetric as keyof typeof estimatesData]?.map(
     (item) => ({
       period: item.period,
       value: item.actual || item.mean,
-      isEstimate: item.period.includes("(E)"),
     })
   );
-
-  // Find the last actual data point index
-  const lastActualIndex = chartData?.findIndex((item, index, arr) => 
-    !item.isEstimate && (index === arr.length - 1 || arr[index + 1]?.isEstimate)
-  );
-
-  // Split data into actual and estimates (renamed estimatesDataPoints to avoid conflict)
-  const actualData = chartData?.slice(0, (lastActualIndex ?? -1) + 1);
-  const estimatesDataPoints = chartData?.slice(lastActualIndex !== undefined ? lastActualIndex + 1 : 0);
 
   return (
     <div className="space-y-6">
@@ -154,25 +143,13 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                     formatters.default)(value)
                 }
               />
-              {/* Actual data line */}
               <Line
                 type="monotone"
                 dataKey="value"
-                data={actualData}
+                data={chartData}
                 stroke="#2563eb"
                 strokeWidth={2}
                 dot={false}
-                connectNulls
-              />
-              {/* Estimates data line */}
-              <Line
-                type="monotone"
-                dataKey="value"
-                data={estimatesDataPoints}
-                stroke="#2563eb"
-                strokeWidth={2}
-                dot={false}
-                strokeDasharray="5 5"
                 connectNulls
               />
             </LineChart>
