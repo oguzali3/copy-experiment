@@ -37,10 +37,10 @@ export const MetricInput = ({ metric, onRemove, onChange }: MetricInputProps) =>
               placeholder="Min value"
               value={metric.min}
               onChange={(e) => onChange(metric.id, e.target.value, metric.max || '')}
-              className="pr-12"
+              className="pr-14"
             />
             {showMillionLabel && (
-              <div className="absolute right-0 pr-10">
+              <div className="absolute right-0 pr-12">
                 <span className="text-gray-500">M</span>
               </div>
             )}
@@ -54,10 +54,10 @@ export const MetricInput = ({ metric, onRemove, onChange }: MetricInputProps) =>
               placeholder="Max value"
               value={metric.max}
               onChange={(e) => onChange(metric.id, metric.min || '', e.target.value)}
-              className="pr-12"
+              className="pr-14"
             />
             {showMillionLabel && (
-              <div className="absolute right-0 pr-10">
+              <div className="absolute right-0 pr-12">
                 <span className="text-gray-500">M</span>
               </div>
             )}
