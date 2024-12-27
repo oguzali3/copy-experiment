@@ -31,29 +31,31 @@ export const MetricInput = ({ metric, onRemove, onChange }: MetricInputProps) =>
       <div className="flex gap-4">
         <div className="flex-1 relative">
           <Label>Min</Label>
-          {showMillionLabel && (
-            <span className="absolute left-3 top-[34px] text-gray-500">M</span>
-          )}
-          <Input
-            type="number"
-            placeholder="Min value"
-            value={metric.min}
-            onChange={(e) => onChange(metric.id, e.target.value, metric.max || '')}
-            className={showMillionLabel ? "pl-8" : ""}
-          />
+          <div className="relative">
+            <Input
+              type="number"
+              placeholder="Min value"
+              value={metric.min}
+              onChange={(e) => onChange(metric.id, e.target.value, metric.max || '')}
+            />
+            {showMillionLabel && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">M</span>
+            )}
+          </div>
         </div>
         <div className="flex-1 relative">
           <Label>Max</Label>
-          {showMillionLabel && (
-            <span className="absolute left-3 top-[34px] text-gray-500">M</span>
-          )}
-          <Input
-            type="number"
-            placeholder="Max value"
-            value={metric.max}
-            onChange={(e) => onChange(metric.id, metric.min || '', e.target.value)}
-            className={showMillionLabel ? "pl-8" : ""}
-          />
+          <div className="relative">
+            <Input
+              type="number"
+              placeholder="Max value"
+              value={metric.max}
+              onChange={(e) => onChange(metric.id, metric.min || '', e.target.value)}
+            />
+            {showMillionLabel && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">M</span>
+            )}
+          </div>
         </div>
       </div>
     </Card>
