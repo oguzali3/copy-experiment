@@ -48,6 +48,10 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
     !item.isEstimate && (index === arr.length - 1 || arr[index + 1]?.isEstimate)
   );
 
+  // Split data into actual and estimates
+  const actualData = chartData?.slice(0, (lastActualIndex ?? -1) + 1);
+  const estimatesData = chartData?.slice(lastActualIndex !== undefined ? lastActualIndex + 1 : 0);
+
   return (
     <div className="space-y-6">
       <div className="space-y-6 border rounded-xl p-6">
@@ -150,16 +154,26 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                     formatters.default)(value)
                 }
               />
+              {/* Actual data line */}
               <Line
                 type="monotone"
                 dataKey="value"
+                data={actualData}
                 stroke="#2563eb"
                 strokeWidth={2}
                 dot={false}
                 connectNulls
-                strokeDasharray={(index: number) => 
-                  index > (lastActualIndex ?? -1) ? "5 5" : "0"
-                }
+              />
+              {/* Estimates data line */}
+              <Line
+                type="monotone"
+                dataKey="value"
+                data={estimatesData}
+                stroke="#2563eb"
+                strokeWidth={2}
+                dot={false}
+                strokeDasharray="5 5"
+                connectNulls
               />
             </LineChart>
           </ResponsiveContainer>
