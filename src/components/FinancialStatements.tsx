@@ -32,11 +32,11 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const getMetricData = (metrics: string[]) => {
     const data = {
       annual: [
-        { period: "2023", revenue: "60922", revenueGrowth: "125.85", costOfRevenue: "16621", grossProfit: "44301", totalAssets: "110716", totalLiabilities: "42781", totalEquity: "67935", operatingCashFlow: "27021", investingCashFlow: "-15783", financingCashFlow: "-8762", freeCashFlow: "27021" },
-        { period: "2022", revenue: "26974", revenueGrowth: "0.22", costOfRevenue: "11618", grossProfit: "15356", totalAssets: "44187", totalLiabilities: "15892", totalEquity: "28295", operatingCashFlow: "3808", investingCashFlow: "-7225", financingCashFlow: "-10413", freeCashFlow: "3808" },
-        { period: "2021", revenue: "26914", revenueGrowth: "61.40", costOfRevenue: "9439", grossProfit: "17475", totalAssets: "44187", totalLiabilities: "15892", totalEquity: "28295", operatingCashFlow: "8132", investingCashFlow: "-4485", financingCashFlow: "-3128", freeCashFlow: "8132" },
-        { period: "2020", revenue: "16675", revenueGrowth: "52.73", costOfRevenue: "6118", grossProfit: "10557", totalAssets: "28791", totalLiabilities: "10418", totalEquity: "18373", operatingCashFlow: "4694", investingCashFlow: "-3892", financingCashFlow: "-2654", freeCashFlow: "4694" },
-        { period: "2019", revenue: "10918", revenueGrowth: "-6.81", costOfRevenue: "4150", grossProfit: "6768", totalAssets: "17315", totalLiabilities: "6232", totalEquity: "11083", operatingCashFlow: "4272", investingCashFlow: "-2987", financingCashFlow: "-1876", freeCashFlow: "4272" }
+        { period: "2023", revenue: "60922", revenueGrowth: "125.85", costOfRevenue: "16621", grossProfit: "44301", totalAssets: "110716", totalLiabilities: "42781", totalEquity: "67935", operatingCashFlow: "27021", investingCashFlow: "-15783", financingCashFlow: "-8762", freeCashFlow: "27021", sga: "2654", researchDevelopment: "8675", operatingExpenses: "11329", operatingIncome: "32972", netIncome: "29760", ebitda: "34480" },
+        { period: "2022", revenue: "26974", revenueGrowth: "0.22", costOfRevenue: "11618", grossProfit: "15356", totalAssets: "44187", totalLiabilities: "15892", totalEquity: "28295", operatingCashFlow: "3808", investingCashFlow: "-7225", financingCashFlow: "-10413", freeCashFlow: "3808", sga: "2440", researchDevelopment: "7339", operatingExpenses: "9779", operatingIncome: "5577", netIncome: "4368", ebitda: "7121" },
+        { period: "2021", revenue: "26914", revenueGrowth: "61.40", costOfRevenue: "9439", grossProfit: "17475", totalAssets: "44187", totalLiabilities: "15892", totalEquity: "28295", operatingCashFlow: "8132", investingCashFlow: "-4485", financingCashFlow: "-3128", freeCashFlow: "8132", sga: "2166", researchDevelopment: "5268", operatingExpenses: "7434", operatingIncome: "10041", netIncome: "9752", ebitda: "11215" },
+        { period: "2020", revenue: "16675", revenueGrowth: "52.73", costOfRevenue: "6118", grossProfit: "10557", totalAssets: "28791", totalLiabilities: "10418", totalEquity: "18373", operatingCashFlow: "4694", investingCashFlow: "-3892", financingCashFlow: "-2654", freeCashFlow: "4694", sga: "1912", researchDevelopment: "3924", operatingExpenses: "5836", operatingIncome: "4721", netIncome: "4332", ebitda: "5819" },
+        { period: "2019", revenue: "10918", revenueGrowth: "-6.81", costOfRevenue: "4150", grossProfit: "6768", totalAssets: "17315", totalLiabilities: "6232", totalEquity: "11083", operatingCashFlow: "4272", investingCashFlow: "-2987", financingCashFlow: "-1876", freeCashFlow: "4272", sga: "1093", researchDevelopment: "2829", operatingExpenses: "3922", operatingIncome: "2846", netIncome: "2796", ebitda: "3227" }
       ]
     };
 
@@ -69,7 +69,13 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       operatingCashFlow: "Operating Cash Flow",
       investingCashFlow: "Investing Cash Flow",
       financingCashFlow: "Financing Cash Flow",
-      freeCashFlow: "Free Cash Flow"
+      freeCashFlow: "Free Cash Flow",
+      sga: "SG&A",
+      researchDevelopment: "R&D",
+      operatingExpenses: "Operating Expenses",
+      operatingIncome: "Operating Income",
+      netIncome: "Net Income",
+      ebitda: "EBITDA"
     };
     return metrics[metricId as keyof typeof metrics] || metricId;
   };
