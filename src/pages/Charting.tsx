@@ -6,7 +6,7 @@ import { MetricsSearch } from "@/components/MetricsSearch";
 import { CompanySearch } from "@/components/CompanySearch";
 import { useState } from "react";
 import { TimeRangePanel } from "@/components/financials/TimeRangePanel";
-import { StockChart } from "@/components/StockChart";
+import { MetricChart } from "@/components/financials/MetricChart";
 import { financialData } from "@/data/financialData";
 
 const Charting = () => {
@@ -37,7 +37,10 @@ const Charting = () => {
     const companyData = financialData[selectedCompany.ticker]?.annual || [];
     return companyData.map(period => ({
       period: period.period,
-      value: parseFloat(period[selectedMetrics[0] as keyof typeof period] || '0')
+      metrics: [{
+        name: selectedMetrics[0],
+        value: parseFloat(period[selectedMetrics[0] as keyof typeof period]?.replace(/,/g, '') || '0')
+      }]
     }));
   };
 
@@ -111,7 +114,11 @@ const Charting = () => {
                       timePeriods={timePeriods}
                     />
                     <div className="h-[500px]">
-                      <StockChart ticker={selectedCompany?.ticker} />
+                      <MetricChart 
+                        data={getChartData() || []}
+                        metrics={selectedMetrics}
+                        chartType="line"
+                      />
                     </div>
                   </>
                 )}
