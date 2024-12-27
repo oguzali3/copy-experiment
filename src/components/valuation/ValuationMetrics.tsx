@@ -8,6 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { MetricChart } from "../financials/MetricChart";
 
 interface ValuationMetric {
@@ -153,34 +154,29 @@ export const ValuationMetrics = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Metric</TableHead>
-              <TableHead className="text-right">2019</TableHead>
-              <TableHead className="text-right">2020</TableHead>
-              <TableHead className="text-right">2021</TableHead>
-              <TableHead className="text-right">2022</TableHead>
-              <TableHead className="text-right">2023</TableHead>
-              <TableHead className="text-right">2024</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
+              {["2019", "2020", "2021", "2022", "2023", "2024"].map((year) => (
+                <TableHead key={year} className="text-right min-w-[120px]">{year}</TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
             {valuationMetrics.map((metric) => (
               <TableRow key={metric.name}>
-                <TableCell className="font-medium">{metric.name}</TableCell>
+                <TableCell className="w-[50px] pr-0">
+                  <Checkbox
+                    id={`checkbox-${metric.name}`}
+                    checked={selectedMetrics.includes(metric.name)}
+                    onCheckedChange={() => handleMetricSelect(metric.name)}
+                  />
+                </TableCell>
+                <TableCell className="font-medium bg-gray-50">{metric.name}</TableCell>
                 {["2019", "2020", "2021", "2022", "2023", "2024"].map((year) => (
                   <TableCell key={year} className="text-right">
                     {metric.historicalData[year]}
                   </TableCell>
                 ))}
-                <TableCell className="text-right">
-                  <Button
-                    variant={selectedMetrics.includes(metric.name) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleMetricSelect(metric.name)}
-                  >
-                    {selectedMetrics.includes(metric.name) ? "Selected" : "Select"}
-                  </Button>
-                </TableCell>
               </TableRow>
             ))}
           </TableBody>
