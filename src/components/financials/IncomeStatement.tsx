@@ -1,7 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState } from "react";
-import { MetricChart } from "./MetricChart";
 
 interface IncomeStatementProps {
   timeFrame: "annual" | "quarterly" | "ttm";
@@ -70,17 +68,6 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange }:
 
   return (
     <div className="space-y-6">
-      {selectedMetrics.length > 0 && (
-        <div className="space-y-4">
-          {selectedMetrics.map(metricId => (
-            <MetricChart 
-              key={metricId}
-              data={getChartData(metricId)}
-              metric={metrics.find(m => m.id === metricId)?.label || ''}
-            />
-          ))}
-        </div>
-      )}
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
