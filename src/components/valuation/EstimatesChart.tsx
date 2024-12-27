@@ -43,9 +43,15 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
     })
   );
 
-  // Split data into actual and estimated values
+  // Create separate datasets while maintaining data continuity
+  const lastActualDataPoint = chartData?.find((item, index, arr) => 
+    !item.isEstimate && arr[index + 1]?.isEstimate
+  );
+
   const actualData = chartData?.filter(item => !item.isEstimate);
-  const estimatedData = chartData?.filter(item => item.isEstimate);
+  const estimatedData = lastActualDataPoint 
+    ? [lastActualDataPoint, ...chartData?.filter(item => item.isEstimate)]
+    : chartData?.filter(item => item.isEstimate);
 
   return (
     <div className="space-y-6">
@@ -157,6 +163,7 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                 stroke="#2563eb"
                 strokeWidth={2}
                 dot={false}
+                connectNulls
               />
               {/* Estimated Data Line (Dashed) */}
               <Line
@@ -167,6 +174,7 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 dot={false}
+                connectNulls
               />
             </LineChart>
           </ResponsiveContainer>
