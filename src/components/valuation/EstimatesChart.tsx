@@ -43,6 +43,10 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
     })
   );
 
+  // Split data into actual and estimated values
+  const actualData = chartData?.filter(item => !item.isEstimate);
+  const estimatedData = chartData?.filter(item => item.isEstimate);
+
   return (
     <div className="space-y-6">
       <div className="space-y-6 border rounded-xl p-6">
@@ -145,12 +149,23 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                     formatters.default)(value)
                 }
               />
+              {/* Actual Data Line */}
               <Line
                 type="monotone"
+                data={actualData}
                 dataKey="value"
                 stroke="#2563eb"
                 strokeWidth={2}
-                strokeDasharray={(d: any) => (d.isEstimate ? "5 5" : "0")}
+                dot={false}
+              />
+              {/* Estimated Data Line (Dashed) */}
+              <Line
+                type="monotone"
+                data={estimatedData}
+                dataKey="value"
+                stroke="#2563eb"
+                strokeWidth={2}
+                strokeDasharray="5 5"
                 dot={false}
               />
             </LineChart>
