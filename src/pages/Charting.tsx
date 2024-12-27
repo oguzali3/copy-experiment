@@ -8,13 +8,15 @@ import { useState } from "react";
 import { TimeRangePanel } from "@/components/financials/TimeRangePanel";
 import { MetricChart } from "@/components/financials/MetricChart";
 import { financialData } from "@/data/financialData";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Charting = () => {
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [sliderValue, setSliderValue] = useState([0, 4]);
+  const [chartType, setChartType] = useState<"bar" | "line">("line");
 
-  const timePeriods = ["1D", "5D", "1M", "6M", "1Y"];
+  const timePeriods = ["2019", "2020", "2021", "2022", "2023"];
 
   const handleMetricSelect = (metricId: string) => {
     if (!selectedMetrics.includes(metricId)) {
@@ -35,13 +37,22 @@ const Charting = () => {
     if (!selectedCompany?.ticker || selectedMetrics.length === 0) return null;
     
     const companyData = financialData[selectedCompany.ticker]?.annual || [];
-    return companyData.map(period => ({
-      period: period.period,
-      metrics: [{
-        name: selectedMetrics[0],
-        value: parseFloat(period[selectedMetrics[0] as keyof typeof period]?.replace(/,/g, '') || '0')
-      }]
-    }));
+    
+    // Filter data based on the selected time range
+    const filteredData = companyData
+      .filter(item => {
+        const year = parseInt(item.period);
+        return year >= 2019 + sliderValue[0] && year <= 2019 + sliderValue[1];
+      })
+      .map(period => ({
+        period: period.period,
+        metrics: selectedMetrics.map(metricId => ({
+          name: metricId,
+          value: parseFloat(period[metricId as keyof typeof period]?.replace(/,/g, '') || '0')
+        }))
+      }));
+
+    return filteredData;
   };
 
   return (
@@ -106,9 +117,20 @@ const Charting = () => {
 
                 {selectedCompany && selectedMetrics.length > 0 && getChartData() && (
                   <>
+                    <div className="flex justify-between items-center">
+                      <Select value={chartType} onValueChange={(value: "bar" | "line") => setChartType(value)}>
+                        <SelectTrigger className="w-[120px]">
+                          <SelectValue placeholder="Chart Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bar">Bar Chart</SelectItem>
+                          <SelectItem value="line">Line Chart</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <TimeRangePanel
-                      startDate="Jan 2024"
-                      endDate="Mar 2024"
+                      startDate={`December 31, 20${19 + sliderValue[0]}`}
+                      endDate={`December 31, 20${19 + sliderValue[1]}`}
                       sliderValue={sliderValue}
                       onSliderChange={handleSliderChange}
                       timePeriods={timePeriods}
@@ -117,7 +139,7 @@ const Charting = () => {
                       <MetricChart 
                         data={getChartData() || []}
                         metrics={selectedMetrics}
-                        chartType="line"
+                        chartType={chartType}
                       />
                     </div>
                   </>
