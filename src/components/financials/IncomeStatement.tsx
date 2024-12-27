@@ -55,12 +55,10 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange }:
   ];
 
   const handleMetricToggle = (metricId: string) => {
-    onMetricsChange(prev => {
-      if (prev.includes(metricId)) {
-        return prev.filter(id => id !== metricId);
-      }
-      return [...prev, metricId];
-    });
+    const newMetrics = selectedMetrics.includes(metricId)
+      ? selectedMetrics.filter(id => id !== metricId)
+      : [...selectedMetrics, metricId];
+    onMetricsChange(newMetrics);
   };
 
   const getChartData = (metricId: string) => {

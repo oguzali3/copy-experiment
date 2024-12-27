@@ -7,6 +7,7 @@ import { CashFlow } from "./financials/CashFlow";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
 import { TimeRangePanel } from "./financials/TimeRangePanel";
+import { MetricChart } from "./financials/MetricChart";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
@@ -62,6 +63,26 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
           </RadioGroup>
         </div>
 
+        {selectedMetrics.length > 0 && (
+          <div className="space-y-4">
+            {selectedMetrics.map(metricId => (
+              <MetricChart 
+                key={metricId}
+                data={[]} // This will be populated by the child component
+                metric={metricId}
+              />
+            ))}
+          </div>
+        )}
+
+        <TimeRangePanel
+          startDate={startDate}
+          endDate={endDate}
+          sliderValue={sliderValue}
+          onSliderChange={handleSliderChange}
+          timePeriods={timePeriods}
+        />
+
         <Tabs defaultValue="income" className="w-full">
           <TabsList className="w-full justify-start mb-4">
             <TabsTrigger value="income">Income Statement</TabsTrigger>
@@ -88,14 +109,6 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
             </div>
           </TabsContent>
         </Tabs>
-
-        <TimeRangePanel
-          startDate={startDate}
-          endDate={endDate}
-          sliderValue={sliderValue}
-          onSliderChange={handleSliderChange}
-          timePeriods={timePeriods}
-        />
       </div>
     </Card>
   );
