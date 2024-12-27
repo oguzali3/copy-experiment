@@ -39,10 +39,16 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       ]
     };
 
-    return data.annual.map(item => ({
-      period: item.period,
-      value: parseFloat(item[metricId as keyof typeof item].replace(/,/g, '')),
-    }));
+    // Filter data based on the selected time range
+    return data.annual
+      .filter(item => {
+        const year = parseInt(item.period);
+        return year >= 2019 + sliderValue[0] && year <= 2019 + sliderValue[1];
+      })
+      .map(item => ({
+        period: item.period,
+        value: parseFloat(item[metricId as keyof typeof item].replace(/,/g, '')),
+      }));
   };
 
   // Get metric label
