@@ -15,6 +15,7 @@ import { ValuationMetrics } from "@/components/valuation/ValuationMetrics";
 import { TranscriptsContent } from "@/components/analysis/TranscriptsContent";
 import { FilingsContent } from "@/components/analysis/FilingsContent";
 import { OwnershipTabs } from "@/components/ownership/OwnershipTabs";
+import { StockChart } from "@/components/StockChart";
 
 // Company data mapping (in a real app, this would come from an API)
 const companyDataMap: Record<string, any> = {
