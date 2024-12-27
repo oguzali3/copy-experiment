@@ -4,13 +4,13 @@ import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { UserCircle, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ScreeningSearch } from "@/components/screening/ScreeningSearch";
 import { ScreeningTable } from "@/components/screening/ScreeningTable";
 import { ScreeningMetric } from "@/types/screening";
+import { MetricInput } from "@/components/screening/MetricInput";
 
 const Screening = () => {
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
@@ -199,35 +199,12 @@ const Screening = () => {
                 {selectedMetrics.length > 0 && (
                   <div className="mt-4 space-y-4">
                     {selectedMetrics.map(metric => (
-                      <Card key={metric.id} className="p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">{metric.name}</span>
-                          <X
-                            className="h-4 w-4 cursor-pointer text-gray-500 hover:text-red-500"
-                            onClick={() => handleMetricRemove(metric.id)}
-                          />
-                        </div>
-                        <div className="flex gap-4">
-                          <div className="flex-1">
-                            <Label>Min</Label>
-                            <Input
-                              type="number"
-                              placeholder="Min value"
-                              value={metric.min}
-                              onChange={(e) => handleMetricRangeChange(metric.id, e.target.value, metric.max || '')}
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <Label>Max</Label>
-                            <Input
-                              type="number"
-                              placeholder="Max value"
-                              value={metric.max}
-                              onChange={(e) => handleMetricRangeChange(metric.id, metric.min || '', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      </Card>
+                      <MetricInput
+                        key={metric.id}
+                        metric={metric}
+                        onRemove={handleMetricRemove}
+                        onChange={handleMetricRangeChange}
+                      />
                     ))}
                   </div>
                 )}
