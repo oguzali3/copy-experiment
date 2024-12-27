@@ -28,7 +28,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   };
 
   // Sample data for metrics (this would normally come from your data source)
-  const getMetricData = (metricId: string) => {
+  const getMetricData = (metrics: string[]) => {
     const data = {
       annual: [
         { period: "2023", revenue: "60922", revenueGrowth: "125.85", costOfRevenue: "16621", grossProfit: "44301", totalAssets: "110716", totalLiabilities: "42781", totalEquity: "67935", operatingCashFlow: "27021", investingCashFlow: "-15783", financingCashFlow: "-8762", freeCashFlow: "27021" },
@@ -40,15 +40,19 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     };
 
     // Filter data based on the selected time range
-    return data.annual
+    const filteredData = data.annual
       .filter(item => {
         const year = parseInt(item.period);
         return year >= 2019 + sliderValue[0] && year <= 2019 + sliderValue[1];
-      })
-      .map(item => ({
-        period: item.period,
+      });
+
+    return filteredData.map(item => ({
+      period: item.period,
+      metrics: metrics.map(metricId => ({
+        name: getMetricLabel(metricId),
         value: parseFloat(item[metricId as keyof typeof item].replace(/,/g, '')),
-      }));
+      })),
+    }));
   };
 
   // Get metric label
@@ -74,15 +78,10 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       {selectedMetrics.length > 0 && (
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">Selected Metrics</h2>
-          <div className="space-y-4">
-            {selectedMetrics.map(metricId => (
-              <MetricChart 
-                key={metricId}
-                data={getMetricData(metricId)}
-                metric={getMetricLabel(metricId)}
-              />
-            ))}
-          </div>
+          <MetricChart 
+            data={getMetricData(selectedMetrics)}
+            metrics={selectedMetrics.map(getMetricLabel)}
+          />
         </Card>
       )}
       

@@ -1,14 +1,28 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface MetricChartProps {
   data: Array<{
     period: string;
-    value: number;
+    metrics: Array<{
+      name: string;
+      value: number;
+    }>;
   }>;
-  metric: string;
+  metrics: string[];
 }
 
-export const MetricChart = ({ data, metric }: MetricChartProps) => {
+const COLORS = [
+  "#0EA5E9", // sky blue
+  "#10B981", // emerald
+  "#F59E0B", // amber
+  "#EC4899", // pink
+  "#8B5CF6", // violet
+  "#14B8A6", // teal
+  "#F43F5E", // rose
+  "#6366F1", // indigo
+];
+
+export const MetricChart = ({ data, metrics }: MetricChartProps) => {
   const formatYAxis = (value: number) => {
     if (value >= 1000000000) return `$${(value / 1000000000).toFixed(1)}B`;
     if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
@@ -18,10 +32,9 @@ export const MetricChart = ({ data, metric }: MetricChartProps) => {
 
   return (
     <div className="w-full bg-white p-4 rounded-lg border">
-      <h3 className="text-lg font-semibold mb-4">{metric}</h3>
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               dataKey="period" 
@@ -32,7 +45,7 @@ export const MetricChart = ({ data, metric }: MetricChartProps) => {
               tick={{ fontSize: 12 }}
             />
             <Tooltip 
-              formatter={(value: number) => [`$${value.toLocaleString()}`, metric]}
+              formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]}
               contentStyle={{
                 backgroundColor: 'white',
                 border: '1px solid #e5e7eb',
@@ -40,12 +53,19 @@ export const MetricChart = ({ data, metric }: MetricChartProps) => {
                 boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
               }}
             />
-            <Bar 
-              dataKey="value" 
-              fill="#0EA5E9"
-              radius={[4, 4, 0, 0]}
-            />
-          </BarChart>
+            <Legend />
+            {metrics.map((metric, index) => (
+              <Line
+                key={metric}
+                type="monotone"
+                dataKey={`metrics[${index}].value`}
+                name={metric}
+                stroke={COLORS[index % COLORS.length]}
+                dot={false}
+                strokeWidth={2}
+              />
+            ))}
+          </LineChart>
         </ResponsiveContainer>
       </div>
     </div>
