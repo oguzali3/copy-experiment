@@ -1,4 +1,5 @@
-import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ComposedChart } from 'recharts';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface MetricChartProps {
   data: Array<{
@@ -10,11 +11,18 @@ interface MetricChartProps {
   }>;
   metrics: string[];
   chartType: 'bar' | 'line';
-  ticker?: string;  // Add ticker to props
+  ticker?: string;
+  metricTypes: Record<string, 'bar' | 'line'>;
+  onMetricTypeChange: (metric: string, type: 'bar' | 'line') => void;
 }
 
-export const MetricChart = ({ data, metrics, chartType, ticker }: MetricChartProps) => {
-  // Transform data for Recharts
+export const MetricChart = ({ 
+  data, 
+  metrics, 
+  ticker,
+  metricTypes,
+  onMetricTypeChange 
+}: MetricChartProps) => {
   const transformedData = data.map(item => {
     const transformed: { [key: string]: string | number } = { period: item.period };
     item.metrics.forEach(metric => {
@@ -24,12 +32,9 @@ export const MetricChart = ({ data, metrics, chartType, ticker }: MetricChartPro
   });
 
   const getMetricColor = (index: number): string => {
-    // Professional color palette
-    if (index === 0) return '#1A237E'; // Navy blue
-    if (index === 1) return '#FB8C00'; // Matte orange
-    if (index === 2) return '#7E57C2'; // Matte purple
-    
-    // Random muted colors for subsequent metrics
+    if (index === 0) return '#1A237E';
+    if (index === 1) return '#FB8C00';
+    if (index === 2) return '#7E57C2';
     return `hsl(${Math.random() * 360}, 50%, 45%)`;
   };
 
@@ -83,56 +88,39 @@ export const MetricChart = ({ data, metrics, chartType, ticker }: MetricChartPro
           }}
           labelStyle={{ color: '#374151', fontWeight: 600, marginBottom: '4px' }}
         />
-        <Legend 
-          formatter={(value) => (
-            <span style={{ color: '#374151', marginLeft: '8px' }}>
-              {`${ticker || ''} - ${value}`}
-            </span>
-          )}
-          wrapperStyle={{ 
-            paddingTop: '20px',
-            fontSize: '13px',
-            fontWeight: 500
-          }}
-          iconType="square"
-          align="left"
-        />
       </>
     );
 
-    if (chartType === 'bar') {
-      return (
-        <BarChart {...commonProps}>
-          {commonChildren}
-          {metrics.map((metric, index) => (
-            <Bar
-              key={metric}
-              dataKey={metric}
-              fill={getMetricColor(index)}
-              name={metric}
-              radius={[0, 0, 0, 0]} // Sharp edges
-              maxBarSize={50}
-            />
-          ))}
-        </BarChart>
-      );
-    }
-
     return (
-      <LineChart {...commonProps}>
+      <ComposedChart {...commonProps}>
         {commonChildren}
-        {metrics.map((metric, index) => (
-          <Line
-            key={metric}
-            type="monotone"
-            dataKey={metric}
-            stroke={getMetricColor(index)}
-            name={metric}
-            dot={false}
-            strokeWidth={2}
-          />
-        ))}
-      </LineChart>
+        {metrics.map((metric, index) => {
+          const color = getMetricColor(index);
+          if (metricTypes[metric] === 'bar') {
+            return (
+              <Bar
+                key={metric}
+                dataKey={metric}
+                fill={color}
+                name={`${ticker} - ${metric}`}
+                radius={[0, 0, 0, 0]}
+                maxBarSize={50}
+              />
+            );
+          }
+          return (
+            <Line
+              key={metric}
+              type="monotone"
+              dataKey={metric}
+              stroke={color}
+              name={`${ticker} - ${metric}`}
+              dot={false}
+              strokeWidth={2}
+            />
+          );
+        })}
+      </ComposedChart>
     );
   };
 
@@ -145,11 +133,32 @@ export const MetricChart = ({ data, metrics, chartType, ticker }: MetricChartPro
   }
 
   return (
-    <div className="w-full bg-white p-4 rounded-lg border">
-      <div className="h-[300px]">
-        <ResponsiveContainer width="100%" height="100%">
-          {renderChart()}
-        </ResponsiveContainer>
+    <div className="space-y-4">
+      <div className="space-y-2">
+        {metrics.map((metric, index) => (
+          <div key={metric} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+            <span className="font-medium text-sm text-gray-700">{metric}</span>
+            <Select
+              value={metricTypes[metric]}
+              onValueChange={(value: 'bar' | 'line') => onMetricTypeChange(metric, value)}
+            >
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Chart Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="bar">Bar Chart</SelectItem>
+                <SelectItem value="line">Line Chart</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        ))}
+      </div>
+      <div className="w-full bg-white p-4 rounded-lg border">
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            {renderChart()}
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

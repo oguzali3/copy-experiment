@@ -8,7 +8,6 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
 import { TimeRangePanel } from "./financials/TimeRangePanel";
 import { MetricChart } from "./financials/MetricChart";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { financialData } from "@/data/financialData";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
@@ -17,12 +16,29 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [endDate, setEndDate] = useState("December 31, 2023");
   const [sliderValue, setSliderValue] = useState([0, 4]);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
-  const [chartType, setChartType] = useState<"bar" | "line">("bar");
+  const [metricTypes, setMetricTypes] = useState<Record<string, 'bar' | 'line'>>({});
 
   // Reset selected metrics when ticker changes
   React.useEffect(() => {
     setSelectedMetrics([]);
+    setMetricTypes({});
   }, [ticker]);
+
+  // Initialize chart type for new metrics
+  React.useEffect(() => {
+    const newMetricTypes = { ...metricTypes };
+    selectedMetrics.forEach(metric => {
+      if (!newMetricTypes[metric]) {
+        // Set default chart type based on metric name
+        if (metric.toLowerCase().includes('margin') || metric.toLowerCase().includes('growth')) {
+          newMetricTypes[metric] = 'line';
+        } else {
+          newMetricTypes[metric] = 'bar';
+        }
+      }
+    });
+    setMetricTypes(newMetricTypes);
+  }, [selectedMetrics]);
 
   // Define the available time periods
   const timePeriods = [
@@ -33,6 +49,13 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     setSliderValue(value);
     setStartDate(`December 31, 20${19 + value[0]}`);
     setEndDate(`December 31, 20${19 + value[1]}`);
+  };
+
+  const handleMetricTypeChange = (metric: string, type: 'bar' | 'line') => {
+    setMetricTypes(prev => ({
+      ...prev,
+      [metric]: type
+    }));
   };
 
   const getMetricData = (metrics: string[]) => {
@@ -82,22 +105,15 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     <div className="space-y-6">
       {selectedMetrics.length > 0 && (
         <Card className="p-6">
-          <div className="flex justify-between items-center mb-4">
+          <div className="mb-4">
             <h2 className="text-lg font-semibold">Selected Metrics</h2>
-            <Select value={chartType} onValueChange={(value: "bar" | "line") => setChartType(value)}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Chart Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="bar">Bar Chart</SelectItem>
-                <SelectItem value="line">Line Chart</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
           <MetricChart 
             data={getMetricData(selectedMetrics)}
             metrics={selectedMetrics.map(getMetricLabel)}
-            chartType={chartType}
+            ticker={ticker}
+            metricTypes={metricTypes}
+            onMetricTypeChange={handleMetricTypeChange}
           />
         </Card>
       )}
