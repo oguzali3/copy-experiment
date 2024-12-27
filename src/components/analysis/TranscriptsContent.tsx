@@ -83,6 +83,81 @@ I'd now like to turn the call over to Tim for introductory remarks.`
     id: "10",
     event: "Apple Inc., Q4 2022 Earnings Call, Oct 27, 2022",
     date: "27 Ekim 2022"
+  },
+  {
+    id: "11",
+    event: "Apple Inc., Q3 2022 Earnings Call, Jul 28, 2022",
+    date: "28 Temmuz 2022"
+  },
+  {
+    id: "12",
+    event: "Apple Inc., Q2 2022 Earnings Call, Apr 28, 2022",
+    date: "28 Nisan 2022"
+  },
+  {
+    id: "13",
+    event: "Apple Inc., Q1 2022 Earnings Call, Jan 27, 2022",
+    date: "27 Ocak 2022"
+  },
+  {
+    id: "14",
+    event: "Apple Inc., Q4 2021 Earnings Call, Oct 28, 2021",
+    date: "28 Ekim 2021"
+  },
+  {
+    id: "15",
+    event: "Apple Inc., Q3 2021 Earnings Call, Jul 27, 2021",
+    date: "27 Temmuz 2021"
+  },
+  {
+    id: "16",
+    event: "Apple Inc., Q2 2021 Earnings Call, Apr 28, 2021",
+    date: "28 Nisan 2021"
+  },
+  {
+    id: "17",
+    event: "Apple Inc., Q1 2021 Earnings Call, Jan 27, 2021",
+    date: "27 Ocak 2021"
+  },
+  {
+    id: "18",
+    event: "Apple Inc., Q4 2020 Earnings Call, Oct 29, 2020",
+    date: "29 Ekim 2020"
+  },
+  {
+    id: "19",
+    event: "Apple Inc., Q3 2020 Earnings Call, Jul 30, 2020",
+    date: "30 Temmuz 2020"
+  },
+  {
+    id: "20",
+    event: "Apple Inc., Q2 2020 Earnings Call, Apr 30, 2020",
+    date: "30 Nisan 2020"
+  },
+  {
+    id: "21",
+    event: "Apple Inc., Q1 2020 Earnings Call, Jan 28, 2020",
+    date: "28 Ocak 2020"
+  },
+  {
+    id: "22",
+    event: "Apple Inc., Q4 2019 Earnings Call, Oct 30, 2019",
+    date: "30 Ekim 2019"
+  },
+  {
+    id: "23",
+    event: "Apple Inc., Q3 2019 Earnings Call, Jul 30, 2019",
+    date: "30 Temmuz 2019"
+  },
+  {
+    id: "24",
+    event: "Apple Inc., Q2 2019 Earnings Call, Apr 30, 2019",
+    date: "30 Nisan 2019"
+  },
+  {
+    id: "25",
+    event: "Apple Inc., Q1 2019 Earnings Call, Jan 29, 2019",
+    date: "29 Ocak 2019"
   }
 ];
 
