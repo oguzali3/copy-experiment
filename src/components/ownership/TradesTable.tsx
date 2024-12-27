@@ -30,7 +30,32 @@ const tradesData = {
     // Add more mock data as needed
   ],
   MSFT: [
-    // Add Microsoft mock data
+    {
+      insider: "Bradford L. Smith",
+      title: "Vice Chair and President",
+      type: "Sale",
+      sharesTraded: "-1,235",
+      percentTraded: "-0.00015",
+      percentChange: "-1.23",
+      endShares: "98.45K",
+      price: "$389.45",
+      value: "$481.12K",
+      filingDate: "2024-12-15",
+      transactionDate: "2024-12-15"
+    },
+    {
+      insider: "Judson Althoff",
+      title: "EVP & Chief Commercial Officer",
+      type: "Purchase",
+      sharesTraded: "+850",
+      percentTraded: "+0.00012",
+      percentChange: "+0.95",
+      endShares: "89.72K",
+      price: "$392.18",
+      value: "$333.35K",
+      filingDate: "2024-12-14",
+      transactionDate: "2024-12-14"
+    }
   ]
 };
 

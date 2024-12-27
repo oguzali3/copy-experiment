@@ -38,7 +38,36 @@ const holdersData = {
     // Add more mock data as needed
   ],
   MSFT: [
-    // Add Microsoft mock data
+    {
+      name: "The Vanguard Group, Inc.",
+      date: "2024-09-30",
+      percentOwned: "8.95",
+      marketValue: "$315.62B",
+      shares: "789.32M",
+      changeShares: "+5.43M",
+      changeSharesPercent: 0.69,
+      percentPortfolio: "4.89"
+    },
+    {
+      name: "BlackRock Inc.",
+      date: "2024-09-30",
+      percentOwned: "7.23",
+      marketValue: "$254.89B",
+      shares: "637.15M",
+      changeShares: "-3.21M",
+      changeSharesPercent: -0.50,
+      percentPortfolio: "3.95"
+    },
+    {
+      name: "State Street Corporation",
+      date: "2024-09-30",
+      percentOwned: "4.12",
+      marketValue: "$145.23B",
+      shares: "363.48M",
+      changeShares: "+1.87M",
+      changeSharesPercent: 0.52,
+      percentPortfolio: "2.78"
+    }
   ]
 };
 

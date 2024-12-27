@@ -37,9 +37,17 @@ const insidersData = {
       name: "Satya Nadella",
       title: "Chief Executive Officer",
       date: "2024-02-15",
-      shares: "859,614",
-      percentOwned: "0.01156",
-      marketValue: "$365.51M"
+      shares: "1,159,614",
+      percentOwned: "0.01556",
+      marketValue: "$465.51M"
+    },
+    {
+      name: "Amy Hood",
+      title: "Chief Financial Officer",
+      date: "2024-02-12",
+      shares: "658,321",
+      percentOwned: "0.00886",
+      marketValue: "$264.88M"
     },
     // Add more mock data as needed
   ]
