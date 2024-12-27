@@ -94,10 +94,16 @@ const Analysis = () => {
             <FinancialStatements ticker={selectedStock.ticker} />
           </div>
         );
-      case "valuation":
+      case "estimates":
         return (
           <div className="space-y-6">
             <EstimatesChart ticker={selectedStock.ticker} />
+          </div>
+        );
+      case "valuation":
+        return (
+          <div className="flex items-center justify-center h-[500px]">
+            <p className="text-gray-500">Valuation content is coming soon...</p>
           </div>
         );
       default:
