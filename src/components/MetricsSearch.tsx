@@ -13,51 +13,40 @@ import { Button } from "./ui/button";
 
 const categories = [
   {
-    name: "Popular Selections",
-    metrics: [
-      { name: "EPS Diluted", description: "Earnings per share on a diluted basis" },
-      { name: "Total Revenues", description: "Total company revenue" },
-      { name: "Diluted EPS 10Y CAGR", description: "10-year compound annual growth rate of diluted EPS" },
-      { name: "Diluted EPS 5Y CAGR", description: "5-year compound annual growth rate of diluted EPS" },
-      { name: "Diluted EPS 3Y CAGR", description: "3-year compound annual growth rate of diluted EPS" },
-    ]
-  },
-  {
     name: "Income Statement",
     metrics: [
-      { name: "Revenue", description: "Company's total revenue" },
-      { name: "Gross Profit", description: "Revenue minus cost of goods sold" },
-      { name: "Operating Income", description: "Profit from operations" },
-      { name: "Net Income", description: "Total earnings or profit" },
+      { id: "revenue", name: "Revenue", description: "Company's total revenue" },
+      { id: "revenueGrowth", name: "Revenue Growth", description: "Year-over-year revenue growth" },
+      { id: "grossProfit", name: "Gross Profit", description: "Revenue minus cost of goods sold" },
+      { id: "operatingIncome", name: "Operating Income", description: "Profit from operations" },
+      { id: "netIncome", name: "Net Income", description: "Total earnings or profit" },
+      { id: "ebitda", name: "EBITDA", description: "Earnings before interest, taxes, depreciation, and amortization" }
     ]
   },
   {
     name: "Balance Sheet",
     metrics: [
-      { name: "Total Assets", description: "Sum of all assets" },
-      { name: "Total Liabilities", description: "Sum of all liabilities" },
-      { name: "Shareholders Equity", description: "Net worth of the company" },
+      { id: "totalAssets", name: "Total Assets", description: "Sum of all assets" },
+      { id: "totalLiabilities", name: "Total Liabilities", description: "Sum of all liabilities" },
+      { id: "totalEquity", name: "Total Equity", description: "Net worth of the company" }
     ]
   },
   {
-    name: "Cash Flow Statement",
+    name: "Cash Flow",
     metrics: [
-      { name: "Operating Cash Flow", description: "Cash from operating activities" },
-      { name: "Free Cash Flow", description: "Operating cash flow minus capital expenditures" },
-      { name: "Capital Expenditure", description: "Funds used to acquire or upgrade assets" },
-    ]
-  },
-  {
-    name: "Ratios",
-    metrics: [
-      { name: "Forward P/E", description: "Price to earnings ratio using forecasted earnings" },
-      { name: "Forward EV/Sales", description: "Enterprise value to sales ratio using forecasted sales" },
-      { name: "Forward EV/FCF", description: "Enterprise value to free cash flow using forecasts" },
+      { id: "operatingCashFlow", name: "Operating Cash Flow", description: "Cash from operating activities" },
+      { id: "investingCashFlow", name: "Investing Cash Flow", description: "Cash used in investing activities" },
+      { id: "financingCashFlow", name: "Financing Cash Flow", description: "Cash from financing activities" },
+      { id: "freeCashFlow", name: "Free Cash Flow", description: "Operating cash flow minus capital expenditures" }
     ]
   }
 ];
 
-export const MetricsSearch = () => {
+interface MetricsSearchProps {
+  onMetricSelect: (metricId: string) => void;
+}
+
+export const MetricsSearch = ({ onMetricSelect }: MetricsSearchProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -68,6 +57,11 @@ export const MetricsSearch = () => {
       metric.description.toLowerCase().includes(searchQuery.toLowerCase())
     )
   })).filter(category => category.metrics.length > 0);
+
+  const handleMetricSelect = (metricId: string) => {
+    onMetricSelect(metricId);
+    setOpen(false);
+  };
 
   return (
     <div className="relative w-full">
@@ -92,8 +86,9 @@ export const MetricsSearch = () => {
               <CommandGroup key={category.name} heading={category.name}>
                 {category.metrics.map((metric) => (
                   <CommandItem
-                    key={metric.name}
+                    key={metric.id}
                     className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
+                    onSelect={() => handleMetricSelect(metric.id)}
                   >
                     <div>
                       <p className="text-sm font-medium">{metric.name}</p>

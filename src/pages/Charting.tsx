@@ -16,9 +16,9 @@ const Charting = () => {
 
   const timePeriods = ["1D", "5D", "1M", "6M", "1Y"];
 
-  const handleMetricSelect = (metric: string) => {
-    if (!selectedMetrics.includes(metric)) {
-      setSelectedMetrics(prev => [...prev, metric]);
+  const handleMetricSelect = (metricId: string) => {
+    if (!selectedMetrics.includes(metricId)) {
+      setSelectedMetrics(prev => [...prev, metricId]);
     }
   };
 
@@ -66,7 +66,7 @@ const Charting = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h2 className="text-sm font-medium mb-2 text-gray-600">Search Metrics</h2>
-              <MetricsSearch />
+              <MetricsSearch onMetricSelect={handleMetricSelect} />
             </div>
             <div>
               <h2 className="text-sm font-medium mb-2 text-gray-600">Search Companies</h2>
