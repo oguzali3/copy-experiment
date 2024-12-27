@@ -10,6 +10,7 @@ import { FinancialStatements } from "@/components/FinancialStatements";
 import { CompanyHeader } from "@/components/analysis/CompanyHeader";
 import { CompanyOverview } from "@/components/analysis/CompanyOverview";
 import { NavigationTabs } from "@/components/analysis/NavigationTabs";
+import { EstimatesChart } from "@/components/valuation/EstimatesChart";
 
 // Default stock data moved to a constant
 const defaultStock = {
@@ -91,6 +92,12 @@ const Analysis = () => {
         return (
           <div className="space-y-6">
             <FinancialStatements ticker={selectedStock.ticker} />
+          </div>
+        );
+      case "valuation":
+        return (
+          <div className="space-y-6">
+            <EstimatesChart ticker={selectedStock.ticker} />
           </div>
         );
       default:
