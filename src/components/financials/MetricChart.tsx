@@ -1,4 +1,4 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface MetricChartProps {
   data: Array<{
@@ -34,7 +34,7 @@ export const MetricChart = ({ data, metrics }: MetricChartProps) => {
     <div className="w-full bg-white p-4 rounded-lg border">
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               dataKey="period" 
@@ -55,17 +55,15 @@ export const MetricChart = ({ data, metrics }: MetricChartProps) => {
             />
             <Legend />
             {metrics.map((metric, index) => (
-              <Line
+              <Bar
                 key={metric}
-                type="monotone"
                 dataKey={`metrics[${index}].value`}
                 name={metric}
-                stroke={COLORS[index % COLORS.length]}
-                dot={false}
-                strokeWidth={2}
+                fill={COLORS[index % COLORS.length]}
+                radius={[4, 4, 0, 0]}
               />
             ))}
-          </LineChart>
+          </BarChart>
         </ResponsiveContainer>
       </div>
     </div>
