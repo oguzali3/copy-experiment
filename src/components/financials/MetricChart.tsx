@@ -10,9 +10,10 @@ interface MetricChartProps {
   }>;
   metrics: string[];
   chartType: 'bar' | 'line';
+  ticker?: string;  // Add ticker to props
 }
 
-export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
+export const MetricChart = ({ data, metrics, chartType, ticker }: MetricChartProps) => {
   // Transform data for Recharts
   const transformedData = data.map(item => {
     const transformed: { [key: string]: string | number } = { period: item.period };
@@ -85,7 +86,7 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
         <Legend 
           formatter={(value) => (
             <span style={{ color: '#374151', marginLeft: '8px' }}>
-              {value}
+              {`${ticker || ''} - ${value}`}
             </span>
           )}
           wrapperStyle={{ 
