@@ -30,7 +30,7 @@ const estimatesData = [
 const formatters = {
   revenue: (value: number) => `$${(value / 1000).toFixed(2)}K`,
   eps: (value: number) => `$${value.toFixed(2)}`,
-  default: (value: number) => value,
+  default: (value: number) => value.toString(), // Convert number to string
 };
 
 export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
