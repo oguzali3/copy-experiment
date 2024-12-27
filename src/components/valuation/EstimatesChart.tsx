@@ -43,12 +43,10 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
     })
   );
 
-  // Create segments for the line
-  const segments = chartData?.map((item, index) => ({
-    ...item,
-    // An item should be dashed if it's an estimate OR if it comes after the last actual data point
-    isDashed: item.isEstimate || (index > 0 && chartData[index - 1].isEstimate),
-  }));
+  // Find the last actual data point index
+  const lastActualIndex = chartData?.findIndex((item, index, arr) => 
+    !item.isEstimate && (index === arr.length - 1 || arr[index + 1]?.isEstimate)
+  );
 
   return (
     <div className="space-y-6">
@@ -124,7 +122,7 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
         <div className="h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={segments}
+              data={chartData}
               margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
             >
               <XAxis
@@ -159,7 +157,7 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                 strokeWidth={2}
                 dot={false}
                 connectNulls
-                strokeDasharray={(props: any) => props.payload.isDashed ? "5 5" : "0"}
+                strokeDasharray={(d: any, i: number) => i > lastActualIndex ? "5 5" : "0"}
               />
             </LineChart>
           </ResponsiveContainer>
