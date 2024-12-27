@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { LayoutGrid, Newspaper, ChartBar, LineChart, MessageSquare, FileText, Briefcase } from "lucide-react";
+import { LayoutGrid, Newspaper, ChartBar, DollarSign, LineChart, MessageSquare, FileText, Briefcase } from "lucide-react";
 
 interface NavigationTabsProps {
   activeTab: string;
@@ -12,6 +12,7 @@ export const NavigationTabs = ({ activeTab, onTabChange }: NavigationTabsProps) 
     { icon: LayoutGrid, label: "Overview", id: "overview" },
     { icon: Newspaper, label: "News", id: "news" },
     { icon: ChartBar, label: "Financials", id: "financials" },
+    { icon: DollarSign, label: "Valuation", id: "valuation" },
     { icon: LineChart, label: "Estimates", id: "estimates" },
     { icon: MessageSquare, label: "Transcripts", id: "transcripts" },
     { icon: FileText, label: "Filings", id: "filings" },
