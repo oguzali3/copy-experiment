@@ -14,7 +14,7 @@ const Charting = () => {
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [sliderValue, setSliderValue] = useState([0, 4]);
-  const [chartType, setChartType] = useState<"bar" | "line">("line");
+  const [metricTypes, setMetricTypes] = useState<Record<string, 'bar' | 'line'>>({});
 
   const timePeriods = ["2019", "2020", "2021", "2022", "2023"];
 
@@ -31,6 +31,24 @@ const Charting = () => {
   const handleSliderChange = (value: number[]) => {
     setSliderValue(value);
   };
+
+  const handleMetricTypeChange = (metric: string, type: 'bar' | 'line') => {
+    setMetricTypes(prev => ({
+      ...prev,
+      [metric]: type
+    }));
+  };
+
+  // Initialize chart type for new metrics
+  React.useEffect(() => {
+    const newMetricTypes = { ...metricTypes };
+    selectedMetrics.forEach(metric => {
+      if (!newMetricTypes[metric]) {
+        newMetricTypes[metric] = metric.toLowerCase().includes('margin') ? 'line' : 'bar';
+      }
+    });
+    setMetricTypes(newMetricTypes);
+  }, [selectedMetrics]);
 
   // Transform financial data for the chart if both company and metrics are selected
   const getChartData = () => {
@@ -118,7 +136,7 @@ const Charting = () => {
                 {selectedCompany && selectedMetrics.length > 0 && getChartData() && (
                   <>
                     <div className="flex justify-between items-center">
-                      <Select value={chartType} onValueChange={(value: "bar" | "line") => setChartType(value)}>
+                      <Select value={metricTypes[selectedMetrics[0]]} onValueChange={(value: "bar" | "line") => handleMetricTypeChange(selectedMetrics[0], value)}>
                         <SelectTrigger className="w-[120px]">
                           <SelectValue placeholder="Chart Type" />
                         </SelectTrigger>
@@ -139,8 +157,9 @@ const Charting = () => {
                       <MetricChart 
                         data={getChartData() || []}
                         metrics={selectedMetrics}
-                        chartType={chartType}
                         ticker={selectedCompany.ticker}
+                        metricTypes={metricTypes}
+                        onMetricTypeChange={handleMetricTypeChange}
                       />
                     </div>
                   </>

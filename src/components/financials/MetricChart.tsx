@@ -10,7 +10,6 @@ interface MetricChartProps {
     }>;
   }>;
   metrics: string[];
-  chartType: 'bar' | 'line';
   ticker?: string;
   metricTypes: Record<string, 'bar' | 'line'>;
   onMetricTypeChange: (metric: string, type: 'bar' | 'line') => void;
@@ -23,10 +22,13 @@ export const MetricChart = ({
   metricTypes,
   onMetricTypeChange 
 }: MetricChartProps) => {
+  // Safely transform the data
   const transformedData = data.map(item => {
     const transformed: { [key: string]: string | number } = { period: item.period };
     item.metrics.forEach(metric => {
-      transformed[metric.name] = metric.value;
+      if (metric && metric.name && typeof metric.value !== 'undefined') {
+        transformed[metric.name] = metric.value;
+      }
     });
     return transformed;
   });
@@ -102,7 +104,7 @@ export const MetricChart = ({
                 key={metric}
                 dataKey={metric}
                 fill={color}
-                name={`${ticker} - ${metric}`}
+                name={ticker ? `${ticker} - ${metric}` : metric}
                 radius={[0, 0, 0, 0]}
                 maxBarSize={50}
               />
@@ -114,7 +116,7 @@ export const MetricChart = ({
               type="monotone"
               dataKey={metric}
               stroke={color}
-              name={`${ticker} - ${metric}`}
+              name={ticker ? `${ticker} - ${metric}` : metric}
               dot={false}
               strokeWidth={2}
             />
