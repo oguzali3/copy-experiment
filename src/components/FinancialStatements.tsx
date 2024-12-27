@@ -11,22 +11,20 @@ import { MetricChart } from "./financials/MetricChart";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
-  const [startDate, setStartDate] = useState("June 30, 2015");
-  const [endDate, setEndDate] = useState("September 30, 2024");
-  const [sliderValue, setSliderValue] = useState([0, 11]);
+  const [startDate, setStartDate] = useState("December 31, 2019");
+  const [endDate, setEndDate] = useState("December 31, 2023");
+  const [sliderValue, setSliderValue] = useState([0, 4]);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
 
   // Define the available time periods
   const timePeriods = [
-    "Jun '15", "Jun '16", "Jun '17", "Jun '18", "Jun '19",
-    "Jun '20", "Jun '21", "Jun '22", "Jun '23", "LTM",
-    "Jun '24", "Jun '26(E)"
+    "2019", "2020", "2021", "2022", "2023"
   ];
 
   const handleSliderChange = (value: number[]) => {
     setSliderValue(value);
-    setStartDate(`June 30, 20${15 + value[0]}`);
-    setEndDate(value[1] === 11 ? "June 30, 2026" : `June 30, 20${15 + value[1]}`);
+    setStartDate(`December 31, 20${19 + value[0]}`);
+    setEndDate(`December 31, 20${19 + value[1]}`);
   };
 
   // Sample data for metrics (this would normally come from your data source)
