@@ -157,9 +157,9 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                 strokeWidth={2}
                 dot={false}
                 connectNulls
-                style={(data: any, index: number) => ({
-                  strokeDasharray: index > (lastActualIndex ?? -1) ? "5 5" : "0"
-                })}
+                strokeDasharray={(index: number) => 
+                  index > (lastActualIndex ?? -1) ? "5 5" : "0"
+                }
               />
             </LineChart>
           </ResponsiveContainer>
