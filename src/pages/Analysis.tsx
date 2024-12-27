@@ -111,7 +111,7 @@ const Analysis = () => {
       case "transcripts":
         return (
           <div className="space-y-6">
-            <TranscriptsContent />
+            <TranscriptsContent ticker={selectedStock.ticker} />
           </div>
         );
       default:
