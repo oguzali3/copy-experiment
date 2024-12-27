@@ -140,6 +140,7 @@ const Charting = () => {
                         data={getChartData() || []}
                         metrics={selectedMetrics}
                         chartType={chartType}
+                        ticker={selectedCompany.ticker}
                       />
                     </div>
                   </>
