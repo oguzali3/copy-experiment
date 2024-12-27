@@ -96,6 +96,28 @@ export const ValuationMetrics = () => {
 
   return (
     <div className="space-y-6">
+      {selectedMetrics.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            {["1M", "3M", "6M", "1Y", "2Y", "5Y"].map((period) => (
+              <Button
+                key={period}
+                variant={timeframe === period ? "default" : "outline"}
+                onClick={() => setTimeframe(period)}
+                size="sm"
+              >
+                {period}
+              </Button>
+            ))}
+          </div>
+          <MetricChart
+            data={mockChartData}
+            metrics={selectedMetrics}
+            chartType="line"
+          />
+        </div>
+      )}
+
       <div className="bg-white rounded-lg border">
         <Table>
           <TableHeader>
@@ -128,28 +150,6 @@ export const ValuationMetrics = () => {
           </TableBody>
         </Table>
       </div>
-
-      {selectedMetrics.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            {["1M", "3M", "6M", "1Y", "2Y", "5Y"].map((period) => (
-              <Button
-                key={period}
-                variant={timeframe === period ? "default" : "outline"}
-                onClick={() => setTimeframe(period)}
-                size="sm"
-              >
-                {period}
-              </Button>
-            ))}
-          </div>
-          <MetricChart
-            data={mockChartData}
-            metrics={selectedMetrics}
-            chartType="line"
-          />
-        </div>
-      )}
     </div>
   );
 };
