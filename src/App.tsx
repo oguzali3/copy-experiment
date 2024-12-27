@@ -10,6 +10,7 @@ import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import Analysis from "./pages/Analysis";
 import CompanyNews from "./pages/CompanyNews";
+import Charting from "./pages/Charting";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/analysis" element={<Analysis />} />
               <Route path="/company/:ticker/news" element={<CompanyNews />} />
+              <Route path="/charting" element={<Charting />} />
             </Routes>
           </BrowserRouter>
         </div>
