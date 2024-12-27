@@ -1,4 +1,4 @@
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 interface MetricChartProps {
   data: Array<{
@@ -9,31 +9,36 @@ interface MetricChartProps {
     }>;
   }>;
   metrics: string[];
-  chartType: "bar" | "line";
+  chartType: 'bar' | 'line';
 }
 
-const COLORS = [
-  "#0EA5E9", // sky blue
-  "#10B981", // emerald
-  "#F59E0B", // amber
-  "#EC4899", // pink
-  "#8B5CF6", // violet
-  "#14B8A6", // teal
-  "#F43F5E", // rose
-  "#6366F1", // indigo
-];
-
 export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
+  // Transform data for Recharts
+  const transformedData = data.map(item => {
+    const transformed: { [key: string]: string | number } = { period: item.period };
+    item.metrics.forEach(metric => {
+      transformed[metric.name] = metric.value;
+    });
+    return transformed;
+  });
+
   const formatYAxis = (value: number) => {
-    if (value >= 1000000000) return `$${(value / 1000000000).toFixed(1)}B`;
-    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-    if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
+    if (value === 0) return '$0';
+    if (Math.abs(value) >= 1e9) {
+      return `$${(value / 1e9).toFixed(1)}B`;
+    }
+    if (Math.abs(value) >= 1e6) {
+      return `$${(value / 1e6).toFixed(1)}M`;
+    }
+    if (Math.abs(value) >= 1e3) {
+      return `$${(value / 1e3).toFixed(1)}K`;
+    }
     return `$${value}`;
   };
 
   const renderChart = () => {
     const commonProps = {
-      data,
+      data: transformedData,
       margin: { top: 20, right: 30, left: 20, bottom: 5 }
     };
 
@@ -62,10 +67,9 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
           {metrics.map((metric, index) => (
             <Bar
               key={metric}
-              dataKey={`metrics[${index}].value`}
+              dataKey={metric}
+              fill={`hsl(${index * (360 / metrics.length)}, 70%, 50%)`}
               name={metric}
-              fill={COLORS[index % COLORS.length]}
-              radius={[4, 4, 0, 0]}
             />
           ))}
         </BarChart>
@@ -79,16 +83,23 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
           <Line
             key={metric}
             type="monotone"
-            dataKey={`metrics[${index}].value`}
+            dataKey={metric}
+            stroke={`hsl(${index * (360 / metrics.length)}, 70%, 50%)`}
             name={metric}
-            stroke={COLORS[index % COLORS.length]}
-            strokeWidth={2}
             dot={false}
           />
         ))}
       </LineChart>
     );
   };
+
+  if (!data || data.length === 0 || !metrics || metrics.length === 0) {
+    return (
+      <div className="w-full bg-white p-4 rounded-lg border flex items-center justify-center h-[300px]">
+        No data available
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-white p-4 rounded-lg border">
