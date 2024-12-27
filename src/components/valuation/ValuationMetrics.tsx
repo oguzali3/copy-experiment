@@ -109,39 +109,6 @@ export const ValuationMetrics = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Metric</TableHead>
-              <TableHead>Value</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {valuationMetrics.map((metric) => (
-              <TableRow key={metric.name}>
-                <TableCell className="font-medium">{metric.name}</TableCell>
-                <TableCell>{metric.value}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {metric.description}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant={selectedMetrics.includes(metric.name) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleMetricSelect(metric.name)}
-                  >
-                    {selectedMetrics.includes(metric.name) ? "Selected" : "Select"}
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
       {selectedMetrics.length > 0 && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -181,6 +148,39 @@ export const ValuationMetrics = () => {
           />
         </div>
       )}
+      
+      <div className="bg-white rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Metric</TableHead>
+              <TableHead>Value</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead className="text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {valuationMetrics.map((metric) => (
+              <TableRow key={metric.name}>
+                <TableCell className="font-medium">{metric.name}</TableCell>
+                <TableCell>{metric.value}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {metric.description}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant={selectedMetrics.includes(metric.name) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleMetricSelect(metric.name)}
+                  >
+                    {selectedMetrics.includes(metric.name) ? "Selected" : "Select"}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };
