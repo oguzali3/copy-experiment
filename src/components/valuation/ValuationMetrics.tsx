@@ -12,41 +12,72 @@ import { MetricChart } from "../financials/MetricChart";
 
 interface ValuationMetric {
   name: string;
-  value: string;
-  description: string;
   trend: "up" | "down" | "neutral";
+  historicalData: {
+    [year: string]: string;
+  };
 }
 
 const valuationMetrics: ValuationMetric[] = [
   { 
     name: "P/E Ratio", 
-    value: "28.5x", 
-    description: "Price to earnings ratio",
-    trend: "up"
+    trend: "up",
+    historicalData: {
+      "2019": "18.2x",
+      "2020": "21.4x",
+      "2021": "24.8x",
+      "2022": "26.3x",
+      "2023": "28.5x",
+      "2024": "29.1x"
+    }
   },
   { 
     name: "P/S Ratio", 
-    value: "6.8x", 
-    description: "Price to sales ratio",
-    trend: "down"
+    trend: "down",
+    historicalData: {
+      "2019": "4.2x",
+      "2020": "5.1x",
+      "2021": "5.8x",
+      "2022": "6.4x",
+      "2023": "6.8x",
+      "2024": "6.5x"
+    }
   },
   { 
     name: "P/B Ratio", 
-    value: "44.6x", 
-    description: "Price to book ratio",
-    trend: "up"
+    trend: "up",
+    historicalData: {
+      "2019": "32.4x",
+      "2020": "35.8x",
+      "2021": "38.9x",
+      "2022": "41.2x",
+      "2023": "44.6x",
+      "2024": "46.2x"
+    }
   },
   { 
     name: "EV/EBITDA", 
-    value: "21.3x", 
-    description: "Enterprise value to EBITDA",
-    trend: "neutral"
+    trend: "neutral",
+    historicalData: {
+      "2019": "15.6x",
+      "2020": "17.2x",
+      "2021": "18.9x",
+      "2022": "20.1x",
+      "2023": "21.3x",
+      "2024": "21.5x"
+    }
   },
   { 
     name: "PEG Ratio", 
-    value: "2.1x", 
-    description: "Price/earnings to growth ratio",
-    trend: "down"
+    trend: "down",
+    historicalData: {
+      "2019": "1.4x",
+      "2020": "1.6x",
+      "2021": "1.8x",
+      "2022": "2.0x",
+      "2023": "2.1x",
+      "2024": "1.9x"
+    }
   }
 ];
 
@@ -123,8 +154,12 @@ export const ValuationMetrics = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Metric</TableHead>
-              <TableHead>Value</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead className="text-right">2019</TableHead>
+              <TableHead className="text-right">2020</TableHead>
+              <TableHead className="text-right">2021</TableHead>
+              <TableHead className="text-right">2022</TableHead>
+              <TableHead className="text-right">2023</TableHead>
+              <TableHead className="text-right">2024</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
@@ -132,10 +167,11 @@ export const ValuationMetrics = () => {
             {valuationMetrics.map((metric) => (
               <TableRow key={metric.name}>
                 <TableCell className="font-medium">{metric.name}</TableCell>
-                <TableCell>{metric.value}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {metric.description}
-                </TableCell>
+                {["2019", "2020", "2021", "2022", "2023", "2024"].map((year) => (
+                  <TableCell key={year} className="text-right">
+                    {metric.historicalData[year]}
+                  </TableCell>
+                ))}
                 <TableCell className="text-right">
                   <Button
                     variant={selectedMetrics.includes(metric.name) ? "default" : "outline"}
