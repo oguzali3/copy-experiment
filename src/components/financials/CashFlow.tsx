@@ -1,14 +1,13 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState } from "react";
 
 interface CashFlowProps {
   timeFrame: "annual" | "quarterly" | "ttm";
+  selectedMetrics: string[];
+  onMetricsChange: (metrics: string[]) => void;
 }
 
-export const CashFlow = ({ timeFrame }: CashFlowProps) => {
-  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
-
+export const CashFlow = ({ timeFrame, selectedMetrics, onMetricsChange }: CashFlowProps) => {
   const data = {
     annual: [
       { year: "2023", operatingCashFlow: "27,021", investingCashFlow: "-15,783", financingCashFlow: "-8,762", freeCashFlow: "27,021" },
@@ -37,46 +36,46 @@ export const CashFlow = ({ timeFrame }: CashFlowProps) => {
   ];
 
   const handleMetricToggle = (metricId: string) => {
-    setSelectedMetrics(prev => {
-      if (prev.includes(metricId)) {
-        return prev.filter(id => id !== metricId);
-      }
-      return [...prev, metricId];
-    });
+    const newMetrics = selectedMetrics.includes(metricId)
+      ? selectedMetrics.filter(id => id !== metricId)
+      : [...selectedMetrics, metricId];
+    onMetricsChange(newMetrics);
   };
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[50px]"></TableHead>
-            <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
-            {currentData.map((row) => (
-              <TableHead key={row.year} className="text-right min-w-[120px]">{row.year}</TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {metrics.map((metric) => (
-            <TableRow key={metric.id}>
-              <TableCell className="w-[50px] pr-0">
-                <Checkbox
-                  id={`checkbox-${metric.id}`}
-                  checked={selectedMetrics.includes(metric.id)}
-                  onCheckedChange={() => handleMetricToggle(metric.id)}
-                />
-              </TableCell>
-              <TableCell className="font-medium bg-gray-50">{metric.label}</TableCell>
+    <div className="space-y-6">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
               {currentData.map((row) => (
-                <TableCell key={`${row.year}-${metric.id}`} className="text-right">
-                  ${row[metric.id as keyof typeof row]}
-                </TableCell>
+                <TableHead key={row.year} className="text-right min-w-[120px]">{row.year}</TableHead>
               ))}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {metrics.map((metric) => (
+              <TableRow key={metric.id}>
+                <TableCell className="w-[50px] pr-0">
+                  <Checkbox
+                    id={`checkbox-${metric.id}`}
+                    checked={selectedMetrics.includes(metric.id)}
+                    onCheckedChange={() => handleMetricToggle(metric.id)}
+                  />
+                </TableCell>
+                <TableCell className="font-medium bg-gray-50">{metric.label}</TableCell>
+                {currentData.map((row) => (
+                  <TableCell key={`${row.year}-${metric.id}`} className="text-right">
+                    ${row[metric.id as keyof typeof row]}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

@@ -31,11 +31,11 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const getMetricData = (metricId: string) => {
     const data = {
       annual: [
-        { period: "2023", revenue: "60922", revenueGrowth: "125.85", costOfRevenue: "16621", grossProfit: "44301" },
-        { period: "2022", revenue: "26974", revenueGrowth: "0.22", costOfRevenue: "11618", grossProfit: "15356" },
-        { period: "2021", revenue: "26914", revenueGrowth: "61.40", costOfRevenue: "9439", grossProfit: "17475" },
-        { period: "2020", revenue: "16675", revenueGrowth: "52.73", costOfRevenue: "6118", grossProfit: "10557" },
-        { period: "2019", revenue: "10918", revenueGrowth: "-6.81", costOfRevenue: "4150", grossProfit: "6768" }
+        { period: "2023", revenue: "60922", revenueGrowth: "125.85", costOfRevenue: "16621", grossProfit: "44301", totalAssets: "110716", totalLiabilities: "42781", totalEquity: "67935", operatingCashFlow: "27021", investingCashFlow: "-15783", financingCashFlow: "-8762", freeCashFlow: "27021" },
+        { period: "2022", revenue: "26974", revenueGrowth: "0.22", costOfRevenue: "11618", grossProfit: "15356", totalAssets: "44187", totalLiabilities: "15892", totalEquity: "28295", operatingCashFlow: "3808", investingCashFlow: "-7225", financingCashFlow: "-10413", freeCashFlow: "3808" },
+        { period: "2021", revenue: "26914", revenueGrowth: "61.40", costOfRevenue: "9439", grossProfit: "17475", totalAssets: "44187", totalLiabilities: "15892", totalEquity: "28295", operatingCashFlow: "8132", investingCashFlow: "-4485", financingCashFlow: "-3128", freeCashFlow: "8132" },
+        { period: "2020", revenue: "16675", revenueGrowth: "52.73", costOfRevenue: "6118", grossProfit: "10557", totalAssets: "28791", totalLiabilities: "10418", totalEquity: "18373", operatingCashFlow: "4694", investingCashFlow: "-3892", financingCashFlow: "-2654", freeCashFlow: "4694" },
+        { period: "2019", revenue: "10918", revenueGrowth: "-6.81", costOfRevenue: "4150", grossProfit: "6768", totalAssets: "17315", totalLiabilities: "6232", totalEquity: "11083", operatingCashFlow: "4272", investingCashFlow: "-2987", financingCashFlow: "-1876", freeCashFlow: "4272" }
       ]
     };
 
@@ -57,7 +57,14 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       revenue: "Revenue",
       revenueGrowth: "Revenue Growth",
       costOfRevenue: "Cost of Revenue",
-      grossProfit: "Gross Profit"
+      grossProfit: "Gross Profit",
+      totalAssets: "Total Assets",
+      totalLiabilities: "Total Liabilities",
+      totalEquity: "Total Equity",
+      operatingCashFlow: "Operating Cash Flow",
+      investingCashFlow: "Investing Cash Flow",
+      financingCashFlow: "Financing Cash Flow",
+      freeCashFlow: "Free Cash Flow"
     };
     return metrics[metricId as keyof typeof metrics] || metricId;
   };
@@ -128,12 +135,20 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
             </TabsContent>
             <TabsContent value="balance">
               <div className="space-y-6">
-                <BalanceSheet timeFrame={timeFrame} />
+                <BalanceSheet 
+                  timeFrame={timeFrame} 
+                  selectedMetrics={selectedMetrics}
+                  onMetricsChange={setSelectedMetrics}
+                />
               </div>
             </TabsContent>
             <TabsContent value="cashflow">
               <div className="space-y-6">
-                <CashFlow timeFrame={timeFrame} />
+                <CashFlow 
+                  timeFrame={timeFrame}
+                  selectedMetrics={selectedMetrics}
+                  onMetricsChange={setSelectedMetrics}
+                />
               </div>
             </TabsContent>
           </Tabs>

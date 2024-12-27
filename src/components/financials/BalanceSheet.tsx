@@ -5,11 +5,11 @@ import { MetricChart } from "./MetricChart";
 
 interface BalanceSheetProps {
   timeFrame: "annual" | "quarterly" | "ttm";
+  selectedMetrics: string[];
+  onMetricsChange: (metrics: string[]) => void;
 }
 
-export const BalanceSheet = ({ timeFrame }: BalanceSheetProps) => {
-  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
-
+export const BalanceSheet = ({ timeFrame, selectedMetrics, onMetricsChange }: BalanceSheetProps) => {
   const data = {
     annual: [
       { year: "2023", totalAssets: "110,716", totalLiabilities: "42,781", totalEquity: "67,935" },
@@ -37,30 +37,14 @@ export const BalanceSheet = ({ timeFrame }: BalanceSheetProps) => {
   ];
 
   const handleMetricToggle = (metricId: string) => {
-    setSelectedMetrics(prev => {
-      if (prev.includes(metricId)) {
-        return prev.filter(id => id !== metricId);
-      }
-      return [...prev, metricId];
-    });
-  };
-
-  const getChartData = (metricId: string) => {
-    return currentData.map(row => ({
-      period: row.year,
-      value: parseFloat(row[metricId as keyof typeof row].replace(/,/g, '')),
-    }));
+    const newMetrics = selectedMetrics.includes(metricId)
+      ? selectedMetrics.filter(id => id !== metricId)
+      : [...selectedMetrics, metricId];
+    onMetricsChange(newMetrics);
   };
 
   return (
     <div className="space-y-6">
-      {selectedMetrics.map(metricId => (
-        <MetricChart 
-          key={metricId}
-          data={getChartData(metricId)}
-          metric={metrics.find(m => m.id === metricId)?.label || ''}
-        />
-      ))}
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
