@@ -23,13 +23,13 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
   });
 
   const getMetricColor = (index: number): string => {
-    // Use navy blue as primary color
-    if (index === 0) return '#1A1F2C'; // Navy blue
-    if (index === 1) return '#403E43'; // Secondary dark color
-    if (index === 2) return '#221F26'; // Tertiary dark color
+    // Professional color palette
+    if (index === 0) return '#1A237E'; // Navy blue
+    if (index === 1) return '#FB8C00'; // Matte orange
+    if (index === 2) return '#7E57C2'; // Matte purple
     
-    // Random dark colors for subsequent metrics
-    return `hsl(${Math.random() * 360}, 30%, 25%)`;
+    // Random muted colors for subsequent metrics
+    return `hsl(${Math.random() * 360}, 50%, 45%)`;
   };
 
   const formatYAxis = (value: number) => {
@@ -83,11 +83,18 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
           labelStyle={{ color: '#374151', fontWeight: 600, marginBottom: '4px' }}
         />
         <Legend 
+          formatter={(value, entry) => (
+            <span style={{ color: '#374151', marginLeft: '8px' }}>
+              {`${entry?.payload?.ticker || ''} - ${value}`}
+            </span>
+          )}
           wrapperStyle={{ 
             paddingTop: '20px',
-            fontSize: '12px',
-            color: '#6B7280'
+            fontSize: '13px',
+            fontWeight: 500
           }}
+          iconType="square"
+          align="left"
         />
       </>
     );
