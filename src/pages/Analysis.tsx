@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
-import { StockChart } from "@/components/StockChart";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { UserCircle } from "lucide-react";
@@ -16,31 +16,62 @@ import { TranscriptsContent } from "@/components/analysis/TranscriptsContent";
 import { FilingsContent } from "@/components/analysis/FilingsContent";
 import { OwnershipTabs } from "@/components/ownership/OwnershipTabs";
 
-// Default stock data moved to a constant
-const defaultStock = {
-  name: "Apple Inc.",
-  ticker: "AAPL",
-  price: "182.52",
-  change: "+1.25",
-  changePercent: "+0.69",
-  marketCap: "2.85T",
-  summary: "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide.",
-  ceo: "Tim Cook",
-  website: "www.apple.com",
-  founded: "1976",
-  ratios: {
-    peRatio: "28.5x",
-    pbRatio: "44.6x",
-    debtToEquity: "1.76",
-    currentRatio: "0.98",
-    quickRatio: "0.92",
-    returnOnEquity: "145.81%"
-  }
+// Company data mapping (in a real app, this would come from an API)
+const companyDataMap: Record<string, any> = {
+  AAPL: {
+    name: "Apple Inc.",
+    ticker: "AAPL",
+    price: "182.52",
+    change: "+1.25",
+    changePercent: "+0.69",
+    marketCap: "2.85T",
+    summary: "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide.",
+    ceo: "Tim Cook",
+    website: "www.apple.com",
+    founded: "1976",
+    ratios: {
+      peRatio: "28.5x",
+      pbRatio: "44.6x",
+      debtToEquity: "1.76",
+      currentRatio: "0.98",
+      quickRatio: "0.92",
+      returnOnEquity: "145.81%"
+    }
+  },
+  MSFT: {
+    name: "Microsoft Corporation",
+    ticker: "MSFT",
+    price: "420.55",
+    change: "+2.80",
+    changePercent: "+0.67",
+    marketCap: "3.12T",
+    summary: "Microsoft Corporation develops, licenses, and supports software, services, devices, and solutions worldwide.",
+    ceo: "Satya Nadella",
+    website: "www.microsoft.com",
+    founded: "1975",
+    ratios: {
+      peRatio: "32.4x",
+      pbRatio: "12.8x",
+      debtToEquity: "0.35",
+      currentRatio: "1.66",
+      quickRatio: "1.64",
+      returnOnEquity: "38.82%"
+    }
+  },
+  // Add more companies as needed
 };
 
 const Analysis = () => {
-  const [selectedStock, setSelectedStock] = useState(defaultStock);
+  const [searchParams] = useSearchParams();
+  const urlTicker = searchParams.get("ticker");
+  const [selectedStock, setSelectedStock] = useState(companyDataMap[urlTicker || "AAPL"]);
   const [activeTab, setActiveTab] = useState("overview");
+
+  useEffect(() => {
+    if (urlTicker && companyDataMap[urlTicker]) {
+      setSelectedStock(companyDataMap[urlTicker]);
+    }
+  }, [urlTicker]);
 
   const handleStockSelect = (stock: any) => {
     setSelectedStock({
