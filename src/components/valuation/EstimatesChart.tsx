@@ -43,7 +43,7 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
   };
 
   return (
-    <div className="space-y-6 bg-[#191d25] p-6 rounded-xl">
+    <div className="space-y-6 border rounded-xl p-6">
       {/* Metrics Navigation */}
       <div className="flex gap-4 overflow-x-auto pb-2">
         {metrics.map((metric) => (
@@ -53,8 +53,8 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
             onClick={() => setSelectedMetric(metric.id)}
             className={`whitespace-nowrap ${
               selectedMetric === metric.id
-                ? "bg-emerald-500 hover:bg-emerald-600"
-                : "text-gray-400 hover:text-white hover:bg-gray-800"
+                ? "bg-primary hover:bg-primary/90"
+                : "text-gray-500 hover:text-gray-900"
             }`}
           >
             {metric.label}
@@ -68,9 +68,9 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
-              className="form-checkbox h-4 w-4 text-emerald-500"
+              className="form-checkbox h-4 w-4 text-primary"
             />
-            <span className="text-gray-300">% Chg.</span>
+            <span className="text-gray-600">% Chg.</span>
           </label>
           <div className="flex gap-2">
             {["K", "M", "B"].map((unit) => (
@@ -78,7 +78,7 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                 key={unit}
                 variant="ghost"
                 size="sm"
-                className="text-gray-400 hover:text-white hover:bg-gray-800"
+                className="text-gray-500 hover:text-gray-900"
               >
                 {unit}
               </Button>
@@ -89,14 +89,14 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
           <Button
             variant={timeframe === "annual" ? "default" : "ghost"}
             onClick={() => setTimeframe("annual")}
-            className={timeframe === "annual" ? "bg-emerald-500 hover:bg-emerald-600" : ""}
+            className={timeframe === "annual" ? "bg-primary hover:bg-primary/90" : ""}
           >
             Annual
           </Button>
           <Button
             variant={timeframe === "quarterly" ? "default" : "ghost"}
             onClick={() => setTimeframe("quarterly")}
-            className={timeframe === "quarterly" ? "bg-emerald-500 hover:bg-emerald-600" : ""}
+            className={timeframe === "quarterly" ? "bg-primary hover:bg-primary/90" : ""}
           >
             Quarterly
           </Button>
@@ -104,7 +104,7 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
             variant="ghost"
             size="icon"
             onClick={handleDownload}
-            className="text-emerald-500 hover:text-emerald-600"
+            className="text-primary hover:text-primary/90"
           >
             <Download className="h-4 w-4" />
           </Button>
@@ -121,11 +121,11 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
             <XAxis
               dataKey="year"
               stroke="#6B7280"
-              tick={{ fill: "#9CA3AF" }}
+              tick={{ fill: "#374151" }}
             />
             <YAxis
               stroke="#6B7280"
-              tick={{ fill: "#9CA3AF" }}
+              tick={{ fill: "#374151" }}
               tickFormatter={(value) =>
                 (formatters[selectedMetric as keyof typeof formatters] ||
                   formatters.default)(value)
@@ -133,10 +133,10 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#1F2937",
-                border: "none",
+                backgroundColor: "#ffffff",
+                border: "1px solid #e5e7eb",
                 borderRadius: "0.5rem",
-                color: "#F3F4F6",
+                color: "#111827",
               }}
               formatter={(value: number) =>
                 (formatters[selectedMetric as keyof typeof formatters] ||
@@ -146,14 +146,14 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#10B981"
+              stroke="#2563eb"
               strokeWidth={2}
               dot={false}
             />
             <Line
               type="monotone"
               dataKey="min"
-              stroke="#6B7280"
+              stroke="#9CA3AF"
               strokeDasharray="3 3"
               strokeWidth={1}
               dot={false}
@@ -161,7 +161,7 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
             <Line
               type="monotone"
               dataKey="max"
-              stroke="#6B7280"
+              stroke="#9CA3AF"
               strokeDasharray="3 3"
               strokeWidth={1}
               dot={false}
