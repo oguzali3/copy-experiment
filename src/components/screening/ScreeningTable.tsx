@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -15,6 +16,8 @@ interface ScreeningTableProps {
 }
 
 export const ScreeningTable = ({ metrics }: ScreeningTableProps) => {
+  const navigate = useNavigate();
+
   // Get companies that match the screening criteria
   const getFilteredCompanies = () => {
     const companies = Object.entries(financialData).map(([ticker, data]) => {
@@ -51,6 +54,10 @@ export const ScreeningTable = ({ metrics }: ScreeningTableProps) => {
     return companyNames[ticker] || ticker;
   };
 
+  const handleTickerClick = (ticker: string) => {
+    navigate(`/analysis?ticker=${ticker}`);
+  };
+
   const filteredCompanies = getFilteredCompanies();
 
   return (
@@ -68,7 +75,14 @@ export const ScreeningTable = ({ metrics }: ScreeningTableProps) => {
         <TableBody>
           {filteredCompanies.map((company) => (
             <TableRow key={company.ticker}>
-              <TableCell className="font-medium">{company.ticker}</TableCell>
+              <TableCell>
+                <button
+                  onClick={() => handleTickerClick(company.ticker)}
+                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {company.ticker}
+                </button>
+              </TableCell>
               <TableCell>{company.name}</TableCell>
               {metrics.map((metric) => (
                 <TableCell key={metric.id}>
