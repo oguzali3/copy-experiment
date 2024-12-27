@@ -5,10 +5,15 @@ import { UserCircle } from "lucide-react";
 import { MetricsSearch } from "@/components/MetricsSearch";
 import { CompanySearch } from "@/components/CompanySearch";
 import { useState } from "react";
+import { TimeRangePanel } from "@/components/financials/TimeRangePanel";
+import { StockChart } from "@/components/StockChart";
 
 const Charting = () => {
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
+  const [sliderValue, setSliderValue] = useState([0, 4]);
+
+  const timePeriods = ["1D", "5D", "1M", "6M", "1Y"];
 
   const handleMetricSelect = (metric: string) => {
     setSelectedMetrics(prev => [...prev, metric]);
@@ -16,6 +21,10 @@ const Charting = () => {
 
   const handleCompanySelect = (company: any) => {
     setSelectedCompany(company);
+  };
+
+  const handleSliderChange = (value: number[]) => {
+    setSliderValue(value);
   };
 
   return (
@@ -57,9 +66,17 @@ const Charting = () => {
                 <p>Select a company and metrics to start charting</p>
               </div>
             ) : (
-              <div>
-                {/* Chart content will go here */}
-                <p className="text-gray-500">Chart visualization will be implemented here</p>
+              <div className="space-y-4">
+                <TimeRangePanel
+                  startDate="Jan 2024"
+                  endDate="Mar 2024"
+                  sliderValue={sliderValue}
+                  onSliderChange={handleSliderChange}
+                  timePeriods={timePeriods}
+                />
+                <div className="h-[500px]">
+                  <StockChart ticker={selectedCompany?.ticker} />
+                </div>
               </div>
             )}
           </div>
