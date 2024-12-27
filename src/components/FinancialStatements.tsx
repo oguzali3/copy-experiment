@@ -10,6 +10,25 @@ import { TimeRangePanel } from "./financials/TimeRangePanel";
 import { MetricChart } from "./financials/MetricChart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
+const financialData: { [key: string]: any } = {
+  AAPL: {
+    annual: [
+      { period: "2023", revenue: "60922", revenueGrowth: "125.85", costOfRevenue: "16621", grossProfit: "44301", totalAssets: "110716", totalLiabilities: "42781", totalEquity: "67935", operatingCashFlow: "27021", investingCashFlow: "-15783", financingCashFlow: "-8762", freeCashFlow: "27021", sga: "2654", researchDevelopment: "8675", operatingExpenses: "11329", operatingIncome: "32972", netIncome: "29760", ebitda: "34480" },
+      { period: "2022", revenue: "26974", revenueGrowth: "0.22", costOfRevenue: "11618", grossProfit: "15356", totalAssets: "44187", totalLiabilities: "15892", totalEquity: "28295", operatingCashFlow: "3808", investingCashFlow: "-7225", financingCashFlow: "-10413", freeCashFlow: "3808", sga: "2440", researchDevelopment: "7339", operatingExpenses: "9779", operatingIncome: "5577", netIncome: "4368", ebitda: "7121" },
+      { period: "2021", revenue: "26914", revenueGrowth: "61.40", costOfRevenue: "9439", grossProfit: "17475", totalAssets: "44187", totalLiabilities: "15892", totalEquity: "28295", operatingCashFlow: "8132", investingCashFlow: "-4485", financingCashFlow: "-3128", freeCashFlow: "8132", sga: "2166", researchDevelopment: "5268", operatingExpenses: "7434", operatingIncome: "10041", netIncome: "9752", ebitda: "11215" },
+      { period: "2020", revenue: "16675", revenueGrowth: "52.73", costOfRevenue: "6118", grossProfit: "10557", totalAssets: "28791", totalLiabilities: "10418", totalEquity: "18373", operatingCashFlow: "4694", investingCashFlow: "-3892", financingCashFlow: "-2654", freeCashFlow: "4694", sga: "1912", researchDevelopment: "3924", operatingExpenses: "5836", operatingIncome: "4721", netIncome: "4332", ebitda: "5819" },
+      { period: "2019", revenue: "10918", revenueGrowth: "-6.81", costOfRevenue: "4150", grossProfit: "6768", totalAssets: "17315", totalLiabilities: "6232", totalEquity: "11083", operatingCashFlow: "4272", investingCashFlow: "-2987", financingCashFlow: "-1876", freeCashFlow: "4272", sga: "1093", researchDevelopment: "2829", operatingExpenses: "3922", operatingIncome: "2846", netIncome: "2796", ebitda: "3227" }
+    ]
+  },
+  MSFT: {
+    annual: [
+      { period: "2023", revenue: "72000", revenueGrowth: "15.4", costOfRevenue: "20000", grossProfit: "52000", totalAssets: "120000", totalLiabilities: "45000", totalEquity: "75000", operatingCashFlow: "30000", investingCashFlow: "-18000", financingCashFlow: "-10000", freeCashFlow: "30000", sga: "3000", researchDevelopment: "9000", operatingExpenses: "12000", operatingIncome: "40000", netIncome: "35000", ebitda: "42000" },
+      { period: "2022", revenue: "62000", revenueGrowth: "12.2", costOfRevenue: "18000", grossProfit: "44000", totalAssets: "100000", totalLiabilities: "40000", totalEquity: "60000", operatingCashFlow: "25000", investingCashFlow: "-15000", financingCashFlow: "-8000", freeCashFlow: "25000", sga: "2800", researchDevelopment: "8000", operatingExpenses: "10800", operatingIncome: "33200", netIncome: "28000", ebitda: "35000" },
+      { period: "2021", revenue: "55000", revenueGrowth: "10.5", costOfRevenue: "16000", grossProfit: "39000", totalAssets: "90000", totalLiabilities: "35000", totalEquity: "55000", operatingCashFlow: "22000", investingCashFlow: "-12000", financingCashFlow: "-7000", freeCashFlow: "22000", sga: "2500", researchDevelopment: "7000", operatingExpenses: "9500", operatingIncome: "29500", netIncome: "25000", ebitda: "31000" }
+    ]
+  }
+};
+
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
   const [startDate, setStartDate] = useState("December 31, 2019");
@@ -17,6 +36,11 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [sliderValue, setSliderValue] = useState([0, 4]);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
+
+  // Reset selected metrics when ticker changes
+  React.useEffect(() => {
+    setSelectedMetrics([]);
+  }, [ticker]);
 
   // Define the available time periods
   const timePeriods = [
@@ -30,18 +54,10 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   };
 
   const getMetricData = (metrics: string[]) => {
-    const data = {
-      annual: [
-        { period: "2023", revenue: "60922", revenueGrowth: "125.85", costOfRevenue: "16621", grossProfit: "44301", totalAssets: "110716", totalLiabilities: "42781", totalEquity: "67935", operatingCashFlow: "27021", investingCashFlow: "-15783", financingCashFlow: "-8762", freeCashFlow: "27021", sga: "2654", researchDevelopment: "8675", operatingExpenses: "11329", operatingIncome: "32972", netIncome: "29760", ebitda: "34480" },
-        { period: "2022", revenue: "26974", revenueGrowth: "0.22", costOfRevenue: "11618", grossProfit: "15356", totalAssets: "44187", totalLiabilities: "15892", totalEquity: "28295", operatingCashFlow: "3808", investingCashFlow: "-7225", financingCashFlow: "-10413", freeCashFlow: "3808", sga: "2440", researchDevelopment: "7339", operatingExpenses: "9779", operatingIncome: "5577", netIncome: "4368", ebitda: "7121" },
-        { period: "2021", revenue: "26914", revenueGrowth: "61.40", costOfRevenue: "9439", grossProfit: "17475", totalAssets: "44187", totalLiabilities: "15892", totalEquity: "28295", operatingCashFlow: "8132", investingCashFlow: "-4485", financingCashFlow: "-3128", freeCashFlow: "8132", sga: "2166", researchDevelopment: "5268", operatingExpenses: "7434", operatingIncome: "10041", netIncome: "9752", ebitda: "11215" },
-        { period: "2020", revenue: "16675", revenueGrowth: "52.73", costOfRevenue: "6118", grossProfit: "10557", totalAssets: "28791", totalLiabilities: "10418", totalEquity: "18373", operatingCashFlow: "4694", investingCashFlow: "-3892", financingCashFlow: "-2654", freeCashFlow: "4694", sga: "1912", researchDevelopment: "3924", operatingExpenses: "5836", operatingIncome: "4721", netIncome: "4332", ebitda: "5819" },
-        { period: "2019", revenue: "10918", revenueGrowth: "-6.81", costOfRevenue: "4150", grossProfit: "6768", totalAssets: "17315", totalLiabilities: "6232", totalEquity: "11083", operatingCashFlow: "4272", investingCashFlow: "-2987", financingCashFlow: "-1876", freeCashFlow: "4272", sga: "1093", researchDevelopment: "2829", operatingExpenses: "3922", operatingIncome: "2846", netIncome: "2796", ebitda: "3227" }
-      ]
-    };
+    const data = financialData[ticker]?.[timeFrame] || financialData["AAPL"][timeFrame];
 
     // Filter data based on the selected time range
-    const filteredData = data.annual
+    const filteredData = data
       .filter(item => {
         const year = parseInt(item.period);
         return year >= 2019 + sliderValue[0] && year <= 2019 + sliderValue[1];
