@@ -31,47 +31,71 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
     return `$${value}`;
   };
 
-  const ChartComponent = chartType === 'bar' ? BarChart : LineChart;
-  const DataComponent = chartType === 'bar' ? Bar : Line;
+  const ChartContent = () => {
+    if (chartType === 'bar') {
+      return (
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="period" tick={{ fontSize: 12 }} />
+          <YAxis tickFormatter={formatYAxis} tick={{ fontSize: 12 }} />
+          <Tooltip 
+            formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]}
+            contentStyle={{
+              backgroundColor: 'white',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+            }}
+          />
+          <Legend />
+          {metrics.map((metric, index) => (
+            <Bar
+              key={metric}
+              dataKey={`metrics[${index}].value`}
+              name={metric}
+              fill={COLORS[index % COLORS.length]}
+              radius={[4, 4, 0, 0]}
+            />
+          ))}
+        </BarChart>
+      );
+    }
+
+    return (
+      <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="period" tick={{ fontSize: 12 }} />
+        <YAxis tickFormatter={formatYAxis} tick={{ fontSize: 12 }} />
+        <Tooltip 
+          formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]}
+          contentStyle={{
+            backgroundColor: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+          }}
+        />
+        <Legend />
+        {metrics.map((metric, index) => (
+          <Line
+            key={metric}
+            type="monotone"
+            dataKey={`metrics[${index}].value`}
+            name={metric}
+            stroke={COLORS[index % COLORS.length]}
+            strokeWidth={2}
+            dot={false}
+          />
+        ))}
+      </LineChart>
+    );
+  };
 
   return (
     <div className="w-full bg-white p-4 rounded-lg border">
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <ChartComponent data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="period" 
-              tick={{ fontSize: 12 }}
-            />
-            <YAxis 
-              tickFormatter={formatYAxis}
-              tick={{ fontSize: 12 }}
-            />
-            <Tooltip 
-              formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]}
-              contentStyle={{
-                backgroundColor: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-              }}
-            />
-            <Legend />
-            {metrics.map((metric, index) => (
-              <DataComponent
-                key={metric}
-                type={chartType === 'line' ? "monotone" : undefined}
-                dataKey={`metrics[${index}].value`}
-                name={metric}
-                stroke={chartType === 'line' ? COLORS[index % COLORS.length] : undefined}
-                fill={chartType === 'bar' ? COLORS[index % COLORS.length] : undefined}
-                dot={chartType === 'line' ? false : undefined}
-                strokeWidth={chartType === 'line' ? 2 : undefined}
-                radius={chartType === 'bar' ? [4, 4, 0, 0] : undefined}
-              />
-            ))}
-          </ChartComponent>
+          <ChartContent />
         </ResponsiveContainer>
       </div>
     </div>

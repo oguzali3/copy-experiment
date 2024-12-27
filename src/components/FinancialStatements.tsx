@@ -51,7 +51,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       period: item.period,
       metrics: metrics.map(metricId => ({
         name: getMetricLabel(metricId),
-        value: parseFloat(item[metricId as keyof typeof item].replace(/,/g, '')),
+        value: parseFloat((item[metricId as keyof typeof item] || "0").replace(/,/g, '')),
       })),
     }));
   };
