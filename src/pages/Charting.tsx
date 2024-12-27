@@ -7,6 +7,7 @@ import { CompanySearch } from "@/components/CompanySearch";
 import { useState } from "react";
 import { TimeRangePanel } from "@/components/financials/TimeRangePanel";
 import { StockChart } from "@/components/StockChart";
+import { financialData } from "@/data/financialData";
 
 const Charting = () => {
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
@@ -16,7 +17,9 @@ const Charting = () => {
   const timePeriods = ["1D", "5D", "1M", "6M", "1Y"];
 
   const handleMetricSelect = (metric: string) => {
-    setSelectedMetrics(prev => [...prev, metric]);
+    if (!selectedMetrics.includes(metric)) {
+      setSelectedMetrics(prev => [...prev, metric]);
+    }
   };
 
   const handleCompanySelect = (company: any) => {
@@ -25,6 +28,17 @@ const Charting = () => {
 
   const handleSliderChange = (value: number[]) => {
     setSliderValue(value);
+  };
+
+  // Transform financial data for the chart if both company and metrics are selected
+  const getChartData = () => {
+    if (!selectedCompany?.ticker || selectedMetrics.length === 0) return null;
+    
+    const companyData = financialData[selectedCompany.ticker]?.annual || [];
+    return companyData.map(period => ({
+      period: period.period,
+      value: parseFloat(period[selectedMetrics[0] as keyof typeof period] || '0')
+    }));
   };
 
   return (
@@ -67,16 +81,40 @@ const Charting = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                <TimeRangePanel
-                  startDate="Jan 2024"
-                  endDate="Mar 2024"
-                  sliderValue={sliderValue}
-                  onSliderChange={handleSliderChange}
-                  timePeriods={timePeriods}
-                />
-                <div className="h-[500px]">
-                  <StockChart ticker={selectedCompany?.ticker} />
-                </div>
+                {selectedCompany && (
+                  <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                    <span className="text-lg">{selectedCompany.logo}</span>
+                    <div>
+                      <p className="font-medium">{selectedCompany.name}</p>
+                      <p className="text-sm text-gray-500">{selectedCompany.ticker}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {selectedMetrics.length > 0 && (
+                  <div className="flex gap-2">
+                    {selectedMetrics.map((metric, index) => (
+                      <div key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                        {metric}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {selectedCompany && selectedMetrics.length > 0 && getChartData() && (
+                  <>
+                    <TimeRangePanel
+                      startDate="Jan 2024"
+                      endDate="Mar 2024"
+                      sliderValue={sliderValue}
+                      onSliderChange={handleSliderChange}
+                      timePeriods={timePeriods}
+                    />
+                    <div className="h-[500px]">
+                      <StockChart ticker={selectedCompany?.ticker} />
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
