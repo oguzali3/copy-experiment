@@ -83,9 +83,9 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
           labelStyle={{ color: '#374151', fontWeight: 600, marginBottom: '4px' }}
         />
         <Legend 
-          formatter={(value, entry) => (
+          formatter={(value) => (
             <span style={{ color: '#374151', marginLeft: '8px' }}>
-              {`${entry?.payload?.ticker || ''} - ${value}`}
+              {value}
             </span>
           )}
           wrapperStyle={{ 
