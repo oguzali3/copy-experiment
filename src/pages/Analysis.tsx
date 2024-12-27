@@ -11,6 +11,7 @@ import { CompanyHeader } from "@/components/analysis/CompanyHeader";
 import { CompanyOverview } from "@/components/analysis/CompanyOverview";
 import { NavigationTabs } from "@/components/analysis/NavigationTabs";
 import { EstimatesChart } from "@/components/valuation/EstimatesChart";
+import { ValuationMetrics } from "@/components/valuation/ValuationMetrics";
 
 // Default stock data moved to a constant
 const defaultStock = {
@@ -102,8 +103,8 @@ const Analysis = () => {
         );
       case "valuation":
         return (
-          <div className="flex items-center justify-center h-[500px]">
-            <p className="text-gray-500">Valuation content is coming soon...</p>
+          <div className="space-y-6">
+            <ValuationMetrics />
           </div>
         );
       default:
