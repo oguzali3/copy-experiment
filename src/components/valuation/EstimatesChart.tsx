@@ -43,15 +43,10 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
     })
   );
 
-  // Create separate datasets while maintaining data continuity
-  const lastActualDataPoint = chartData?.find((item, index, arr) => 
-    !item.isEstimate && arr[index + 1]?.isEstimate
+  // Find the transition point between actual and estimated data
+  const transitionPoint = chartData?.findIndex((item, index) => 
+    !item.isEstimate && chartData[index + 1]?.isEstimate
   );
-
-  const actualData = chartData?.filter(item => !item.isEstimate);
-  const estimatedData = lastActualDataPoint 
-    ? [lastActualDataPoint, ...chartData?.filter(item => item.isEstimate)]
-    : chartData?.filter(item => item.isEstimate);
 
   return (
     <div className="space-y-6">
@@ -155,26 +150,18 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                     formatters.default)(value)
                 }
               />
-              {/* Actual Data Line */}
+              {/* Single Line with Dynamic Dash Array */}
               <Line
                 type="monotone"
-                data={actualData}
+                data={chartData}
                 dataKey="value"
                 stroke="#2563eb"
                 strokeWidth={2}
                 dot={false}
                 connectNulls
-              />
-              {/* Estimated Data Line (Dashed) */}
-              <Line
-                type="monotone"
-                data={estimatedData}
-                dataKey="value"
-                stroke="#2563eb"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                dot={false}
-                connectNulls
+                strokeDasharray={(d: any, i: number) => 
+                  i > transitionPoint ? "5 5" : "0"
+                }
               />
             </LineChart>
           </ResponsiveContainer>
