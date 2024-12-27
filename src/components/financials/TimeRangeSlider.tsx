@@ -12,7 +12,7 @@ export const TimeRangeSlider = ({
   timePeriods,
 }: TimeRangeSliderProps) => {
   return (
-    <div className="px-2 py-4">
+    <div className="px-2 py-8">
       <div className="relative">
         <div className="absolute w-full top-[9px]">
           {timePeriods.map((_, index) => (
