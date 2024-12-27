@@ -13,6 +13,7 @@ import { NavigationTabs } from "@/components/analysis/NavigationTabs";
 import { EstimatesChart } from "@/components/valuation/EstimatesChart";
 import { ValuationMetrics } from "@/components/valuation/ValuationMetrics";
 import { TranscriptsContent } from "@/components/analysis/TranscriptsContent";
+import { FilingsContent } from "@/components/analysis/FilingsContent";
 
 // Default stock data moved to a constant
 const defaultStock = {
@@ -112,6 +113,12 @@ const Analysis = () => {
         return (
           <div className="space-y-6">
             <TranscriptsContent ticker={selectedStock.ticker} />
+          </div>
+        );
+      case "filings":
+        return (
+          <div className="space-y-6">
+            <FilingsContent ticker={selectedStock.ticker} />
           </div>
         );
       default:
