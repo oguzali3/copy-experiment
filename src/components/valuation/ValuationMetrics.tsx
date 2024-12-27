@@ -57,9 +57,6 @@ const mockChartData = [
     metrics: [
       { name: "P/E Ratio", value: 25.4 },
       { name: "P/S Ratio", value: 6.2 },
-      { name: "P/B Ratio", value: 42.1 },
-      { name: "EV/EBITDA", value: 19.8 },
-      { name: "PEG Ratio", value: 1.9 },
     ],
   },
   {
@@ -67,9 +64,6 @@ const mockChartData = [
     metrics: [
       { name: "P/E Ratio", value: 26.8 },
       { name: "P/S Ratio", value: 6.5 },
-      { name: "P/B Ratio", value: 43.2 },
-      { name: "EV/EBITDA", value: 20.5 },
-      { name: "PEG Ratio", value: 2.0 },
     ],
   },
   {
@@ -77,9 +71,6 @@ const mockChartData = [
     metrics: [
       { name: "P/E Ratio", value: 27.9 },
       { name: "P/S Ratio", value: 6.7 },
-      { name: "P/B Ratio", value: 44.1 },
-      { name: "EV/EBITDA", value: 21.0 },
-      { name: "PEG Ratio", value: 2.05 },
     ],
   },
   {
@@ -87,16 +78,12 @@ const mockChartData = [
     metrics: [
       { name: "P/E Ratio", value: 28.5 },
       { name: "P/S Ratio", value: 6.8 },
-      { name: "P/B Ratio", value: 44.6 },
-      { name: "EV/EBITDA", value: 21.3 },
-      { name: "PEG Ratio", value: 2.1 },
     ],
   },
 ];
 
 export const ValuationMetrics = () => {
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
-  const [chartType, setChartType] = useState<'line' | 'bar'>('line');
   const [timeframe, setTimeframe] = useState("quarterly");
 
   const handleMetricSelect = (metricName: string) => {
@@ -144,40 +131,22 @@ export const ValuationMetrics = () => {
 
       {selectedMetrics.length > 0 && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2">
-              {["1M", "3M", "6M", "1Y", "2Y", "5Y"].map((period) => (
-                <Button
-                  key={period}
-                  variant={timeframe === period ? "default" : "outline"}
-                  onClick={() => setTimeframe(period)}
-                  size="sm"
-                >
-                  {period}
-                </Button>
-              ))}
-            </div>
-            <div className="flex gap-2">
+          <div className="flex gap-2">
+            {["1M", "3M", "6M", "1Y", "2Y", "5Y"].map((period) => (
               <Button
-                variant={chartType === 'line' ? "default" : "outline"}
+                key={period}
+                variant={timeframe === period ? "default" : "outline"}
+                onClick={() => setTimeframe(period)}
                 size="sm"
-                onClick={() => setChartType('line')}
               >
-                Line
+                {period}
               </Button>
-              <Button
-                variant={chartType === 'bar' ? "default" : "outline"}
-                size="sm"
-                onClick={() => setChartType('bar')}
-              >
-                Bar
-              </Button>
-            </div>
+            ))}
           </div>
           <MetricChart
             data={mockChartData}
             metrics={selectedMetrics}
-            chartType={chartType}
+            chartType="line"
           />
         </div>
       )}
