@@ -5,11 +5,11 @@ import { MetricChart } from "./MetricChart";
 
 interface IncomeStatementProps {
   timeFrame: "annual" | "quarterly" | "ttm";
+  selectedMetrics: string[];
+  onMetricsChange: (metrics: string[]) => void;
 }
 
-export const IncomeStatement = ({ timeFrame }: IncomeStatementProps) => {
-  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
-
+export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange }: IncomeStatementProps) => {
   const data = {
     annual: [
       { year: "2023", revenue: "60,922", revenueGrowth: "125.85%", costOfRevenue: "16,621", grossProfit: "44,301", sga: "2,654", researchDevelopment: "8,675", operatingExpenses: "11,329", operatingIncome: "32,972", interestExpense: "-257", investmentIncome: "866", otherIncome: "-1", ebt: "33,580", incomeTax: "4,058", netIncome: "29,760", eps: "1.21", epsDiluted: "1.19", sharesOutstanding: "24,690", sharesOutstandingDiluted: "24,940", ebitda: "34,480", ebitdaMargin: "56.60%", effectiveTaxRate: "12.00%" },
@@ -55,7 +55,7 @@ export const IncomeStatement = ({ timeFrame }: IncomeStatementProps) => {
   ];
 
   const handleMetricToggle = (metricId: string) => {
-    setSelectedMetrics(prev => {
+    onMetricsChange(prev => {
       if (prev.includes(metricId)) {
         return prev.filter(id => id !== metricId);
       }
@@ -71,7 +71,7 @@ export const IncomeStatement = ({ timeFrame }: IncomeStatementProps) => {
   };
 
   return (
-    <div className="flex flex-col space-y-6">
+    <div className="space-y-6">
       {selectedMetrics.length > 0 && (
         <div className="space-y-4">
           {selectedMetrics.map(metricId => (

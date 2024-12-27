@@ -13,6 +13,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [startDate, setStartDate] = useState("June 30, 2015");
   const [endDate, setEndDate] = useState("September 30, 2024");
   const [sliderValue, setSliderValue] = useState([0, 11]);
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
 
   // Define the available time periods
   const timePeriods = [
@@ -61,14 +62,6 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
           </RadioGroup>
         </div>
 
-        <TimeRangePanel
-          startDate={startDate}
-          endDate={endDate}
-          sliderValue={sliderValue}
-          onSliderChange={handleSliderChange}
-          timePeriods={timePeriods}
-        />
-
         <Tabs defaultValue="income" className="w-full">
           <TabsList className="w-full justify-start mb-4">
             <TabsTrigger value="income">Income Statement</TabsTrigger>
@@ -77,7 +70,11 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
           </TabsList>
           <TabsContent value="income">
             <div className="space-y-6">
-              <IncomeStatement timeFrame={timeFrame} />
+              <IncomeStatement 
+                timeFrame={timeFrame} 
+                selectedMetrics={selectedMetrics}
+                onMetricsChange={setSelectedMetrics}
+              />
             </div>
           </TabsContent>
           <TabsContent value="balance">
@@ -91,6 +88,14 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
             </div>
           </TabsContent>
         </Tabs>
+
+        <TimeRangePanel
+          startDate={startDate}
+          endDate={endDate}
+          sliderValue={sliderValue}
+          onSliderChange={handleSliderChange}
+          timePeriods={timePeriods}
+        />
       </div>
     </Card>
   );
