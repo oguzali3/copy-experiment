@@ -18,24 +18,44 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
   // Define the available time periods
   const timePeriods = [
-    "Jun '15",
-    "Jun '16",
-    "Jun '17",
-    "Jun '18",
-    "Jun '19",
-    "Jun '20",
-    "Jun '21",
-    "Jun '22",
-    "Jun '23",
-    "LTM",
-    "Jun '24",
-    "Jun '26(E)",
+    "Jun '15", "Jun '16", "Jun '17", "Jun '18", "Jun '19",
+    "Jun '20", "Jun '21", "Jun '22", "Jun '23", "LTM",
+    "Jun '24", "Jun '26(E)"
   ];
 
   const handleSliderChange = (value: number[]) => {
     setSliderValue(value);
     setStartDate(`June 30, 20${15 + value[0]}`);
     setEndDate(value[1] === 11 ? "June 30, 2026" : `June 30, 20${15 + value[1]}`);
+  };
+
+  // Sample data for metrics (this would normally come from your data source)
+  const getMetricData = (metricId: string) => {
+    const data = {
+      annual: [
+        { period: "2023", revenue: "60922", revenueGrowth: "125.85", costOfRevenue: "16621", grossProfit: "44301" },
+        { period: "2022", revenue: "26974", revenueGrowth: "0.22", costOfRevenue: "11618", grossProfit: "15356" },
+        { period: "2021", revenue: "26914", revenueGrowth: "61.40", costOfRevenue: "9439", grossProfit: "17475" },
+        { period: "2020", revenue: "16675", revenueGrowth: "52.73", costOfRevenue: "6118", grossProfit: "10557" },
+        { period: "2019", revenue: "10918", revenueGrowth: "-6.81", costOfRevenue: "4150", grossProfit: "6768" }
+      ]
+    };
+
+    return data.annual.map(item => ({
+      period: item.period,
+      value: parseFloat(item[metricId as keyof typeof item].replace(/,/g, '')),
+    }));
+  };
+
+  // Get metric label
+  const getMetricLabel = (metricId: string): string => {
+    const metrics = {
+      revenue: "Revenue",
+      revenueGrowth: "Revenue Growth",
+      costOfRevenue: "Cost of Revenue",
+      grossProfit: "Gross Profit"
+    };
+    return metrics[metricId as keyof typeof metrics] || metricId;
   };
 
   return (
@@ -47,8 +67,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
             {selectedMetrics.map(metricId => (
               <MetricChart 
                 key={metricId}
-                data={[]} // This will be populated by the child component
-                metric={metricId}
+                data={getMetricData(metricId)}
+                metric={getMetricLabel(metricId)}
               />
             ))}
           </div>
