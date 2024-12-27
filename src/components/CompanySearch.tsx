@@ -12,12 +12,17 @@ import {
 import { useState } from "react";
 import { Button } from "./ui/button";
 
-const additionalCompanies = [
-  { name: "UnitedHealth", ticker: "UNH", marketCap: "445B", price: "521.63", change: "+0.75%", isPositive: true },
-  { name: "Johnson & Johnson", ticker: "JNJ", marketCap: "421B", price: "156.74", change: "-0.32%", isPositive: false },
-  { name: "Walmart", ticker: "WMT", marketCap: "418B", price: "157.96", change: "+1.15%", isPositive: true },
-  { name: "Mastercard", ticker: "MA", marketCap: "412B", price: "425.82", change: "+0.91%", isPositive: true },
-  { name: "Procter & Gamble", ticker: "PG", marketCap: "387B", price: "145.28", change: "-0.45%", isPositive: false },
+const companies = [
+  { name: "Apple Inc.", ticker: "AAPL", logo: "🍎" },
+  { name: "Microsoft Corporation", ticker: "MSFT", logo: "🪟" },
+  { name: "NVIDIA Corporation", ticker: "NVDA", logo: "🎮" },
+  { name: "Alphabet Inc.", ticker: "GOOGL", logo: "🔍" },
+  { name: "Amazon.com, Inc.", ticker: "AMZN", logo: "📦" },
+  { name: "Meta Platforms, Inc.", ticker: "META", logo: "👥" },
+  { name: "Tesla, Inc.", ticker: "TSLA", logo: "🚗" },
+  { name: "Berkshire Hathaway Inc.", ticker: "BRK.A", logo: "💰" },
+  { name: "JPMorgan Chase & Co.", ticker: "JPM", logo: "🏦" },
+  { name: "Johnson & Johnson", ticker: "JNJ", logo: "💊" },
 ];
 
 interface CompanySearchProps {
@@ -26,6 +31,12 @@ interface CompanySearchProps {
 
 export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredCompanies = companies.filter(company => 
+    company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    company.ticker.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="relative w-full">
@@ -39,22 +50,30 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <Command className="rounded-lg border shadow-md">
-          <CommandInput placeholder="Search companies..." />
+          <CommandInput 
+            placeholder="Search companies..." 
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
           <CommandList>
             <CommandEmpty>No companies found.</CommandEmpty>
-            <CommandGroup heading="Available Companies">
-              {additionalCompanies.map((company) => (
+            <CommandGroup heading="Companies">
+              {filteredCompanies.map((company) => (
                 <CommandItem
                   key={company.ticker}
                   onSelect={() => {
                     onCompanySelect(company);
+                    setSearchQuery("");
                     setOpen(false);
                   }}
                   className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
                 >
-                  <div>
-                    <p className="text-sm font-medium">{company.name}</p>
-                    <p className="text-xs text-muted-foreground">{company.ticker}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{company.logo}</span>
+                    <div>
+                      <p className="text-sm font-medium">{company.name}</p>
+                      <p className="text-xs text-muted-foreground">{company.ticker}</p>
+                    </div>
                   </div>
                 </CommandItem>
               ))}
