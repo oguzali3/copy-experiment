@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, ArrowUp, ArrowDown } from "lucide-react";
 import { 
   Table, 
   TableBody, 
@@ -27,6 +27,7 @@ interface FilingsContentProps {
 export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const itemsPerPage = 10;
 
   const filings = filingData[ticker] || [];
@@ -37,14 +38,25 @@ export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
     return searchString.includes(searchQuery.toLowerCase());
   });
 
+  // Sort filings by date
+  const sortedFilings = [...filteredFilings].sort((a, b) => {
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
+  });
+
   // Calculate pagination
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentFilings = filteredFilings.slice(startIndex, endIndex);
-  const totalPages = Math.ceil(filteredFilings.length / itemsPerPage);
+  const currentFilings = sortedFilings.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(sortedFilings.length / itemsPerPage);
 
   const handleFilingClick = (filing: Filing) => {
     window.open(filing.url, '_blank');
+  };
+
+  const toggleSort = () => {
+    setSortDirection(prev => prev === "asc" ? "desc" : "asc");
   };
 
   return (
@@ -68,7 +80,19 @@ export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
             <TableHead className="w-[15%]">Form</TableHead>
             <TableHead className="w-[15%]">Type</TableHead>
             <TableHead className="w-[40%]">Description</TableHead>
-            <TableHead className="w-[30%]">Date</TableHead>
+            <TableHead 
+              className="w-[30%] cursor-pointer hover:text-blue-600 transition-colors"
+              onClick={toggleSort}
+            >
+              <div className="flex items-center gap-2">
+                Date
+                {sortDirection === "asc" ? (
+                  <ArrowUp className="h-4 w-4" />
+                ) : (
+                  <ArrowDown className="h-4 w-4" />
+                )}
+              </div>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
