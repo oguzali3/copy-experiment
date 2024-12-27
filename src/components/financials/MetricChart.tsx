@@ -22,6 +22,16 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
     return transformed;
   });
 
+  const getMetricColor = (index: number): string => {
+    // Fixed colors for first three metrics
+    if (index === 0) return '#0EA5E9'; // Blue
+    if (index === 1) return '#F97316'; // Orange
+    if (index === 2) return '#8B5CF6'; // Purple
+    
+    // Random colors for subsequent metrics
+    return `hsl(${Math.random() * 360}, 70%, 50%)`;
+  };
+
   const formatYAxis = (value: number) => {
     if (value === 0) return '$0';
     if (Math.abs(value) >= 1e9) {
@@ -68,8 +78,9 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
             <Bar
               key={metric}
               dataKey={metric}
-              fill={`hsl(${index * (360 / metrics.length)}, 70%, 50%)`}
+              fill={getMetricColor(index)}
               name={metric}
+              radius={[4, 4, 0, 0]}
             />
           ))}
         </BarChart>
@@ -84,9 +95,10 @@ export const MetricChart = ({ data, metrics, chartType }: MetricChartProps) => {
             key={metric}
             type="monotone"
             dataKey={metric}
-            stroke={`hsl(${index * (360 / metrics.length)}, 70%, 50%)`}
+            stroke={getMetricColor(index)}
             name={metric}
             dot={false}
+            strokeWidth={2}
           />
         ))}
       </LineChart>
