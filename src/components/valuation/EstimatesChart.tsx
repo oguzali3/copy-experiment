@@ -48,9 +48,9 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
     !item.isEstimate && (index === arr.length - 1 || arr[index + 1]?.isEstimate)
   );
 
-  // Split data into actual and estimates
+  // Split data into actual and estimates (renamed estimatesDataPoints to avoid conflict)
   const actualData = chartData?.slice(0, (lastActualIndex ?? -1) + 1);
-  const estimatesData = chartData?.slice(lastActualIndex !== undefined ? lastActualIndex + 1 : 0);
+  const estimatesDataPoints = chartData?.slice(lastActualIndex !== undefined ? lastActualIndex + 1 : 0);
 
   return (
     <div className="space-y-6">
@@ -168,7 +168,7 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
               <Line
                 type="monotone"
                 dataKey="value"
-                data={estimatesData}
+                data={estimatesDataPoints}
                 stroke="#2563eb"
                 strokeWidth={2}
                 dot={false}
