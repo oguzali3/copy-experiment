@@ -85,31 +85,63 @@ const valuationMetrics: ValuationMetric[] = [
 
 const mockChartData = [
   {
-    period: "Q1 2023",
+    period: "2019",
     metrics: [
-      { name: "P/E Ratio", value: 25.4 },
-      { name: "P/S Ratio", value: 6.2 },
+      { name: "P/E Ratio", value: 18.2 },
+      { name: "P/S Ratio", value: 4.2 },
+      { name: "P/B Ratio", value: 32.4 },
+      { name: "EV/EBITDA", value: 15.6 },
+      { name: "PEG Ratio", value: 1.4 },
     ],
   },
   {
-    period: "Q2 2023",
+    period: "2020",
     metrics: [
-      { name: "P/E Ratio", value: 26.8 },
-      { name: "P/S Ratio", value: 6.5 },
+      { name: "P/E Ratio", value: 21.4 },
+      { name: "P/S Ratio", value: 5.1 },
+      { name: "P/B Ratio", value: 35.8 },
+      { name: "EV/EBITDA", value: 17.2 },
+      { name: "PEG Ratio", value: 1.6 },
     ],
   },
   {
-    period: "Q3 2023",
+    period: "2021",
     metrics: [
-      { name: "P/E Ratio", value: 27.9 },
-      { name: "P/S Ratio", value: 6.7 },
+      { name: "P/E Ratio", value: 24.8 },
+      { name: "P/S Ratio", value: 5.8 },
+      { name: "P/B Ratio", value: 38.9 },
+      { name: "EV/EBITDA", value: 18.9 },
+      { name: "PEG Ratio", value: 1.8 },
     ],
   },
   {
-    period: "Q4 2023",
+    period: "2022",
+    metrics: [
+      { name: "P/E Ratio", value: 26.3 },
+      { name: "P/S Ratio", value: 6.4 },
+      { name: "P/B Ratio", value: 41.2 },
+      { name: "EV/EBITDA", value: 20.1 },
+      { name: "PEG Ratio", value: 2.0 },
+    ],
+  },
+  {
+    period: "2023",
     metrics: [
       { name: "P/E Ratio", value: 28.5 },
       { name: "P/S Ratio", value: 6.8 },
+      { name: "P/B Ratio", value: 44.6 },
+      { name: "EV/EBITDA", value: 21.3 },
+      { name: "PEG Ratio", value: 2.1 },
+    ],
+  },
+  {
+    period: "2024",
+    metrics: [
+      { name: "P/E Ratio", value: 29.1 },
+      { name: "P/S Ratio", value: 6.5 },
+      { name: "P/B Ratio", value: 46.2 },
+      { name: "EV/EBITDA", value: 21.5 },
+      { name: "PEG Ratio", value: 1.9 },
     ],
   },
 ];
