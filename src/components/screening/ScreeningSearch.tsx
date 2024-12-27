@@ -30,11 +30,17 @@ const exchanges = [
 ];
 
 const metrics = [
-  { id: "revenue", name: "Total Revenues", category: "Income Statement" },
-  { id: "grossMargin", name: "Gross Profit Margin", category: "Profitability" },
+  { id: "revenue", name: "Revenue", category: "Income Statement" },
+  { id: "revenueGrowth", name: "Revenue Growth", category: "Growth" },
+  { id: "grossProfit", name: "Gross Profit", category: "Income Statement" },
+  { id: "operatingIncome", name: "Operating Income", category: "Income Statement" },
   { id: "netIncome", name: "Net Income", category: "Income Statement" },
   { id: "ebitda", name: "EBITDA", category: "Income Statement" },
-  { id: "marketCap", name: "Market Cap", category: "Valuation" },
+  { id: "totalAssets", name: "Total Assets", category: "Balance Sheet" },
+  { id: "totalLiabilities", name: "Total Liabilities", category: "Balance Sheet" },
+  { id: "totalEquity", name: "Total Equity", category: "Balance Sheet" },
+  { id: "operatingCashFlow", name: "Operating Cash Flow", category: "Cash Flow" },
+  { id: "freeCashFlow", name: "Free Cash Flow", category: "Cash Flow" },
 ];
 
 interface ScreeningSearchProps {
