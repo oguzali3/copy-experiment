@@ -1,10 +1,10 @@
+import React, { useState } from "react";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { UserCircle } from "lucide-react";
 import { MetricsSearch } from "@/components/MetricsSearch";
 import { CompanySearch } from "@/components/CompanySearch";
-import { useState } from "react";
 import { TimeRangePanel } from "@/components/financials/TimeRangePanel";
 import { MetricChart } from "@/components/financials/MetricChart";
 import { financialData } from "@/data/financialData";
