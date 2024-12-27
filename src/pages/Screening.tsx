@@ -2,15 +2,11 @@ import React, { useState } from "react";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
-import { UserCircle, X } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { ScreeningSearch } from "@/components/screening/ScreeningSearch";
-import { ScreeningTable } from "@/components/screening/ScreeningTable";
+import { UserCircle } from "lucide-react";
+import { FilterSection } from "@/components/screening/FilterSection";
+import { ScreenerCriteria } from "@/components/screening/ScreenerCriteria";
+import { ScreenerResults } from "@/components/screening/ScreenerResults";
 import { ScreeningMetric } from "@/types/screening";
-import { MetricInput } from "@/components/screening/MetricInput";
 
 const Screening = () => {
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
@@ -33,6 +29,13 @@ const Screening = () => {
     setSelectedMetrics(prev => prev.map(m => 
       m.id === metricId ? { ...m, min, max } : m
     ));
+  };
+
+  const handleReset = () => {
+    setSelectedCountries([]);
+    setSelectedIndustries([]);
+    setSelectedExchanges([]);
+    setSelectedMetrics([]);
   };
 
   return (
@@ -63,165 +66,48 @@ const Screening = () => {
               <Button
                 variant="outline"
                 className="text-sm"
-                onClick={() => {
-                  setSelectedCountries([]);
-                  setSelectedIndustries([]);
-                  setSelectedExchanges([]);
-                  setSelectedMetrics([]);
-                }}
+                onClick={handleReset}
               >
                 Reset Metrics
               </Button>
             </div>
 
             <div className="grid gap-6">
-              {/* Countries Section */}
-              <Card className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Countries</h2>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="exclude-countries"
-                      checked={excludeCountries}
-                      onCheckedChange={setExcludeCountries}
-                    />
-                    <Label htmlFor="exclude-countries">Exclude Countries</Label>
-                  </div>
-                </div>
-                <ScreeningSearch
-                  type="countries"
-                  selected={selectedCountries}
-                  onSelect={setSelectedCountries}
-                />
-                {selectedCountries.length > 0 && (
-                  <ScrollArea className="h-12 mt-2">
-                    <div className="flex gap-2 flex-wrap">
-                      {selectedCountries.map(country => (
-                        <div
-                          key={country}
-                          className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-sm"
-                        >
-                          {country}
-                          <X
-                            className="h-3 w-3 cursor-pointer"
-                            onClick={() => setSelectedCountries(prev => prev.filter(c => c !== country))}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </Card>
+              <FilterSection
+                title="Countries"
+                selected={selectedCountries}
+                onSelect={setSelectedCountries}
+                excludeEnabled={excludeCountries}
+                onExcludeChange={setExcludeCountries}
+                type="countries"
+              />
 
-              {/* Industries Section */}
-              <Card className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Industries</h2>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="exclude-industries"
-                      checked={excludeIndustries}
-                      onCheckedChange={setExcludeIndustries}
-                    />
-                    <Label htmlFor="exclude-industries">Exclude Industries</Label>
-                  </div>
-                </div>
-                <ScreeningSearch
-                  type="industries"
-                  selected={selectedIndustries}
-                  onSelect={setSelectedIndustries}
-                />
-                {selectedIndustries.length > 0 && (
-                  <ScrollArea className="h-12 mt-2">
-                    <div className="flex gap-2 flex-wrap">
-                      {selectedIndustries.map(industry => (
-                        <div
-                          key={industry}
-                          className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-sm"
-                        >
-                          {industry}
-                          <X
-                            className="h-3 w-3 cursor-pointer"
-                            onClick={() => setSelectedIndustries(prev => prev.filter(i => i !== industry))}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </Card>
+              <FilterSection
+                title="Industries"
+                selected={selectedIndustries}
+                onSelect={setSelectedIndustries}
+                excludeEnabled={excludeIndustries}
+                onExcludeChange={setExcludeIndustries}
+                type="industries"
+              />
 
-              {/* Exchanges Section */}
-              <Card className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">Exchanges</h2>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id="exclude-exchanges"
-                      checked={excludeExchanges}
-                      onCheckedChange={setExcludeExchanges}
-                    />
-                    <Label htmlFor="exclude-exchanges">Exclude Exchanges</Label>
-                  </div>
-                </div>
-                <ScreeningSearch
-                  type="exchanges"
-                  selected={selectedExchanges}
-                  onSelect={setSelectedExchanges}
-                />
-                {selectedExchanges.length > 0 && (
-                  <ScrollArea className="h-12 mt-2">
-                    <div className="flex gap-2 flex-wrap">
-                      {selectedExchanges.map(exchange => (
-                        <div
-                          key={exchange}
-                          className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded text-sm"
-                        >
-                          {exchange}
-                          <X
-                            className="h-3 w-3 cursor-pointer"
-                            onClick={() => setSelectedExchanges(prev => prev.filter(e => e !== exchange))}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </Card>
+              <FilterSection
+                title="Exchanges"
+                selected={selectedExchanges}
+                onSelect={setSelectedExchanges}
+                excludeEnabled={excludeExchanges}
+                onExcludeChange={setExcludeExchanges}
+                type="exchanges"
+              />
 
-              {/* Screening Criteria Section */}
-              <Card className="p-4">
-                <h2 className="text-lg font-semibold mb-4">Screener Criteria</h2>
-                <ScreeningSearch
-                  type="metrics"
-                  onMetricSelect={handleMetricAdd}
-                />
-                {selectedMetrics.length > 0 && (
-                  <div className="mt-4 space-y-4">
-                    {selectedMetrics.map(metric => (
-                      <MetricInput
-                        key={metric.id}
-                        metric={metric}
-                        onRemove={handleMetricRemove}
-                        onChange={handleMetricRangeChange}
-                      />
-                    ))}
-                  </div>
-                )}
-              </Card>
+              <ScreenerCriteria
+                selectedMetrics={selectedMetrics}
+                onMetricAdd={handleMetricAdd}
+                onMetricRemove={handleMetricRemove}
+                onMetricRangeChange={handleMetricRangeChange}
+              />
 
-              {/* Results Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Button className="bg-[#077dfa] hover:bg-[#077dfa]/90">
-                    Run Screener
-                  </Button>
-                  <div className="text-sm text-gray-500">
-                    Screener Results: 7
-                  </div>
-                </div>
-                <ScreeningTable metrics={selectedMetrics} />
-              </div>
+              <ScreenerResults metrics={selectedMetrics} />
             </div>
           </div>
         </main>
