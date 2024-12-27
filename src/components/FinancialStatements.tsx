@@ -39,31 +39,10 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   };
 
   return (
-    <Card className="p-6">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold">Financial Statements</h2>
-          <RadioGroup
-            defaultValue="annual"
-            onValueChange={(value) => setTimeFrame(value as "annual" | "quarterly" | "ttm")}
-            className="flex space-x-4"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="annual" id="annual" />
-              <Label htmlFor="annual">Annual</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="quarterly" id="quarterly" />
-              <Label htmlFor="quarterly">Quarterly</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="ttm" id="ttm" />
-              <Label htmlFor="ttm">TTM</Label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        {selectedMetrics.length > 0 && (
+    <div className="space-y-6">
+      {selectedMetrics.length > 0 && (
+        <Card className="p-6">
+          <h2 className="text-lg font-semibold mb-4">Selected Metrics</h2>
           <div className="space-y-4">
             {selectedMetrics.map(metricId => (
               <MetricChart 
@@ -73,43 +52,69 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
               />
             ))}
           </div>
-        )}
+        </Card>
+      )}
+      
+      <Card className="p-6">
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold">Financial Statements</h2>
+            <RadioGroup
+              defaultValue="annual"
+              onValueChange={(value) => setTimeFrame(value as "annual" | "quarterly" | "ttm")}
+              className="flex space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="annual" id="annual" />
+                <Label htmlFor="annual">Annual</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="quarterly" id="quarterly" />
+                <Label htmlFor="quarterly">Quarterly</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="ttm" id="ttm" />
+                <Label htmlFor="ttm">TTM</Label>
+              </div>
+            </RadioGroup>
+          </div>
 
-        <TimeRangePanel
-          startDate={startDate}
-          endDate={endDate}
-          sliderValue={sliderValue}
-          onSliderChange={handleSliderChange}
-          timePeriods={timePeriods}
-        />
+          <TimeRangePanel
+            startDate={startDate}
+            endDate={endDate}
+            sliderValue={sliderValue}
+            onSliderChange={handleSliderChange}
+            timePeriods={timePeriods}
+          />
 
-        <Tabs defaultValue="income" className="w-full">
-          <TabsList className="w-full justify-start mb-4">
-            <TabsTrigger value="income">Income Statement</TabsTrigger>
-            <TabsTrigger value="balance">Balance Sheet</TabsTrigger>
-            <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
-          </TabsList>
-          <TabsContent value="income">
-            <div className="space-y-6">
-              <IncomeStatement 
-                timeFrame={timeFrame} 
-                selectedMetrics={selectedMetrics}
-                onMetricsChange={setSelectedMetrics}
-              />
-            </div>
-          </TabsContent>
-          <TabsContent value="balance">
-            <div className="space-y-6">
-              <BalanceSheet timeFrame={timeFrame} />
-            </div>
-          </TabsContent>
-          <TabsContent value="cashflow">
-            <div className="space-y-6">
-              <CashFlow timeFrame={timeFrame} />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </Card>
+          <Tabs defaultValue="income" className="w-full">
+            <TabsList className="w-full justify-start mb-4">
+              <TabsTrigger value="income">Income Statement</TabsTrigger>
+              <TabsTrigger value="balance">Balance Sheet</TabsTrigger>
+              <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
+            </TabsList>
+            <TabsContent value="income">
+              <div className="space-y-6">
+                <IncomeStatement 
+                  timeFrame={timeFrame} 
+                  selectedMetrics={selectedMetrics}
+                  onMetricsChange={setSelectedMetrics}
+                />
+              </div>
+            </TabsContent>
+            <TabsContent value="balance">
+              <div className="space-y-6">
+                <BalanceSheet timeFrame={timeFrame} />
+              </div>
+            </TabsContent>
+            <TabsContent value="cashflow">
+              <div className="space-y-6">
+                <CashFlow timeFrame={timeFrame} />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </Card>
+    </div>
   );
 };
