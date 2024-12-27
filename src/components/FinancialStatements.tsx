@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
 import { TimeRangePanel } from "./financials/TimeRangePanel";
 import { MetricChart } from "./financials/MetricChart";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
@@ -15,6 +16,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [endDate, setEndDate] = useState("December 31, 2023");
   const [sliderValue, setSliderValue] = useState([0, 4]);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+  const [chartType, setChartType] = useState<"bar" | "line">("bar");
 
   // Define the available time periods
   const timePeriods = [
@@ -27,7 +29,6 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     setEndDate(`December 31, 20${19 + value[1]}`);
   };
 
-  // Sample data for metrics (this would normally come from your data source)
   const getMetricData = (metrics: string[]) => {
     const data = {
       annual: [
@@ -77,10 +78,22 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     <div className="space-y-6">
       {selectedMetrics.length > 0 && (
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">Selected Metrics</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">Selected Metrics</h2>
+            <Select value={chartType} onValueChange={(value: "bar" | "line") => setChartType(value)}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Chart Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="bar">Bar Chart</SelectItem>
+                <SelectItem value="line">Line Chart</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <MetricChart 
             data={getMetricData(selectedMetrics)}
             metrics={selectedMetrics.map(getMetricLabel)}
+            chartType={chartType}
           />
         </Card>
       )}
