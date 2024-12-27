@@ -1,34 +1,16 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState } from "react";
-import { MetricChart } from "./MetricChart";
+import { financialData } from "@/data/financialData";
 
 interface BalanceSheetProps {
   timeFrame: "annual" | "quarterly" | "ttm";
   selectedMetrics: string[];
   onMetricsChange: (metrics: string[]) => void;
+  ticker: string;
 }
 
-export const BalanceSheet = ({ timeFrame, selectedMetrics, onMetricsChange }: BalanceSheetProps) => {
-  const data = {
-    annual: [
-      { year: "2023", totalAssets: "110,716", totalLiabilities: "42,781", totalEquity: "67,935" },
-      { year: "2022", totalAssets: "44,187", totalLiabilities: "15,892", totalEquity: "28,295" },
-      { year: "2021", totalAssets: "44,187", totalLiabilities: "15,892", totalEquity: "28,295" },
-      { year: "2020", totalAssets: "28,791", totalLiabilities: "10,418", totalEquity: "18,373" },
-      { year: "2019", totalAssets: "17,315", totalLiabilities: "6,232", totalEquity: "11,083" }
-    ],
-    quarterly: [
-      { year: "Q4 2023", totalAssets: "110,716", totalLiabilities: "42,781", totalEquity: "67,935" },
-      { year: "Q3 2023", totalAssets: "102,483", totalLiabilities: "39,876", totalEquity: "62,607" },
-      { year: "Q2 2023", totalAssets: "92,154", totalLiabilities: "35,891", totalEquity: "56,263" }
-    ],
-    ttm: [
-      { year: "TTM", totalAssets: "110,716", totalLiabilities: "42,781", totalEquity: "67,935" }
-    ],
-  };
-
-  const currentData = data[timeFrame];
+export const BalanceSheet = ({ timeFrame, selectedMetrics, onMetricsChange, ticker }: BalanceSheetProps) => {
+  const currentData = financialData[ticker]?.[timeFrame] || [];
 
   const metrics = [
     { id: "totalAssets", label: "Total Assets" },
@@ -52,7 +34,7 @@ export const BalanceSheet = ({ timeFrame, selectedMetrics, onMetricsChange }: Ba
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
               {currentData.map((row) => (
-                <TableHead key={row.year} className="text-right min-w-[120px]">{row.year}</TableHead>
+                <TableHead key={row.period} className="text-right min-w-[120px]">{row.period}</TableHead>
               ))}
             </TableRow>
           </TableHeader>
@@ -68,7 +50,7 @@ export const BalanceSheet = ({ timeFrame, selectedMetrics, onMetricsChange }: Ba
                 </TableCell>
                 <TableCell className="font-medium bg-gray-50">{metric.label}</TableCell>
                 {currentData.map((row) => (
-                  <TableCell key={`${row.year}-${metric.id}`} className="text-right">
+                  <TableCell key={`${row.period}-${metric.id}`} className="text-right">
                     ${row[metric.id as keyof typeof row]}
                   </TableCell>
                 ))}
