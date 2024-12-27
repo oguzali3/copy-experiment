@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MetricChart } from "../financials/MetricChart";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface ValuationMetric {
   name: string;
@@ -82,7 +83,6 @@ const valuationMetrics: ValuationMetric[] = [
   }
 ];
 
-// Mock data for the chart
 const mockChartData = [
   {
     period: "Q1 2023",
@@ -151,36 +151,39 @@ export const ValuationMetrics = () => {
       )}
 
       <div className="bg-white rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[50px]"></TableHead>
-              <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
-              {["2019", "2020", "2021", "2022", "2023", "2024"].map((year) => (
-                <TableHead key={year} className="text-right min-w-[120px]">{year}</TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {valuationMetrics.map((metric) => (
-              <TableRow key={metric.name}>
-                <TableCell className="w-[50px] pr-0">
-                  <Checkbox
-                    id={`checkbox-${metric.name}`}
-                    checked={selectedMetrics.includes(metric.name)}
-                    onCheckedChange={() => handleMetricSelect(metric.name)}
-                  />
-                </TableCell>
-                <TableCell className="font-medium bg-gray-50">{metric.name}</TableCell>
+        <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
                 {["2019", "2020", "2021", "2022", "2023", "2024"].map((year) => (
-                  <TableCell key={year} className="text-right">
-                    {metric.historicalData[year]}
-                  </TableCell>
+                  <TableHead key={year} className="text-right min-w-[120px]">{year}</TableHead>
                 ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {valuationMetrics.map((metric) => (
+                <TableRow key={metric.name}>
+                  <TableCell className="w-[50px] pr-0">
+                    <Checkbox
+                      id={`checkbox-${metric.name}`}
+                      checked={selectedMetrics.includes(metric.name)}
+                      onCheckedChange={() => handleMetricSelect(metric.name)}
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium bg-gray-50">{metric.name}</TableCell>
+                  {["2019", "2020", "2021", "2022", "2023", "2024"].map((year) => (
+                    <TableCell key={year} className="text-right">
+                      {metric.historicalData[year]}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       </div>
     </div>
   );
