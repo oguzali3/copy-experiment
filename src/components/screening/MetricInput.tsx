@@ -29,33 +29,37 @@ export const MetricInput = ({ metric, onRemove, onChange }: MetricInputProps) =>
         />
       </div>
       <div className="flex gap-4">
-        <div className="flex-1 relative">
+        <div className="flex-1">
           <Label>Min</Label>
-          <div className="relative">
+          <div className="relative flex items-center">
             <Input
               type="number"
               placeholder="Min value"
               value={metric.min}
               onChange={(e) => onChange(metric.id, e.target.value, metric.max || '')}
-              className="pr-12"
+              className="pr-8"
             />
             {showMillionLabel && (
-              <span className="absolute right-12 top-1/2 -translate-y-1/2 text-gray-500">M</span>
+              <div className="absolute right-0 pr-7">
+                <span className="text-gray-500">M</span>
+              </div>
             )}
           </div>
         </div>
-        <div className="flex-1 relative">
+        <div className="flex-1">
           <Label>Max</Label>
-          <div className="relative">
+          <div className="relative flex items-center">
             <Input
               type="number"
               placeholder="Max value"
               value={metric.max}
               onChange={(e) => onChange(metric.id, metric.min || '', e.target.value)}
-              className="pr-12"
+              className="pr-8"
             />
             {showMillionLabel && (
-              <span className="absolute right-12 top-1/2 -translate-y-1/2 text-gray-500">M</span>
+              <div className="absolute right-0 pr-7">
+                <span className="text-gray-500">M</span>
+              </div>
             )}
           </div>
         </div>
