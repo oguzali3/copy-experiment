@@ -18,6 +18,11 @@ export const TimeRangePanel = ({
   onSliderChange,
   timePeriods,
 }: TimeRangePanelProps) => {
+  const handleMetricSelect = (metricId: string) => {
+    console.log("Metric selected:", metricId);
+    // This is just a placeholder since TimeRangePanel doesn't need metric selection
+  };
+
   return (
     <div className="flex flex-col space-y-4">
       <div className="flex items-center justify-between">
@@ -38,7 +43,7 @@ export const TimeRangePanel = ({
       />
 
       <div className="flex items-center gap-4">
-        <MetricsSearch />
+        <MetricsSearch onMetricSelect={handleMetricSelect} />
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" className="h-9 w-9">
             <RotateCcw className="h-4 w-4" />

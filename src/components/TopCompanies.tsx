@@ -69,11 +69,16 @@ export const TopCompanies = () => {
     setCompanies(prev => prev.filter(company => company.ticker !== tickerToRemove));
   };
 
+  const handleMetricSelect = (metricId: string) => {
+    console.log("Metric selected:", metricId);
+    // This is just a placeholder since TopCompanies doesn't need metric selection
+  };
+
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold text-[#111827]">Featured Companies</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <MetricsSearch />
+        <MetricsSearch onMetricSelect={handleMetricSelect} />
         <CompanySearch onCompanySelect={handleCompanySelect} />
       </div>
       <Card className="overflow-hidden">
