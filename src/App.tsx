@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Analysis from "./pages/Analysis";
 import CompanyNews from "./pages/CompanyNews";
 import Charting from "./pages/Charting";
+import Screening from "./pages/Screening";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/analysis" element={<Analysis />} />
               <Route path="/company/:ticker/news" element={<CompanyNews />} />
               <Route path="/charting" element={<Charting />} />
+              <Route path="/screening" element={<Screening />} />
             </Routes>
           </BrowserRouter>
         </div>
