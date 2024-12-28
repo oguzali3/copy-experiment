@@ -20,6 +20,8 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, t
     enabled: !!ticker,
   });
 
+  console.log('Raw Financial Data:', financialData); // Debug log
+
   const handleMetricToggle = (metricId: string) => {
     const newMetrics = selectedMetrics.includes(metricId)
       ? selectedMetrics.filter(id => id !== metricId)
@@ -51,18 +53,25 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, t
 
   // Function to get all available metrics from the API response
   const getAvailableMetrics = () => {
-    if (!financialData?.[0]) return [];
+    if (!financialData?.[0]) {
+      console.log('No financial data available'); // Debug log
+      return [];
+    }
     
     // Get all keys from the first data point
     const allKeys = Object.keys(financialData[0]);
+    console.log('Available keys:', allKeys); // Debug log
     
     // Filter out non-metric keys and sort alphabetically
-    return allKeys
+    const metrics = allKeys
       .filter(key => 
         !['date', 'symbol', 'reportedCurrency', 'period', 'link', 'finalLink'].includes(key) &&
         typeof financialData[0][key] === 'number'
       )
       .sort((a, b) => formatMetricLabel(a).localeCompare(formatMetricLabel(b)));
+    
+    console.log('Filtered metrics:', metrics); // Debug log
+    return metrics;
   };
 
   if (isLoading) {
@@ -90,8 +99,19 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, t
     );
   }
 
+  if (!financialData || !Array.isArray(financialData) || financialData.length === 0) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          No financial data available for {ticker}.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   // Filter data based on timeFrame
-  const filteredData = financialData?.filter((item: any) => {
+  const filteredData = financialData.filter((item: any) => {
     if (timeFrame === "annual") {
       return item.period === "FY";
     }
@@ -99,7 +119,7 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, t
       return item.period === "Q1" || item.period === "Q2" || item.period === "Q3" || item.period === "Q4";
     }
     return true;
-  }) || [];
+  });
 
   // Sort data by date in descending order
   const sortedData = [...filteredData].sort((a: any, b: any) => 
@@ -119,6 +139,17 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, t
   };
 
   const availableMetrics = getAvailableMetrics();
+
+  if (availableMetrics.length === 0) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          No metrics available for {ticker}.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="space-y-6">
