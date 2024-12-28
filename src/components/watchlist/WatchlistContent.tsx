@@ -7,9 +7,21 @@ import { WatchlistView } from "./WatchlistView";
 export type Stock = {
   ticker: string;
   name: string;
+  price: number;
+  change: number;
+  marketCap: number;
   metrics: {
     [key: string]: string | number;
   };
+  peRatio?: number;
+  pbRatio?: number;
+  psRatio?: number;
+  evEbitda?: number;
+  roe?: number;
+  roa?: number;
+  currentRatio?: number;
+  quickRatio?: number;
+  debtEquity?: number;
 };
 
 export type Watchlist = {
