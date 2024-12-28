@@ -47,7 +47,7 @@ const Settings = () => {
             {/* User Settings */}
             <section>
               <h2 className="text-sm font-medium text-muted-foreground mb-4">USER SETTINGS</h2>
-              <div className="bg-card dark:bg-[#2b2b35] rounded-lg p-4">
+              <div className="bg-white dark:bg-[#2b2b35] rounded-lg p-4 shadow-sm">
                 <div className="flex justify-between items-center">
                   <span>Email</span>
                   <Input
@@ -63,7 +63,7 @@ const Settings = () => {
             {/* Appearance */}
             <section>
               <h2 className="text-sm font-medium text-muted-foreground mb-4">APPEARANCE</h2>
-              <div className="bg-card dark:bg-[#2b2b35] rounded-lg p-4">
+              <div className="bg-white dark:bg-[#2b2b35] rounded-lg p-4 shadow-sm">
                 <div className="flex justify-between items-center">
                   <span>Dark Mode</span>
                   <Switch
@@ -77,7 +77,7 @@ const Settings = () => {
             {/* Visibility */}
             <section>
               <h2 className="text-sm font-medium text-muted-foreground mb-4">VISIBILITY</h2>
-              <div className="bg-card dark:bg-[#2b2b35] rounded-lg p-4">
+              <div className="bg-white dark:bg-[#2b2b35] rounded-lg p-4 shadow-sm">
                 <div className="flex justify-between items-center">
                   <div>
                     <div className="flex items-center gap-2">
@@ -97,13 +97,13 @@ const Settings = () => {
             <section>
               <h2 className="text-sm font-medium text-muted-foreground mb-4">SUBSCRIPTION</h2>
               <div className="space-y-2">
-                <div className="bg-card dark:bg-[#2b2b35] rounded-lg p-4">
+                <div className="bg-white dark:bg-[#2b2b35] rounded-lg p-4 shadow-sm">
                   <div className="flex justify-between items-center">
                     <span>Current Plan</span>
                     <span className="text-muted-foreground">Free</span>
                   </div>
                 </div>
-                <div className="bg-card dark:bg-[#2b2b35] rounded-lg p-4">
+                <div className="bg-white dark:bg-[#2b2b35] rounded-lg p-4 shadow-sm">
                   <div className="flex justify-between items-center cursor-pointer">
                     <span>Upgrade</span>
                     <ChevronRight className="h-4 w-4" />
@@ -116,13 +116,13 @@ const Settings = () => {
             <section>
               <h2 className="text-sm font-medium text-muted-foreground mb-4">BILLING</h2>
               <div className="space-y-2">
-                <div className="bg-card dark:bg-[#2b2b35] rounded-lg p-4">
+                <div className="bg-white dark:bg-[#2b2b35] rounded-lg p-4 shadow-sm">
                   <div className="flex justify-between items-center cursor-pointer">
                     <span>Payment Method</span>
                     <ChevronRight className="h-4 w-4" />
                   </div>
                 </div>
-                <div className="bg-card dark:bg-[#2b2b35] rounded-lg p-4">
+                <div className="bg-white dark:bg-[#2b2b35] rounded-lg p-4 shadow-sm">
                   <div className="flex justify-between items-center cursor-pointer">
                     <span>Invoices</span>
                     <ChevronRight className="h-4 w-4" />
@@ -135,13 +135,13 @@ const Settings = () => {
             <section>
               <h2 className="text-sm font-medium text-muted-foreground mb-4">HELP</h2>
               <div className="space-y-2">
-                <div className="bg-card dark:bg-[#2b2b35] rounded-lg p-4">
+                <div className="bg-white dark:bg-[#2b2b35] rounded-lg p-4 shadow-sm">
                   <div className="flex justify-between items-center cursor-pointer">
                     <span>Contact Us</span>
                     <ChevronRight className="h-4 w-4" />
                   </div>
                 </div>
-                <div className="bg-card dark:bg-[#2b2b35] rounded-lg p-4">
+                <div className="bg-white dark:bg-[#2b2b35] rounded-lg p-4 shadow-sm">
                   <div className="flex justify-between items-center cursor-pointer">
                     <span>FAQs</span>
                     <ChevronRight className="h-4 w-4" />
