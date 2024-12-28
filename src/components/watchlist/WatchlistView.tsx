@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Stock } from "./WatchlistContent";
 
 interface WatchlistViewProps {
   watchlist: {
