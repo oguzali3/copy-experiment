@@ -5,6 +5,7 @@ import { FilterSection } from "@/components/screening/FilterSection";
 import { ScreenerCriteria } from "@/components/screening/ScreenerCriteria";
 import { ScreenerResults } from "@/components/screening/ScreenerResults";
 import { ScreeningMetric } from "@/types/screening";
+import { Button } from "@/components/ui/button";
 
 const Screening = () => {
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
