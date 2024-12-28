@@ -14,14 +14,22 @@ serve(async (req) => {
   }
 
   try {
+    // Validate API key
+    if (!FMP_API_KEY) {
+      throw new Error('FMP_API_KEY is not configured')
+    }
+
     const { endpoint, symbol, query } = await req.json()
+    console.log('Request received:', { endpoint, symbol, query })
 
     if (endpoint === 'search' && query) {
       console.log('Searching for:', query)
       const searchUrl = `${FMP_BASE_URL}/search?query=${encodeURIComponent(query)}&limit=10&apikey=${FMP_API_KEY}`
+      console.log('Search URL:', searchUrl)
       
       const searchResponse = await fetch(searchUrl)
       if (!searchResponse.ok) {
+        console.error('Search API error:', await searchResponse.text())
         throw new Error(`Search API failed with status: ${searchResponse.status}`)
       }
       
@@ -38,10 +46,11 @@ serve(async (req) => {
       // Get quotes for all found symbols
       const symbols = searchData.map((item: any) => item.symbol).join(',')
       const quoteUrl = `${FMP_BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`
-      console.log('Fetching quotes for:', symbols)
+      console.log('Quote URL:', quoteUrl)
 
       const quoteResponse = await fetch(quoteUrl)
       if (!quoteResponse.ok) {
+        console.error('Quote API error:', await quoteResponse.text())
         throw new Error(`Quote API failed with status: ${quoteResponse.status}`)
       }
 
@@ -72,10 +81,7 @@ serve(async (req) => {
     }
 
     if (!symbol) {
-      return new Response(
-        JSON.stringify({ error: 'Symbol is required' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
+      throw new Error('Symbol is required')
     }
 
     let url: string
@@ -96,19 +102,19 @@ serve(async (req) => {
         url = `${FMP_BASE_URL}/cash-flow-statement/${symbol}?limit=120&apikey=${FMP_API_KEY}`
         break
       default:
-        return new Response(
-          JSON.stringify({ error: 'Invalid endpoint' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
+        throw new Error('Invalid endpoint')
     }
 
     console.log(`Fetching data from ${url}`)
     const response = await fetch(url)
     if (!response.ok) {
+      console.error('API error:', await response.text())
       throw new Error(`API request failed with status: ${response.status}`)
     }
     
     const data = await response.json()
+    console.log('API response:', data)
+    
     return new Response(
       JSON.stringify(data),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
