@@ -25,8 +25,8 @@ serve(async (req) => {
 
     if (endpoint === 'search' && query) {
       console.log('Searching for:', query)
-      // Updated search endpoint to use search-ticker endpoint which is more reliable
-      const searchUrl = `${FMP_BASE_URL}/search-ticker?query=${encodeURIComponent(query)}&limit=10&exchange=NASDAQ,NYSE&apikey=${FMP_API_KEY}`
+      // Use search endpoint which returns more comprehensive results
+      const searchUrl = `${FMP_BASE_URL}/search?query=${encodeURIComponent(query)}&limit=10&apikey=${FMP_API_KEY}`
       console.log('Search URL:', searchUrl)
       
       const searchResponse = await fetch(searchUrl)
@@ -47,6 +47,12 @@ serve(async (req) => {
       }
       
       console.log('Search results:', searchData)
+
+      // Filter for only NASDAQ and NYSE stocks
+      searchData = searchData.filter((item: any) => 
+        item.exchangeShortName === 'NASDAQ' || 
+        item.exchangeShortName === 'NYSE'
+      )
 
       if (!Array.isArray(searchData) || searchData.length === 0) {
         return new Response(
