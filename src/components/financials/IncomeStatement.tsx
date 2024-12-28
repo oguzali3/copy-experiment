@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchFinancialData } from "@/utils/financialApi";
 import { MetricRow } from "./MetricRow";
 import { orderedMetricIds, metricKeyMapping, getMetricOrder } from "@/utils/financialMetricsOrder";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface IncomeStatementProps {
   timeFrame: "annual" | "quarterly" | "ttm";
@@ -45,7 +46,10 @@ export const IncomeStatement = ({
       .replace(/Sg And A/g, 'SG&A');
   };
 
-  const formatValue = (value: number) => {
+  const formatValue = (value: number, isPercentage?: boolean) => {
+    if (isPercentage) {
+      return `${value.toFixed(2)}%`;
+    }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -125,18 +129,68 @@ export const IncomeStatement = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {availableMetrics.map((metricId) => (
-              <MetricRow
-                key={metricId}
-                metricId={metricId}
-                label={formatMetricLabel(metricId)}
-                values={filteredData.map((row: any) => row[metricId] || 0)}
-                dates={filteredData.map((row: any) => row.date)}
-                isSelected={selectedMetrics.includes(metricId)}
-                onToggle={handleMetricToggle}
-                formatValue={formatValue}
-              />
-            ))}
+            {/* Revenue Row */}
+            <TableRow>
+              <TableCell className="w-[50px] pr-0">
+                <Checkbox
+                  id="checkbox-revenue"
+                  checked={selectedMetrics.includes('revenue')}
+                  onCheckedChange={() => handleMetricToggle('revenue')}
+                />
+              </TableCell>
+              <TableCell className="font-medium bg-gray-50">
+                Revenue
+              </TableCell>
+              {filteredData.map((row: any, index) => (
+                <TableCell key={`${row.date}-revenue`} className="text-right">
+                  {formatValue(parseFloat(row.revenue || 0))}
+                </TableCell>
+              ))}
+            </TableRow>
+
+            {/* Revenue Growth Row */}
+            <TableRow>
+              <TableCell className="w-[50px] pr-0">
+                <Checkbox
+                  id="checkbox-revenueGrowth"
+                  checked={selectedMetrics.includes('revenueGrowth')}
+                  onCheckedChange={() => handleMetricToggle('revenueGrowth')}
+                />
+              </TableCell>
+              <TableCell className="font-medium bg-gray-50 pl-8">
+                Revenue Growth (YoY)
+              </TableCell>
+              {filteredData.map((row: any, index) => (
+                <TableCell 
+                  key={`${row.date}-revenueGrowth`} 
+                  className={`text-right ${
+                    parseFloat(row.revenueGrowth) > 0 
+                      ? 'text-green-600' 
+                      : parseFloat(row.revenueGrowth) < 0 
+                        ? 'text-red-600' 
+                        : ''
+                  }`}
+                >
+                  {formatValue(parseFloat(row.revenueGrowth || 0), true)}
+                </TableCell>
+              ))}
+            </TableRow>
+
+            {/* Other Metrics */}
+            {availableMetrics
+              .filter(metricId => !['revenue', 'revenueGrowth'].includes(metricId))
+              .map((metricId) => (
+                <MetricRow
+                  key={metricId}
+                  metricId={metricId}
+                  label={formatMetricLabel(metricId)}
+                  values={filteredData.map((row: any) => row[metricId] || 0)}
+                  dates={filteredData.map((row: any) => row.date)}
+                  isSelected={selectedMetrics.includes(metricId)}
+                  onToggle={handleMetricToggle}
+                  formatValue={formatValue}
+                />
+              ))}
           </TableBody>
         </Table>
       </div>
