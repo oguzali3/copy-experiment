@@ -10,14 +10,8 @@ import {
 } from "@/components/ui/command";
 import { useState } from "react";
 import { Button } from "./ui/button";
-
-const stocksData = [
-  { name: "Apple Inc.", ticker: "AAPL", price: "182.52", change: "+1.25", changePercent: "+0.69", marketCap: "2.85T", summary: "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide." },
-  { name: "Microsoft", ticker: "MSFT", price: "420.45", change: "+2.80", changePercent: "+0.67", marketCap: "3.12T", summary: "Microsoft Corporation develops, licenses, and supports software, services, devices, and solutions worldwide." },
-  { name: "Amazon", ticker: "AMZN", price: "178.15", change: "-1.20", changePercent: "-0.67", marketCap: "1.85T", summary: "Amazon.com, Inc. engages in the retail sale of consumer products and subscriptions worldwide." },
-  { name: "Alphabet", ticker: "GOOGL", price: "147.68", change: "+0.85", changePercent: "+0.58", marketCap: "1.87T", summary: "Alphabet Inc. provides various products and platforms in the United States, Europe, the Middle East, Africa, and internationally." },
-  { name: "Meta", ticker: "META", price: "505.95", change: "+4.20", changePercent: "+0.84", marketCap: "1.28T", summary: "Meta Platforms, Inc. engages in the development of social media applications." }
-];
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SearchBarProps {
   onStockSelect: (stock: any) => void;
@@ -27,10 +21,38 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredStocks = stocksData.filter(stock => 
-    stock.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    stock.ticker.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const { data: stocksData, isLoading } = useQuery({
+    queryKey: ['search-stocks', searchQuery],
+    queryFn: async () => {
+      if (!searchQuery) return [];
+      
+      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+        body: { endpoint: 'search', query: searchQuery }
+      });
+
+      if (error) {
+        console.error('Error fetching stocks:', error);
+        return [];
+      }
+
+      return data || [];
+    },
+    enabled: searchQuery.length > 0
+  });
+
+  const handleSelect = (stock: any) => {
+    onStockSelect({
+      name: stock.name,
+      ticker: stock.symbol,
+      price: stock.price,
+      change: stock.change,
+      changePercent: stock.changesPercentage,
+      marketCap: stock.marketCap,
+      summary: stock.description || `${stock.name} is a publicly traded company.`,
+    });
+    setSearchQuery("");
+    setOpen(false);
+  };
 
   return (
     <div className="relative w-full">
@@ -50,26 +72,24 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
             onValueChange={setSearchQuery}
           />
           <CommandList>
-            <CommandEmpty>No stocks found.</CommandEmpty>
+            <CommandEmpty>
+              {isLoading ? "Searching..." : "No stocks found."}
+            </CommandEmpty>
             <CommandGroup heading="Stocks">
-              {filteredStocks.map((stock) => (
+              {stocksData?.map((stock: any) => (
                 <CommandItem
-                  key={stock.ticker}
-                  onSelect={() => {
-                    onStockSelect(stock);
-                    setSearchQuery("");
-                    setOpen(false);
-                  }}
+                  key={stock.symbol}
+                  onSelect={() => handleSelect(stock)}
                   className="flex items-center justify-between px-4 py-2 hover:bg-accent cursor-pointer"
                 >
                   <div className="flex flex-col">
                     <p className="text-sm font-medium">{stock.name}</p>
-                    <p className="text-xs text-muted-foreground">${stock.ticker}</p>
+                    <p className="text-xs text-muted-foreground">${stock.symbol}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium">${stock.price}</p>
                     <p className={`text-xs ${parseFloat(stock.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {stock.change} ({stock.changePercent})
+                      {stock.change} ({stock.changesPercentage}%)
                     </p>
                   </div>
                 </CommandItem>

@@ -5,80 +5,68 @@ import { CompanyHeader } from "@/components/analysis/CompanyHeader";
 import { NavigationTabs } from "@/components/analysis/NavigationTabs";
 import { DashboardHeader } from "@/components/shared/DashboardHeader";
 import { AnalysisContent } from "@/components/analysis/AnalysisContent";
-
-// Company data mapping (in a real app, this would come from an API)
-const companyDataMap: Record<string, any> = {
-  AAPL: {
-    name: "Apple Inc.",
-    ticker: "AAPL",
-    price: "182.52",
-    change: "+1.25",
-    changePercent: "+0.69",
-    marketCap: "2.85T",
-    summary: "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide.",
-    ceo: "Tim Cook",
-    website: "www.apple.com",
-    founded: "1976",
-    ratios: {
-      peRatio: "28.5x",
-      pbRatio: "44.6x",
-      debtToEquity: "1.76",
-      currentRatio: "0.98",
-      quickRatio: "0.92",
-      returnOnEquity: "145.81%"
-    }
-  },
-  MSFT: {
-    name: "Microsoft Corporation",
-    ticker: "MSFT",
-    price: "420.55",
-    change: "+2.80",
-    changePercent: "+0.67",
-    marketCap: "3.12T",
-    summary: "Microsoft Corporation develops, licenses, and supports software, services, devices, and solutions worldwide.",
-    ceo: "Satya Nadella",
-    website: "www.microsoft.com",
-    founded: "1975",
-    ratios: {
-      peRatio: "32.4x",
-      pbRatio: "12.8x",
-      debtToEquity: "0.35",
-      currentRatio: "1.66",
-      quickRatio: "1.64",
-      returnOnEquity: "38.82%"
-    }
-  },
-  // Add more companies as needed
-};
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Analysis = () => {
   const [searchParams] = useSearchParams();
-  const urlTicker = searchParams.get("ticker");
-  const [selectedStock, setSelectedStock] = useState(companyDataMap[urlTicker || "AAPL"]);
+  const urlTicker = searchParams.get("ticker") || "AAPL";
   const [activeTab, setActiveTab] = useState("overview");
 
-  useEffect(() => {
-    if (urlTicker && companyDataMap[urlTicker]) {
-      setSelectedStock(companyDataMap[urlTicker]);
+  const { data: companyData, isLoading } = useQuery({
+    queryKey: ['company-profile', urlTicker],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+        body: { endpoint: 'profile', symbol: urlTicker }
+      });
+
+      if (error) throw error;
+      return data[0];
+    },
+    enabled: !!urlTicker
+  });
+
+  const { data: quoteData } = useQuery({
+    queryKey: ['company-quote', urlTicker],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+        body: { endpoint: 'quote', symbol: urlTicker }
+      });
+
+      if (error) throw error;
+      return data[0];
+    },
+    enabled: !!urlTicker
+  });
+
+  const selectedStock = {
+    name: companyData?.companyName || "Loading...",
+    ticker: urlTicker,
+    price: quoteData?.price?.toFixed(2) || "0.00",
+    change: quoteData?.change?.toFixed(2) || "0.00",
+    changePercent: quoteData?.changesPercentage?.toFixed(2) || "0.00",
+    marketCap: quoteData?.marketCap || "N/A",
+    summary: companyData?.description || "Loading company description...",
+    ceo: companyData?.ceo || "N/A",
+    website: companyData?.website || `www.${urlTicker.toLowerCase()}.com`,
+    founded: companyData?.ipoDate || "N/A",
+    ratios: {
+      peRatio: quoteData?.pe?.toFixed(2) + "x" || "N/A",
+      pbRatio: quoteData?.priceToBook?.toFixed(2) + "x" || "N/A",
+      debtToEquity: (quoteData?.debtToEquity || 0).toFixed(2),
+      currentRatio: "N/A",
+      quickRatio: "N/A",
+      returnOnEquity: (quoteData?.returnOnEquity || 0).toFixed(2) + "%"
     }
-  }, [urlTicker]);
+  };
 
   const handleStockSelect = (stock: any) => {
-    setSelectedStock({
-      ...stock,
-      ceo: stock.ceo || "N/A",
-      website: `www.${stock.ticker.toLowerCase()}.com`,
-      founded: stock.founded || "N/A",
-      ratios: stock.ratios || {
-        peRatio: "N/A",
-        pbRatio: "N/A",
-        debtToEquity: "N/A",
-        currentRatio: "N/A",
-        quickRatio: "N/A",
-        returnOnEquity: "N/A"
-      }
-    });
+    window.location.href = `/analysis?ticker=${stock.ticker}`;
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
