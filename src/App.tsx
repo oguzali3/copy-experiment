@@ -12,6 +12,7 @@ import Analysis from "./pages/Analysis";
 import CompanyNews from "./pages/CompanyNews";
 import Charting from "./pages/Charting";
 import Screening from "./pages/Screening";
+import Watchlists from "./pages/Watchlists";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/company/:ticker/news" element={<CompanyNews />} />
               <Route path="/charting" element={<Charting />} />
               <Route path="/screening" element={<Screening />} />
+              <Route path="/watchlists" element={<Watchlists />} />
             </Routes>
           </BrowserRouter>
         </div>
