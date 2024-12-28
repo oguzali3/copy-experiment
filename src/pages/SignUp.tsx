@@ -1,41 +1,79 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { supabase } from "@/integrations/supabase/client";
+import { useSessionContext } from '@supabase/auth-helpers-react';
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const { session, isLoading } = useSessionContext();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [signingUp, setSigningUp] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    if (session) {
+      navigate("/dashboard");
+    }
+  }, [session, navigate]);
+
+  const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    setSigningUp(true);
     
-    // For demo purposes, just show success and redirect
-    toast.success("Account created successfully!");
-    navigate("/");
-    setLoading(false);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Sign up successful! Please check your email to verify your account.");
+        navigate("/signin");
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+      console.error("Error:", error);
+    } finally {
+      setSigningUp(false);
+    }
   };
 
   const handleGoogleSignUp = async () => {
-    setLoading(true);
-    
-    // Simulate Google sign-up
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    toast.success("Account created successfully with Google!");
-    navigate("/");
-    setLoading(false);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      
+      if (error) {
+        toast.error("Error signing up with Google");
+        console.error("Error:", error.message);
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+      console.error("Error:", error);
+    }
   };
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -44,7 +82,7 @@ const SignUp = () => {
         <div className="w-full max-w-md space-y-8 p-8 bg-white rounded-xl shadow-lg">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-[#111827]">Create an account</h2>
-            <p className="mt-2 text-gray-600">Start your journey with us</p>
+            <p className="mt-2 text-gray-600">Sign up to get started</p>
           </div>
 
           <div className="mt-8">
@@ -52,7 +90,6 @@ const SignUp = () => {
               onClick={handleGoogleSignUp}
               variant="outline"
               className="w-full flex items-center justify-center gap-2"
-              disabled={loading}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -80,28 +117,13 @@ const SignUp = () => {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                <span className="px-2 bg-white text-gray-500">Or continue with email</span>
               </div>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+          <form onSubmit={handleEmailSignUp} className="mt-8 space-y-6">
             <div className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                  Full name
-                </label>
-                <Input
-                  id="name"
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="mt-1"
-                  placeholder="Enter your full name"
-                />
-              </div>
-
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   Email address
@@ -128,7 +150,22 @@ const SignUp = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="mt-1"
-                  placeholder="Create a password"
+                  placeholder="Enter your password"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                  Confirm Password
+                </label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="mt-1"
+                  placeholder="Confirm your password"
                 />
               </div>
             </div>
@@ -136,9 +173,9 @@ const SignUp = () => {
             <Button
               type="submit"
               className="w-full bg-[#077dfa] hover:bg-[#077dfa]/90"
-              disabled={loading}
+              disabled={signingUp}
             >
-              {loading ? "Creating account..." : "Sign up"}
+              {signingUp ? "Signing up..." : "Sign up with Email"}
             </Button>
 
             <p className="text-center text-sm text-gray-600">
