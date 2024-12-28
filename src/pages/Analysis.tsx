@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { CompanyHeader } from "@/components/analysis/CompanyHeader";
 import { NavigationTabs } from "@/components/analysis/NavigationTabs";
-import { AnalysisHeader } from "@/components/analysis/AnalysisHeader";
+import { DashboardHeader } from "@/components/shared/DashboardHeader";
 import { AnalysisContent } from "@/components/analysis/AnalysisContent";
 
 // Company data mapping (in a real app, this would come from an API)
@@ -84,7 +84,7 @@ const Analysis = () => {
     <div className="flex h-screen w-full overflow-hidden">
       <DashboardSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <AnalysisHeader />
+        <DashboardHeader />
         <main className="flex-1 p-6 space-y-6 overflow-y-auto bg-gray-50">
           <CompanyHeader {...selectedStock} />
           <NavigationTabs activeTab={activeTab} onTabChange={setActiveTab} />
