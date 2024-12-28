@@ -5,6 +5,8 @@ import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { UserCircle, Settings, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,9 +21,20 @@ const Dashboard = () => {
     navigate('/analysis', { state: { stock } });
   };
 
-  const handleLogout = () => {
-    // Add any logout logic here (clearing tokens, etc)
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast.error("Error signing out");
+        console.error("Error:", error.message);
+      } else {
+        toast.success("Signed out successfully");
+        navigate('/');
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+      console.error("Error:", error);
+    }
   };
 
   return (
