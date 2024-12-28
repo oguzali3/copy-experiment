@@ -76,6 +76,7 @@ export const WatchlistView = ({ watchlist, onAddWatchlist, onDeleteWatchlist, on
       price: Math.random() * 1000,
       change: (Math.random() - 0.5) * 10,
       marketCap: Math.random() * 1000000000000,
+      metrics: {}, // Add empty metrics object
       peRatio: Math.random() * 50,
       pbRatio: Math.random() * 10,
       psRatio: Math.random() * 15,
