@@ -21,8 +21,8 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Remove "$" from the search query
-  const sanitizedQuery = searchQuery.replace(/\$/g, '');
+  // Remove "$" and trim whitespace from the search query
+  const sanitizedQuery = searchQuery.replace(/\$/g, '').trim().toLowerCase();
 
   const { data: stocksData, isLoading, error } = useQuery({
     queryKey: ['search-stocks', sanitizedQuery],
@@ -40,9 +40,13 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
         throw error;
       }
 
+      // Log the response for debugging
+      console.log('Search response:', data);
       return data || [];
     },
-    enabled: sanitizedQuery.length > 0
+    enabled: sanitizedQuery.length > 0,
+    staleTime: 30000, // Cache results for 30 seconds
+    retry: 1 // Only retry once on failure
   });
 
   const handleSelect = (stock: any) => {
@@ -83,7 +87,7 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
               ) : error ? (
                 "Error searching stocks. Please try again."
               ) : stocksData?.length === 0 ? (
-                "No stocks found."
+                "No stocks found. Try searching with the company name or ticker symbol."
               ) : (
                 "Start typing to search..."
               )}
