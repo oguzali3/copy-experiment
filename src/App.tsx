@@ -13,6 +13,7 @@ import CompanyNews from "./pages/CompanyNews";
 import Charting from "./pages/Charting";
 import Screening from "./pages/Screening";
 import Watchlists from "./pages/Watchlists";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -20,7 +21,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <SidebarProvider>
-        <div className="min-h-screen flex w-full">
+        <div className="min-h-screen flex w-full dark:bg-[#1c1c20] dark:text-white">
           <Toaster />
           <Sonner />
           <BrowserRouter>
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/charting" element={<Charting />} />
               <Route path="/screening" element={<Screening />} />
               <Route path="/watchlists" element={<Watchlists />} />
+              <Route path="/settings" element={<Settings />} />
             </Routes>
           </BrowserRouter>
         </div>
