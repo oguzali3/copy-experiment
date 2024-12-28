@@ -13,6 +13,35 @@ interface IncomeStatementProps {
   ticker: string;
 }
 
+// Define the preferred order of metrics
+const orderedMetricIds = [
+  "revenue",
+  "revenueGrowth",
+  "costOfRevenue",
+  "grossProfit",
+  "grossProfitRatio",
+  "sellingGeneralAndAdministrativeExpenses",
+  "researchAndDevelopmentExpenses",
+  "operatingExpenses",
+  "operatingIncome",
+  "operatingIncomeRatio",
+  "interestExpense",
+  "interestIncome",
+  "totalOtherIncomeExpensesNet",
+  "incomeBeforeTax",
+  "incomeBeforeTaxRatio",
+  "incomeTaxExpense",
+  "netIncome",
+  "netIncomeRatio",
+  "eps",
+  "epsdiluted",
+  "weightedAverageShsOut",
+  "weightedAverageShsOutDil",
+  "ebitda",
+  "ebitdaratio",
+  // Add any additional metrics in the desired order
+];
+
 export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, ticker }: IncomeStatementProps) => {
   const { data: financialData, isLoading, error } = useQuery({
     queryKey: ['income-statement', ticker],
@@ -62,16 +91,15 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, t
     const allKeys = Object.keys(financialData[0]);
     console.log('Available keys:', allKeys); // Debug log
     
-    // Filter out non-metric keys and sort alphabetically
+    // Filter out non-metric keys
     const metrics = allKeys
       .filter(key => 
         !['date', 'symbol', 'reportedCurrency', 'period', 'link', 'finalLink'].includes(key) &&
         typeof financialData[0][key] === 'number'
-      )
-      .sort((a, b) => formatMetricLabel(a).localeCompare(formatMetricLabel(b)));
+      );
     
-    console.log('Filtered metrics:', metrics); // Debug log
-    return metrics;
+    // Sort metrics according to the ordered list
+    return orderedMetricIds.filter(id => metrics.includes(id));
   };
 
   if (isLoading) {
