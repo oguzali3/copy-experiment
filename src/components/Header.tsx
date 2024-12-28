@@ -2,9 +2,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
+import { useSessionContext } from '@supabase/auth-helpers-react';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Header = () => {
   const navigate = useNavigate();
+  const { session } = useSessionContext();
   const [isScrolled, setIsScrolled] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [show, setShow] = useState(true);
@@ -33,6 +37,22 @@ export const Header = () => {
     window.addEventListener("scroll", controlNavbar);
     return () => window.removeEventListener("scroll", controlNavbar);
   }, [lastScrollY]);
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast.error("Error signing out");
+        console.error("Error:", error.message);
+      } else {
+        toast.success("Signed out successfully");
+        navigate("/");
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+      console.error("Error:", error);
+    }
+  };
 
   return (
     <header
@@ -64,19 +84,39 @@ export const Header = () => {
 
           {/* Auth Buttons */}
           <div className="flex items-center space-x-4">
-            <Button 
-              variant="ghost" 
-              className="hidden md:inline-flex"
-              onClick={() => navigate("/signin")}
-            >
-              Sign In
-            </Button>
-            <Button 
-              className="bg-[#077dfa] hover:bg-[#077dfa]/90"
-              onClick={() => navigate("/signup")}
-            >
-              Sign Up
-            </Button>
+            {session ? (
+              <>
+                <Button 
+                  variant="ghost" 
+                  className="hidden md:inline-flex"
+                  onClick={() => navigate("/dashboard")}
+                >
+                  Dashboard
+                </Button>
+                <Button 
+                  className="bg-[#077dfa] hover:bg-[#077dfa]/90"
+                  onClick={handleSignOut}
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button 
+                  variant="ghost" 
+                  className="hidden md:inline-flex"
+                  onClick={() => navigate("/signin")}
+                >
+                  Sign In
+                </Button>
+                <Button 
+                  className="bg-[#077dfa] hover:bg-[#077dfa]/90"
+                  onClick={() => navigate("/signup")}
+                >
+                  Sign Up
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
