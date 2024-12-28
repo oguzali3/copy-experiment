@@ -1,1 +1,8 @@
 project_id = "eiilyloldbgnxtrysaky"
+
+[api]
+enabled = true
+url = "https://eiilyloldbgnxtrysaky.supabase.co"
+
+[functions.fetch-financial-data]
+verify_jwt = false
