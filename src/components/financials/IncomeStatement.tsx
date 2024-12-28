@@ -1,124 +1,139 @@
-import { MetricChart } from "./MetricChart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useState } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useQuery } from "@tanstack/react-query";
+import { fetchFinancialData } from "@/utils/financialApi";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface IncomeStatementProps {
-  data: any[];
-  timeRange: string;
+  timeFrame: "annual" | "quarterly" | "ttm";
+  selectedMetrics: string[];
+  onMetricsChange: (metrics: string[]) => void;
+  ticker: string;
 }
 
-export const IncomeStatement = ({ data = [], timeRange }: IncomeStatementProps) => {
-  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
-  const [metricTypes, setMetricTypes] = useState<Record<string, 'bar' | 'line'>>({});
+export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, ticker }: IncomeStatementProps) => {
+  const { data: financialData, isLoading, error } = useQuery({
+    queryKey: ['income-statement', ticker],
+    queryFn: () => fetchFinancialData('income-statement', ticker),
+    enabled: !!ticker,
+  });
 
-  // Format large numbers
-  const formatNumber = (num: number) => {
-    if (Math.abs(num) >= 1e12) return (num / 1e12).toFixed(1) + 'T';
-    if (Math.abs(num) >= 1e9) return (num / 1e9).toFixed(1) + 'B';
-    if (Math.abs(num) >= 1e6) return (num / 1e6).toFixed(1) + 'M';
-    if (Math.abs(num) >= 1e3) return (num / 1e3).toFixed(1) + 'K';
-    return num.toString();
-  };
-
-  // Sort data by date and get the most recent periods
-  const sortedData = [...(data || [])].sort((a, b) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  ).slice(0, 5);
+  console.log('Income Statement Data:', financialData);
 
   const metrics = [
-    { key: "revenue", label: "Revenue" },
-    { key: "grossProfit", label: "Gross Profit" },
-    { key: "operatingIncome", label: "Operating Income" },
-    { key: "netIncome", label: "Net Income" },
-    { key: "eps", label: "EPS" },
-    { key: "ebitda", label: "EBITDA" }
+    { id: "revenue", label: "Revenue", key: "revenue" },
+    { id: "revenueGrowth", label: "Revenue Growth", key: "revenueGrowth" },
+    { id: "costOfRevenue", label: "Cost of Revenue", key: "costOfRevenue" },
+    { id: "grossProfit", label: "Gross Profit", key: "grossProfit" },
+    { id: "sga", label: "SG&A", key: "sellingGeneralAndAdministrativeExpenses" },
+    { id: "researchDevelopment", label: "R&D", key: "researchAndDevelopmentExpenses" },
+    { id: "operatingExpenses", label: "Operating Expenses", key: "operatingExpenses" },
+    { id: "operatingIncome", label: "Operating Income", key: "operatingIncome" },
+    { id: "netIncome", label: "Net Income", key: "netIncome" },
+    { id: "ebitda", label: "EBITDA", key: "ebitda" }
   ];
 
-  const chartData = sortedData.map(period => ({
-    period: new Date(period.date).getFullYear().toString(),
-    metrics: metrics.map(metric => ({
-      name: metric.label,
-      value: period[metric.key] || 0
-    }))
-  }));
-
-  const handleMetricSelect = (metricName: string) => {
-    if (selectedMetrics.includes(metricName)) {
-      setSelectedMetrics(selectedMetrics.filter(m => m !== metricName));
-      const newMetricTypes = { ...metricTypes };
-      delete newMetricTypes[metricName];
-      setMetricTypes(newMetricTypes);
-    } else {
-      setSelectedMetrics([...selectedMetrics, metricName]);
-      setMetricTypes(prev => ({
-        ...prev,
-        [metricName]: 'bar'
-      }));
-    }
+  const handleMetricToggle = (metricId: string) => {
+    const newMetrics = selectedMetrics.includes(metricId)
+      ? selectedMetrics.filter(id => id !== metricId)
+      : [...selectedMetrics, metricId];
+    onMetricsChange(newMetrics);
   };
 
-  const handleMetricTypeChange = (metric: string, type: 'bar' | 'line') => {
-    setMetricTypes(prev => ({
-      ...prev,
-      [metric]: type
-    }));
-  };
-
-  if (!data || data.length === 0) {
-    return <div>No income statement data available.</div>;
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="flex space-x-4">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-[200px]" />
+            <Skeleton className="h-4 w-[100px]" />
+          </div>
+        ))}
+      </div>
+    );
   }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Error loading financial data. Please try again later.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // Filter data based on timeFrame
+  const filteredData = financialData?.filter((item: any) => {
+    if (timeFrame === "annual") {
+      return item.period === "FY";
+    }
+    if (timeFrame === "quarterly") {
+      return item.period === "Q1" || item.period === "Q2" || item.period === "Q3" || item.period === "Q4";
+    }
+    return true;
+  }) || [];
+
+  // Sort data by date in descending order
+  const sortedData = [...filteredData].sort((a: any, b: any) => 
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  // Take only the last 5 periods
+  const currentData = sortedData.slice(0, 5);
+
+  const formatValue = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      notation: 'compact',
+      maximumFractionDigits: 1
+    }).format(value);
+  };
 
   return (
     <div className="space-y-6">
-      {selectedMetrics.length > 0 && (
-        <MetricChart
-          data={chartData}
-          metrics={selectedMetrics}
-          metricTypes={metricTypes}
-          onMetricTypeChange={handleMetricTypeChange}
-        />
-      )}
-      
-      <ScrollArea className="h-[600px] rounded-md border">
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[200px]">Metric</TableHead>
-              {sortedData.map((period) => (
-                <TableHead key={period.date} className="text-right">
-                  {new Date(period.date).getFullYear()}
+              <TableHead className="w-[50px]"></TableHead>
+              <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
+              {currentData.map((row: any) => (
+                <TableHead key={row.date} className="text-right min-w-[120px]">
+                  {new Date(row.date).toLocaleDateString('en-US', { 
+                    year: 'numeric',
+                    month: 'short'
+                  })}
                 </TableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
             {metrics.map((metric) => (
-              <TableRow key={metric.key}>
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedMetrics.includes(metric.label)}
-                      onChange={() => handleMetricSelect(metric.label)}
-                      className="h-4 w-4 rounded border-gray-300"
-                    />
-                    {metric.label}
-                  </div>
+              <TableRow key={metric.id}>
+                <TableCell className="w-[50px] pr-0">
+                  <Checkbox
+                    id={`checkbox-${metric.id}`}
+                    checked={selectedMetrics.includes(metric.id)}
+                    onCheckedChange={() => handleMetricToggle(metric.id)}
+                  />
                 </TableCell>
-                {sortedData.map((period) => (
-                  <TableCell key={period.date} className="text-right">
-                    {metric.key === 'eps' 
-                      ? `$${period[metric.key]?.toFixed(2) || '0.00'}`
-                      : `$${formatNumber(period[metric.key] || 0)}`
-                    }
+                <TableCell className="font-medium bg-gray-50">{metric.label}</TableCell>
+                {currentData.map((row: any) => (
+                  <TableCell key={`${row.date}-${metric.id}`} className="text-right">
+                    {formatValue(row[metric.key] || 0)}
                   </TableCell>
                 ))}
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </ScrollArea>
+      </div>
     </div>
   );
 };
