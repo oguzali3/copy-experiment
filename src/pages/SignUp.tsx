@@ -22,11 +22,24 @@ const SignUp = () => {
     }
   }, [session, navigate]);
 
+  const validatePassword = (password: string) => {
+    if (password.length < 6) {
+      return "Password must be at least 6 characters long";
+    }
+    return null;
+  };
+
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
+      return;
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      toast.error(passwordError);
       return;
     }
 
@@ -150,7 +163,7 @@ const SignUp = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="mt-1"
-                  placeholder="Enter your password"
+                  placeholder="Enter your password (min. 6 characters)"
                 />
               </div>
 
