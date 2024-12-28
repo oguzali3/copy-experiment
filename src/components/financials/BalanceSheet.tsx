@@ -1,15 +1,14 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState } from "react";
 
 interface BalanceSheetProps {
-  data: any[];
-  timeRange: string;
+  timeFrame: "annual" | "quarterly" | "ttm";
+  selectedMetrics: string[];
+  onMetricsChange: (metrics: string[]) => void;
+  ticker: string;
 }
 
-export const BalanceSheet = ({ data = [], timeRange }: BalanceSheetProps) => {
-  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
-
+export const BalanceSheet = ({ timeFrame, selectedMetrics, onMetricsChange, ticker }: BalanceSheetProps) => {
   const metrics = [
     { id: "totalAssets", label: "Total Assets" },
     { id: "totalLiabilities", label: "Total Liabilities" },
@@ -20,7 +19,7 @@ export const BalanceSheet = ({ data = [], timeRange }: BalanceSheetProps) => {
     const newMetrics = selectedMetrics.includes(metricId)
       ? selectedMetrics.filter(id => id !== metricId)
       : [...selectedMetrics, metricId];
-    setSelectedMetrics(newMetrics);
+    onMetricsChange(newMetrics);
   };
 
   return (
@@ -31,11 +30,7 @@ export const BalanceSheet = ({ data = [], timeRange }: BalanceSheetProps) => {
             <TableRow>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
-              {data.map((row) => (
-                <TableHead key={row.date} className="text-right min-w-[120px]">
-                  {new Date(row.date).getFullYear()}
-                </TableHead>
-              ))}
+              <TableHead className="text-right min-w-[120px]">Value</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -49,11 +44,7 @@ export const BalanceSheet = ({ data = [], timeRange }: BalanceSheetProps) => {
                   />
                 </TableCell>
                 <TableCell className="font-medium bg-gray-50">{metric.label}</TableCell>
-                {data.map((row) => (
-                  <TableCell key={`${row.date}-${metric.id}`} className="text-right">
-                    ${row[metric.id] || 0}
-                  </TableCell>
-                ))}
+                <TableCell className="text-right">-</TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -1,28 +1,66 @@
 import { Button } from "@/components/ui/button";
-import { Dispatch, SetStateAction } from "react";
+import { Slider } from "@/components/ui/slider";
 
 interface TimeRangePanelProps {
-  timeRange: string;
-  onTimeRangeChange: Dispatch<SetStateAction<string>>;
+  startDate: string;
+  endDate: string;
+  sliderValue: number[];
+  onSliderChange: (value: number[]) => void;
+  timePeriods: string[];
 }
 
-export const TimeRangePanel = ({ timeRange, onTimeRangeChange }: TimeRangePanelProps) => {
+export const TimeRangePanel = ({ 
+  startDate,
+  endDate,
+  sliderValue,
+  onSliderChange,
+  timePeriods
+}: TimeRangePanelProps) => {
   return (
-    <div className="flex gap-2">
-      <Button
-        variant={timeRange === "annual" ? "default" : "outline"}
-        onClick={() => onTimeRangeChange("annual")}
-        size="sm"
-      >
-        Annual
-      </Button>
-      <Button
-        variant={timeRange === "quarterly" ? "default" : "outline"}
-        onClick={() => onTimeRangeChange("quarterly")}
-        size="sm"
-      >
-        Quarterly
-      </Button>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center text-sm text-gray-500">
+        <span>{startDate}</span>
+        <span>{endDate}</span>
+      </div>
+      <div className="px-2 py-8">
+        <div className="relative">
+          <div className="absolute w-full top-[9px]">
+            {timePeriods.map((_, index) => (
+              <div
+                key={index}
+                className="absolute w-1.5 h-1.5 bg-white border border-primary rounded-full"
+                style={{
+                  left: `${(index / (timePeriods.length - 1)) * 100}%`,
+                  transform: 'translate(-50%, 0)',
+                }}
+              />
+            ))}
+          </div>
+          <Slider
+            defaultValue={[0, 4]}
+            min={0}
+            max={4}
+            step={1}
+            value={sliderValue}
+            onValueChange={onSliderChange}
+            className="w-full"
+          />
+          <div className="absolute w-full -bottom-5 left-0 right-0">
+            {timePeriods.map((period, index) => (
+              <div 
+                key={index} 
+                className="absolute text-xs text-gray-500"
+                style={{ 
+                  left: `${(index / (timePeriods.length - 1)) * 100}%`,
+                  transform: 'translateX(-50%)'
+                }}
+              >
+                {period}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
