@@ -21,23 +21,28 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: stocksData, isLoading } = useQuery({
-    queryKey: ['search-stocks', searchQuery],
+  // Remove "$" from the search query
+  const sanitizedQuery = searchQuery.replace(/\$/g, '');
+
+  const { data: stocksData, isLoading, error } = useQuery({
+    queryKey: ['search-stocks', sanitizedQuery],
     queryFn: async () => {
-      if (!searchQuery) return [];
+      if (!sanitizedQuery) return [];
+      
+      console.log('Searching with query:', sanitizedQuery);
       
       const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-        body: { endpoint: 'search', query: searchQuery }
+        body: { endpoint: 'search', query: sanitizedQuery }
       });
 
       if (error) {
         console.error('Error fetching stocks:', error);
-        return [];
+        throw error;
       }
 
       return data || [];
     },
-    enabled: searchQuery.length > 0
+    enabled: sanitizedQuery.length > 0
   });
 
   const handleSelect = (stock: any) => {
@@ -73,7 +78,15 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
           />
           <CommandList>
             <CommandEmpty>
-              {isLoading ? "Searching..." : "No stocks found."}
+              {isLoading ? (
+                "Searching..."
+              ) : error ? (
+                "Error searching stocks. Please try again."
+              ) : stocksData?.length === 0 ? (
+                "No stocks found."
+              ) : (
+                "Start typing to search..."
+              )}
             </CommandEmpty>
             <CommandGroup heading="Stocks">
               {stocksData?.map((stock: any) => (
@@ -86,12 +99,14 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
                     <p className="text-sm font-medium">{stock.name}</p>
                     <p className="text-xs text-muted-foreground">${stock.symbol}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">${stock.price}</p>
-                    <p className={`text-xs ${parseFloat(stock.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {stock.change} ({stock.changesPercentage}%)
-                    </p>
-                  </div>
+                  {stock.price && (
+                    <div className="text-right">
+                      <p className="text-sm font-medium">${stock.price}</p>
+                      <p className={`text-xs ${parseFloat(stock.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        {stock.change} ({stock.changesPercentage}%)
+                      </p>
+                    </div>
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>
