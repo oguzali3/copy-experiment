@@ -1,0 +1,64 @@
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Stock } from "./PortfolioContent";
+import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
+
+interface PortfolioTableProps {
+  stocks: Stock[];
+}
+
+export const PortfolioTable = ({ stocks }: PortfolioTableProps) => {
+  return (
+    <div className="bg-white rounded-lg shadow-sm">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Ticker</TableHead>
+            <TableHead>Company</TableHead>
+            <TableHead className="text-right">Shares</TableHead>
+            <TableHead className="text-right">Avg Price</TableHead>
+            <TableHead className="text-right">Current Price</TableHead>
+            <TableHead className="text-right">Market Value</TableHead>
+            <TableHead className="text-right">% of Portfolio</TableHead>
+            <TableHead className="text-right">Gain/Loss</TableHead>
+            <TableHead className="text-right">Gain/Loss %</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {stocks.map((stock) => (
+            <TableRow key={stock.ticker}>
+              <TableCell className="font-medium">{stock.ticker}</TableCell>
+              <TableCell>{stock.name}</TableCell>
+              <TableCell className="text-right">{stock.shares.toLocaleString()}</TableCell>
+              <TableCell className="text-right">${stock.avgPrice.toFixed(2)}</TableCell>
+              <TableCell className="text-right">${stock.currentPrice.toFixed(2)}</TableCell>
+              <TableCell className="text-right">${stock.marketValue.toLocaleString()}</TableCell>
+              <TableCell className="text-right">{stock.percentOfPortfolio.toFixed(2)}%</TableCell>
+              <TableCell className="text-right">
+                <span className={stock.gainLoss >= 0 ? "text-green-600" : "text-red-600"}>
+                  ${Math.abs(stock.gainLoss).toLocaleString()}
+                </span>
+              </TableCell>
+              <TableCell className="text-right">
+                <div className={`flex items-center justify-end ${stock.gainLossPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {stock.gainLossPercent >= 0 ? (
+                    <ArrowUpIcon className="h-4 w-4 mr-1" />
+                  ) : (
+                    <ArrowDownIcon className="h-4 w-4 mr-1" />
+                  )}
+                  {Math.abs(stock.gainLossPercent).toFixed(2)}%
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+};
