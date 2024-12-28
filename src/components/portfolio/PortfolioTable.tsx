@@ -6,14 +6,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { ArrowUpIcon, ArrowDownIcon, Trash2 } from "lucide-react";
 import { Stock } from "./PortfolioContent";
-import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 
 interface PortfolioTableProps {
   stocks: Stock[];
+  onDeletePosition: (ticker: string) => void;
 }
 
-export const PortfolioTable = ({ stocks }: PortfolioTableProps) => {
+export const PortfolioTable = ({ stocks, onDeletePosition }: PortfolioTableProps) => {
   return (
     <div className="bg-white rounded-lg shadow-sm">
       <Table>
@@ -28,6 +30,7 @@ export const PortfolioTable = ({ stocks }: PortfolioTableProps) => {
             <TableHead className="text-right">% of Portfolio</TableHead>
             <TableHead className="text-right">Gain/Loss</TableHead>
             <TableHead className="text-right">Gain/Loss %</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -54,6 +57,15 @@ export const PortfolioTable = ({ stocks }: PortfolioTableProps) => {
                   )}
                   {Math.abs(stock.gainLossPercent).toFixed(2)}%
                 </div>
+              </TableCell>
+              <TableCell className="text-right">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => onDeletePosition(stock.ticker)}
+                >
+                  <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-500" />
+                </Button>
               </TableCell>
             </TableRow>
           ))}
