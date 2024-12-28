@@ -17,6 +17,7 @@ serve(async (req) => {
     const { endpoint, symbol, query } = await req.json()
 
     if (endpoint === 'search' && query) {
+      console.log('Searching for:', query)
       const url = `${FMP_BASE_URL}/search?query=${encodeURIComponent(query)}&limit=10&apikey=${FMP_API_KEY}`
       const response = await fetch(url)
       const searchData = await response.json()
@@ -25,18 +26,24 @@ serve(async (req) => {
       if (searchData && searchData.length > 0) {
         const symbols = searchData.map((item: any) => item.symbol).join(',')
         const quoteUrl = `${FMP_BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`
+        console.log('Fetching quotes for:', symbols)
+        
         const quoteResponse = await fetch(quoteUrl)
         const quoteData = await quoteResponse.json()
 
+        // Ensure quoteData is always an array
+        const quoteArray = Array.isArray(quoteData) ? quoteData : [quoteData]
+
         // Merge search and quote data
         const enrichedData = searchData.map((searchItem: any) => {
-          const quoteItem = quoteData.find((q: any) => q.symbol === searchItem.symbol)
+          const quoteItem = quoteArray.find((q: any) => q.symbol === searchItem.symbol) || {}
           return {
             ...searchItem,
             ...quoteItem
           }
         })
 
+        console.log('Enriched data:', enrichedData)
         return new Response(
           JSON.stringify(enrichedData),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
