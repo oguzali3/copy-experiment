@@ -47,16 +47,24 @@ export const IncomeStatement = ({
   };
 
   const parseNumber = (value: any, isGrowthMetric: boolean = false): number => {
+    console.log('Parsing value:', value, 'isGrowthMetric:', isGrowthMetric);
+    
     if (typeof value === 'number') return value;
     if (!value) return 0;
     
-    // For growth metrics, just convert the string to float directly
+    let result;
     if (isGrowthMetric) {
-      return parseFloat(value);
+      // For growth metrics, handle percentage strings
+      result = typeof value === 'string' 
+        ? parseFloat(value.replace('%', '')) 
+        : parseFloat(value);
+    } else {
+      // For other metrics, remove commas before parsing
+      result = parseFloat(value.toString().replace(/,/g, ''));
     }
     
-    // For other metrics, remove commas before parsing
-    return parseFloat(value.toString().replace(/,/g, ''));
+    console.log('Parsed result:', result);
+    return isNaN(result) ? 0 : result;
   };
 
   const formatValue = (value: number, isPercentage?: boolean) => {
@@ -107,6 +115,9 @@ export const IncomeStatement = ({
     );
   }
 
+  // Log the raw financial data to inspect revenue growth values
+  console.log('Financial Data:', financialData);
+
   const filteredData = financialData
     .filter((item: any) => {
       if (timeFrame === "annual") return item.period === "FY";
@@ -115,6 +126,9 @@ export const IncomeStatement = ({
     })
     .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
+
+  // Log the filtered data to inspect revenue growth values
+  console.log('Filtered Data:', filteredData);
 
   const availableMetrics = Object.keys(financialData[0])
     .filter(key => 
@@ -173,20 +187,26 @@ export const IncomeStatement = ({
               <TableCell className="font-medium bg-gray-50 pl-8">
                 Revenue Growth (YoY)
               </TableCell>
-              {filteredData.map((row: any) => (
-                <TableCell 
-                  key={`${row.date}-revenueGrowth`} 
-                  className={`text-right ${
-                    parseNumber(row.revenueGrowth, true) > 0 
-                      ? 'text-green-600' 
-                      : parseNumber(row.revenueGrowth, true) < 0 
-                        ? 'text-red-600' 
-                        : ''
-                  }`}
-                >
-                  {formatValue(parseNumber(row.revenueGrowth, true), true)}
-                </TableCell>
-              ))}
+              {filteredData.map((row: any) => {
+                console.log('Revenue Growth for row:', row.date, row.revenueGrowth);
+                const growthValue = parseNumber(row.revenueGrowth, true);
+                console.log('Parsed Growth Value:', growthValue);
+                
+                return (
+                  <TableCell 
+                    key={`${row.date}-revenueGrowth`} 
+                    className={`text-right ${
+                      growthValue > 0 
+                        ? 'text-green-600' 
+                        : growthValue < 0 
+                          ? 'text-red-600' 
+                          : ''
+                    }`}
+                  >
+                    {formatValue(growthValue, true)}
+                  </TableCell>
+                );
+              })}
             </TableRow>
 
             {/* Other Metrics */}
