@@ -3,7 +3,7 @@ import {
   LineChart, 
   List, 
   Settings, 
-  BookOpen, 
+  PieChart, 
   Home,
   Filter,
   Building
@@ -27,7 +27,7 @@ const menuItems = [
   { title: "Charting", icon: LineChart, path: "/charting" },
   { title: "Screening", icon: Filter, path: "/screening" },
   { title: "Watchlists", icon: List, path: "/watchlists" },
-  { title: "Resources", icon: BookOpen, path: "/resources" },
+  { title: "Portfolio", icon: PieChart, path: "/portfolio" },
   { title: "Settings", icon: Settings, path: "/settings" },
 ];
 
