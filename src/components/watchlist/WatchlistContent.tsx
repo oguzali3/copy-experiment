@@ -1,8 +1,8 @@
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { WatchlistEmpty } from "./WatchlistEmpty";
 import { WatchlistCreate } from "./WatchlistCreate";
 import { WatchlistView } from "./WatchlistView";
-import { Button } from "@/components/ui/button";
 
 export type Stock = {
   ticker: string;
@@ -19,50 +19,6 @@ export type Watchlist = {
   selectedMetrics: string[];
 };
 
-// Mock data
-const mockStocks: Stock[] = [
-  {
-    ticker: "AAPL",
-    name: "Apple Inc.",
-    metrics: {
-      ntmPE: "34.57",
-      ntmTevEbit: "28.90",
-      ntmMcFcf: "25.6",
-      ntmPCfps: "30.2",
-    }
-  },
-  {
-    ticker: "MSFT",
-    name: "Microsoft Corporation",
-    metrics: {
-      ntmPE: "32.66",
-      ntmTevEbit: "25.53",
-      ntmMcFcf: "22.4",
-      ntmPCfps: "28.1",
-    }
-  },
-  {
-    ticker: "NVDA",
-    name: "NVIDIA Corporation",
-    metrics: {
-      ntmPE: "34.74",
-      ntmTevEbit: "29.29",
-      ntmMcFcf: "27.8",
-      ntmPCfps: "31.5",
-    }
-  },
-  {
-    ticker: "META",
-    name: "Meta Platforms, Inc.",
-    metrics: {
-      ntmPE: "-",
-      ntmTevEbit: "-",
-      ntmMcFcf: "-",
-      ntmPCfps: "-",
-    }
-  }
-];
-
 export const WatchlistContent = () => {
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
   const [selectedWatchlist, setSelectedWatchlist] = useState<Watchlist | null>(null);
@@ -72,7 +28,7 @@ export const WatchlistContent = () => {
     const newWatchlist: Watchlist = {
       id: Date.now().toString(),
       name,
-      stocks: mockStocks,
+      stocks: [],
       selectedMetrics: []
     };
     setWatchlists([...watchlists, newWatchlist]);
@@ -85,6 +41,13 @@ export const WatchlistContent = () => {
     if (selectedWatchlist?.id === id) {
       setSelectedWatchlist(null);
     }
+  };
+
+  const handleUpdateWatchlist = (updatedWatchlist: Watchlist) => {
+    setWatchlists(watchlists.map(w => 
+      w.id === updatedWatchlist.id ? updatedWatchlist : w
+    ));
+    setSelectedWatchlist(updatedWatchlist);
   };
 
   if (watchlists.length === 0 && !isCreating) {
@@ -122,6 +85,7 @@ export const WatchlistContent = () => {
           watchlist={selectedWatchlist}
           onAddWatchlist={() => setIsCreating(true)}
           onDeleteWatchlist={handleDeleteWatchlist}
+          onUpdateWatchlist={handleUpdateWatchlist}
         />
       )}
     </div>

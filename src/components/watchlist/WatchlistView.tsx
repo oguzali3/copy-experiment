@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Copy, PlusCircle, ChevronDown, X } from "lucide-react";
+import { Trash2, Copy, PlusCircle, ChevronDown, X, Settings } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -9,9 +9,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Stock } from "./WatchlistContent";
+import { CompanySearch } from "../CompanySearch";
 
 interface WatchlistViewProps {
   watchlist: {
@@ -22,6 +31,7 @@ interface WatchlistViewProps {
   };
   onAddWatchlist: () => void;
   onDeleteWatchlist: (id: string) => void;
+  onUpdateWatchlist: (watchlist: any) => void;
 }
 
 const availableMetrics = [
@@ -33,17 +43,73 @@ const availableMetrics = [
   { id: "ntmPAffo", name: "NTM P/AFFO", description: "Next Twelve Months Price to Adjusted Funds From Operations" },
 ];
 
-export const WatchlistView = ({ watchlist, onAddWatchlist, onDeleteWatchlist }: WatchlistViewProps) => {
+export const WatchlistView = ({ watchlist, onAddWatchlist, onDeleteWatchlist, onUpdateWatchlist }: WatchlistViewProps) => {
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(watchlist.selectedMetrics);
+  const [isAddingTicker, setIsAddingTicker] = useState(false);
+  const [newWatchlistName, setNewWatchlistName] = useState(watchlist.name);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handleMetricSelect = (metricId: string) => {
     if (!selectedMetrics.includes(metricId)) {
-      setSelectedMetrics([...selectedMetrics, metricId]);
+      const updatedMetrics = [...selectedMetrics, metricId];
+      setSelectedMetrics(updatedMetrics);
+      onUpdateWatchlist({
+        ...watchlist,
+        selectedMetrics: updatedMetrics
+      });
     }
   };
 
   const handleRemoveMetric = (metricId: string) => {
-    setSelectedMetrics(selectedMetrics.filter(id => id !== metricId));
+    const updatedMetrics = selectedMetrics.filter(id => id !== metricId);
+    setSelectedMetrics(updatedMetrics);
+    onUpdateWatchlist({
+      ...watchlist,
+      selectedMetrics: updatedMetrics
+    });
+  };
+
+  const handleAddTicker = (company: any) => {
+    const newStock: Stock = {
+      ticker: company.ticker,
+      name: company.name,
+      price: Math.random() * 1000,
+      change: (Math.random() - 0.5) * 10,
+      marketCap: Math.random() * 1000000000000,
+      peRatio: Math.random() * 50,
+      pbRatio: Math.random() * 10,
+      psRatio: Math.random() * 15,
+      evEbitda: Math.random() * 20,
+      roe: Math.random() * 30,
+      roa: Math.random() * 20,
+      currentRatio: Math.random() * 3,
+      quickRatio: Math.random() * 2,
+      debtEquity: Math.random() * 2,
+    };
+
+    onUpdateWatchlist({
+      ...watchlist,
+      stocks: [...watchlist.stocks, newStock]
+    });
+    setIsAddingTicker(false);
+    toast.success(`Added ${company.name} to watchlist`);
+  };
+
+  const handleDeleteTicker = (ticker: string) => {
+    onUpdateWatchlist({
+      ...watchlist,
+      stocks: watchlist.stocks.filter(stock => stock.ticker !== ticker)
+    });
+    toast.success(`Removed ${ticker} from watchlist`);
+  };
+
+  const handleUpdateWatchlistName = () => {
+    onUpdateWatchlist({
+      ...watchlist,
+      name: newWatchlistName
+    });
+    setIsSettingsOpen(false);
+    toast.success("Watchlist name updated");
   };
 
   const handleCopyTable = () => {
@@ -57,13 +123,52 @@ export const WatchlistView = ({ watchlist, onAddWatchlist, onDeleteWatchlist }: 
       </div>
 
       <div className="flex items-center gap-4">
-        <Button variant="outline">
-          Watchlist Settings
-        </Button>
-        <Button variant="outline" className="text-green-600 border-green-600">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Ticker
-        </Button>
+        <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              <Settings className="mr-2 h-4 w-4" />
+              Watchlist Settings
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Watchlist Settings</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium">
+                  Watchlist Name
+                </label>
+                <Input
+                  id="name"
+                  value={newWatchlistName}
+                  onChange={(e) => setNewWatchlistName(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleUpdateWatchlistName}>
+                Save Changes
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        
+        <Dialog open={isAddingTicker} onOpenChange={setIsAddingTicker}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="text-green-600 border-green-600">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Ticker
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Ticker to Watchlist</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <CompanySearch onCompanySelect={handleAddTicker} />
+            </div>
+          </DialogContent>
+        </Dialog>
+
         <div className="ml-auto flex items-center gap-4">
           <Button variant="outline" onClick={handleCopyTable}>
             <Copy className="mr-2 h-4 w-4" />
@@ -137,7 +242,11 @@ export const WatchlistView = ({ watchlist, onAddWatchlist, onDeleteWatchlist }: 
                 </TableCell>
               ))}
               <TableCell className="text-right">
-                <Button variant="ghost" size="icon">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => handleDeleteTicker(stock.ticker)}
+                >
                   <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-500" />
                 </Button>
               </TableCell>
@@ -146,10 +255,7 @@ export const WatchlistView = ({ watchlist, onAddWatchlist, onDeleteWatchlist }: 
         </TableBody>
       </Table>
 
-      <div className="flex justify-between">
-        <Button className="bg-[#f5a623] hover:bg-[#f5a623]/90 text-white">
-          Set as Active Watchlist
-        </Button>
+      <div className="flex justify-end">
         <Button 
           variant="destructive"
           onClick={() => onDeleteWatchlist(watchlist.id)}
