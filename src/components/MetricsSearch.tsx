@@ -16,7 +16,7 @@ const categories = [
     name: "Income Statement",
     metrics: [
       { id: "revenue", name: "Revenue", description: "Company's total revenue" },
-      { id: "revenueGrowth", name: "Revenue Growth", description: "Year-over-year revenue growth" },
+      { id: "revenueGrowth", name: "Revenue Growth", description: "Year-over-year revenue growth (%)" },
       { id: "grossProfit", name: "Gross Profit", description: "Revenue minus cost of goods sold" },
       { id: "operatingIncome", name: "Operating Income", description: "Profit from operations" },
       { id: "netIncome", name: "Net Income", description: "Total earnings or profit" },
