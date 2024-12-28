@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -10,12 +11,39 @@ import { useSessionContext } from '@supabase/auth-helpers-react';
 const SignIn = () => {
   const navigate = useNavigate();
   const { session, isLoading } = useSessionContext();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
     if (session) {
       navigate("/dashboard");
     }
   }, [session, navigate]);
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSigningIn(true);
+    
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Signed in successfully");
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+      console.error("Error:", error);
+    } finally {
+      setSigningIn(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     try {
@@ -76,14 +104,65 @@ const SignIn = () => {
               </svg>
               Sign in with Google
             </Button>
+
+            <div className="mt-6 relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with email</span>
+              </div>
+            </div>
           </div>
 
-          <p className="text-center text-sm text-gray-600">
-            Don't have an account?{" "}
-            <Link to="/signup" className="text-[#077dfa] hover:underline">
-              Sign up
-            </Link>
-          </p>
+          <form onSubmit={handleEmailSignIn} className="mt-8 space-y-6">
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email address
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-1"
+                  placeholder="Enter your email"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="mt-1"
+                  placeholder="Enter your password"
+                />
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-[#077dfa] hover:bg-[#077dfa]/90"
+              disabled={signingIn}
+            >
+              {signingIn ? "Signing in..." : "Sign in with Email"}
+            </Button>
+
+            <p className="text-center text-sm text-gray-600">
+              Don't have an account?{" "}
+              <Link to="/signup" className="text-[#077dfa] hover:underline">
+                Sign up
+              </Link>
+            </p>
+          </form>
         </div>
       </div>
       <Footer />
