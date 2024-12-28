@@ -1,10 +1,11 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useQuery } from "@tanstack/react-query";
-import { fetchFinancialData } from "@/utils/financialApi";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import { fetchFinancialData } from "@/utils/financialApi";
+import { MetricRow } from "./MetricRow";
+import { orderedMetricIds, metricKeyMapping, getMetricOrder } from "@/utils/financialMetricsOrder";
 
 interface IncomeStatementProps {
   timeFrame: "annual" | "quarterly" | "ttm";
@@ -13,43 +14,17 @@ interface IncomeStatementProps {
   ticker: string;
 }
 
-// Define the preferred order of metrics
-const orderedMetricIds = [
-  "revenue",
-  "revenueGrowth",
-  "costOfRevenue",
-  "grossProfit",
-  "grossProfitRatio",
-  "sellingGeneralAndAdministrativeExpenses",
-  "researchAndDevelopmentExpenses",
-  "operatingExpenses",
-  "operatingIncome",
-  "operatingIncomeRatio",
-  "interestExpense",
-  "interestIncome",
-  "totalOtherIncomeExpensesNet",
-  "incomeBeforeTax",
-  "incomeBeforeTaxRatio",
-  "incomeTaxExpense",
-  "netIncome",
-  "netIncomeRatio",
-  "eps",
-  "epsdiluted",
-  "weightedAverageShsOut",
-  "weightedAverageShsOutDil",
-  "ebitda",
-  "ebitdaratio",
-  // Add any additional metrics in the desired order
-];
-
-export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, ticker }: IncomeStatementProps) => {
+export const IncomeStatement = ({ 
+  timeFrame, 
+  selectedMetrics, 
+  onMetricsChange, 
+  ticker 
+}: IncomeStatementProps) => {
   const { data: financialData, isLoading, error } = useQuery({
     queryKey: ['income-statement', ticker],
     queryFn: () => fetchFinancialData('income-statement', ticker),
     enabled: !!ticker,
   });
-
-  console.log('Raw Financial Data:', financialData); // Debug log
 
   const handleMetricToggle = (metricId: string) => {
     const newMetrics = selectedMetrics.includes(metricId)
@@ -58,48 +33,25 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, t
     onMetricsChange(newMetrics);
   };
 
-  // Function to format metric labels from API keys
   const formatMetricLabel = (key: string): string => {
-    // Remove common prefixes if present
     let label = key.replace(/^total|^gross|^net/, '');
-    
-    // Split by capital letters and join with spaces
     label = label.replace(/([A-Z])/g, ' $1').trim();
-    
-    // Capitalize first letter of each word
     label = label.split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
-
-    // Handle special cases
-    label = label.replace(/Ebit/g, 'EBIT')
+    return label.replace(/Ebit/g, 'EBIT')
       .replace(/Ebitda/g, 'EBITDA')
       .replace(/R And D/g, 'R&D')
       .replace(/Sg And A/g, 'SG&A');
-
-    return label;
   };
 
-  // Function to get all available metrics from the API response
-  const getAvailableMetrics = () => {
-    if (!financialData?.[0]) {
-      console.log('No financial data available'); // Debug log
-      return [];
-    }
-    
-    // Get all keys from the first data point
-    const allKeys = Object.keys(financialData[0]);
-    console.log('Available keys:', allKeys); // Debug log
-    
-    // Filter out non-metric keys
-    const metrics = allKeys
-      .filter(key => 
-        !['date', 'symbol', 'reportedCurrency', 'period', 'link', 'finalLink'].includes(key) &&
-        typeof financialData[0][key] === 'number'
-      );
-    
-    // Sort metrics according to the ordered list
-    return orderedMetricIds.filter(id => metrics.includes(id));
+  const formatValue = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      notation: 'compact',
+      maximumFractionDigits: 1
+    }).format(value);
   };
 
   if (isLoading) {
@@ -138,46 +90,21 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, t
     );
   }
 
-  // Filter data based on timeFrame
-  const filteredData = financialData.filter((item: any) => {
-    if (timeFrame === "annual") {
-      return item.period === "FY";
-    }
-    if (timeFrame === "quarterly") {
-      return item.period === "Q1" || item.period === "Q2" || item.period === "Q3" || item.period === "Q4";
-    }
-    return true;
-  });
+  const filteredData = financialData
+    .filter((item: any) => {
+      if (timeFrame === "annual") return item.period === "FY";
+      if (timeFrame === "quarterly") return ["Q1", "Q2", "Q3", "Q4"].includes(item.period);
+      return true;
+    })
+    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
 
-  // Sort data by date in descending order
-  const sortedData = [...filteredData].sort((a: any, b: any) => 
-    new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
-
-  // Take only the last 5 periods
-  const currentData = sortedData.slice(0, 5);
-
-  const formatValue = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      notation: 'compact',
-      maximumFractionDigits: 1
-    }).format(value);
-  };
-
-  const availableMetrics = getAvailableMetrics();
-
-  if (availableMetrics.length === 0) {
-    return (
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          No metrics available for {ticker}.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  const availableMetrics = Object.keys(financialData[0])
+    .filter(key => 
+      !['date', 'symbol', 'reportedCurrency', 'period', 'link', 'finalLink'].includes(key) &&
+      typeof financialData[0][key] === 'number'
+    )
+    .sort((a, b) => getMetricOrder(a) - getMetricOrder(b));
 
   return (
     <div className="space-y-6">
@@ -187,7 +114,7 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, t
             <TableRow>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
-              {currentData.map((row: any) => (
+              {filteredData.map((row: any) => (
                 <TableHead key={row.date} className="text-right min-w-[120px]">
                   {new Date(row.date).toLocaleDateString('en-US', { 
                     year: 'numeric',
@@ -199,23 +126,16 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, t
           </TableHeader>
           <TableBody>
             {availableMetrics.map((metricId) => (
-              <TableRow key={metricId}>
-                <TableCell className="w-[50px] pr-0">
-                  <Checkbox
-                    id={`checkbox-${metricId}`}
-                    checked={selectedMetrics.includes(metricId)}
-                    onCheckedChange={() => handleMetricToggle(metricId)}
-                  />
-                </TableCell>
-                <TableCell className="font-medium bg-gray-50">
-                  {formatMetricLabel(metricId)}
-                </TableCell>
-                {currentData.map((row: any) => (
-                  <TableCell key={`${row.date}-${metricId}`} className="text-right">
-                    {formatValue(row[metricId] || 0)}
-                  </TableCell>
-                ))}
-              </TableRow>
+              <MetricRow
+                key={metricId}
+                metricId={metricId}
+                label={formatMetricLabel(metricId)}
+                values={filteredData.map((row: any) => row[metricId] || 0)}
+                dates={filteredData.map((row: any) => row.date)}
+                isSelected={selectedMetrics.includes(metricId)}
+                onToggle={handleMetricToggle}
+                formatValue={formatValue}
+              />
             ))}
           </TableBody>
         </Table>
