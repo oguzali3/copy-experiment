@@ -1,58 +1,28 @@
 import { Button } from "@/components/ui/button";
-import { RefreshCcw, RotateCcw } from "lucide-react";
-import { MetricsSearch } from "../MetricsSearch";
-import { TimeRangeSlider } from "./TimeRangeSlider";
+import { Dispatch, SetStateAction } from "react";
 
 interface TimeRangePanelProps {
-  startDate: string;
-  endDate: string;
-  sliderValue: number[];
-  onSliderChange: (value: number[]) => void;
-  timePeriods: string[];
+  timeRange: string;
+  onTimeRangeChange: Dispatch<SetStateAction<string>>;
 }
 
-export const TimeRangePanel = ({
-  startDate,
-  endDate,
-  sliderValue,
-  onSliderChange,
-  timePeriods,
-}: TimeRangePanelProps) => {
-  const handleMetricSelect = (metricId: string) => {
-    console.log("Metric selected:", metricId);
-    // This is just a placeholder since TimeRangePanel doesn't need metric selection
-  };
-
+export const TimeRangePanel = ({ timeRange, onTimeRangeChange }: TimeRangePanelProps) => {
   return (
-    <div className="flex flex-col space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="bg-gray-100 px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
-          {startDate}
-          <button className="text-gray-400 hover:text-gray-600">×</button>
-        </div>
-        <div className="bg-gray-100 px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
-          {endDate}
-          <button className="text-gray-400 hover:text-gray-600">×</button>
-        </div>
-      </div>
-
-      <TimeRangeSlider
-        sliderValue={sliderValue}
-        onSliderChange={onSliderChange}
-        timePeriods={timePeriods}
-      />
-
-      <div className="flex items-center gap-4">
-        <MetricsSearch onMetricSelect={handleMetricSelect} />
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" className="h-9 w-9">
-            <RotateCcw className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" className="h-9 w-9">
-            <RefreshCcw className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+    <div className="flex gap-2">
+      <Button
+        variant={timeRange === "annual" ? "default" : "outline"}
+        onClick={() => onTimeRangeChange("annual")}
+        size="sm"
+      >
+        Annual
+      </Button>
+      <Button
+        variant={timeRange === "quarterly" ? "default" : "outline"}
+        onClick={() => onTimeRangeChange("quarterly")}
+        size="sm"
+      >
+        Quarterly
+      </Button>
     </div>
   );
 };

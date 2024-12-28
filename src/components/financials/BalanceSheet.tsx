@@ -1,16 +1,14 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { financialData } from "@/data/financialData";
+import { useState } from "react";
 
 interface BalanceSheetProps {
-  timeFrame: "annual" | "quarterly" | "ttm";
-  selectedMetrics: string[];
-  onMetricsChange: (metrics: string[]) => void;
-  ticker: string;
+  data: any[];
+  timeRange: string;
 }
 
-export const BalanceSheet = ({ timeFrame, selectedMetrics, onMetricsChange, ticker }: BalanceSheetProps) => {
-  const currentData = financialData[ticker]?.[timeFrame] || [];
+export const BalanceSheet = ({ data = [], timeRange }: BalanceSheetProps) => {
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
 
   const metrics = [
     { id: "totalAssets", label: "Total Assets" },
@@ -22,7 +20,7 @@ export const BalanceSheet = ({ timeFrame, selectedMetrics, onMetricsChange, tick
     const newMetrics = selectedMetrics.includes(metricId)
       ? selectedMetrics.filter(id => id !== metricId)
       : [...selectedMetrics, metricId];
-    onMetricsChange(newMetrics);
+    setSelectedMetrics(newMetrics);
   };
 
   return (
@@ -33,8 +31,10 @@ export const BalanceSheet = ({ timeFrame, selectedMetrics, onMetricsChange, tick
             <TableRow>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
-              {currentData.map((row) => (
-                <TableHead key={row.period} className="text-right min-w-[120px]">{row.period}</TableHead>
+              {data.map((row) => (
+                <TableHead key={row.date} className="text-right min-w-[120px]">
+                  {new Date(row.date).getFullYear()}
+                </TableHead>
               ))}
             </TableRow>
           </TableHeader>
@@ -49,9 +49,9 @@ export const BalanceSheet = ({ timeFrame, selectedMetrics, onMetricsChange, tick
                   />
                 </TableCell>
                 <TableCell className="font-medium bg-gray-50">{metric.label}</TableCell>
-                {currentData.map((row) => (
-                  <TableCell key={`${row.period}-${metric.id}`} className="text-right">
-                    ${row[metric.id as keyof typeof row]}
+                {data.map((row) => (
+                  <TableCell key={`${row.date}-${metric.id}`} className="text-right">
+                    ${row[metric.id] || 0}
                   </TableCell>
                 ))}
               </TableRow>

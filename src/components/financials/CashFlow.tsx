@@ -1,30 +1,20 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
-import { financialData } from "@/data/financialData";
+import { useState } from "react";
 
 interface CashFlowProps {
-  timeFrame: "annual" | "quarterly" | "ttm";
-  selectedMetrics: string[];
-  onMetricsChange: (metrics: string[]) => void;
-  ticker: string;
+  data: any[];
+  timeRange: string;
 }
 
-export const CashFlow = ({ timeFrame, selectedMetrics, onMetricsChange, ticker }: CashFlowProps) => {
-  const currentData = financialData[ticker]?.[timeFrame] || [];
+export const CashFlow = ({ data = [], timeRange }: CashFlowProps) => {
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
 
   const metrics = [
     { id: "operatingCashFlow", label: "Operating Cash Flow" },
     { id: "investingCashFlow", label: "Investing Cash Flow" },
     { id: "financingCashFlow", label: "Financing Cash Flow" },
-    { id: "freeCashFlow", label: "Free Cash Flow" }
+    { id: "netCashFlow", label: "Net Cash Flow" }
   ];
-
-  const handleMetricToggle = (metricId: string) => {
-    const newMetrics = selectedMetrics.includes(metricId)
-      ? selectedMetrics.filter(id => id !== metricId)
-      : [...selectedMetrics, metricId];
-    onMetricsChange(newMetrics);
-  };
 
   return (
     <div className="space-y-6">
@@ -32,27 +22,21 @@ export const CashFlow = ({ timeFrame, selectedMetrics, onMetricsChange, ticker }
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
-              {currentData.map((row) => (
-                <TableHead key={row.period} className="text-right min-w-[120px]">{row.period}</TableHead>
+              {data.map((row) => (
+                <TableHead key={row.date} className="text-right min-w-[120px]">
+                  {new Date(row.date).getFullYear()}
+                </TableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
             {metrics.map((metric) => (
               <TableRow key={metric.id}>
-                <TableCell className="w-[50px] pr-0">
-                  <Checkbox
-                    id={`checkbox-${metric.id}`}
-                    checked={selectedMetrics.includes(metric.id)}
-                    onCheckedChange={() => handleMetricToggle(metric.id)}
-                  />
-                </TableCell>
                 <TableCell className="font-medium bg-gray-50">{metric.label}</TableCell>
-                {currentData.map((row) => (
-                  <TableCell key={`${row.period}-${metric.id}`} className="text-right">
-                    ${row[metric.id as keyof typeof row]}
+                {data.map((row) => (
+                  <TableCell key={`${row.date}-${metric.id}`} className="text-right">
+                    ${row[metric.id] || 0}
                   </TableCell>
                 ))}
               </TableRow>
