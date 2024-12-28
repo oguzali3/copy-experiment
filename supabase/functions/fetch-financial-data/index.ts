@@ -8,13 +8,41 @@ const corsHeaders = {
 const FMP_API_KEY = Deno.env.get('FMP_API_KEY')
 const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3'
 
+// Simple in-memory cache
+const cache = new Map<string, { data: any; timestamp: number }>()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+async function fetchWithRetry(url: string, retries = 3, delay = 1000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url)
+      
+      // If we hit rate limit, wait and retry
+      if (response.status === 429) {
+        console.log(`Rate limited, attempt ${i + 1} of ${retries}. Waiting ${delay}ms...`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+        // Exponential backoff
+        delay *= 2
+        continue
+      }
+      
+      return response
+    } catch (error) {
+      if (i === retries - 1) throw error
+      console.error(`Fetch attempt ${i + 1} failed:`, error)
+      await new Promise(resolve => setTimeout(resolve, delay))
+      delay *= 2
+    }
+  }
+  throw new Error(`Failed after ${retries} retries`)
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    // Validate API key
     if (!FMP_API_KEY) {
       console.error('FMP_API_KEY is not configured')
       throw new Error('FMP_API_KEY is not configured')
@@ -23,13 +51,25 @@ serve(async (req) => {
     const { endpoint, symbol, query } = await req.json()
     console.log('Request received:', { endpoint, symbol, query })
 
+    // Generate cache key based on request parameters
+    const cacheKey = JSON.stringify({ endpoint, symbol, query })
+    const cached = cache.get(cacheKey)
+    
+    // Return cached data if it's still valid
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      console.log('Returning cached data for:', cacheKey)
+      return new Response(
+        JSON.stringify(cached.data),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     if (endpoint === 'search' && query) {
       console.log('Searching for:', query)
-      // Use search endpoint which returns more comprehensive results
       const searchUrl = `${FMP_BASE_URL}/search?query=${encodeURIComponent(query)}&limit=10&apikey=${FMP_API_KEY}`
       console.log('Search URL:', searchUrl)
       
-      const searchResponse = await fetch(searchUrl)
+      const searchResponse = await fetchWithRetry(searchUrl)
       const searchText = await searchResponse.text()
       console.log('Search API response:', searchText)
       
@@ -46,8 +86,6 @@ serve(async (req) => {
         throw new Error('Invalid search response format')
       }
       
-      console.log('Search results:', searchData)
-
       // Filter for only NASDAQ and NYSE stocks
       searchData = searchData.filter((item: any) => 
         item.exchangeShortName === 'NASDAQ' || 
@@ -64,11 +102,9 @@ serve(async (req) => {
       // Get quotes for all found symbols
       const symbols = searchData.map((item: any) => item.symbol).join(',')
       const quoteUrl = `${FMP_BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`
-      console.log('Quote URL:', quoteUrl)
-
-      const quoteResponse = await fetch(quoteUrl)
+      
+      const quoteResponse = await fetchWithRetry(quoteUrl)
       const quoteText = await quoteResponse.text()
-      console.log('Quote API response:', quoteText)
       
       if (!quoteResponse.ok) {
         console.error('Quote API error:', quoteText)
@@ -85,7 +121,6 @@ serve(async (req) => {
 
       // Ensure quoteData is always an array
       const quoteArray = Array.isArray(quoteData) ? quoteData : [quoteData]
-      console.log('Quote data (as array):', quoteArray)
 
       // Merge search and quote data
       const enrichedData = searchData.map((searchItem: any) => {
@@ -101,7 +136,9 @@ serve(async (req) => {
         }
       })
 
-      console.log('Enriched data:', enrichedData)
+      // Cache the results
+      cache.set(cacheKey, { data: enrichedData, timestamp: Date.now() })
+
       return new Response(
         JSON.stringify(enrichedData),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -134,9 +171,8 @@ serve(async (req) => {
     }
 
     console.log(`Fetching data from ${url}`)
-    const response = await fetch(url)
+    const response = await fetchWithRetry(url)
     const responseText = await response.text()
-    console.log('API response text:', responseText)
     
     if (!response.ok) {
       console.error('API error:', responseText)
@@ -151,7 +187,8 @@ serve(async (req) => {
       throw new Error('Invalid API response format')
     }
     
-    console.log('API response data:', data)
+    // Cache the results
+    cache.set(cacheKey, { data, timestamp: Date.now() })
     
     return new Response(
       JSON.stringify(data),
