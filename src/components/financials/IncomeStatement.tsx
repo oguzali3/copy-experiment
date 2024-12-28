@@ -46,10 +46,16 @@ export const IncomeStatement = ({
       .replace(/Sg And A/g, 'SG&A');
   };
 
-  const parseNumber = (value: any): number => {
+  const parseNumber = (value: any, isGrowthMetric: boolean = false): number => {
     if (typeof value === 'number') return value;
     if (!value) return 0;
-    // Remove any commas and convert to number
+    
+    // For growth metrics, just convert the string to float directly
+    if (isGrowthMetric) {
+      return parseFloat(value);
+    }
+    
+    // For other metrics, remove commas before parsing
     return parseFloat(value.toString().replace(/,/g, ''));
   };
 
@@ -171,14 +177,14 @@ export const IncomeStatement = ({
                 <TableCell 
                   key={`${row.date}-revenueGrowth`} 
                   className={`text-right ${
-                    parseNumber(row.revenueGrowth) > 0 
+                    parseNumber(row.revenueGrowth, true) > 0 
                       ? 'text-green-600' 
-                      : parseNumber(row.revenueGrowth) < 0 
+                      : parseNumber(row.revenueGrowth, true) < 0 
                         ? 'text-red-600' 
                         : ''
                   }`}
                 >
-                  {formatValue(parseNumber(row.revenueGrowth), true)}
+                  {formatValue(parseNumber(row.revenueGrowth, true), true)}
                 </TableCell>
               ))}
             </TableRow>
