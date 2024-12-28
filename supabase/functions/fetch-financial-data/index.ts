@@ -25,7 +25,8 @@ serve(async (req) => {
 
     if (endpoint === 'search' && query) {
       console.log('Searching for:', query)
-      const searchUrl = `${FMP_BASE_URL}/search?query=${encodeURIComponent(query)}&limit=10&apikey=${FMP_API_KEY}`
+      // Updated search endpoint to use search-ticker endpoint which is more reliable
+      const searchUrl = `${FMP_BASE_URL}/search-ticker?query=${encodeURIComponent(query)}&limit=10&exchange=NASDAQ,NYSE&apikey=${FMP_API_KEY}`
       console.log('Search URL:', searchUrl)
       
       const searchResponse = await fetch(searchUrl)
@@ -90,6 +91,7 @@ serve(async (req) => {
           change: quoteItem.change || 0,
           changesPercentage: quoteItem.changesPercentage || 0,
           marketCap: quoteItem.marketCap || 0,
+          description: searchItem.description || `${searchItem.name} is a publicly traded company.`,
         }
       })
 
