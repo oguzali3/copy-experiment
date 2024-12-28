@@ -40,7 +40,7 @@ export const AnalysisContent = ({ activeTab, selectedStock, onTabChange }: Analy
     case "valuation":
       return (
         <div className="space-y-6">
-          <ValuationMetrics />
+          <ValuationMetrics ticker={selectedStock.ticker} />
         </div>
       );
     case "transcripts":
