@@ -46,6 +46,13 @@ export const IncomeStatement = ({
       .replace(/Sg And A/g, 'SG&A');
   };
 
+  const parseNumber = (value: any): number => {
+    if (typeof value === 'number') return value;
+    if (!value) return 0;
+    // Remove any commas and convert to number
+    return parseFloat(value.toString().replace(/,/g, ''));
+  };
+
   const formatValue = (value: number, isPercentage?: boolean) => {
     if (isPercentage) {
       return `${value.toFixed(2)}%`;
@@ -141,9 +148,9 @@ export const IncomeStatement = ({
               <TableCell className="font-medium bg-gray-50">
                 Revenue
               </TableCell>
-              {filteredData.map((row: any, index) => (
+              {filteredData.map((row: any) => (
                 <TableCell key={`${row.date}-revenue`} className="text-right">
-                  {formatValue(parseFloat(row.revenue || 0))}
+                  {formatValue(parseNumber(row.revenue))}
                 </TableCell>
               ))}
             </TableRow>
@@ -160,18 +167,18 @@ export const IncomeStatement = ({
               <TableCell className="font-medium bg-gray-50 pl-8">
                 Revenue Growth (YoY)
               </TableCell>
-              {filteredData.map((row: any, index) => (
+              {filteredData.map((row: any) => (
                 <TableCell 
                   key={`${row.date}-revenueGrowth`} 
                   className={`text-right ${
-                    parseFloat(row.revenueGrowth) > 0 
+                    parseNumber(row.revenueGrowth) > 0 
                       ? 'text-green-600' 
-                      : parseFloat(row.revenueGrowth) < 0 
+                      : parseNumber(row.revenueGrowth) < 0 
                         ? 'text-red-600' 
                         : ''
                   }`}
                 >
-                  {formatValue(parseFloat(row.revenueGrowth || 0), true)}
+                  {formatValue(parseNumber(row.revenueGrowth), true)}
                 </TableCell>
               ))}
             </TableRow>
@@ -184,7 +191,7 @@ export const IncomeStatement = ({
                   key={metricId}
                   metricId={metricId}
                   label={formatMetricLabel(metricId)}
-                  values={filteredData.map((row: any) => row[metricId] || 0)}
+                  values={filteredData.map((row: any) => parseNumber(row[metricId]))}
                   dates={filteredData.map((row: any) => row.date)}
                   isSelected={selectedMetrics.includes(metricId)}
                   onToggle={handleMetricToggle}
