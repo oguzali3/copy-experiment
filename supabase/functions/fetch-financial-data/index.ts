@@ -16,6 +16,7 @@ serve(async (req) => {
   try {
     // Validate API key
     if (!FMP_API_KEY) {
+      console.error('FMP_API_KEY is not configured')
       throw new Error('FMP_API_KEY is not configured')
     }
 
@@ -28,12 +29,22 @@ serve(async (req) => {
       console.log('Search URL:', searchUrl)
       
       const searchResponse = await fetch(searchUrl)
+      const searchText = await searchResponse.text()
+      console.log('Search API response:', searchText)
+      
       if (!searchResponse.ok) {
-        console.error('Search API error:', await searchResponse.text())
+        console.error('Search API error:', searchText)
         throw new Error(`Search API failed with status: ${searchResponse.status}`)
       }
       
-      const searchData = await searchResponse.json()
+      let searchData
+      try {
+        searchData = JSON.parse(searchText)
+      } catch (e) {
+        console.error('Failed to parse search response:', e)
+        throw new Error('Invalid search response format')
+      }
+      
       console.log('Search results:', searchData)
 
       if (!Array.isArray(searchData) || searchData.length === 0) {
@@ -49,16 +60,25 @@ serve(async (req) => {
       console.log('Quote URL:', quoteUrl)
 
       const quoteResponse = await fetch(quoteUrl)
+      const quoteText = await quoteResponse.text()
+      console.log('Quote API response:', quoteText)
+      
       if (!quoteResponse.ok) {
-        console.error('Quote API error:', await quoteResponse.text())
+        console.error('Quote API error:', quoteText)
         throw new Error(`Quote API failed with status: ${quoteResponse.status}`)
       }
 
-      const quoteData = await quoteResponse.json()
-      console.log('Quote data:', quoteData)
+      let quoteData
+      try {
+        quoteData = JSON.parse(quoteText)
+      } catch (e) {
+        console.error('Failed to parse quote response:', e)
+        throw new Error('Invalid quote response format')
+      }
 
       // Ensure quoteData is always an array
       const quoteArray = Array.isArray(quoteData) ? quoteData : [quoteData]
+      console.log('Quote data (as array):', quoteArray)
 
       // Merge search and quote data
       const enrichedData = searchData.map((searchItem: any) => {
@@ -107,13 +127,23 @@ serve(async (req) => {
 
     console.log(`Fetching data from ${url}`)
     const response = await fetch(url)
+    const responseText = await response.text()
+    console.log('API response text:', responseText)
+    
     if (!response.ok) {
-      console.error('API error:', await response.text())
+      console.error('API error:', responseText)
       throw new Error(`API request failed with status: ${response.status}`)
     }
     
-    const data = await response.json()
-    console.log('API response:', data)
+    let data
+    try {
+      data = JSON.parse(responseText)
+    } catch (e) {
+      console.error('Failed to parse API response:', e)
+      throw new Error('Invalid API response format')
+    }
+    
+    console.log('API response data:', data)
     
     return new Response(
       JSON.stringify(data),
