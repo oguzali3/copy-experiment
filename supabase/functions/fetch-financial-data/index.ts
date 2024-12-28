@@ -18,40 +18,55 @@ serve(async (req) => {
 
     if (endpoint === 'search' && query) {
       console.log('Searching for:', query)
-      const url = `${FMP_BASE_URL}/search?query=${encodeURIComponent(query)}&limit=10&apikey=${FMP_API_KEY}`
-      const response = await fetch(url)
-      const searchData = await response.json()
+      const searchUrl = `${FMP_BASE_URL}/search?query=${encodeURIComponent(query)}&limit=10&apikey=${FMP_API_KEY}`
+      
+      const searchResponse = await fetch(searchUrl)
+      if (!searchResponse.ok) {
+        throw new Error(`Search API failed with status: ${searchResponse.status}`)
+      }
+      
+      const searchData = await searchResponse.json()
+      console.log('Search results:', searchData)
 
-      // If we have search results, fetch additional data for each stock
-      if (searchData && searchData.length > 0) {
-        const symbols = searchData.map((item: any) => item.symbol).join(',')
-        const quoteUrl = `${FMP_BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`
-        console.log('Fetching quotes for:', symbols)
-        
-        const quoteResponse = await fetch(quoteUrl)
-        const quoteData = await quoteResponse.json()
-
-        // Ensure quoteData is always an array
-        const quoteArray = Array.isArray(quoteData) ? quoteData : [quoteData]
-
-        // Merge search and quote data
-        const enrichedData = searchData.map((searchItem: any) => {
-          const quoteItem = quoteArray.find((q: any) => q.symbol === searchItem.symbol) || {}
-          return {
-            ...searchItem,
-            ...quoteItem
-          }
-        })
-
-        console.log('Enriched data:', enrichedData)
+      if (!Array.isArray(searchData) || searchData.length === 0) {
         return new Response(
-          JSON.stringify(enrichedData),
+          JSON.stringify([]),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
+      // Get quotes for all found symbols
+      const symbols = searchData.map((item: any) => item.symbol).join(',')
+      const quoteUrl = `${FMP_BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`
+      console.log('Fetching quotes for:', symbols)
+
+      const quoteResponse = await fetch(quoteUrl)
+      if (!quoteResponse.ok) {
+        throw new Error(`Quote API failed with status: ${quoteResponse.status}`)
+      }
+
+      const quoteData = await quoteResponse.json()
+      console.log('Quote data:', quoteData)
+
+      // Ensure quoteData is always an array
+      const quoteArray = Array.isArray(quoteData) ? quoteData : [quoteData]
+
+      // Merge search and quote data
+      const enrichedData = searchData.map((searchItem: any) => {
+        const quoteItem = quoteArray.find((q: any) => q?.symbol === searchItem.symbol) || {}
+        return {
+          name: searchItem.name,
+          symbol: searchItem.symbol,
+          price: quoteItem.price || 0,
+          change: quoteItem.change || 0,
+          changesPercentage: quoteItem.changesPercentage || 0,
+          marketCap: quoteItem.marketCap || 0,
+        }
+      })
+
+      console.log('Enriched data:', enrichedData)
       return new Response(
-        JSON.stringify([]),
+        JSON.stringify(enrichedData),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -89,8 +104,11 @@ serve(async (req) => {
 
     console.log(`Fetching data from ${url}`)
     const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`API request failed with status: ${response.status}`)
+    }
+    
     const data = await response.json()
-
     return new Response(
       JSON.stringify(data),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
