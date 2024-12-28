@@ -20,26 +20,49 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, t
     enabled: !!ticker,
   });
 
-  console.log('Income Statement Data:', financialData);
-
-  const metrics = [
-    { id: "revenue", label: "Revenue", key: "revenue" },
-    { id: "revenueGrowth", label: "Revenue Growth", key: "revenueGrowth" },
-    { id: "costOfRevenue", label: "Cost of Revenue", key: "costOfRevenue" },
-    { id: "grossProfit", label: "Gross Profit", key: "grossProfit" },
-    { id: "sga", label: "SG&A", key: "sellingGeneralAndAdministrativeExpenses" },
-    { id: "researchDevelopment", label: "R&D", key: "researchAndDevelopmentExpenses" },
-    { id: "operatingExpenses", label: "Operating Expenses", key: "operatingExpenses" },
-    { id: "operatingIncome", label: "Operating Income", key: "operatingIncome" },
-    { id: "netIncome", label: "Net Income", key: "netIncome" },
-    { id: "ebitda", label: "EBITDA", key: "ebitda" }
-  ];
-
   const handleMetricToggle = (metricId: string) => {
     const newMetrics = selectedMetrics.includes(metricId)
       ? selectedMetrics.filter(id => id !== metricId)
       : [...selectedMetrics, metricId];
     onMetricsChange(newMetrics);
+  };
+
+  // Function to format metric labels from API keys
+  const formatMetricLabel = (key: string): string => {
+    // Remove common prefixes if present
+    let label = key.replace(/^total|^gross|^net/, '');
+    
+    // Split by capital letters and join with spaces
+    label = label.replace(/([A-Z])/g, ' $1').trim();
+    
+    // Capitalize first letter of each word
+    label = label.split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+
+    // Handle special cases
+    label = label.replace(/Ebit/g, 'EBIT')
+      .replace(/Ebitda/g, 'EBITDA')
+      .replace(/R And D/g, 'R&D')
+      .replace(/Sg And A/g, 'SG&A');
+
+    return label;
+  };
+
+  // Function to get all available metrics from the API response
+  const getAvailableMetrics = () => {
+    if (!financialData?.[0]) return [];
+    
+    // Get all keys from the first data point
+    const allKeys = Object.keys(financialData[0]);
+    
+    // Filter out non-metric keys and sort alphabetically
+    return allKeys
+      .filter(key => 
+        !['date', 'symbol', 'reportedCurrency', 'period', 'link', 'finalLink'].includes(key) &&
+        typeof financialData[0][key] === 'number'
+      )
+      .sort((a, b) => formatMetricLabel(a).localeCompare(formatMetricLabel(b)));
   };
 
   if (isLoading) {
@@ -95,6 +118,8 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, t
     }).format(value);
   };
 
+  const availableMetrics = getAvailableMetrics();
+
   return (
     <div className="space-y-6">
       <div className="overflow-x-auto">
@@ -114,19 +139,21 @@ export const IncomeStatement = ({ timeFrame, selectedMetrics, onMetricsChange, t
             </TableRow>
           </TableHeader>
           <TableBody>
-            {metrics.map((metric) => (
-              <TableRow key={metric.id}>
+            {availableMetrics.map((metricId) => (
+              <TableRow key={metricId}>
                 <TableCell className="w-[50px] pr-0">
                   <Checkbox
-                    id={`checkbox-${metric.id}`}
-                    checked={selectedMetrics.includes(metric.id)}
-                    onCheckedChange={() => handleMetricToggle(metric.id)}
+                    id={`checkbox-${metricId}`}
+                    checked={selectedMetrics.includes(metricId)}
+                    onCheckedChange={() => handleMetricToggle(metricId)}
                   />
                 </TableCell>
-                <TableCell className="font-medium bg-gray-50">{metric.label}</TableCell>
+                <TableCell className="font-medium bg-gray-50">
+                  {formatMetricLabel(metricId)}
+                </TableCell>
                 {currentData.map((row: any) => (
-                  <TableCell key={`${row.date}-${metric.id}`} className="text-right">
-                    {formatValue(row[metric.key] || 0)}
+                  <TableCell key={`${row.date}-${metricId}`} className="text-right">
+                    {formatValue(row[metricId] || 0)}
                   </TableCell>
                 ))}
               </TableRow>
