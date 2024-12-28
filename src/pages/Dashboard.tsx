@@ -4,6 +4,7 @@ import { TopCompanies } from "@/components/TopCompanies";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { ProfileMenu } from "@/components/shared/ProfileMenu";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const navigate = useNavigate();
