@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 
 export const UserSettings = () => {
   const { toast } = useToast();
+  const [email, setEmail] = useState("");
+
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
     toast({
