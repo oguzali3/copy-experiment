@@ -33,6 +33,56 @@ export const StockChart = ({ ticker }: StockChartProps) => {
 
   const timeframes = ["1D", "5D", "1M", "3M", "6M", "YTD", "1Y", "3Y", "5Y", "MAX"];
 
+  const formatXAxisTick = (time: string) => {
+    const date = new Date(time);
+    
+    switch (timeframe) {
+      case "1D":
+        return date.toLocaleTimeString('en-US', { 
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true 
+        });
+      case "1Y":
+        // Show quarterly intervals (Mar, Jul, Nov)
+        return date.toLocaleDateString('en-US', { 
+          month: 'short',
+          year: 'numeric'
+        });
+      case "3Y":
+      case "5Y":
+        // Show yearly intervals
+        return date.getFullYear().toString();
+      case "MAX":
+        // Show decade intervals
+        return date.getFullYear().toString();
+      default:
+        return date.toLocaleDateString('en-US', { 
+          month: 'short',
+          day: 'numeric'
+        });
+    }
+  };
+
+  const getXAxisTickInterval = () => {
+    if (!chartData?.length) return 0;
+    
+    switch (timeframe) {
+      case "1Y":
+        // Show 4 ticks for 1Y (quarterly)
+        return Math.floor(chartData.length / 4);
+      case "3Y":
+      case "5Y":
+        // Show yearly ticks
+        return Math.floor(chartData.length / (timeframe === "3Y" ? 3 : 5));
+      case "MAX":
+        // Show approximately 10 ticks
+        return Math.floor(chartData.length / 10);
+      default:
+        return undefined;
+    }
+  };
+
   if (!ticker) {
     return (
       <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm flex items-center justify-center">
@@ -61,21 +111,6 @@ export const StockChart = ({ ticker }: StockChartProps) => {
       </div>
     );
   }
-
-  const formatXAxisTick = (time: string) => {
-    if (timeframe === "1D") {
-      const date = new Date(time);
-      return date.toLocaleTimeString('en-US', { 
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true 
-      });
-    }
-    return new Date(time).toLocaleDateString('en-US', { 
-      month: 'short',
-      day: 'numeric'
-    });
-  };
 
   return (
     <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm">
@@ -106,6 +141,7 @@ export const StockChart = ({ ticker }: StockChartProps) => {
               fontSize={12}
               tickLine={false}
               dy={10}
+              interval={getXAxisTickInterval()}
               tickFormatter={formatXAxisTick}
             />
             <YAxis 
@@ -124,15 +160,15 @@ export const StockChart = ({ ticker }: StockChartProps) => {
               }}
               formatter={(value: number) => [`$${value.toFixed(2)}`, "Price"]}
               labelFormatter={(label) => {
+                const date = new Date(label);
                 if (timeframe === "1D") {
-                  const date = new Date(label);
                   return date.toLocaleTimeString('en-US', {
                     hour: 'numeric',
                     minute: '2-digit',
                     hour12: true
                   });
                 }
-                return new Date(label).toLocaleDateString('en-US', {
+                return date.toLocaleDateString('en-US', {
                   month: 'long',
                   day: 'numeric',
                   year: 'numeric'
