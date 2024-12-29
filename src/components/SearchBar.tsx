@@ -8,7 +8,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "./ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,11 +22,11 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // Debounce search query
+  // Implement debouncing with a shorter delay
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
-    }, 300); // 300ms delay
+    }, 150); // Reduced to 150ms for faster response
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -55,7 +55,10 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
     enabled: sanitizedQuery.length > 0,
     staleTime: 1000 * 60 * 5, // Cache results for 5 minutes
     retry: 2, // Retry twice on failure
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    // Add these options for better performance
+    cacheTime: 1000 * 60 * 10, // Keep cache for 10 minutes
+    keepPreviousData: true, // Show previous results while fetching new ones
   });
 
   const handleSelect = (stock: any) => {
