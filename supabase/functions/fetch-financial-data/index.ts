@@ -15,6 +15,12 @@ serve(async (req) => {
     const { endpoint, symbol, from, to, page } = await req.json();
     const apiKey = Deno.env.get("FMP_API_KEY");
 
+    if (!apiKey) {
+      throw new Error("FMP_API_KEY is not set");
+    }
+
+    console.log('Received request with params:', { endpoint, symbol, from, to, page });
+
     let url;
     switch (endpoint) {
       case "profile":
@@ -33,14 +39,22 @@ serve(async (req) => {
         url = `https://financialmodelingprep.com/api/v3/cash-flow-statement/${symbol}?period=quarter&limit=12&apikey=${apiKey}`;
         break;
       case "company-news":
+        if (!from || !to) {
+          throw new Error("From and to dates are required for company news");
+        }
         url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&page=${page || 1}&from=${from}&to=${to}&apikey=${apiKey}`;
         break;
       default:
-        throw new Error("Invalid endpoint");
+        throw new Error(`Invalid endpoint: ${endpoint}`);
     }
 
     console.log(`Fetching data from: ${url}`);
     const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`FMP API responded with status ${response.status}`);
+    }
+    
     const data = await response.json();
 
     return new Response(JSON.stringify(data), {
