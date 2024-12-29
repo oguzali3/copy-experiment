@@ -22,6 +22,7 @@ export const StockChart = ({ ticker }: StockChartProps) => {
       });
 
       if (error) throw error;
+      console.log('Chart data received:', data?.length, 'data points');
       return data;
     },
     enabled: !!ticker,
@@ -70,7 +71,10 @@ export const StockChart = ({ ticker }: StockChartProps) => {
         hour12: true 
       });
     }
-    return time;
+    return new Date(time).toLocaleDateString('en-US', { 
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   return (
@@ -128,7 +132,11 @@ export const StockChart = ({ ticker }: StockChartProps) => {
                     hour12: true
                   });
                 }
-                return label;
+                return new Date(label).toLocaleDateString('en-US', {
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric'
+                });
               }}
             />
             <Line
