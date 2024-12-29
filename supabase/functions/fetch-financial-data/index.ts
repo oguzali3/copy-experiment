@@ -6,7 +6,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -25,7 +24,36 @@ serve(async (req) => {
     switch (endpoint) {
       case "search":
         url = `https://financialmodelingprep.com/api/v3/search?query=${query}&limit=10&apikey=${apiKey}`;
-        break;
+        const searchResponse = await fetch(url);
+        const searchResults = await searchResponse.json();
+        
+        // If we have search results, fetch quotes for all symbols
+        if (searchResults && searchResults.length > 0) {
+          const symbols = searchResults.map((result: any) => result.symbol).join(',');
+          const quotesUrl = `https://financialmodelingprep.com/api/v3/quote/${symbols}?apikey=${apiKey}`;
+          const quotesResponse = await fetch(quotesUrl);
+          const quotesData = await quotesResponse.json();
+
+          // Merge search results with quotes data
+          const enrichedResults = searchResults.map((result: any) => {
+            const quote = quotesData.find((q: any) => q.symbol === result.symbol);
+            return {
+              ...result,
+              price: quote?.price,
+              change: quote?.change,
+              changesPercentage: quote?.changesPercentage,
+            };
+          });
+
+          return new Response(JSON.stringify(enrichedResults), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        return new Response(JSON.stringify(searchResults), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       case "profile":
         url = `https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${apiKey}`;
         break;
@@ -51,18 +79,13 @@ serve(async (req) => {
         throw new Error(`Invalid endpoint: ${endpoint}`);
     }
 
-    console.log(`Fetching data from: ${url}`);
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`FMP API responded with status ${response.status}`);
+    if (endpoint !== "search") {
+      const response = await fetch(url);
+      const data = await response.json();
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
-    
-    const data = await response.json();
-
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
   } catch (error) {
     console.error('Error:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
