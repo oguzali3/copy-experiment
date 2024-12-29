@@ -61,35 +61,31 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
     }
   };
 
-  // Debounced search function
-  const debouncedSearch = useCallback(
-    _.debounce((query: string) => {
-      console.log('Debounced search triggered with:', query);
-      fetchResults(query);
-    }, 300),
-    []
-  );
-
   // Effect to handle search when query changes
   useEffect(() => {
-    if (open) {
+    if (open && searchQuery.trim()) {
       console.log('Search effect triggered:', { searchQuery, open });
-      debouncedSearch(searchQuery);
-    }
-    
-    return () => {
-      console.log('Cleaning up search effect');
-      debouncedSearch.cancel();
-    };
-  }, [searchQuery, open, debouncedSearch]);
-
-  // Effect to handle modal open/close
-  useEffect(() => {
-    if (open && searchQuery) {
-      console.log('Modal opened with existing query:', searchQuery);
+      // Immediate search for initial query
       fetchResults(searchQuery);
     }
   }, [open]);
+
+  // Handle input changes with debouncing
+  const handleSearchChange = useCallback(
+    _.debounce((value: string) => {
+      if (open) {
+        console.log('Debounced search triggered with:', value);
+        fetchResults(value);
+      }
+    }, 300),
+    [open]
+  );
+
+  // Update search query and trigger debounced search
+  const handleInputChange = (value: string) => {
+    setSearchQuery(value);
+    handleSearchChange(value);
+  };
 
   const handleSelect = (stock: any) => {
     console.log('Stock selected:', stock);
@@ -120,7 +116,7 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
           <CommandInput 
             placeholder="Search stocks..." 
             value={searchQuery}
-            onValueChange={setSearchQuery}
+            onValueChange={handleInputChange}
             autoFocus
           />
           <CommandList>
