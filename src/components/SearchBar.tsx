@@ -23,20 +23,21 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    let isActive = true; // For handling race conditions
+    let isActive = true;
 
-    const fetchResults = async (query: string) => {
-      if (!query.trim()) {
+    const fetchResults = async () => {
+      if (!searchQuery.trim()) {
         setResults([]);
+        setIsLoading(false);
         return;
       }
 
       setIsLoading(true);
-      console.log('Starting search with query:', query);
+      console.log('Starting search with query:', searchQuery);
 
       try {
         const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-          body: { endpoint: 'search', query: query.replace(/\$/g, '').trim() }
+          body: { endpoint: 'search', query: searchQuery.replace(/\$/g, '').trim() }
         });
 
         console.log('API response received:', { data, error });
@@ -53,7 +54,9 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
         }
 
         console.log('Setting results:', data);
-        if (isActive) setResults(data);
+        if (isActive) {
+          setResults(data);
+        }
       } catch (error) {
         console.error('Search error:', error);
         if (isActive) setResults([]);
@@ -62,13 +65,16 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
       }
     };
 
-    if (open && searchQuery.trim()) {
-      const timeoutId = setTimeout(() => fetchResults(searchQuery), 300);
-      return () => {
-        isActive = false;
-        clearTimeout(timeoutId);
-      };
-    }
+    const timeoutId = setTimeout(() => {
+      if (open && searchQuery.trim()) {
+        fetchResults();
+      }
+    }, 300);
+
+    return () => {
+      isActive = false;
+      clearTimeout(timeoutId);
+    };
   }, [searchQuery, open]);
 
   const handleSelect = (stock: any) => {
@@ -138,7 +144,7 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
                       </div>
                     )}
                   </CommandItem>
-                ))}
+                ))
               </CommandGroup>
             )}
           </CommandList>
