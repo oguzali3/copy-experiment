@@ -2,6 +2,8 @@ import { useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface StockChartProps {
   ticker?: string;
@@ -10,7 +12,7 @@ interface StockChartProps {
 export const StockChart = ({ ticker }: StockChartProps) => {
   const [timeframe, setTimeframe] = useState("1D");
 
-  const { data: chartData, isLoading } = useQuery({
+  const { data: chartData, isLoading, error } = useQuery({
     queryKey: ['stock-chart', ticker, timeframe],
     queryFn: async () => {
       if (!ticker) return [];
@@ -23,6 +25,7 @@ export const StockChart = ({ ticker }: StockChartProps) => {
       return data;
     },
     enabled: !!ticker,
+    retry: 1,
   });
 
   const timeframes = ["5D", "1M", "3M", "6M", "YTD", "1Y", "3Y", "5Y", "MAX"];
@@ -39,6 +42,19 @@ export const StockChart = ({ ticker }: StockChartProps) => {
     return (
       <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm flex items-center justify-center">
         <p className="text-gray-500">Loading chart data...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Error loading chart data. Please try again later.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }

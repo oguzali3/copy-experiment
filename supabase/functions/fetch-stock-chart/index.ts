@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.fresh.run/std@0.168.0/http/server.ts'
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -46,6 +46,9 @@ serve(async (req) => {
     console.log(`Fetching data from: ${endpoint}`)
     
     const response = await fetch(endpoint)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
     const data = await response.json()
 
     // Transform the data based on the response format
