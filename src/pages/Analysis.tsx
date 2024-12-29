@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { CompanyHeader } from "@/components/analysis/CompanyHeader";
 import { NavigationTabs } from "@/components/analysis/NavigationTabs";
-import { DashboardHeader } from "@/components/shared/DashboardHeader";
 import { AnalysisContent } from "@/components/analysis/AnalysisContent";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,21 +63,15 @@ const Analysis = () => {
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
-      <DashboardSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader />
-        <main className="flex-1 p-6 space-y-6 overflow-y-auto bg-gray-50">
-          <CompanyHeader {...selectedStock} />
-          <NavigationTabs activeTab={activeTab} onTabChange={setActiveTab} />
-          <AnalysisContent 
-            activeTab={activeTab} 
-            selectedStock={selectedStock} 
-            onTabChange={setActiveTab}
-          />
-        </main>
-      </div>
-    </div>
+    <>
+      <CompanyHeader {...selectedStock} />
+      <NavigationTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      <AnalysisContent 
+        activeTab={activeTab} 
+        selectedStock={selectedStock} 
+        onTabChange={setActiveTab}
+      />
+    </>
   );
 };
 

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
 import { supabase } from "@/integrations/supabase/client";
+import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -33,14 +34,18 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/signup" element={<SignUp />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/analysis" element={<Analysis />} />
-                <Route path="/company/:ticker/news" element={<CompanyNews />} />
-                <Route path="/charting" element={<Charting />} />
-                <Route path="/screening" element={<Screening />} />
-                <Route path="/watchlists" element={<Watchlists />} />
-                <Route path="/portfolio" element={<Portfolio />} />
-                <Route path="/settings" element={<Settings />} />
+                
+                {/* Dashboard Layout Routes */}
+                <Route element={<DashboardLayout />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/analysis" element={<Analysis />} />
+                  <Route path="/company/:ticker/news" element={<CompanyNews />} />
+                  <Route path="/charting" element={<Charting />} />
+                  <Route path="/screening" element={<Screening />} />
+                  <Route path="/watchlists" element={<Watchlists />} />
+                  <Route path="/portfolio" element={<Portfolio />} />
+                  <Route path="/settings" element={<Settings />} />
+                </Route>
               </Routes>
             </BrowserRouter>
           </div>
