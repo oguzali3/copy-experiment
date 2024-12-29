@@ -23,46 +23,60 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   const [results, setResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Separate API call function for immediate execution
+  const fetchResults = async (query: string) => {
+    if (!query.trim()) {
+      setResults([]);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      console.log('Searching with query:', query);
+      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+        body: { endpoint: 'search', query: query.replace(/\$/g, '').trim() }
+      });
+
+      if (error) {
+        console.error('Error fetching stocks:', error);
+        throw error;
+      }
+
+      setResults(data || []);
+    } catch (error) {
+      console.error('Search error:', error);
+      setResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Debounced search function
   const debouncedSearch = useCallback(
-    _.debounce(async (query: string) => {
-      if (!query.trim()) {
-        setResults([]);
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        console.log('Searching with query:', query);
-        const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-          body: { endpoint: 'search', query: query.replace(/\$/g, '').trim() }
-        });
-
-        if (error) {
-          console.error('Error fetching stocks:', error);
-          throw error;
-        }
-
-        setResults(data || []);
-      } catch (error) {
-        console.error('Search error:', error);
-        setResults([]);
-      } finally {
-        setIsLoading(false);
-      }
+    _.debounce((query: string) => {
+      fetchResults(query);
     }, 300),
     []
   );
 
-  // Effect to trigger search when input changes
+  // Effect to handle search when query changes
   useEffect(() => {
-    debouncedSearch(searchQuery);
-    // Cleanup
+    if (open) {
+      debouncedSearch(searchQuery);
+    }
+    
     return () => {
       debouncedSearch.cancel();
     };
-  }, [searchQuery, debouncedSearch]);
+  }, [searchQuery, open, debouncedSearch]);
+
+  // Effect to handle modal open/close
+  useEffect(() => {
+    if (open && searchQuery) {
+      // Immediately search when reopening with existing query
+      fetchResults(searchQuery);
+    }
+  }, [open]);
 
   const handleSelect = (stock: any) => {
     onStockSelect({
@@ -74,7 +88,6 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
       marketCap: stock.marketCap,
       summary: stock.description || `${stock.name} is a publicly traded company.`,
     });
-    setSearchQuery("");
     setOpen(false);
   };
 
