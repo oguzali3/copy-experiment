@@ -58,21 +58,23 @@ serve(async (req) => {
     
     const response = await fetch(endpoint)
     if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}`)
+      console.error(`API request failed with status ${response.status}`);
+      throw new Error(`API request failed with status ${response.status}`);
     }
 
     const data = await response.json()
     if (!data) {
-      throw new Error('No data received from API')
+      console.error('No data received from API');
+      throw new Error('No data received from API');
     }
 
-    let chartData = []
+    let chartData = [];
 
     // Handle intraday data (5min intervals)
     if (timeframe === '1D') {
       if (!Array.isArray(data)) {
-        console.error('Unexpected data format for intraday data:', data)
-        throw new Error('Invalid data format for intraday data')
+        console.error('Unexpected data format for intraday data:', data);
+        throw new Error('Invalid data format for intraday data');
       }
 
       // For intraday data, we want to show only today's data
@@ -80,7 +82,10 @@ serve(async (req) => {
       
       chartData = data
         .filter(item => {
-          if (!item || !item.date || isNaN(parseFloat(item.close))) return false;
+          if (!item || !item.date || isNaN(parseFloat(item.close))) {
+            console.log('Filtering out invalid data point:', item);
+            return false;
+          }
           return item.date.startsWith(today);
         })
         .map((item: any) => ({
@@ -102,19 +107,26 @@ serve(async (req) => {
       }
 
       chartData = historicalData
-        .filter(item => item && item.date && !isNaN(parseFloat(item.close)))
+        .filter(item => {
+          if (!item || !item.date || isNaN(parseFloat(item.close))) {
+            console.log('Filtering out invalid data point:', item);
+            return false;
+          }
+          return true;
+        })
         .map((item: any) => ({
           time: item.date,
           price: parseFloat(item.close)
         }));
     }
 
-    if (!chartData.length) {
-      throw new Error('No valid data points after transformation')
+    if (!chartData || chartData.length === 0) {
+      console.error('No valid data points after transformation');
+      throw new Error('No data available for the selected timeframe');
     }
 
     // Sort data chronologically (ascending) - earliest date first
-    chartData.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
+    chartData.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
     console.log(`Successfully processed ${chartData.length} data points`);
     console.log('First data point:', chartData[0]);
@@ -130,10 +142,13 @@ serve(async (req) => {
       },
     )
   } catch (error) {
-    console.error('Error:', error.message)
+    console.error('Error:', error.message);
     
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: 'Please try again later or contact support if the issue persists'
+      }),
       { 
         status: 400,
         headers: {
