@@ -47,46 +47,19 @@ serve(async (req) => {
     }
 
     let endpoint;
-    // Define quoteEndpoint outside the if block so it's accessible everywhere
-    const quoteEndpoint = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
     
     if (timeframe === '1D') {
-      // First get the quote to ensure we have current price
-      const quoteResponse = await fetch(quoteEndpoint);
-      const quoteData = await quoteResponse.json();
-      
-      if (!Array.isArray(quoteData) || quoteData.length === 0) {
-        throw new Error('Failed to fetch current quote data');
-      }
-
-      // Then get intraday data
+      // For 1D, use 5-minute interval intraday data
       endpoint = `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbol}?apikey=${apiKey}`;
       console.log('Fetching intraday data with 5-minute intervals');
-    } else {
-      const { from, to } = getTimeframeParams(timeframe);
-      endpoint = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${from}&to=${to}&apikey=${apiKey}`;
-    }
+      
+      const response = await fetch(endpoint);
+      if (!response.ok) {
+        console.error(`API request failed with status ${response.status}`);
+        throw new Error(`API request failed with status ${response.status}`);
+      }
 
-    console.log(`Fetching data from endpoint: ${endpoint}`);
-    
-    const response = await fetch(endpoint)
-    if (!response.ok) {
-      console.error(`API request failed with status ${response.status}`);
-      throw new Error(`API request failed with status ${response.status}`);
-    }
-
-    const data = await response.json()
-    console.log('Raw API response:', JSON.stringify(data).slice(0, 200) + '...');
-
-    if (!data) {
-      console.error('No data received from API');
-      throw new Error('No data received from API');
-    }
-
-    let chartData = [];
-
-    // Handle intraday data (1D)
-    if (timeframe === '1D') {
+      const data = await response.json();
       if (!Array.isArray(data)) {
         console.error('Unexpected intraday data format:', data);
         throw new Error('Invalid intraday data format');
@@ -99,8 +72,8 @@ serve(async (req) => {
       const marketClose = new Date(now);
       marketClose.setHours(16, 0, 0, 0);
 
-      // Filter data for market hours
-      chartData = data
+      // Filter data for market hours and format it
+      const chartData = data
         .filter(item => {
           const itemDate = new Date(item.date);
           return itemDate >= marketOpen && itemDate <= marketClose;
@@ -108,75 +81,62 @@ serve(async (req) => {
         .map(item => ({
           time: item.date,
           price: parseFloat(item.close)
-        }));
-
-      // If no data points (pre-market or after-hours), use quote data
-      if (chartData.length === 0) {
-        const quote = (await (await fetch(quoteEndpoint)).json())[0];
-        chartData = [{
-          time: now.toISOString(),
-          price: quote.price
-        }];
-      }
-
-      // Sort data chronologically
-      chartData.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+        }))
+        .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
       console.log(`Processed ${chartData.length} intraday data points`);
-    } 
-    // Handle historical daily data
-    else {
-      let historicalData;
       
-      if (data.historical && Array.isArray(data.historical)) {
-        historicalData = data.historical;
-      } else if (Array.isArray(data)) {
-        historicalData = data;
-      } else {
+      if (chartData.length === 0) {
+        console.log('No intraday data points available, fetching latest quote');
+        // If no intraday data, use current quote
+        const quoteEndpoint = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
+        const quoteResponse = await fetch(quoteEndpoint);
+        const quoteData = await quoteResponse.json();
+        
+        if (Array.isArray(quoteData) && quoteData.length > 0) {
+          return new Response(
+            JSON.stringify([{
+              time: now.toISOString(),
+              price: quoteData[0].price
+            }]),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+
+      return new Response(
+        JSON.stringify(chartData),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } else {
+      // For other timeframes, use historical daily data
+      const { from, to } = getTimeframeParams(timeframe);
+      endpoint = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${from}&to=${to}&apikey=${apiKey}`;
+      
+      const response = await fetch(endpoint);
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.historical || !Array.isArray(data.historical)) {
         console.error('Unexpected historical data format:', data);
         throw new Error('Historical data is not in the expected format');
       }
 
-      if (!historicalData || historicalData.length === 0) {
-        console.error('No historical data available');
-        throw new Error('No historical data available for the selected timeframe');
-      }
-
-      chartData = historicalData
-        .filter(item => {
-          if (!item || !item.date || isNaN(parseFloat(item.close))) {
-            console.log('Filtering out invalid historical data point:', item);
-            return false;
-          }
-          return true;
-        })
+      const chartData = data.historical
         .map((item: any) => ({
           time: item.date,
           price: parseFloat(item.close)
-        }));
+        }))
+        .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+
+      return new Response(
+        JSON.stringify(chartData),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
-
-    if (!chartData || chartData.length === 0) {
-      console.error('No valid data points after transformation');
-      throw new Error('No data available for the selected timeframe');
-    }
-
-    // Sort data chronologically (ascending) - earliest date first
-    chartData.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
-
-    console.log(`Successfully processed ${chartData.length} data points`);
-    console.log('First data point:', chartData[0]);
-    console.log('Last data point:', chartData[chartData.length - 1]);
-
-    return new Response(
-      JSON.stringify(chartData),
-      { 
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      },
-    )
   } catch (error) {
     console.error('Error:', error.message);
     
