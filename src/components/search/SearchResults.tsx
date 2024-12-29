@@ -32,7 +32,7 @@ export const SearchResults = ({ results, onSelect, searchQuery }: SearchResultPr
                   className="w-full h-full object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    target.src = '/placeholder.svg';
+                    target.style.display = 'none';
                   }}
                 />
               </div>
