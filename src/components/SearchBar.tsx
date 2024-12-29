@@ -17,6 +17,38 @@ interface SearchBarProps {
 }
 
 export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
+  
+
+Let me fix the syntax errors in the SearchBar component. The main issues are:
+
+1. Missing parenthesis after the `map` function
+2. Syntax error in the JSX structure
+
+Here's the corrected version:
+
+<lov-code>
+Let's fix the SearchBar.tsx file:
+
+<lov-write file_path="src/components/SearchBar.tsx">
+import { Search, Loader } from "lucide-react";
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { useState, useEffect } from "react";
+import { Button } from "./ui/button";
+import { supabase } from "@/integrations/supabase/client";
+
+interface SearchBarProps {
+  onStockSelect: (stock: any) => void;
+}
+
+export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
@@ -144,7 +176,7 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
                       </div>
                     )}
                   </CommandItem>
-                ))
+                ))}
               </CommandGroup>
             )}
           </CommandList>
