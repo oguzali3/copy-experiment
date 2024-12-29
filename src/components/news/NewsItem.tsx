@@ -15,6 +15,10 @@ export const NewsItem = ({ title, date, source, summary, url }: NewsItemProps) =
     }
   };
 
+  const truncatedSummary = summary.length > 280 
+    ? `${summary.substring(0, 280)}...` 
+    : summary;
+
   return (
     <div className="border-b border-gray-100 last:border-0 pb-6 last:pb-0">
       <div className="flex justify-between items-start mb-2">
@@ -23,7 +27,7 @@ export const NewsItem = ({ title, date, source, summary, url }: NewsItemProps) =
         </h3>
         <span className="text-sm text-gray-500 whitespace-nowrap ml-4">{date}</span>
       </div>
-      <p className="text-gray-600 mb-2">{summary}</p>
+      <p className="text-gray-600 mb-2">{truncatedSummary}</p>
       <div className="flex items-center text-sm">
         <span className="text-gray-500">Source: {source}</span>
         <Button 
