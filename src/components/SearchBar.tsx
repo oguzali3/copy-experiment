@@ -1,6 +1,7 @@
 import { useSearch } from "@/hooks/useSearch";
 import { SearchInput } from "./search/SearchInput";
 import { SearchResults } from "./search/SearchResults";
+import { useRef, useEffect } from "react";
 
 interface SearchBarProps {
   onStockSelect: (stock: any) => void;
@@ -15,6 +16,21 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
     isOpen,
     setIsOpen
   } = useSearch();
+
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [setIsOpen]);
 
   const handleSelect = (stock: any) => {
     onStockSelect({
@@ -31,7 +47,7 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   };
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" ref={searchContainerRef}>
       <SearchInput
         value={searchQuery}
         onChange={(value) => {
