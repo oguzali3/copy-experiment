@@ -8,7 +8,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,11 +20,21 @@ interface SearchBarProps {
 export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Remove "$" and trim whitespace from the search query
-  const sanitizedQuery = searchQuery.replace(/\$/g, '').trim().toLowerCase();
+  const sanitizedQuery = debouncedQuery.replace(/\$/g, '').trim().toLowerCase();
 
-  const { data: stocksData, isLoading, error } = useQuery({
+  const { data: stocksData, isLoading } = useQuery({
     queryKey: ['search-stocks', sanitizedQuery],
     queryFn: async () => {
       if (!sanitizedQuery) return [];
@@ -40,13 +50,12 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
         throw error;
       }
 
-      // Log the response for debugging
-      console.log('Search response:', data);
       return data || [];
     },
     enabled: sanitizedQuery.length > 0,
-    staleTime: 30000, // Cache results for 30 seconds
-    retry: 1 // Only retry once on failure
+    staleTime: 1000 * 60 * 5, // Cache results for 5 minutes
+    retry: 2, // Retry twice on failure
+    refetchOnWindowFocus: false
   });
 
   const handleSelect = (stock: any) => {
@@ -79,41 +88,44 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
             placeholder="Search stocks..." 
             value={searchQuery}
             onValueChange={setSearchQuery}
+            autoFocus
           />
           <CommandList>
             <CommandEmpty>
               {isLoading ? (
                 "Searching..."
-              ) : error ? (
-                "Error searching stocks. Please try again."
+              ) : debouncedQuery.length === 0 ? (
+                "Start typing to search..."
               ) : stocksData?.length === 0 ? (
                 "No stocks found. Try searching with the company name or ticker symbol."
               ) : (
-                "Start typing to search..."
+                "No results found."
               )}
             </CommandEmpty>
-            <CommandGroup heading="Stocks">
-              {stocksData?.map((stock: any) => (
-                <CommandItem
-                  key={stock.symbol}
-                  onSelect={() => handleSelect(stock)}
-                  className="flex items-center justify-between px-4 py-2 hover:bg-accent cursor-pointer"
-                >
-                  <div className="flex flex-col">
-                    <p className="text-sm font-medium">{stock.name}</p>
-                    <p className="text-xs text-muted-foreground">${stock.symbol}</p>
-                  </div>
-                  {stock.price && (
-                    <div className="text-right">
-                      <p className="text-sm font-medium">${stock.price}</p>
-                      <p className={`text-xs ${parseFloat(stock.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {stock.change} ({stock.changesPercentage}%)
-                      </p>
+            {stocksData && stocksData.length > 0 && (
+              <CommandGroup heading="Stocks">
+                {stocksData.map((stock: any) => (
+                  <CommandItem
+                    key={stock.symbol}
+                    onSelect={() => handleSelect(stock)}
+                    className="flex items-center justify-between px-4 py-2 hover:bg-accent cursor-pointer"
+                  >
+                    <div className="flex flex-col">
+                      <p className="text-sm font-medium">{stock.name}</p>
+                      <p className="text-xs text-muted-foreground">${stock.symbol}</p>
                     </div>
-                  )}
-                </CommandItem>
-              ))}
-            </CommandGroup>
+                    {stock.price && (
+                      <div className="text-right">
+                        <p className="text-sm font-medium">${stock.price}</p>
+                        <p className={`text-xs ${parseFloat(stock.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {stock.change} ({stock.changesPercentage}%)
+                        </p>
+                      </div>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </CommandDialog>
