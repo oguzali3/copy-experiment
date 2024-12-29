@@ -25,15 +25,22 @@ serve(async (req) => {
 
     // Map timeframe to FMP API parameters
     const getTimeframeParams = (tf: string) => {
+      const today = new Date()
       switch (tf) {
-        case '5D': return { from: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: new Date().toISOString().split('T')[0] }
-        case '1M': return { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: new Date().toISOString().split('T')[0] }
-        case '3M': return { from: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: new Date().toISOString().split('T')[0] }
-        case '6M': return { from: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: new Date().toISOString().split('T')[0] }
-        case '1Y': return { from: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: new Date().toISOString().split('T')[0] }
-        case '3Y': return { from: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: new Date().toISOString().split('T')[0] }
-        case '5Y': return { from: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: new Date().toISOString().split('T')[0] }
-        default: return { from: new Date().toISOString().split('T')[0], to: new Date().toISOString().split('T')[0] }
+        case '5D': return { from: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
+        case '1M': return { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
+        case '3M': return { from: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
+        case '6M': return { from: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
+        case '1Y': return { from: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
+        case '3Y': return { from: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
+        case '5Y': return { from: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
+        case 'MAX': {
+          // For MAX, we'll go back 30 years or to company inception, whichever is more recent
+          const thirtyYearsAgo = new Date()
+          thirtyYearsAgo.setFullYear(thirtyYearsAgo.getFullYear() - 30)
+          return { from: thirtyYearsAgo.toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
+        }
+        default: return { from: today.toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
       }
     }
 
@@ -43,7 +50,7 @@ serve(async (req) => {
       ? `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbol}?apikey=${apiKey}`
       : `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${from}&to=${to}&apikey=${apiKey}`;
 
-    console.log(`Fetching data from: ${endpoint}`)
+    console.log(`Fetching data from: ${endpoint} for timeframe: ${timeframe}`)
     
     const response = await fetch(endpoint)
     if (!response.ok) {
@@ -84,10 +91,12 @@ serve(async (req) => {
         throw new Error('Historical data is not in the expected format')
       }
 
-      chartData = historicalData.map((item: any) => ({
-        time: item.date,
-        price: parseFloat(item.close)
-      })).filter(item => !isNaN(item.price)) // Filter out any invalid price values
+      chartData = historicalData
+        .filter(item => item && item.date && !isNaN(parseFloat(item.close))) // Filter out invalid entries
+        .map((item: any) => ({
+          time: item.date,
+          price: parseFloat(item.close)
+        }))
     }
 
     // Validate transformed data
@@ -100,7 +109,8 @@ serve(async (req) => {
     chartData.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
 
     console.log(`Successfully processed ${chartData.length} data points`)
-    console.log('Sample data point:', chartData[0])
+    console.log('First data point:', chartData[0])
+    console.log('Last data point:', chartData[chartData.length - 1])
 
     return new Response(
       JSON.stringify(chartData),
