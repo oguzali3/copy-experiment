@@ -81,31 +81,48 @@ serve(async (req) => {
 
       const quote = data[0];
       const now = new Date();
-      const marketOpen = new Date();
-      marketOpen.setHours(9, 30, 0, 0);
-
-      // Generate 50 points between market open and now
-      const totalPoints = 50;
-      const timeInterval = (now.getTime() - marketOpen.getTime()) / (totalPoints - 1);
-      const priceChange = quote.price - quote.previousClose;
       
-      // Create smooth price transitions using sine wave for variation
-      for (let i = 0; i < totalPoints; i++) {
-        const time = new Date(marketOpen.getTime() + timeInterval * i);
-        const progress = i / (totalPoints - 1);
+      // Create market hours timestamps (9:30 AM to 4:00 PM)
+      const marketOpen = new Date(now);
+      marketOpen.setHours(9, 30, 0, 0);
+      const marketClose = new Date(now);
+      marketClose.setHours(16, 0, 0, 0);
+
+      // Generate data points at 10-minute intervals
+      const interval = 10; // minutes
+      const points = [];
+      let currentTime = new Date(marketOpen);
+
+      while (currentTime <= marketClose && currentTime <= now) {
+        // Calculate a weighted average between open and current price
+        // based on the time progression through the trading day
+        const totalMinutes = (marketClose.getTime() - marketOpen.getTime()) / (1000 * 60);
+        const elapsedMinutes = (currentTime.getTime() - marketOpen.getTime()) / (1000 * 60);
+        const progress = Math.min(elapsedMinutes / totalMinutes, 1);
+
+        // Create price variations that tend towards the current price
+        const basePrice = quote.previousClose + (quote.price - quote.previousClose) * progress;
         
-        // Add some randomness to make it look more natural
-        const randomFactor = Math.sin(progress * Math.PI * 4) * (priceChange * 0.1);
-        const price = quote.previousClose + (priceChange * progress) + randomFactor;
-        
-        chartData.push({
-          time: time.toISOString(),
-          price: Number(price.toFixed(2))
+        // Add smaller random variations (+/- 0.5% max)
+        const variation = (Math.random() - 0.5) * 0.01 * basePrice;
+        const price = Number((basePrice + variation).toFixed(2));
+
+        points.push({
+          time: currentTime.toISOString(),
+          price: price
         });
+
+        // Increment by interval
+        currentTime = new Date(currentTime.getTime() + interval * 60 * 1000);
       }
 
-      // Ensure the last point matches the current price exactly
-      chartData[chartData.length - 1].price = quote.price;
+      // Ensure we have the opening and current price points
+      if (points.length > 0) {
+        points[0].price = quote.previousClose;
+        points[points.length - 1].price = quote.price;
+      }
+
+      chartData = points;
     } 
     // Handle historical daily data
     else {
