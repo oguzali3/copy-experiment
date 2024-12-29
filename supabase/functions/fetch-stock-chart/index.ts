@@ -48,7 +48,16 @@ serve(async (req) => {
 
     let endpoint;
     if (timeframe === '1D') {
-      // Use 5-minute interval data for intraday
+      // First get the quote to ensure we have current price
+      const quoteEndpoint = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
+      const quoteResponse = await fetch(quoteEndpoint);
+      const quoteData = await quoteResponse.json();
+      
+      if (!Array.isArray(quoteData) || quoteData.length === 0) {
+        throw new Error('Failed to fetch current quote data');
+      }
+
+      // Then get intraday data
       endpoint = `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbol}?apikey=${apiKey}`;
       console.log('Fetching intraday data with 5-minute intervals');
     } else {
@@ -81,24 +90,32 @@ serve(async (req) => {
         throw new Error('Invalid intraday data format');
       }
 
-      // Filter data for current trading day and market hours (9:30 AM - 4:00 PM)
-      const today = new Date().toISOString().split('T')[0];
+      // Get market hours in EST (market's timezone)
+      const now = new Date();
+      const marketOpen = new Date(now);
+      marketOpen.setHours(9, 30, 0, 0);
+      const marketClose = new Date(now);
+      marketClose.setHours(16, 0, 0, 0);
+
+      // Filter data for market hours
       chartData = data
         .filter(item => {
           const itemDate = new Date(item.date);
-          const hours = itemDate.getHours();
-          const minutes = itemDate.getMinutes();
-          const timeInMinutes = hours * 60 + minutes;
-          
-          // Only include data between 9:30 AM (570 minutes) and 4:00 PM (960 minutes)
-          return itemDate.toISOString().startsWith(today) && 
-                 timeInMinutes >= 570 && 
-                 timeInMinutes <= 960;
+          return itemDate >= marketOpen && itemDate <= marketClose;
         })
         .map(item => ({
           time: item.date,
           price: parseFloat(item.close)
         }));
+
+      // If no data points (pre-market or after-hours), use quote data
+      if (chartData.length === 0) {
+        const quote = (await (await fetch(quoteEndpoint)).json())[0];
+        chartData = [{
+          time: now.toISOString(),
+          price: quote.price
+        }];
+      }
 
       // Sort data chronologically
       chartData.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
