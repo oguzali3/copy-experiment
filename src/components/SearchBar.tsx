@@ -8,9 +8,8 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import _ from "lodash";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SearchBarProps {
@@ -23,69 +22,54 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   const [results, setResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Separate API call function for immediate execution
-  const fetchResults = async (query: string) => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
+  useEffect(() => {
+    let isActive = true; // For handling race conditions
 
-    setIsLoading(true);
-    console.log('Starting search with query:', query);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-        body: { endpoint: 'search', query: query.replace(/\$/g, '').trim() }
-      });
-
-      console.log('API response received:', { data, error });
-
-      if (error) {
-        console.error('Error fetching stocks:', error);
-        throw error;
-      }
-
-      if (!data || !Array.isArray(data)) {
-        console.warn('Unexpected data format:', data);
+    const fetchResults = async (query: string) => {
+      if (!query.trim()) {
         setResults([]);
         return;
       }
 
-      console.log('Setting results:', data);
-      setResults(data);
-    } catch (error) {
-      console.error('Search error:', error);
-      setResults([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      setIsLoading(true);
+      console.log('Starting search with query:', query);
 
-  // Effect to handle search when query changes
-  useEffect(() => {
-    if (open && searchQuery.trim()) {
-      console.log('Search effect triggered:', { searchQuery, open });
-      // Immediate search for initial query
-      fetchResults(searchQuery);
-    }
-  }, [open]);
+      try {
+        const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+          body: { endpoint: 'search', query: query.replace(/\$/g, '').trim() }
+        });
 
-  // Handle input changes with debouncing
-  const handleSearchChange = useCallback(
-    _.debounce((value: string) => {
-      if (open) {
-        console.log('Debounced search triggered with:', value);
-        fetchResults(value);
+        console.log('API response received:', { data, error });
+
+        if (error) {
+          console.error('Error fetching stocks:', error);
+          throw error;
+        }
+
+        if (!data || !Array.isArray(data)) {
+          console.warn('Unexpected data format:', data);
+          if (isActive) setResults([]);
+          return;
+        }
+
+        console.log('Setting results:', data);
+        if (isActive) setResults(data);
+      } catch (error) {
+        console.error('Search error:', error);
+        if (isActive) setResults([]);
+      } finally {
+        if (isActive) setIsLoading(false);
       }
-    }, 300),
-    [open]
-  );
+    };
 
-  // Update search query and trigger debounced search
-  const handleInputChange = (value: string) => {
-    setSearchQuery(value);
-    handleSearchChange(value);
-  };
+    if (open && searchQuery.trim()) {
+      const timeoutId = setTimeout(() => fetchResults(searchQuery), 300);
+      return () => {
+        isActive = false;
+        clearTimeout(timeoutId);
+      };
+    }
+  }, [searchQuery, open]);
 
   const handleSelect = (stock: any) => {
     console.log('Stock selected:', stock);
@@ -116,7 +100,7 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
           <CommandInput 
             placeholder="Search stocks..." 
             value={searchQuery}
-            onValueChange={handleInputChange}
+            onValueChange={setSearchQuery}
             autoFocus
           />
           <CommandList>
