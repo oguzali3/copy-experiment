@@ -80,12 +80,12 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } else if (timeframe === '5D') {
-      // For 5D, use daily data
+      // For 5D, use hourly data
       const today = new Date();
       const fiveDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000); // Get 7 days to ensure we have 5 trading days
       
-      const endpoint = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${fiveDaysAgo.toISOString().split('T')[0]}&to=${today.toISOString().split('T')[0]}&apikey=${apiKey}`;
-      console.log('Fetching 5D daily data from endpoint:', endpoint);
+      const endpoint = `https://financialmodelingprep.com/api/v3/historical-chart/1hour/${symbol}?apikey=${apiKey}`;
+      console.log('Fetching 5D hourly data from endpoint:', endpoint);
       
       const response = await fetch(endpoint);
       if (!response.ok) {
@@ -93,16 +93,17 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      console.log('Historical data received:', data.historical?.length, 'data points');
+      console.log('Historical hourly data received:', data?.length, 'data points');
       
-      if (!data.historical || !Array.isArray(data.historical)) {
+      if (!Array.isArray(data)) {
         throw new Error('Historical data is not in the expected format');
       }
 
-      // Take only the last 5 trading days
-      const chartData = data.historical
-        .slice(0, 5)
-        .map((item: any) => ({
+      // Filter for the last 5 trading days and map to the required format
+      const fiveDaysAgoTimestamp = fiveDaysAgo.getTime();
+      const chartData = data
+        .filter(item => new Date(item.date).getTime() >= fiveDaysAgoTimestamp)
+        .map(item => ({
           time: item.date,
           price: parseFloat(item.close)
         }))
