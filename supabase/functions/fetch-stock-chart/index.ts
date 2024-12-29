@@ -48,7 +48,9 @@ serve(async (req) => {
 
     let endpoint;
     if (timeframe === '1D') {
-      endpoint = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
+      // Use 5-minute interval data for intraday
+      endpoint = `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbol}?apikey=${apiKey}`;
+      console.log('Fetching intraday data with 5-minute intervals');
     } else {
       const { from, to } = getTimeframeParams(timeframe);
       endpoint = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${from}&to=${to}&apikey=${apiKey}`;
@@ -72,57 +74,36 @@ serve(async (req) => {
 
     let chartData = [];
 
-    // Handle quote data (1D)
+    // Handle intraday data (1D)
     if (timeframe === '1D') {
-      if (!Array.isArray(data) || data.length === 0) {
-        console.error('Unexpected quote data format:', data);
-        throw new Error('Invalid quote data format');
+      if (!Array.isArray(data)) {
+        console.error('Unexpected intraday data format:', data);
+        throw new Error('Invalid intraday data format');
       }
 
-      const quote = data[0];
-      const now = new Date();
-      
-      // Create market hours timestamps (9:30 AM to 4:00 PM)
-      const marketOpen = new Date(now);
-      marketOpen.setHours(9, 30, 0, 0);
-      const marketClose = new Date(now);
-      marketClose.setHours(16, 0, 0, 0);
+      // Filter data for current trading day and market hours (9:30 AM - 4:00 PM)
+      const today = new Date().toISOString().split('T')[0];
+      chartData = data
+        .filter(item => {
+          const itemDate = new Date(item.date);
+          const hours = itemDate.getHours();
+          const minutes = itemDate.getMinutes();
+          const timeInMinutes = hours * 60 + minutes;
+          
+          // Only include data between 9:30 AM (570 minutes) and 4:00 PM (960 minutes)
+          return itemDate.toISOString().startsWith(today) && 
+                 timeInMinutes >= 570 && 
+                 timeInMinutes <= 960;
+        })
+        .map(item => ({
+          time: item.date,
+          price: parseFloat(item.close)
+        }));
 
-      // Generate data points at 10-minute intervals
-      const interval = 10; // minutes
-      const points = [];
-      let currentTime = new Date(marketOpen);
+      // Sort data chronologically
+      chartData.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
-      while (currentTime <= marketClose && currentTime <= now) {
-        // Calculate a weighted average between open and current price
-        // based on the time progression through the trading day
-        const totalMinutes = (marketClose.getTime() - marketOpen.getTime()) / (1000 * 60);
-        const elapsedMinutes = (currentTime.getTime() - marketOpen.getTime()) / (1000 * 60);
-        const progress = Math.min(elapsedMinutes / totalMinutes, 1);
-
-        // Create price variations that tend towards the current price
-        const basePrice = quote.previousClose + (quote.price - quote.previousClose) * progress;
-        
-        // Add smaller random variations (+/- 0.5% max)
-        const variation = (Math.random() - 0.5) * 0.01 * basePrice;
-        const price = Number((basePrice + variation).toFixed(2));
-
-        points.push({
-          time: currentTime.toISOString(),
-          price: price
-        });
-
-        // Increment by interval
-        currentTime = new Date(currentTime.getTime() + interval * 60 * 1000);
-      }
-
-      // Ensure we have the opening and current price points
-      if (points.length > 0) {
-        points[0].price = quote.previousClose;
-        points[points.length - 1].price = quote.price;
-      }
-
-      chartData = points;
+      console.log(`Processed ${chartData.length} intraday data points`);
     } 
     // Handle historical daily data
     else {
