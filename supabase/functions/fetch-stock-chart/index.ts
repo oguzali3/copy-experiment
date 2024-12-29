@@ -46,9 +46,33 @@ serve(async (req) => {
       }
     }
 
+    // Check if market is open (US Eastern Time)
+    const isMarketOpen = () => {
+      const now = new Date();
+      const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      const hours = et.getHours();
+      const minutes = et.getMinutes();
+      const day = et.getDay();
+      
+      // Market is closed on weekends
+      if (day === 0 || day === 6) return false;
+      
+      // Market is open 9:30 AM - 4:00 PM ET
+      const marketTime = hours * 60 + minutes;
+      return marketTime >= 9 * 60 + 30 && marketTime < 16 * 60;
+    }
+
     let endpoint;
     if (timeframe === '1D') {
-      endpoint = `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbol}?apikey=${apiKey}`;
+      // For 1D, if market is closed, get the last trading day's data
+      if (!isMarketOpen()) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        endpoint = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${yesterdayStr}&to=${yesterdayStr}&apikey=${apiKey}`;
+      } else {
+        endpoint = `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbol}?apikey=${apiKey}`;
+      }
     } else {
       const { from, to } = getTimeframeParams(timeframe);
       endpoint = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${from}&to=${to}&apikey=${apiKey}`;
@@ -63,8 +87,6 @@ serve(async (req) => {
     }
 
     const data = await response.json()
-    
-    // Log the raw API response for debugging
     console.log('Raw API response:', JSON.stringify(data).slice(0, 200) + '...');
 
     if (!data) {
@@ -75,13 +97,12 @@ serve(async (req) => {
     let chartData = [];
 
     // Handle intraday data (5min intervals)
-    if (timeframe === '1D') {
+    if (timeframe === '1D' && isMarketOpen()) {
       if (!Array.isArray(data)) {
         console.error('Unexpected data format for intraday data:', data);
         throw new Error('Invalid data format for intraday data');
       }
 
-      // For intraday data, we want to show only today's data
       const today = new Date().toISOString().split('T')[0];
       
       chartData = data
