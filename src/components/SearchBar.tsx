@@ -35,11 +35,11 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   const handleSelect = (stock: any) => {
     onStockSelect({
       name: stock.name,
-      symbol: stock.symbol,
-      price: stock.price,
-      change: stock.change,
-      changePercent: stock.changesPercentage,
-      marketCap: stock.marketCap,
+      ticker: stock.symbol,
+      price: stock.price?.toFixed(2) || "0.00",
+      change: stock.change?.toFixed(2) || "0.00",
+      changePercent: stock.changesPercentage?.toFixed(2) || "0.00",
+      marketCap: stock.marketCap || "N/A",
       summary: stock.description || `${stock.name} is a publicly traded company.`,
     });
     setSearchQuery("");

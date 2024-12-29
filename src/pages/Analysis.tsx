@@ -60,10 +60,6 @@ const Analysis = () => {
     }
   };
 
-  const handleStockSelect = (stock: any) => {
-    window.location.href = `/analysis?ticker=${stock.ticker}`;
-  };
-
   if (isLoading) {
     return <div>Loading...</div>;
   }

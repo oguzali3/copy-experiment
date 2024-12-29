@@ -7,7 +7,7 @@ export const DashboardHeader = () => {
   const navigate = useNavigate();
 
   const handleStockSelect = (stock: any) => {
-    navigate(`/analysis?ticker=${stock.symbol}`);
+    navigate(`/analysis?ticker=${stock.ticker}`);
   };
 
   return (
