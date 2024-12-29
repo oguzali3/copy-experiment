@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { symbol, timeframe = '1D' } = await req.json()
+    const { symbol, timeframe } = await req.json()
     
     if (!symbol) {
       throw new Error('Symbol is required')
@@ -20,7 +20,7 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get('FMP_API_KEY')
     if (!apiKey) {
-      throw new Error('FMP_API_KEY is not set')
+      throw new Error('API key is not configured')
     }
 
     // Map timeframe to FMP API parameters
@@ -46,7 +46,7 @@ serve(async (req) => {
 
     const { from, to } = getTimeframeParams(timeframe)
     
-    let endpoint = timeframe === '1D' 
+    const endpoint = timeframe === '1D' 
       ? `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbol}?apikey=${apiKey}`
       : `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${from}&to=${to}&apikey=${apiKey}`;
 
@@ -54,45 +54,46 @@ serve(async (req) => {
     
     const response = await fetch(endpoint)
     if (!response.ok) {
-      console.error(`HTTP error! status: ${response.status}`)
-      throw new Error(`HTTP error! status: ${response.status}`)
+      throw new Error(`API request failed with status ${response.status}`)
     }
-    
-    const data = await response.json()
-    console.log('API Response structure:', Object.keys(data))
 
-    // Validate the response data
+    const data = await response.json()
     if (!data) {
-      console.error('No data received from API')
       throw new Error('No data received from API')
     }
 
-    // Transform the data based on the response format
-    let chartData
+    let chartData = []
+
+    // Handle intraday data (5min intervals)
     if (timeframe === '1D') {
       if (!Array.isArray(data)) {
-        console.error('Invalid 1D data format:', typeof data)
-        throw new Error('Invalid data format for 1D timeframe')
+        console.error('Unexpected data format for intraday data:', data)
+        throw new Error('Invalid data format for intraday data')
       }
-      chartData = data.map((item: any) => ({
-        time: item.date.split(' ')[1],
-        price: parseFloat(item.close)
-      }))
-    } else {
-      // For historical data, we need to check the structure
-      if (!data.historical && !Array.isArray(data)) {
-        console.error('Invalid historical data format:', typeof data)
-        throw new Error('Invalid data format for historical data')
-      }
+
+      chartData = data
+        .filter(item => item && item.date && !isNaN(parseFloat(item.close)))
+        .map((item: any) => ({
+          time: item.date,
+          price: parseFloat(item.close)
+        }))
+    } 
+    // Handle historical daily data
+    else {
+      let historicalData
       
-      const historicalData = data.historical || data
-      if (!Array.isArray(historicalData)) {
-        console.error('Historical data is not an array:', typeof historicalData)
+      // Check if data is in the expected format
+      if (data.historical && Array.isArray(data.historical)) {
+        historicalData = data.historical
+      } else if (Array.isArray(data)) {
+        historicalData = data
+      } else {
+        console.error('Unexpected data format:', data)
         throw new Error('Historical data is not in the expected format')
       }
 
       chartData = historicalData
-        .filter(item => item && item.date && !isNaN(parseFloat(item.close))) // Filter out invalid entries
+        .filter(item => item && item.date && !isNaN(parseFloat(item.close)))
         .map((item: any) => ({
           time: item.date,
           price: parseFloat(item.close)
@@ -100,12 +101,11 @@ serve(async (req) => {
     }
 
     // Validate transformed data
-    if (!Array.isArray(chartData) || chartData.length === 0) {
-      console.error('No valid data points available')
-      throw new Error('No data points available for the specified timeframe')
+    if (!chartData.length) {
+      throw new Error('No valid data points after transformation')
     }
 
-    // Sort data chronologically
+    // Sort data chronologically (ascending) - earliest date first
     chartData.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
 
     console.log(`Successfully processed ${chartData.length} data points`)
@@ -115,7 +115,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify(chartData),
       { 
-        headers: { 
+        headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
         },
@@ -123,14 +123,15 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Error:', error.message)
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
-        headers: { 
+        status: 400,
+        headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
         },
-        status: 400,
       },
     )
   }
