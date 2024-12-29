@@ -47,12 +47,16 @@ serve(async (req) => {
     
     const response = await fetch(endpoint)
     if (!response.ok) {
+      console.error(`HTTP error! status: ${response.status}`)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
+    
     const data = await response.json()
+    console.log('API Response:', JSON.stringify(data).slice(0, 200) + '...') // Log first 200 chars of response
 
     // Validate the response data
     if (!data) {
+      console.error('No data received from API')
       throw new Error('No data received from API')
     }
 
@@ -60,26 +64,36 @@ serve(async (req) => {
     let chartData
     if (timeframe === '1D') {
       if (!Array.isArray(data)) {
+        console.error('Invalid 1D data format:', typeof data, Object.keys(data))
         throw new Error('Invalid data format for 1D timeframe')
       }
       chartData = data.map((item: any) => ({
         time: item.date.split(' ')[1],
-        price: item.close
+        price: parseFloat(item.close)
       }))
     } else {
-      if (!data.historical || !Array.isArray(data.historical)) {
+      // For historical data, the response might be wrapped in a 'historical' property
+      const historicalData = data.historical || data
+      if (!Array.isArray(historicalData)) {
+        console.error('Invalid historical data format:', typeof historicalData, Object.keys(data))
         throw new Error('Invalid data format for historical data')
       }
-      chartData = data.historical.map((item: any) => ({
+      chartData = historicalData.map((item: any) => ({
         time: item.date,
-        price: item.close
+        price: parseFloat(item.close)
       }))
     }
 
     // Validate transformed data
-    if (!Array.isArray(chartData)) {
-      throw new Error('Failed to transform chart data')
+    if (!Array.isArray(chartData) || chartData.length === 0) {
+      console.error('Failed to transform chart data or no data points available')
+      throw new Error('No data points available for the specified timeframe')
     }
+
+    // Sort data chronologically
+    chartData.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
+
+    console.log(`Successfully processed ${chartData.length} data points`)
 
     return new Response(
       JSON.stringify(chartData),
