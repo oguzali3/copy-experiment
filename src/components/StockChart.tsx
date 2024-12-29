@@ -1,43 +1,69 @@
+import { useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface StockChartProps {
   ticker?: string;
 }
 
-const data = [
-  { time: "9:30", price: 150.25 },
-  { time: "10:00", price: 152.75 },
-  { time: "10:30", price: 151.50 },
-  { time: "11:00", price: 154.25 },
-  { time: "11:30", price: 153.75 },
-  { time: "12:00", price: 155.50 },
-  { time: "12:30", price: 154.25 },
-  { time: "13:00", price: 156.75 },
-  { time: "13:30", price: 158.25 },
-  { time: "14:00", price: 157.50 },
-  { time: "14:30", price: 159.75 },
-  { time: "15:00", price: 160.25 },
-  { time: "15:30", price: 162.50 },
-  { time: "16:00", price: 161.75 },
-];
-
 export const StockChart = ({ ticker }: StockChartProps) => {
+  const [timeframe, setTimeframe] = useState("1D");
+
+  const { data: chartData, isLoading } = useQuery({
+    queryKey: ['stock-chart', ticker, timeframe],
+    queryFn: async () => {
+      if (!ticker) return [];
+      
+      const { data, error } = await supabase.functions.invoke('fetch-stock-chart', {
+        body: { symbol: ticker, timeframe }
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!ticker,
+  });
+
+  const timeframes = ["5D", "1M", "3M", "6M", "YTD", "1Y", "3Y", "5Y", "MAX"];
+
+  if (!ticker) {
+    return (
+      <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm flex items-center justify-center">
+        <p className="text-gray-500">Select a stock to view its chart</p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm flex items-center justify-center">
+        <p className="text-gray-500">Loading chart data...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm">
       <div className="flex gap-2 mb-4 flex-wrap px-2">
-        {["5D", "1M", "3M", "6M", "YTD", "1Y", "3Y", "5Y", "MAX"].map((timeframe) => (
+        {timeframes.map((tf) => (
           <button
-            key={timeframe}
-            className="px-3 py-1 text-sm rounded-md hover:bg-gray-100 transition-colors"
+            key={tf}
+            className={`px-3 py-1 text-sm rounded-md transition-colors ${
+              timeframe === tf 
+                ? "bg-blue-100 text-blue-700" 
+                : "hover:bg-gray-100"
+            }`}
+            onClick={() => setTimeframe(tf)}
           >
-            {timeframe}
+            {tf}
           </button>
         ))}
       </div>
       <div className="h-[calc(100%-60px)]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={data}
+            data={chartData}
             margin={{ top: 5, right: 5, left: 5, bottom: 20 }}
           >
             <XAxis 
@@ -52,7 +78,7 @@ export const StockChart = ({ ticker }: StockChartProps) => {
               fontSize={12}
               tickLine={false}
               domain={['auto', 'auto']}
-              tickFormatter={(value) => `$${value}`}
+              tickFormatter={(value) => `$${value.toFixed(2)}`}
             />
             <Tooltip
               contentStyle={{
@@ -61,7 +87,7 @@ export const StockChart = ({ ticker }: StockChartProps) => {
                 borderRadius: "8px",
                 boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
               }}
-              formatter={(value) => [`$${value}`, "Price"]}
+              formatter={(value: number) => [`$${value.toFixed(2)}`, "Price"]}
             />
             <Line
               type="monotone"
