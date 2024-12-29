@@ -52,7 +52,7 @@ serve(async (req) => {
     }
     
     const data = await response.json()
-    console.log('API Response:', JSON.stringify(data).slice(0, 200) + '...') // Log first 200 chars of response
+    console.log('API Response structure:', Object.keys(data))
 
     // Validate the response data
     if (!data) {
@@ -64,7 +64,7 @@ serve(async (req) => {
     let chartData
     if (timeframe === '1D') {
       if (!Array.isArray(data)) {
-        console.error('Invalid 1D data format:', typeof data, Object.keys(data))
+        console.error('Invalid 1D data format:', typeof data)
         throw new Error('Invalid data format for 1D timeframe')
       }
       chartData = data.map((item: any) => ({
@@ -72,21 +72,27 @@ serve(async (req) => {
         price: parseFloat(item.close)
       }))
     } else {
-      // For historical data, the response might be wrapped in a 'historical' property
-      const historicalData = data.historical || data
-      if (!Array.isArray(historicalData)) {
-        console.error('Invalid historical data format:', typeof historicalData, Object.keys(data))
+      // For historical data, we need to check the structure
+      if (!data.historical && !Array.isArray(data)) {
+        console.error('Invalid historical data format:', typeof data)
         throw new Error('Invalid data format for historical data')
       }
+      
+      const historicalData = data.historical || data
+      if (!Array.isArray(historicalData)) {
+        console.error('Historical data is not an array:', typeof historicalData)
+        throw new Error('Historical data is not in the expected format')
+      }
+
       chartData = historicalData.map((item: any) => ({
         time: item.date,
         price: parseFloat(item.close)
-      }))
+      })).filter(item => !isNaN(item.price)) // Filter out any invalid price values
     }
 
     // Validate transformed data
     if (!Array.isArray(chartData) || chartData.length === 0) {
-      console.error('Failed to transform chart data or no data points available')
+      console.error('No valid data points available')
       throw new Error('No data points available for the specified timeframe')
     }
 
@@ -94,6 +100,7 @@ serve(async (req) => {
     chartData.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
 
     console.log(`Successfully processed ${chartData.length} data points`)
+    console.log('Sample data point:', chartData[0])
 
     return new Response(
       JSON.stringify(chartData),
