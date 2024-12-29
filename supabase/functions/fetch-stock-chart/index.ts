@@ -46,14 +46,12 @@ serve(async (req) => {
       }
     }
 
-    let endpoint;
-    
     if (timeframe === '1D') {
       // For 1D, use 5-minute interval intraday data
-      endpoint = `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbol}?apikey=${apiKey}`;
+      const intradayEndpoint = `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbol}?apikey=${apiKey}`;
       console.log('Fetching intraday data with 5-minute intervals');
       
-      const response = await fetch(endpoint);
+      const response = await fetch(intradayEndpoint);
       if (!response.ok) {
         console.error(`API request failed with status ${response.status}`);
         throw new Error(`API request failed with status ${response.status}`);
@@ -65,14 +63,14 @@ serve(async (req) => {
         throw new Error('Invalid intraday data format');
       }
 
-      // Get market hours in EST (market's timezone)
+      // Get today's date in EST (market's timezone)
       const now = new Date();
       const marketOpen = new Date(now);
       marketOpen.setHours(9, 30, 0, 0);
       const marketClose = new Date(now);
       marketClose.setHours(16, 0, 0, 0);
 
-      // Filter data for market hours and format it
+      // Filter data for today's market hours and format it
       const chartData = data
         .filter(item => {
           const itemDate = new Date(item.date);
@@ -111,7 +109,7 @@ serve(async (req) => {
     } else {
       // For other timeframes, use historical daily data
       const { from, to } = getTimeframeParams(timeframe);
-      endpoint = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${from}&to=${to}&apikey=${apiKey}`;
+      const endpoint = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${from}&to=${to}&apikey=${apiKey}`;
       
       const response = await fetch(endpoint);
       if (!response.ok) {
