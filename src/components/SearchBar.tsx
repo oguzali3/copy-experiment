@@ -35,7 +35,7 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   const handleSelect = (stock: any) => {
     onStockSelect({
       name: stock.name,
-      ticker: stock.symbol,
+      symbol: stock.symbol,
       price: stock.price,
       change: stock.change,
       changePercent: stock.changesPercentage,
