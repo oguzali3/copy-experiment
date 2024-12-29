@@ -26,9 +26,11 @@ export const StockChart = ({ ticker }: StockChartProps) => {
     },
     enabled: !!ticker,
     retry: 1,
+    // Refresh every minute for intraday data
+    refetchInterval: timeframe === "1D" ? 60000 : false,
   });
 
-  const timeframes = ["5D", "1M", "3M", "6M", "YTD", "1Y", "3Y", "5Y", "MAX"];
+  const timeframes = ["1D", "5D", "1M", "3M", "6M", "YTD", "1Y", "3Y", "5Y", "MAX"];
 
   if (!ticker) {
     return (
@@ -59,6 +61,18 @@ export const StockChart = ({ ticker }: StockChartProps) => {
     );
   }
 
+  const formatXAxisTick = (time: string) => {
+    if (timeframe === "1D") {
+      const date = new Date(time);
+      return date.toLocaleTimeString('en-US', { 
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true 
+      });
+    }
+    return time;
+  };
+
   return (
     <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm">
       <div className="flex gap-2 mb-4 flex-wrap px-2">
@@ -88,6 +102,7 @@ export const StockChart = ({ ticker }: StockChartProps) => {
               fontSize={12}
               tickLine={false}
               dy={10}
+              tickFormatter={formatXAxisTick}
             />
             <YAxis 
               stroke="#888888"
@@ -104,6 +119,17 @@ export const StockChart = ({ ticker }: StockChartProps) => {
                 boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
               }}
               formatter={(value: number) => [`$${value.toFixed(2)}`, "Price"]}
+              labelFormatter={(label) => {
+                if (timeframe === "1D") {
+                  const date = new Date(label);
+                  return date.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  });
+                }
+                return label;
+              }}
             />
             <Line
               type="monotone"

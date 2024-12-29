@@ -6,7 +6,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -31,11 +30,14 @@ serve(async (req) => {
         case '1M': return { from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
         case '3M': return { from: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
         case '6M': return { from: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
+        case 'YTD': {
+          const startOfYear = new Date(today.getFullYear(), 0, 1)
+          return { from: startOfYear.toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
+        }
         case '1Y': return { from: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
         case '3Y': return { from: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
         case '5Y': return { from: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
         case 'MAX': {
-          // For MAX, we'll go back 30 years or to company inception, whichever is more recent
           const thirtyYearsAgo = new Date()
           thirtyYearsAgo.setFullYear(thirtyYearsAgo.getFullYear() - 30)
           return { from: thirtyYearsAgo.toISOString().split('T')[0], to: today.toISOString().split('T')[0] }
@@ -44,13 +46,15 @@ serve(async (req) => {
       }
     }
 
-    const { from, to } = getTimeframeParams(timeframe)
-    
-    const endpoint = timeframe === '1D' 
-      ? `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbol}?apikey=${apiKey}`
-      : `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${from}&to=${to}&apikey=${apiKey}`;
+    let endpoint;
+    if (timeframe === '1D') {
+      endpoint = `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbol}?apikey=${apiKey}`;
+    } else {
+      const { from, to } = getTimeframeParams(timeframe);
+      endpoint = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${from}&to=${to}&apikey=${apiKey}`;
+    }
 
-    console.log(`Fetching data from: ${endpoint} for timeframe: ${timeframe}`)
+    console.log(`Fetching data from endpoint for timeframe: ${timeframe}`);
     
     const response = await fetch(endpoint)
     if (!response.ok) {
@@ -71,25 +75,30 @@ serve(async (req) => {
         throw new Error('Invalid data format for intraday data')
       }
 
+      // For intraday data, we want to show only today's data
+      const today = new Date().toISOString().split('T')[0];
+      
       chartData = data
-        .filter(item => item && item.date && !isNaN(parseFloat(item.close)))
+        .filter(item => {
+          if (!item || !item.date || isNaN(parseFloat(item.close))) return false;
+          return item.date.startsWith(today);
+        })
         .map((item: any) => ({
           time: item.date,
           price: parseFloat(item.close)
-        }))
+        }));
     } 
     // Handle historical daily data
     else {
-      let historicalData
+      let historicalData;
       
-      // Check if data is in the expected format
       if (data.historical && Array.isArray(data.historical)) {
-        historicalData = data.historical
+        historicalData = data.historical;
       } else if (Array.isArray(data)) {
-        historicalData = data
+        historicalData = data;
       } else {
-        console.error('Unexpected data format:', data)
-        throw new Error('Historical data is not in the expected format')
+        console.error('Unexpected data format:', data);
+        throw new Error('Historical data is not in the expected format');
       }
 
       chartData = historicalData
@@ -97,10 +106,9 @@ serve(async (req) => {
         .map((item: any) => ({
           time: item.date,
           price: parseFloat(item.close)
-        }))
+        }));
     }
 
-    // Validate transformed data
     if (!chartData.length) {
       throw new Error('No valid data points after transformation')
     }
@@ -108,9 +116,9 @@ serve(async (req) => {
     // Sort data chronologically (ascending) - earliest date first
     chartData.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
 
-    console.log(`Successfully processed ${chartData.length} data points`)
-    console.log('First data point:', chartData[0])
-    console.log('Last data point:', chartData[chartData.length - 1])
+    console.log(`Successfully processed ${chartData.length} data points`);
+    console.log('First data point:', chartData[0]);
+    console.log('Last data point:', chartData[chartData.length - 1]);
 
     return new Response(
       JSON.stringify(chartData),
