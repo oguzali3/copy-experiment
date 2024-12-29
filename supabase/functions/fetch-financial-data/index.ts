@@ -6,53 +6,48 @@ const corsHeaders = {
   'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
 }
 
-const FMP_API_KEY = Deno.env.get('FMP_API_KEY')
-const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3'
-
 // In-memory cache with expiration
 const cache = new Map<string, { data: any, timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
+    const { endpoint, symbol, query } = await req.json()
+    const FMP_API_KEY = Deno.env.get('FMP_API_KEY')
+    
     if (!FMP_API_KEY) {
-      console.error('FMP_API_KEY is not configured')
       throw new Error('FMP_API_KEY is not configured')
     }
 
-    const { endpoint, symbol, query } = await req.json()
-    console.log('Request received:', { endpoint, symbol, query })
-
-    // Generate cache key
-    const cacheKey = `${endpoint}-${symbol || ''}-${query || ''}`
-    
-    // Check in-memory cache first
-    const cachedData = cache.get(cacheKey)
-    if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_DURATION) {
-      console.log('Returning cached data for:', cacheKey)
-      return new Response(
-        JSON.stringify(cachedData.data),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
     if (endpoint === 'search' && query) {
-      console.log('Searching for:', query)
-      const searchUrl = `${FMP_BASE_URL}/search?query=${encodeURIComponent(query)}&limit=10&apikey=${FMP_API_KEY}`
-      console.log('Search URL:', searchUrl)
+      // Generate cache key
+      const cacheKey = `search-${query.toLowerCase()}`
       
+      // Check cache
+      const cachedResult = cache.get(cacheKey)
+      if (cachedResult && (Date.now() - cachedResult.timestamp) < CACHE_DURATION) {
+        console.log('Returning cached data for:', query)
+        return new Response(
+          JSON.stringify(cachedResult.data),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      console.log('Fetching new data for:', query)
+      const searchUrl = `https://financialmodelingprep.com/api/v3/search?query=${encodeURIComponent(query)}&limit=10&apikey=${FMP_API_KEY}`
       const searchResponse = await fetch(searchUrl)
+      
       if (!searchResponse.ok) {
         throw new Error(`Search API failed with status: ${searchResponse.status}`)
       }
       
       let searchData = await searchResponse.json()
-      console.log('Search results:', searchData)
-
+      
       // Filter for only NASDAQ and NYSE stocks
       searchData = searchData.filter((item: any) => 
         item.exchangeShortName === 'NASDAQ' || 
@@ -68,9 +63,8 @@ serve(async (req) => {
 
       // Get quotes for all found symbols
       const symbols = searchData.map((item: any) => item.symbol).join(',')
-      const quoteUrl = `${FMP_BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`
-      console.log('Quote URL:', quoteUrl)
-
+      const quoteUrl = `https://financialmodelingprep.com/api/v3/quote/${symbols}?apikey=${FMP_API_KEY}`
+      
       const quoteResponse = await fetch(quoteUrl)
       if (!quoteResponse.ok) {
         throw new Error(`Quote API failed with status: ${quoteResponse.status}`)
@@ -102,7 +96,7 @@ serve(async (req) => {
       )
     }
 
-    // Handle other endpoints (quote, profile, etc.)
+    // Handle other endpoints...
     if (!symbol) {
       throw new Error('Symbol is required')
     }
@@ -110,19 +104,19 @@ serve(async (req) => {
     let url: string
     switch (endpoint) {
       case 'quote':
-        url = `${FMP_BASE_URL}/quote/${symbol}?apikey=${FMP_API_KEY}`
+        url = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${FMP_API_KEY}`
         break
       case 'profile':
-        url = `${FMP_BASE_URL}/profile/${symbol}?apikey=${FMP_API_KEY}`
+        url = `https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${FMP_API_KEY}`
         break
       case 'income-statement':
-        url = `${FMP_BASE_URL}/income-statement/${symbol}?limit=120&apikey=${FMP_API_KEY}`
+        url = `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?limit=120&apikey=${FMP_API_KEY}`
         break
       case 'balance-sheet':
-        url = `${FMP_BASE_URL}/balance-sheet-statement/${symbol}?limit=120&apikey=${FMP_API_KEY}`
+        url = `https://financialmodelingprep.com/api/v3/balance-sheet-statement/${symbol}?limit=120&apikey=${FMP_API_KEY}`
         break
       case 'cash-flow':
-        url = `${FMP_BASE_URL}/cash-flow-statement/${symbol}?limit=120&apikey=${FMP_API_KEY}`
+        url = `https://financialmodelingprep.com/api/v3/cash-flow-statement/${symbol}?limit=120&apikey=${FMP_API_KEY}`
         break
       default:
         throw new Error('Invalid endpoint')

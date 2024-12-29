@@ -1,15 +1,5 @@
 import { Search, Loader } from "lucide-react";
-import {
-  Command,
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { useState, useEffect, useCallback } from "react";
-import { Button } from "./ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SearchBarProps {
@@ -17,13 +7,13 @@ interface SearchBarProps {
 }
 
 export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
-  const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [cache, setCache] = useState<Record<string, any[]>>({});
+  const [isOpen, setIsOpen] = useState(false);
 
-  // Memoized search function
+  // Memoized search function with caching
   const searchStocks = useCallback(async (query: string) => {
     // Check cache first
     if (cache[query]) {
@@ -96,19 +86,16 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
     };
 
     const timeoutId = setTimeout(() => {
-      if (open) {
-        fetchResults();
-      }
+      fetchResults();
     }, 300);
 
     return () => {
       isActive = false;
       clearTimeout(timeoutId);
     };
-  }, [searchQuery, open, searchStocks, cache]);
+  }, [searchQuery, searchStocks, cache]);
 
   const handleSelect = (stock: any) => {
-    console.log('Stock selected:', stock);
     onStockSelect({
       name: stock.name,
       ticker: stock.symbol,
@@ -118,72 +105,68 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
       marketCap: stock.marketCap,
       summary: stock.description || `${stock.name} is a publicly traded company.`,
     });
-    setOpen(false);
+    setSearchQuery("");
+    setResults([]);
+    setIsOpen(false);
   };
 
   return (
     <div className="relative w-full">
-      <Button 
-        variant="outline" 
-        className="w-full justify-start text-left font-normal"
-        onClick={() => setOpen(true)}
-        aria-label="Open stock search"
-      >
-        <Search className="mr-2 h-4 w-4" />
-        <span>Search stocks...</span>
-      </Button>
-      <CommandDialog open={open} onOpenChange={setOpen}>
-        <Command className="rounded-lg border shadow-md" aria-label="Search stocks dialog">
-          <CommandInput 
-            placeholder="Search stocks..." 
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-            autoFocus
-            aria-label="Search stocks input"
-          />
-          <CommandList>
-            <CommandEmpty>
-              {isLoading ? (
-                <div className="flex items-center justify-center py-6">
-                  <Loader className="h-6 w-6 animate-spin" />
-                </div>
-              ) : searchQuery.length === 0 ? (
-                "Start typing to search..."
-              ) : searchQuery.length < 2 ? (
-                "Type at least 2 characters to search..."
-              ) : results.length === 0 ? (
-                "No stocks found. Try searching with the company name or ticker symbol."
-              ) : (
-                "No results found."
-              )}
-            </CommandEmpty>
-            {results.length > 0 && (
-              <CommandGroup heading="Stocks">
-                {results.map((stock: any) => (
-                  <CommandItem
-                    key={stock.symbol}
-                    onSelect={() => handleSelect(stock)}
-                    className="flex items-center justify-between px-4 py-2 hover:bg-accent cursor-pointer"
-                  >
-                    <div className="flex flex-col">
-                      <p className="text-sm font-medium">{stock.name}</p>
-                      <p className="text-xs text-muted-foreground">${stock.symbol}</p>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          className="w-full pl-10 pr-4 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Search stocks..."
+        />
+      </div>
+
+      {isOpen && (searchQuery.length > 0 || isLoading) && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border max-h-[400px] overflow-y-auto z-50">
+          {isLoading ? (
+            <div className="flex items-center justify-center p-4">
+              <Loader className="h-5 w-5 animate-spin text-gray-400" />
+            </div>
+          ) : results.length === 0 ? (
+            <div className="p-4 text-sm text-gray-500 text-center">
+              {searchQuery.length < 2 
+                ? "Type at least 2 characters to search..."
+                : "No results found"}
+            </div>
+          ) : (
+            <div>
+              {results.map((stock) => (
+                <div
+                  key={stock.symbol}
+                  onClick={() => handleSelect(stock)}
+                  className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-medium text-sm">{stock.name}</div>
+                      <div className="text-xs text-gray-500">{stock.symbol}</div>
                     </div>
                     {stock.price && (
                       <div className="text-right">
-                        <p className="text-sm font-medium">${stock.price}</p>
-                        <p className={`text-xs ${parseFloat(stock.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        <div className="text-sm font-medium">${stock.price}</div>
+                        <div className={`text-xs ${parseFloat(stock.change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                           {stock.change} ({stock.changesPercentage}%)
-                        </p>
+                        </div>
                       </div>
                     )}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-          </CommandList>
-        </Command>
-      </CommandDialog>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
