@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { Search, Loader } from "lucide-react";
 import {
   Command,
   CommandDialog,
@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/command";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "./ui/button";
-import { useQuery } from "@tanstack/react-query";
+import _ from "lodash";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SearchBarProps {
@@ -20,46 +20,49 @@ interface SearchBarProps {
 export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [results, setResults] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Implement debouncing with a shorter delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
-    }, 150); // Reduced to 150ms for faster response
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  // Remove "$" and trim whitespace from the search query
-  const sanitizedQuery = debouncedQuery.replace(/\$/g, '').trim().toLowerCase();
-
-  const { data: stocksData, isLoading } = useQuery({
-    queryKey: ['search-stocks', sanitizedQuery],
-    queryFn: async () => {
-      if (!sanitizedQuery) return [];
-      
-      console.log('Searching with query:', sanitizedQuery);
-      
-      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-        body: { endpoint: 'search', query: sanitizedQuery }
-      });
-
-      if (error) {
-        console.error('Error fetching stocks:', error);
-        throw error;
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    _.debounce(async (query: string) => {
+      if (!query.trim()) {
+        setResults([]);
+        setIsLoading(false);
+        return;
       }
 
-      return data || [];
-    },
-    enabled: sanitizedQuery.length > 0,
-    staleTime: 1000 * 60 * 5, // Cache results for 5 minutes
-    retry: 2, // Retry twice on failure
-    refetchOnWindowFocus: false,
-    // Updated options for better performance
-    gcTime: 1000 * 60 * 10, // Keep cache for 10 minutes (renamed from cacheTime)
-    placeholderData: (previousData) => previousData // Show previous results while fetching new ones (replaces keepPreviousData)
-  });
+      setIsLoading(true);
+      try {
+        console.log('Searching with query:', query);
+        const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+          body: { endpoint: 'search', query: query.replace(/\$/g, '').trim() }
+        });
+
+        if (error) {
+          console.error('Error fetching stocks:', error);
+          throw error;
+        }
+
+        setResults(data || []);
+      } catch (error) {
+        console.error('Search error:', error);
+        setResults([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 300),
+    []
+  );
+
+  // Effect to trigger search when input changes
+  useEffect(() => {
+    debouncedSearch(searchQuery);
+    // Cleanup
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [searchQuery, debouncedSearch]);
 
   const handleSelect = (stock: any) => {
     onStockSelect({
@@ -96,18 +99,20 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
           <CommandList>
             <CommandEmpty>
               {isLoading ? (
-                "Searching..."
-              ) : debouncedQuery.length === 0 ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader className="h-6 w-6 animate-spin" />
+                </div>
+              ) : searchQuery.length === 0 ? (
                 "Start typing to search..."
-              ) : stocksData?.length === 0 ? (
+              ) : results.length === 0 ? (
                 "No stocks found. Try searching with the company name or ticker symbol."
               ) : (
                 "No results found."
               )}
             </CommandEmpty>
-            {stocksData && stocksData.length > 0 && (
+            {results.length > 0 && (
               <CommandGroup heading="Stocks">
-                {stocksData.map((stock: any) => (
+                {results.map((stock: any) => (
                   <CommandItem
                     key={stock.symbol}
                     onSelect={() => handleSelect(stock)}
