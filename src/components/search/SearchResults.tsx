@@ -25,8 +25,16 @@ export const SearchResults = ({ results, onSelect, searchQuery }: SearchResultPr
         >
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-2">
-              <div className="text-2xl">
-                {stock.symbol.toLowerCase().includes('aapl') ? '🍎' : '📈'}
+              <div className="w-8 h-8">
+                <img 
+                  src={`https://financialmodelingprep.com/image-stock/${stock.symbol}.png`} 
+                  alt={`${stock.name} logo`}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/placeholder.svg';
+                  }}
+                />
               </div>
               <div>
                 <div className="font-medium text-sm flex items-center gap-2">
