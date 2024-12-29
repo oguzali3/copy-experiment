@@ -25,8 +25,10 @@ export const SearchResults = ({ results, onSelect, searchQuery }: SearchResultPr
         >
           <div className="flex justify-between items-start">
             <div>
-              <div className="font-medium text-sm">{stock.name}</div>
-              <div className="text-xs text-gray-500">{stock.symbol}</div>
+              <div className="font-medium text-sm flex items-center gap-2">
+                {stock.name}
+                <span className="text-gray-500">({stock.symbol})</span>
+              </div>
             </div>
             {stock.price && (
               <div className="text-right">
