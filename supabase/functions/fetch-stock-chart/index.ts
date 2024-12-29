@@ -46,33 +46,9 @@ serve(async (req) => {
       }
     }
 
-    // Check if market is open (US Eastern Time)
-    const isMarketOpen = () => {
-      const now = new Date();
-      const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-      const hours = et.getHours();
-      const minutes = et.getMinutes();
-      const day = et.getDay();
-      
-      // Market is closed on weekends
-      if (day === 0 || day === 6) return false;
-      
-      // Market is open 9:30 AM - 4:00 PM ET
-      const marketTime = hours * 60 + minutes;
-      return marketTime >= 9 * 60 + 30 && marketTime < 16 * 60;
-    }
-
     let endpoint;
     if (timeframe === '1D') {
-      // For 1D, if market is closed, get the last trading day's data
-      if (!isMarketOpen()) {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-        endpoint = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${yesterdayStr}&to=${yesterdayStr}&apikey=${apiKey}`;
-      } else {
-        endpoint = `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbol}?apikey=${apiKey}`;
-      }
+      endpoint = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
     } else {
       const { from, to } = getTimeframeParams(timeframe);
       endpoint = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${from}&to=${to}&apikey=${apiKey}`;
@@ -96,27 +72,30 @@ serve(async (req) => {
 
     let chartData = [];
 
-    // Handle intraday data (5min intervals)
-    if (timeframe === '1D' && isMarketOpen()) {
-      if (!Array.isArray(data)) {
-        console.error('Unexpected data format for intraday data:', data);
-        throw new Error('Invalid data format for intraday data');
+    // Handle quote data (1D)
+    if (timeframe === '1D') {
+      if (!Array.isArray(data) || data.length === 0) {
+        console.error('Unexpected quote data format:', data);
+        throw new Error('Invalid quote data format');
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      const quote = data[0];
+      const now = new Date();
       
-      chartData = data
-        .filter(item => {
-          if (!item || !item.date || isNaN(parseFloat(item.close))) {
-            console.log('Filtering out invalid intraday data point:', item);
-            return false;
-          }
-          return item.date.startsWith(today);
-        })
-        .map((item: any) => ({
-          time: item.date,
-          price: parseFloat(item.close)
-        }));
+      // Create a simple chart data point with the current price
+      chartData = [{
+        time: now.toISOString(),
+        price: quote.price
+      }];
+
+      // Add the previous close price point
+      const marketOpen = new Date();
+      marketOpen.setHours(9, 30, 0, 0);
+      
+      chartData.unshift({
+        time: marketOpen.toISOString(),
+        price: quote.previousClose
+      });
     } 
     // Handle historical daily data
     else {
