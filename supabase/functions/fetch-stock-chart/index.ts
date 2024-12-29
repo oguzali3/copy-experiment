@@ -47,9 +47,11 @@ serve(async (req) => {
     }
 
     let endpoint;
+    // Define quoteEndpoint outside the if block so it's accessible everywhere
+    const quoteEndpoint = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
+    
     if (timeframe === '1D') {
       // First get the quote to ensure we have current price
-      const quoteEndpoint = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
       const quoteResponse = await fetch(quoteEndpoint);
       const quoteData = await quoteResponse.json();
       
