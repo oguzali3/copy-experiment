@@ -51,16 +51,35 @@ serve(async (req) => {
     }
     const data = await response.json()
 
+    // Validate the response data
+    if (!data) {
+      throw new Error('No data received from API')
+    }
+
     // Transform the data based on the response format
-    const chartData = timeframe === '1D' 
-      ? data.map((item: any) => ({
-          time: item.date.split(' ')[1],
-          price: item.close
-        }))
-      : data.historical.map((item: any) => ({
-          time: item.date,
-          price: item.close
-        }));
+    let chartData
+    if (timeframe === '1D') {
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid data format for 1D timeframe')
+      }
+      chartData = data.map((item: any) => ({
+        time: item.date.split(' ')[1],
+        price: item.close
+      }))
+    } else {
+      if (!data.historical || !Array.isArray(data.historical)) {
+        throw new Error('Invalid data format for historical data')
+      }
+      chartData = data.historical.map((item: any) => ({
+        time: item.date,
+        price: item.close
+      }))
+    }
+
+    // Validate transformed data
+    if (!Array.isArray(chartData)) {
+      throw new Error('Failed to transform chart data')
+    }
 
     return new Response(
       JSON.stringify(chartData),
