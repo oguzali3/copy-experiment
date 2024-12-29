@@ -56,9 +56,9 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
     staleTime: 1000 * 60 * 5, // Cache results for 5 minutes
     retry: 2, // Retry twice on failure
     refetchOnWindowFocus: false,
-    // Add these options for better performance
-    cacheTime: 1000 * 60 * 10, // Keep cache for 10 minutes
-    keepPreviousData: true, // Show previous results while fetching new ones
+    // Updated options for better performance
+    gcTime: 1000 * 60 * 10, // Keep cache for 10 minutes (renamed from cacheTime)
+    placeholderData: (previousData) => previousData // Show previous results while fetching new ones (replaces keepPreviousData)
   });
 
   const handleSelect = (stock: any) => {
