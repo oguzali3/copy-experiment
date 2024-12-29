@@ -24,10 +24,14 @@ serve(async (req) => {
       throw new Error('FMP_API_KEY is not configured')
     }
 
+    // Generate cache key based on endpoint and parameters
+    const cacheKey = endpoint === 'search' 
+      ? `search-${query?.toLowerCase()}`
+      : `${endpoint}-${symbol?.toLowerCase()}`;
+
+    console.log('Cache key:', cacheKey);
+
     if (endpoint === 'search' && query) {
-      // Generate cache key
-      const cacheKey = `search-${query.toLowerCase()}`
-      
       // Check cache
       const cachedResult = cache.get(cacheKey)
       if (cachedResult && (Date.now() - cachedResult.timestamp) < CACHE_DURATION) {
@@ -101,6 +105,16 @@ serve(async (req) => {
       throw new Error('Symbol is required')
     }
 
+    // Check cache for other endpoints
+    const cachedResult = cache.get(cacheKey)
+    if (cachedResult && (Date.now() - cachedResult.timestamp) < CACHE_DURATION) {
+      console.log('Returning cached data for:', cacheKey)
+      return new Response(
+        JSON.stringify(cachedResult.data),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     let url: string
     switch (endpoint) {
       case 'quote':
@@ -122,6 +136,7 @@ serve(async (req) => {
         throw new Error('Invalid endpoint')
     }
 
+    console.log('Fetching new data for:', cacheKey)
     const response = await fetch(url)
     if (!response.ok) {
       throw new Error(`API request failed with status: ${response.status}`)
