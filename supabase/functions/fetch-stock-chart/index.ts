@@ -63,18 +63,15 @@ serve(async (req) => {
         throw new Error('Invalid intraday data format');
       }
 
-      // Get today's date in EST (market's timezone)
-      const now = new Date();
-      const marketOpen = new Date(now);
-      marketOpen.setHours(9, 30, 0, 0);
-      const marketClose = new Date(now);
-      marketClose.setHours(16, 0, 0, 0);
-
-      // Filter data for today's market hours and format it
+      // Get today's date string for comparison
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Filter data for today's trading hours and format it
       const chartData = data
         .filter(item => {
           const itemDate = new Date(item.date);
-          return itemDate >= marketOpen && itemDate <= marketClose;
+          // Check if the data point is from today
+          return itemDate.toISOString().split('T')[0] === today;
         })
         .map(item => ({
           time: item.date,
@@ -82,7 +79,7 @@ serve(async (req) => {
         }))
         .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
-      console.log(`Processed ${chartData.length} intraday data points`);
+      console.log(`Processed ${chartData.length} intraday data points for today`);
       
       if (chartData.length === 0) {
         console.log('No intraday data points available, fetching latest quote');
@@ -94,7 +91,7 @@ serve(async (req) => {
         if (Array.isArray(quoteData) && quoteData.length > 0) {
           return new Response(
             JSON.stringify([{
-              time: now.toISOString(),
+              time: new Date().toISOString(),
               price: quoteData[0].price
             }]),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
