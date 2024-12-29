@@ -31,18 +31,28 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
     }
 
     setIsLoading(true);
+    console.log('Starting search with query:', query);
+
     try {
-      console.log('Searching with query:', query);
       const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
         body: { endpoint: 'search', query: query.replace(/\$/g, '').trim() }
       });
+
+      console.log('API response received:', { data, error });
 
       if (error) {
         console.error('Error fetching stocks:', error);
         throw error;
       }
 
-      setResults(data || []);
+      if (!data || !Array.isArray(data)) {
+        console.warn('Unexpected data format:', data);
+        setResults([]);
+        return;
+      }
+
+      console.log('Setting results:', data);
+      setResults(data);
     } catch (error) {
       console.error('Search error:', error);
       setResults([]);
@@ -54,6 +64,7 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   // Debounced search function
   const debouncedSearch = useCallback(
     _.debounce((query: string) => {
+      console.log('Debounced search triggered with:', query);
       fetchResults(query);
     }, 300),
     []
@@ -62,10 +73,12 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   // Effect to handle search when query changes
   useEffect(() => {
     if (open) {
+      console.log('Search effect triggered:', { searchQuery, open });
       debouncedSearch(searchQuery);
     }
     
     return () => {
+      console.log('Cleaning up search effect');
       debouncedSearch.cancel();
     };
   }, [searchQuery, open, debouncedSearch]);
@@ -73,12 +86,13 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
   // Effect to handle modal open/close
   useEffect(() => {
     if (open && searchQuery) {
-      // Immediately search when reopening with existing query
+      console.log('Modal opened with existing query:', searchQuery);
       fetchResults(searchQuery);
     }
   }, [open]);
 
   const handleSelect = (stock: any) => {
+    console.log('Stock selected:', stock);
     onStockSelect({
       name: stock.name,
       ticker: stock.symbol,
