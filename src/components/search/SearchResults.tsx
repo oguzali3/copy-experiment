@@ -24,10 +24,15 @@ export const SearchResults = ({ results, onSelect, searchQuery }: SearchResultPr
           className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
         >
           <div className="flex justify-between items-start">
-            <div>
-              <div className="font-medium text-sm flex items-center gap-2">
-                {stock.name}
-                <span className="text-gray-500">({stock.symbol})</span>
+            <div className="flex items-center gap-2">
+              <div className="text-2xl">
+                {stock.symbol.toLowerCase().includes('aapl') ? '🍎' : '📈'}
+              </div>
+              <div>
+                <div className="font-medium text-sm flex items-center gap-2">
+                  {stock.name}
+                  <span className="text-gray-500">({stock.symbol})</span>
+                </div>
               </div>
             </div>
             {stock.price && (
