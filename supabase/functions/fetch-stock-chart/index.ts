@@ -79,6 +79,39 @@ serve(async (req) => {
         JSON.stringify(chartData),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    } else if (timeframe === '5D') {
+      // For 5D, use daily data
+      const today = new Date();
+      const fiveDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000); // Get 7 days to ensure we have 5 trading days
+      
+      const endpoint = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${fiveDaysAgo.toISOString().split('T')[0]}&to=${today.toISOString().split('T')[0]}&apikey=${apiKey}`;
+      console.log('Fetching 5D daily data from endpoint:', endpoint);
+      
+      const response = await fetch(endpoint);
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Historical data received:', data.historical?.length, 'data points');
+      
+      if (!data.historical || !Array.isArray(data.historical)) {
+        throw new Error('Historical data is not in the expected format');
+      }
+
+      // Take only the last 5 trading days
+      const chartData = data.historical
+        .slice(0, 5)
+        .map((item: any) => ({
+          time: item.date,
+          price: parseFloat(item.close)
+        }))
+        .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+
+      return new Response(
+        JSON.stringify(chartData),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     } else {
       // For other timeframes, use historical daily data
       const { from, to } = getTimeframeParams(timeframe);
@@ -132,11 +165,6 @@ serve(async (req) => {
 const getTimeframeParams = (tf: string) => {
   const today = new Date();
   switch (tf) {
-    case '5D':
-      return { 
-        from: new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], 
-        to: today.toISOString().split('T')[0] 
-      };
     case '1M':
       return { 
         from: new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], 
