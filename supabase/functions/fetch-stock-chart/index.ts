@@ -54,7 +54,7 @@ serve(async (req) => {
       endpoint = `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?from=${from}&to=${to}&apikey=${apiKey}`;
     }
 
-    console.log(`Fetching data from endpoint for timeframe: ${timeframe}`);
+    console.log(`Fetching data from endpoint: ${endpoint}`);
     
     const response = await fetch(endpoint)
     if (!response.ok) {
@@ -63,6 +63,10 @@ serve(async (req) => {
     }
 
     const data = await response.json()
+    
+    // Log the raw API response for debugging
+    console.log('Raw API response:', JSON.stringify(data).slice(0, 200) + '...');
+
     if (!data) {
       console.error('No data received from API');
       throw new Error('No data received from API');
@@ -83,7 +87,7 @@ serve(async (req) => {
       chartData = data
         .filter(item => {
           if (!item || !item.date || isNaN(parseFloat(item.close))) {
-            console.log('Filtering out invalid data point:', item);
+            console.log('Filtering out invalid intraday data point:', item);
             return false;
           }
           return item.date.startsWith(today);
@@ -102,14 +106,19 @@ serve(async (req) => {
       } else if (Array.isArray(data)) {
         historicalData = data;
       } else {
-        console.error('Unexpected data format:', data);
+        console.error('Unexpected historical data format:', data);
         throw new Error('Historical data is not in the expected format');
+      }
+
+      if (!historicalData || historicalData.length === 0) {
+        console.error('No historical data available');
+        throw new Error('No historical data available for the selected timeframe');
       }
 
       chartData = historicalData
         .filter(item => {
           if (!item || !item.date || isNaN(parseFloat(item.close))) {
-            console.log('Filtering out invalid data point:', item);
+            console.log('Filtering out invalid historical data point:', item);
             return false;
           }
           return true;
