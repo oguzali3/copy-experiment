@@ -1,14 +1,18 @@
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ComposedChart } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+interface MetricData {
+  name: string;
+  value: string | number;
+}
+
+interface ChartData {
+  period: string;
+  metrics: MetricData[];
+}
+
 interface MetricChartProps {
-  data: Array<{
-    period: string;
-    metrics: Array<{
-      name: string;
-      value: number;
-    }>;
-  }>;
+  data: ChartData[];
   metrics: string[];
   ticker?: string;
   metricTypes: Record<string, 'bar' | 'line'>;
