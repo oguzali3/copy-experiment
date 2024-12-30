@@ -61,8 +61,33 @@ serve(async (req) => {
         url = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
         break;
       case "income-statement":
-        url = `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?period=quarter&limit=12&apikey=${apiKey}`;
-        break;
+        // First get TTM data
+        const ttmUrl = `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?period=quarter&limit=4&apikey=${apiKey}`;
+        const ttmResponse = await fetch(ttmUrl);
+        const ttmData = await ttmResponse.json();
+        
+        // Calculate TTM by summing last 4 quarters
+        const ttm = ttmData.reduce((acc: any, quarter: any) => {
+          Object.keys(quarter).forEach(key => {
+            if (typeof quarter[key] === 'number') {
+              acc[key] = (acc[key] || 0) + quarter[key];
+            }
+          });
+          return acc;
+        }, { period: 'TTM', symbol, date: new Date().toISOString() });
+
+        // Get annual data
+        url = `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?limit=10&apikey=${apiKey}`;
+        const annualResponse = await fetch(url);
+        const annualData = await annualResponse.json();
+
+        // Combine TTM with annual data
+        const combinedData = [ttm, ...annualData];
+        
+        return new Response(JSON.stringify(combinedData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       case "balance-sheet":
         url = `https://financialmodelingprep.com/api/v3/balance-sheet-statement/${symbol}?period=quarter&limit=12&apikey=${apiKey}`;
         break;
@@ -79,7 +104,7 @@ serve(async (req) => {
         throw new Error(`Invalid endpoint: ${endpoint}`);
     }
 
-    if (endpoint !== "search") {
+    if (endpoint !== "search" && endpoint !== "income-statement") {
       const response = await fetch(url);
       const data = await response.json();
       return new Response(JSON.stringify(data), {
