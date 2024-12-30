@@ -14,7 +14,6 @@ interface CashFlowProps {
 }
 
 export const CashFlow = ({ 
-  timeFrame, 
   selectedMetrics, 
   onMetricsChange,
   ticker 
@@ -130,14 +129,16 @@ export const CashFlow = ({
           <TableBody>
             {metrics.map((metric) => (
               <TableRow key={metric.id}>
-                <TableCell className="w-[50px] pr-0">
+                <TableCell className="w-[50px] sticky left-0 z-20 bg-white pr-0">
                   <Checkbox
                     id={`checkbox-${metric.id}`}
                     checked={selectedMetrics.includes(metric.id)}
                     onCheckedChange={() => handleMetricToggle(metric.id)}
                   />
                 </TableCell>
-                <TableCell className="font-medium bg-gray-50">{metric.label}</TableCell>
+                <TableCell className="font-medium sticky left-[50px] z-20 bg-gray-50">
+                  {metric.label}
+                </TableCell>
                 {filteredData.map((row: any) => (
                   <TableCell key={`${row.date}-${metric.id}`} className="text-right">
                     {formatValue(parseNumber(row[metric.id]))}
