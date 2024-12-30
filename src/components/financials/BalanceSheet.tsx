@@ -83,22 +83,17 @@ export const BalanceSheet = ({
     );
   }
 
-  // Filter and sort data based on timeFrame
-  const filteredData = financialData
-    .filter((item: any) => {
-      if (timeFrame === 'ttm') return item.period === 'TTM';
-      if (timeFrame === 'annual') return item.period === 'FY';
-      if (timeFrame === 'quarterly') return item.period === 'Q';
-      return false;
-    })
-    .sort((a: any, b: any) => {
-      // Special handling for TTM to always be first
-      if (a.period === 'TTM') return -1;
-      if (b.period === 'TTM') return 1;
-      // For annual data, sort by date in descending order
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    })
-    .slice(0, timeFrame === 'annual' ? 10 : 4); // Get last 10 years for annual, 4 quarters for quarterly
+  // Get TTM data first
+  const ttmData = financialData.find((item: any) => item.period === 'TTM');
+  
+  // Get annual data sorted by date
+  const annualData = financialData
+    .filter((item: any) => item.period === 'FY')
+    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 10); // Get last 10 years
+
+  // Combine TTM with annual data
+  const filteredData = ttmData ? [ttmData, ...annualData] : annualData;
 
   const metrics = [
     { id: "totalAssets", label: "Total Assets" },
