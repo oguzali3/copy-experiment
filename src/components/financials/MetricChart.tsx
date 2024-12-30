@@ -22,16 +22,24 @@ export const MetricChart = ({
   metricTypes,
   onMetricTypeChange 
 }: MetricChartProps) => {
-  // Safely transform the data
-  const transformedData = data.map(item => {
-    const transformed: { [key: string]: string | number } = { period: item.period };
-    item.metrics.forEach(metric => {
-      if (metric && metric.name && typeof metric.value !== 'undefined') {
-        transformed[metric.name] = metric.value;
-      }
+  // Transform and sort the data from earliest to latest
+  const transformedData = data
+    .slice()
+    .sort((a, b) => {
+      // Convert period strings to numbers for comparison
+      const periodA = parseInt(a.period);
+      const periodB = parseInt(b.period);
+      return periodA - periodB; // Sort ascending (earliest to latest)
+    })
+    .map(item => {
+      const transformed: { [key: string]: string | number } = { period: item.period };
+      item.metrics.forEach(metric => {
+        if (metric && metric.name && typeof metric.value !== 'undefined') {
+          transformed[metric.name] = metric.value;
+        }
+      });
+      return transformed;
     });
-    return transformed;
-  });
 
   const getMetricColor = (index: number): string => {
     if (index === 0) return '#1A237E';
