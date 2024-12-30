@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { fetchFinancialData } from "@/utils/financialApi";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface CashFlowProps {
   timeFrame: "annual" | "quarterly" | "ttm";
@@ -14,7 +15,6 @@ interface CashFlowProps {
 }
 
 export const CashFlow = ({ 
-  timeFrame,
   selectedMetrics, 
   onMetricsChange,
   ticker 
@@ -130,41 +130,46 @@ export const CashFlow = ({
 
   return (
     <div className="space-y-6">
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[50px]"></TableHead>
-              <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
-              {sortedData.map((row: any) => (
-                <TableHead key={row.date} className="text-right min-w-[120px]">
-                  {formatPeriod(row)}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {metrics.map((metric) => (
-              <TableRow key={metric.id}>
-                <TableCell className="w-[50px] sticky left-0 z-20 bg-white pr-0">
-                  <Checkbox
-                    id={`checkbox-${metric.id}`}
-                    checked={selectedMetrics.includes(metric.id)}
-                    onCheckedChange={() => handleMetricToggle(metric.id)}
-                  />
-                </TableCell>
-                <TableCell className="font-medium sticky left-[50px] z-20 bg-gray-50">
-                  {metric.label}
-                </TableCell>
-                {sortedData.map((row: any) => (
-                  <TableCell key={`${row.date}-${metric.id}`} className="text-right">
-                    {formatValue(parseNumber(row[metric.id]))}
-                  </TableCell>
+      <div className="bg-white rounded-lg border">
+        <ScrollArea className="w-full rounded-md">
+          <div className="max-w-full overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px] sticky left-0 z-20 bg-white"></TableHead>
+                  <TableHead className="w-[250px] sticky left-[50px] z-20 bg-gray-50 font-semibold">Metrics</TableHead>
+                  {sortedData.map((row: any) => (
+                    <TableHead key={row.date} className="text-right min-w-[120px]">
+                      {formatPeriod(row)}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {metrics.map((metric) => (
+                  <TableRow key={metric.id}>
+                    <TableCell className="w-[50px] sticky left-0 z-20 bg-white pr-0">
+                      <Checkbox
+                        id={`checkbox-${metric.name}`}
+                        checked={selectedMetrics.includes(metric.id)}
+                        onCheckedChange={() => handleMetricToggle(metric.id)}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium sticky left-[50px] z-20 bg-gray-50">
+                      {metric.label}
+                    </TableCell>
+                    {sortedData.map((row: any) => (
+                      <TableCell key={`${row.date}-${metric.id}`} className="text-right">
+                        {formatValue(parseNumber(row[metric.id]))}
+                      </TableCell>
+                    ))}
+                  </TableRow>
                 ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+              </TableBody>
+            </Table>
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       </div>
     </div>
   );
