@@ -71,21 +71,29 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     const data = financialData[ticker]?.[timeFrame] || [];
     console.log('Raw financial data:', data);
     
+    if (!data || data.length === 0) {
+      console.log('No data available for ticker:', ticker);
+      return [];
+    }
+
     const filteredData = data
       .filter(item => {
         const year = parseInt(item.period);
         return year >= 2019 + sliderValue[0] && year <= 2019 + sliderValue[1];
       })
       .sort((a, b) => parseInt(a.period) - parseInt(b.period))
-      .map(item => ({
-        period: item.period,
-        metrics: metrics.map(metricId => ({
-          name: metricId,
-          value: parseValue(item[metricId])
-        }))
-      }));
+      .map(item => {
+        const transformedData: any = { period: item.period };
+        
+        metrics.forEach(metricId => {
+          const value = parseValue(item[metricId]);
+          transformedData[getMetricLabel(metricId)] = value;
+        });
+        
+        return transformedData;
+      });
 
-    console.log('Filtered and transformed data:', filteredData);
+    console.log('Transformed data for chart:', filteredData);
     return filteredData;
   };
 
