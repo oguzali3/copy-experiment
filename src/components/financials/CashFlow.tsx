@@ -89,11 +89,20 @@ export const CashFlow = ({
   // Get annual data sorted by date
   const annualData = financialData
     .filter((item: any) => item.period !== 'TTM')
-    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .sort((a: any, b: any) => {
+      const yearA = new Date(a.date).getFullYear();
+      const yearB = new Date(b.date).getFullYear();
+      return yearB - yearA;
+    })
     .slice(0, 10); // Get last 10 years
 
   // Combine TTM with annual data
   const sortedData = ttmData ? [ttmData, ...annualData] : annualData;
+
+  const formatPeriod = (row: any) => {
+    if (row.period === 'TTM') return 'TTM';
+    return new Date(row.date).getFullYear().toString();
+  };
 
   const metrics = [
     { id: "operatingCashFlow", label: "Operating Cash Flow" },
@@ -122,7 +131,7 @@ export const CashFlow = ({
               <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
               {sortedData.map((row: any) => (
                 <TableHead key={row.date} className="text-right min-w-[120px]">
-                  {row.period === 'TTM' ? 'TTM' : new Date(row.date).getFullYear()}
+                  {formatPeriod(row)}
                 </TableHead>
               ))}
             </TableRow>
