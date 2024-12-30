@@ -54,57 +54,17 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     if (typeof value === 'number') return value;
     if (!value) return 0;
     
-    // Remove commas and dollar signs
     const cleanValue = value.toString().replace(/[$,]/g, '');
     
-    // Handle billion format (e.g., "26.1B")
     if (cleanValue.endsWith('B')) {
       return parseFloat(cleanValue.replace('B', '')) * 1000000000;
     }
     
-    // Handle million format (e.g., "26.1M"))
     if (cleanValue.endsWith('M')) {
       return parseFloat(cleanValue.replace('M', '')) * 1000000;
     }
     
     return parseFloat(cleanValue);
-  };
-
-  // Map frontend metric IDs to their corresponding data keys
-  const metricToDataKeyMap: Record<string, string> = {
-    // Income Statement metrics
-    revenue: "revenue",
-    revenueGrowth: "revenueGrowth",
-    costOfRevenue: "costOfRevenue",
-    grossProfit: "grossProfit",
-    sga: "sga",
-    researchDevelopment: "researchDevelopment",
-    operatingExpenses: "operatingExpenses",
-    operatingIncome: "operatingIncome",
-    netIncome: "netIncome",
-    ebitda: "ebitda",
-    sellingGeneralAndAdministrativeExpenses: "sga",
-    
-    // Balance Sheet metrics
-    totalAssets: "totalAssets",
-    totalLiabilities: "totalLiabilities",
-    totalEquity: "totalEquity",
-    
-    // Cash Flow metrics
-    operatingCashFlow: "operatingCashFlow",
-    netCashFlow: "netCashFlow",
-    cashAtEndOfPeriod: "cashAtEndOfPeriod",
-    capitalExpenditure: "capitalExpenditure",
-    freeCashFlow: "freeCashFlow",
-    investingCashFlow: "netCashUsedForInvestingActivities",
-    financingCashFlow: "netCashUsedForFinancingActivities",
-    cashAtBeginningOfPeriod: "cashAtBeginningOfPeriod",
-    changeInWorkingCapital: "changeInWorkingCapital",
-    stockBasedCompensation: "stockBasedCompensation",
-    depreciationAndAmortization: "depreciationAndAmortization",
-    dividendsPaid: "dividendsPaid",
-    commonStockRepurchased: "commonStockRepurchased",
-    debtRepayment: "debtRepayment"
   };
 
   const getMetricData = (metrics: string[]) => {
@@ -113,35 +73,16 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     
     const filteredData = data
       .filter(item => {
-        if (item.period === 'TTM') return true;
         const year = parseInt(item.period);
         return year >= 2019 + sliderValue[0] && year <= 2019 + sliderValue[1];
       })
-      .sort((a, b) => {
-        if (a.period === 'TTM') return 1;  // TTM goes at the end
-        if (b.period === 'TTM') return -1;
-        return parseInt(a.period) - parseInt(b.period);
-      })
+      .sort((a, b) => parseInt(a.period) - parseInt(b.period))
       .map(item => ({
         period: item.period,
-        metrics: metrics.map(metricId => {
-          const dataKey = metricToDataKeyMap[metricId];
-          if (!dataKey) {
-            console.warn(`No data key mapping found for metric: ${metricId}`);
-            return { name: getMetricLabel(metricId), value: 0 };
-          }
-          
-          const rawValue = item[dataKey];
-          console.log(`Raw value for ${metricId} (using key ${dataKey}):`, rawValue);
-          
-          const parsedValue = parseValue(rawValue);
-          console.log(`Parsed value for ${metricId}:`, parsedValue);
-          
-          return {
-            name: getMetricLabel(metricId),
-            value: parsedValue,
-          };
-        }),
+        metrics: metrics.map(metricId => ({
+          name: metricId,
+          value: parseValue(item[metricId])
+        }))
       }));
 
     console.log('Filtered and transformed data:', filteredData);
@@ -150,7 +91,6 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
   const getMetricLabel = (metricId: string): string => {
     const metrics = {
-      // Income Statement metrics
       revenue: "Revenue",
       revenueGrowth: "Revenue Growth",
       costOfRevenue: "Cost of Revenue",
@@ -162,13 +102,9 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       netIncome: "Net Income",
       ebitda: "EBITDA",
       sellingGeneralAndAdministrativeExpenses: "SG&A Expenses",
-      
-      // Balance Sheet metrics
       totalAssets: "Total Assets",
       totalLiabilities: "Total Liabilities",
       totalEquity: "Total Equity",
-      
-      // Cash Flow metrics
       operatingCashFlow: "Operating Cash Flow",
       netCashFlow: "Net Cash Flow",
       cashAtEndOfPeriod: "Cash at End of Period",
