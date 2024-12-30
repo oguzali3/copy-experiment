@@ -83,25 +83,21 @@ export const CashFlow = ({
     );
   }
 
-  // First, separate TTM and annual data
+  // Get TTM data if it exists
   const ttmData = financialData.find((item: any) => item.period === 'TTM');
   
-  // Get annual data and sort by date
+  // Get annual data and sort by calendar year
   const annualData = financialData
-    .filter((item: any) => item.period === 'FY')  // Only get fiscal year data
-    .sort((a: any, b: any) => {
-      const yearA = parseInt(a.calendarYear);
-      const yearB = parseInt(b.calendarYear);
-      return yearB - yearA;
-    })
-    .slice(0, 10); // Get last 10 years
+    .filter((item: any) => item.period === 'FY')
+    .sort((a: any, b: any) => parseInt(b.calendarYear) - parseInt(a.calendarYear))
+    .slice(0, 10);
 
   // Combine TTM with annual data
   const sortedData = ttmData ? [ttmData, ...annualData] : annualData;
 
   const formatPeriod = (row: any) => {
     if (row.period === 'TTM') return 'TTM';
-    return row.calendarYear;  // Use calendarYear instead of parsing date
+    return row.calendarYear;
   };
 
   const metrics = [
@@ -115,9 +111,9 @@ export const CashFlow = ({
     { id: "cashAtBeginningOfPeriod", label: "Cash at Beginning of Period" },
     { id: "changeInWorkingCapital", label: "Change in Working Capital" },
     { id: "stockBasedCompensation", label: "Stock-based Compensation" },
-    { id: "depreciation", label: "Depreciation & Amortization" },
+    { id: "depreciationAndAmortization", label: "Depreciation & Amortization" },
     { id: "dividendsPaid", label: "Dividends Paid" },
-    { id: "stockSaleAndPurchase", label: "Stock Sale & Purchase" },
+    { id: "commonStockRepurchased", label: "Stock Sale & Purchase" },
     { id: "debtRepayment", label: "Debt Repayment" }
   ];
 
