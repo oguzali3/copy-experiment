@@ -41,16 +41,11 @@ export const transformChartData = (
       metrics.forEach(metricName => {
         const metricData = item.metrics.find(m => m.name === metricName);
         if (metricData) {
-          let value: number;
-          if (typeof metricData.value === 'string') {
-            // Remove commas and convert to number
-            value = parseFloat(metricData.value.replace(/,/g, ''));
-          } else {
-            value = metricData.value;
-          }
+          const value = typeof metricData.value === 'number' 
+            ? metricData.value 
+            : parseFloat(metricData.value.toString().replace(/[^0-9.-]/g, ''));
           
-          // Add additional logging to debug the values
-          console.log(`Period: ${item.period}, Metric: ${metricName}, Raw Value: ${metricData.value}, Parsed Value: ${value}`);
+          console.log(`Transforming data for ${metricName} in period ${item.period}: ${value}`);
           
           if (!isNaN(value)) {
             transformed[metricName] = value;

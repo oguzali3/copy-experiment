@@ -50,6 +50,26 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     }));
   };
 
+  const parseValue = (value: any): number => {
+    if (typeof value === 'number') return value;
+    if (!value) return 0;
+    
+    // Remove commas and dollar signs
+    const cleanValue = value.toString().replace(/[$,]/g, '');
+    
+    // Handle billion format (e.g., "26.1B")
+    if (cleanValue.endsWith('B')) {
+      return parseFloat(cleanValue.replace('B', '')) * 1000000000;
+    }
+    
+    // Handle million format (e.g., "26.1M")
+    if (cleanValue.endsWith('M')) {
+      return parseFloat(cleanValue.replace('M', '')) * 1000000;
+    }
+    
+    return parseFloat(cleanValue);
+  };
+
   const getMetricData = (metrics: string[]) => {
     const data = financialData[ticker]?.[timeFrame] || [];
     const filteredData = data
@@ -64,9 +84,13 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
           const rawValue = item[metricId as keyof typeof item];
           console.log(`Raw value for ${metricId}: ${rawValue}`);
           
+          // Parse the value properly
+          const parsedValue = parseValue(rawValue);
+          console.log(`Parsed value for ${metricId}: ${parsedValue}`);
+          
           return {
             name: getMetricLabel(metricId),
-            value: rawValue || "0",
+            value: parsedValue,
           };
         }),
       }));
