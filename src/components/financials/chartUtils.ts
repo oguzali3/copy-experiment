@@ -43,15 +43,19 @@ export const transformChartData = (
         if (metricData) {
           let value: number;
           if (typeof metricData.value === 'string') {
+            // Remove commas and convert to number
             value = parseFloat(metricData.value.replace(/,/g, ''));
           } else {
             value = metricData.value;
           }
           
+          // Add additional logging to debug the values
+          console.log(`Period: ${item.period}, Metric: ${metricName}, Raw Value: ${metricData.value}, Parsed Value: ${value}`);
+          
           if (!isNaN(value)) {
             transformed[metricName] = value;
           } else {
-            console.warn(`Invalid value for metric ${metricName} in period ${item.period}`);
+            console.warn(`Invalid value for metric ${metricName} in period ${item.period}: ${metricData.value}`);
             transformed[metricName] = 0;
           }
         } else {

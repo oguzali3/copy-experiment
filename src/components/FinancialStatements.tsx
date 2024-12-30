@@ -56,15 +56,23 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       .filter(item => {
         const year = parseInt(item.period);
         return year >= 2019 + sliderValue[0] && year <= 2019 + sliderValue[1];
-      });
+      })
+      .map(item => ({
+        period: item.period,
+        metrics: metrics.map(metricId => {
+          // Get the raw value from the data
+          const rawValue = item[metricId as keyof typeof item];
+          console.log(`Raw value for ${metricId}: ${rawValue}`);
+          
+          return {
+            name: getMetricLabel(metricId),
+            value: rawValue || "0",
+          };
+        }),
+      }));
 
-    return filteredData.map(item => ({
-      period: item.period,
-      metrics: metrics.map(metricId => ({
-        name: getMetricLabel(metricId),
-        value: parseFloat((item[metricId as keyof typeof item] || "0").replace(/,/g, '')),
-      })),
-    }));
+    console.log('Filtered and transformed data:', filteredData);
+    return filteredData;
   };
 
   const getMetricLabel = (metricId: string): string => {
