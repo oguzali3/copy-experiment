@@ -85,7 +85,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       operatingExpenses: "Operating Expenses",
       operatingIncome: "Operating Income",
       netIncome: "Net Income",
-      ebitda: "EBITDA"
+      ebitda: "EBITDA",
+      sellingGeneralAndAdministrativeExpenses: "SG&A Expenses"
     };
     return metrics[metricId as keyof typeof metrics] || metricId;
   };
