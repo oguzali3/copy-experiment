@@ -34,8 +34,18 @@ export const MetricChart = ({
     .map(item => {
       const transformed: { [key: string]: string | number } = { period: item.period };
       item.metrics.forEach(metric => {
-        if (metric && metric.name && typeof metric.value !== 'undefined') {
-          transformed[metric.name] = metric.value;
+        if (metric && metric.name) {
+          // Ensure we have a valid number
+          const value = typeof metric.value === 'string' 
+            ? parseFloat(metric.value.replace(/,/g, '')) 
+            : metric.value;
+          
+          if (!isNaN(value)) {
+            transformed[metric.name] = value;
+          } else {
+            transformed[metric.name] = 0; // Default to 0 for invalid values
+            console.warn(`Invalid value for metric ${metric.name} in period ${item.period}`);
+          }
         }
       });
       return transformed;
