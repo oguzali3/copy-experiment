@@ -7,7 +7,6 @@ interface MetricsChartSectionProps {
   ticker: string;
   metricTypes: Record<string, 'bar' | 'line'>;
   onMetricTypeChange: (metric: string, type: 'bar' | 'line') => void;
-  getMetricLabel: (metricId: string) => string;
 }
 
 export const MetricsChartSection = ({
@@ -16,13 +15,12 @@ export const MetricsChartSection = ({
   ticker,
   metricTypes,
   onMetricTypeChange,
-  getMetricLabel
 }: MetricsChartSectionProps) => {
   if (selectedMetrics.length === 0) {
     return null;
   }
 
-  console.log('Chart data in MetricsChartSection:', data);
+  console.log('MetricsChartSection data:', data);
 
   return (
     <Card className="p-6">
@@ -31,7 +29,7 @@ export const MetricsChartSection = ({
       </div>
       <MetricChart 
         data={data}
-        metrics={selectedMetrics.map(getMetricLabel)}
+        metrics={selectedMetrics}
         ticker={ticker}
         metricTypes={metricTypes}
         onMetricTypeChange={onMetricTypeChange}
