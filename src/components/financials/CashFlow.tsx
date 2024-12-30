@@ -88,12 +88,11 @@ export const CashFlow = ({
   
   // Get annual data and sort by date
   const annualData = financialData
-    .filter((item: any) => item.period !== 'TTM')
+    .filter((item: any) => item.period === 'FY')  // Only get fiscal year data
     .sort((a: any, b: any) => {
-      // Parse dates and compare years
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      return dateB.getTime() - dateA.getTime();
+      const yearA = parseInt(a.calendarYear);
+      const yearB = parseInt(b.calendarYear);
+      return yearB - yearA;
     })
     .slice(0, 10); // Get last 10 years
 
@@ -102,8 +101,7 @@ export const CashFlow = ({
 
   const formatPeriod = (row: any) => {
     if (row.period === 'TTM') return 'TTM';
-    const date = new Date(row.date);
-    return date.getFullYear().toString();
+    return row.calendarYear;  // Use calendarYear instead of parsing date
   };
 
   const metrics = [
