@@ -30,36 +30,56 @@ export const MetricChart = ({
   const transformedData = data
     .slice()
     .sort((a, b) => {
-      // Convert period strings to numbers for comparison
       const periodA = parseInt(a.period);
       const periodB = parseInt(b.period);
-      return periodA - periodB; // Sort ascending (earliest to latest)
+      return periodA - periodB;
     })
     .map(item => {
       const transformed: { [key: string]: string | number } = { period: item.period };
-      item.metrics.forEach(metric => {
-        if (metric && metric.name) {
-          // Ensure we have a valid number
-          const value = typeof metric.value === 'string' 
-            ? parseFloat(metric.value.replace(/,/g, '')) 
-            : metric.value;
-          
-          if (!isNaN(value)) {
-            transformed[metric.name] = value;
+      
+      // Map through metrics array to ensure we capture all selected metrics
+      metrics.forEach(metricName => {
+        const metricData = item.metrics.find(m => m.name === metricName);
+        if (metricData) {
+          let value: number;
+          if (typeof metricData.value === 'string') {
+            // Remove commas and convert to number
+            value = parseFloat(metricData.value.replace(/,/g, ''));
           } else {
-            transformed[metric.name] = 0; // Default to 0 for invalid values
-            console.warn(`Invalid value for metric ${metric.name} in period ${item.period}`);
+            value = metricData.value;
           }
+          
+          // Only add the metric if it's a valid number
+          if (!isNaN(value)) {
+            transformed[metricName] = value;
+          } else {
+            console.warn(`Invalid value for metric ${metricName} in period ${item.period}`);
+            transformed[metricName] = 0;
+          }
+        } else {
+          // If metric is not found, set it to 0 and log warning
+          console.warn(`Missing data for metric ${metricName} in period ${item.period}`);
+          transformed[metricName] = 0;
         }
       });
+      
       return transformed;
     });
 
   const getMetricColor = (index: number): string => {
-    if (index === 0) return '#1A237E';
-    if (index === 1) return '#FB8C00';
-    if (index === 2) return '#7E57C2';
-    return `hsl(${Math.random() * 360}, 50%, 45%)`;
+    const colors = [
+      '#1A237E', // Deep Blue
+      '#FB8C00', // Orange
+      '#7E57C2', // Purple
+      '#2E7D32', // Green
+      '#C62828', // Red
+      '#00838F', // Cyan
+      '#EF6C00', // Dark Orange
+      '#4527A0', // Deep Purple
+      '#1565C0', // Blue
+      '#2E7D32'  // Green
+    ];
+    return colors[index % colors.length];
   };
 
   const formatYAxis = (value: number) => {
@@ -102,7 +122,10 @@ export const MetricChart = ({
           tickLine={false}
         />
         <Tooltip 
-          formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]}
+          formatter={(value: number, name: string) => [
+            `$${value.toLocaleString()}`,
+            ticker ? `${ticker} - ${name}` : name
+          ]}
           contentStyle={{
             backgroundColor: 'white',
             border: '1px solid #e5e7eb',
@@ -126,7 +149,7 @@ export const MetricChart = ({
                 key={metric}
                 dataKey={metric}
                 fill={color}
-                name={ticker ? `${ticker} - ${metric}` : metric}
+                name={metric}
                 radius={[0, 0, 0, 0]}
                 maxBarSize={50}
               />
@@ -138,7 +161,7 @@ export const MetricChart = ({
               type="monotone"
               dataKey={metric}
               stroke={color}
-              name={ticker ? `${ticker} - ${metric}` : metric}
+              name={metric}
               dot={false}
               strokeWidth={2}
             />
