@@ -1,12 +1,12 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { fetchFinancialData } from "@/utils/financialApi";
-import { MetricRow } from "./MetricRow";
-import { orderedMetricIds, metricKeyMapping, getMetricOrder } from "@/utils/financialMetricsOrder";
-import { Checkbox } from "@/components/ui/checkbox";
+import { IncomeStatementHeader } from "./IncomeStatementHeader";
+import { IncomeStatementMetrics } from "./IncomeStatementMetrics";
+import { formatMetricLabel, parseNumber, formatValue } from "./IncomeStatementUtils";
 
 interface IncomeStatementProps {
   timeFrame: "annual" | "quarterly" | "ttm";
@@ -16,7 +16,6 @@ interface IncomeStatementProps {
 }
 
 export const IncomeStatement = ({ 
-  timeFrame, 
   selectedMetrics, 
   onMetricsChange, 
   ticker 
@@ -32,51 +31,6 @@ export const IncomeStatement = ({
       ? selectedMetrics.filter(id => id !== metricId)
       : [...selectedMetrics, metricId];
     onMetricsChange(newMetrics);
-  };
-
-  const formatMetricLabel = (key: string): string => {
-    let label = key.replace(/^total|^gross|^net/, '');
-    label = label.replace(/([A-Z])/g, ' $1').trim();
-    label = label.split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-    return label.replace(/Ebit/g, 'EBIT')
-      .replace(/Ebitda/g, 'EBITDA')
-      .replace(/R And D/g, 'R&D')
-      .replace(/Sg And A/g, 'SG&A');
-  };
-
-  const parseNumber = (value: any, isGrowthMetric: boolean = false): number => {
-    console.log('Parsing value:', value, 'isGrowthMetric:', isGrowthMetric);
-    
-    if (typeof value === 'number') return value;
-    if (!value) return 0;
-    
-    let result;
-    if (isGrowthMetric) {
-      // For growth metrics, handle percentage strings
-      result = typeof value === 'string' 
-        ? parseFloat(value.replace('%', '')) 
-        : parseFloat(value);
-    } else {
-      // For other metrics, remove commas before parsing
-      result = parseFloat(value.toString().replace(/,/g, ''));
-    }
-    
-    console.log('Parsed result:', result);
-    return isNaN(result) ? 0 : result;
-  };
-
-  const formatValue = (value: number, isPercentage?: boolean) => {
-    if (isPercentage) {
-      return `${value.toFixed(2)}%`;
-    }
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      notation: 'compact',
-      maximumFractionDigits: 1
-    }).format(value);
   };
 
   if (isLoading) {
@@ -115,110 +69,57 @@ export const IncomeStatement = ({
     );
   }
 
-  // Log the raw financial data to inspect revenue growth values
-  console.log('Financial Data:', financialData);
-
-  const filteredData = financialData
-    .filter((item: any) => {
-      if (timeFrame === "annual") return item.period === "FY";
-      if (timeFrame === "quarterly") return ["Q1", "Q2", "Q3", "Q4"].includes(item.period);
-      return true;
-    })
+  // Filter and sort data to get TTM and last 10 years
+  const ttmData = financialData.find((item: any) => item.period === "TTM");
+  const annualData = financialData
+    .filter((item: any) => item.period === "FY")
     .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
+    .slice(0, 10);
 
-  // Log the filtered data to inspect revenue growth values
-  console.log('Filtered Data:', filteredData);
+  const combinedData = ttmData ? [ttmData, ...annualData] : annualData;
+
+  const periods = combinedData.map((item: any) => {
+    if (item.period === "TTM") return "TTM";
+    return new Date(item.date).getFullYear().toString();
+  });
 
   const availableMetrics = Object.keys(financialData[0])
     .filter(key => 
       !['date', 'symbol', 'reportedCurrency', 'period', 'link', 'finalLink'].includes(key) &&
       typeof financialData[0][key] === 'number'
-    )
-    .sort((a, b) => getMetricOrder(a) - getMetricOrder(b));
+    );
 
   return (
     <div className="space-y-6">
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[50px]"></TableHead>
-              <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
-              {filteredData.map((row: any) => (
-                <TableHead key={row.date} className="text-right min-w-[120px]">
-                  {new Date(row.date).toLocaleDateString('en-US', { 
-                    year: 'numeric',
-                    month: 'short'
-                  })}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
+          <IncomeStatementHeader periods={periods} />
           <TableBody>
-            {/* Revenue Row */}
-            <TableRow>
-              <TableCell className="w-[50px] pr-0">
-                <Checkbox
-                  id="checkbox-revenue"
-                  checked={selectedMetrics.includes('revenue')}
-                  onCheckedChange={() => handleMetricToggle('revenue')}
-                />
-              </TableCell>
-              <TableCell className="font-medium bg-gray-50">
-                Revenue
-              </TableCell>
-              {filteredData.map((row: any) => (
-                <TableCell key={`${row.date}-revenue`} className="text-right">
-                  {formatValue(parseNumber(row.revenue))}
-                </TableCell>
-              ))}
-            </TableRow>
-
-            {/* Revenue Growth Row */}
-            <TableRow>
-              <TableCell className="w-[50px] pr-0">
-                <Checkbox
-                  id="checkbox-revenueGrowth"
-                  checked={selectedMetrics.includes('revenueGrowth')}
-                  onCheckedChange={() => handleMetricToggle('revenueGrowth')}
-                />
-              </TableCell>
-              <TableCell className="font-medium bg-gray-50 pl-8">
-                Revenue Growth (YoY)
-              </TableCell>
-              {filteredData.map((row: any) => {
-                console.log('Revenue Growth for row:', row.date, row.revenueGrowth);
-                const growthValue = parseNumber(row.revenueGrowth, true);
-                console.log('Parsed Growth Value:', growthValue);
-                
-                return (
-                  <TableCell 
-                    key={`${row.date}-revenueGrowth`} 
-                    className={`text-right ${
-                      growthValue > 0 
-                        ? 'text-green-600' 
-                        : growthValue < 0 
-                          ? 'text-red-600' 
-                          : ''
-                    }`}
-                  >
-                    {formatValue(growthValue, true)}
-                  </TableCell>
-                );
-              })}
-            </TableRow>
-
-            {/* Other Metrics */}
+            <IncomeStatementMetrics
+              metricId="revenue"
+              label="Revenue"
+              values={combinedData.map((row: any) => parseNumber(row.revenue))}
+              isSelected={selectedMetrics.includes('revenue')}
+              onToggle={handleMetricToggle}
+              formatValue={formatValue}
+            />
+            <IncomeStatementMetrics
+              metricId="revenueGrowth"
+              label="Revenue Growth (YoY)"
+              values={combinedData.map((row: any) => parseNumber(row.revenueGrowth, true))}
+              isSelected={selectedMetrics.includes('revenueGrowth')}
+              onToggle={handleMetricToggle}
+              formatValue={formatValue}
+              isGrowthMetric={true}
+            />
             {availableMetrics
               .filter(metricId => !['revenue', 'revenueGrowth'].includes(metricId))
               .map((metricId) => (
-                <MetricRow
+                <IncomeStatementMetrics
                   key={metricId}
                   metricId={metricId}
                   label={formatMetricLabel(metricId)}
-                  values={filteredData.map((row: any) => parseNumber(row[metricId]))}
-                  dates={filteredData.map((row: any) => row.date)}
+                  values={combinedData.map((row: any) => parseNumber(row[metricId]))}
                   isSelected={selectedMetrics.includes(metricId)}
                   onToggle={handleMetricToggle}
                   formatValue={formatValue}
