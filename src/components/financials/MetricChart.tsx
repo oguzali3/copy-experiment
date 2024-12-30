@@ -131,22 +131,26 @@ export const MetricChart = ({
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-4 border-t pt-4 text-sm text-gray-600">
-        <div className="flex flex-wrap gap-x-6 gap-y-2">
-          <div>
-            <span className="font-medium">{ticker}</span>
-          </div>
-          {metrics.map((metric, index) => (
-            <div key={metric}>
-              <span style={{ color: getMetricColor(index) }} className="font-medium">
-                {metric}: {cagrResults[metric].toFixed(1)}% CAGR
-              </span>
-            </div>
-          ))}
-          <div>
-            <span className="font-medium">
+      <div className="mt-4 border-t pt-4">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-gray-700">{ticker}</span>
+            <span className="text-gray-500">
               {sortedData[0].period} - {sortedData[sortedData.length - 1].period}
             </span>
+          </div>
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            {metrics.map((metric, index) => (
+              <div key={metric} className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-sm"
+                  style={{ backgroundColor: getMetricColor(index) }}
+                />
+                <span className="font-medium" style={{ color: getMetricColor(index) }}>
+                  {metric}: {cagrResults[metric].toFixed(1)}% CAGR
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
