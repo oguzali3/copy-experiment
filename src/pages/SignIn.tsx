@@ -41,10 +41,7 @@ const SignIn = () => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password,
-        options: {
-          persistSession: true // Ensure session persistence
-        }
+        password
       });
       
       if (error) {
@@ -66,8 +63,7 @@ const SignIn = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
-          persistSession: true // Ensure session persistence
+          redirectTo: `${window.location.origin}/dashboard`
         }
       });
       
