@@ -18,7 +18,11 @@ export const MetricsChartSection = ({
   onMetricTypeChange,
   getMetricLabel
 }: MetricsChartSectionProps) => {
-  if (selectedMetrics.length === 0) return null;
+  if (selectedMetrics.length === 0) {
+    return null;
+  }
+
+  console.log('Chart data in MetricsChartSection:', data);
 
   return (
     <Card className="p-6">

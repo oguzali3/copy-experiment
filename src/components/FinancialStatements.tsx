@@ -74,39 +74,35 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     }
 
     const data = financialData[ticker]?.[timeFrame] || [];
-    console.log('Raw financial data:', data);
+    console.log('Raw financial data for ticker:', ticker, data);
     
     if (!data || data.length === 0) {
       console.log('No data available for ticker:', ticker);
       return [];
     }
 
-    // Get unique periods and sort them
-    const periods = [...new Set(data.map(item => item.period))]
-      .sort((a, b) => parseInt(a) - parseInt(b))
-      .filter(period => {
-        const year = parseInt(period);
-        return year >= 2019 + sliderValue[0] && year <= 2019 + sliderValue[1];
-      });
-
-    console.log('Filtered periods:', periods);
-
     // Transform data for chart
-    const transformedData = periods.map(period => {
-      const periodData = data.find(item => item.period === period) || {};
-      const dataPoint: any = { period };
-
-      metrics.forEach(metricId => {
-        const rawValue = periodData[metricId];
-        const value = parseValue(rawValue);
-        const label = getMetricLabel(metricId);
-        dataPoint[label] = value;
+    const transformedData = data
+      .filter(item => {
+        const year = parseInt(item.period);
+        return year >= 2019 + sliderValue[0] && year <= 2019 + sliderValue[1];
+      })
+      .sort((a, b) => parseInt(a.period) - parseInt(b.period))
+      .map(item => {
+        const chartPoint: any = { period: item.period };
+        
+        metrics.forEach(metricId => {
+          const rawValue = item[metricId];
+          console.log(`Processing ${metricId} for period ${item.period}:`, rawValue);
+          const value = parseValue(rawValue);
+          const label = getMetricLabel(metricId);
+          chartPoint[label] = value;
+        });
+        
+        return chartPoint;
       });
 
-      return dataPoint;
-    });
-
-    console.log('Transformed data for chart:', transformedData);
+    console.log('Transformed chart data:', transformedData);
     return transformedData;
   };
 
