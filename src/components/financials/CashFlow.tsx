@@ -150,7 +150,7 @@ export const CashFlow = ({
                   <TableRow key={metric.id}>
                     <TableCell className="w-[50px] sticky left-0 z-20 bg-white pr-0">
                       <Checkbox
-                        id={`checkbox-${metric.name}`}
+                        id={`checkbox-${metric.id}`}
                         checked={selectedMetrics.includes(metric.id)}
                         onCheckedChange={() => handleMetricToggle(metric.id)}
                       />
