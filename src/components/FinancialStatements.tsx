@@ -125,18 +125,15 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       .map(item => ({
         period: item.period,
         metrics: metrics.map(metricId => {
-          // Get the corresponding data key for this metric
           const dataKey = metricToDataKeyMap[metricId];
           if (!dataKey) {
             console.warn(`No data key mapping found for metric: ${metricId}`);
             return { name: getMetricLabel(metricId), value: 0 };
           }
           
-          // Get the raw value using the mapped key
-          const rawValue = item[dataKey as keyof typeof item];
+          const rawValue = item[dataKey];
           console.log(`Raw value for ${metricId} (using key ${dataKey}):`, rawValue);
           
-          // Parse the value properly
           const parsedValue = parseValue(rawValue);
           console.log(`Parsed value for ${metricId}:`, parsedValue);
           
