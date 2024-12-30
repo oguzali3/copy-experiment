@@ -50,33 +50,48 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     }
 
     // Filter years based on slider
+    const startYear = 2019 + sliderValue[0];
+    const endYear = 2019 + sliderValue[1];
+    
     const filteredData = data.filter(item => {
       const year = parseInt(item.period);
-      return year >= 2019 + sliderValue[0] && year <= 2019 + sliderValue[1];
+      return year >= startYear && year <= endYear;
     });
+
+    console.log('Filtered data:', filteredData);
 
     // Transform data for chart
     const chartData = filteredData.map(item => {
-      const point: any = { period: item.period };
+      const point: Record<string, any> = { period: item.period };
+      
       selectedMetrics.forEach(metric => {
-        point[metric] = parseFloat(item[metric].toString().replace(/[$,B]/g, ''));
+        const value = item[metric];
+        if (typeof value === 'string') {
+          // Remove currency symbols and convert to number
+          point[metric] = parseFloat(value.replace(/[$,B]/g, ''));
+        } else {
+          point[metric] = value;
+        }
       });
+      
       return point;
     });
 
-    console.log('Chart data:', chartData);
+    console.log('Final chart data:', chartData);
     return chartData;
   };
 
   return (
     <div className="space-y-6">
-      <MetricsChartSection 
-        selectedMetrics={selectedMetrics}
-        data={getMetricData()}
-        ticker={ticker}
-        metricTypes={metricTypes}
-        onMetricTypeChange={handleMetricTypeChange}
-      />
+      {selectedMetrics.length > 0 && (
+        <MetricsChartSection 
+          selectedMetrics={selectedMetrics}
+          data={getMetricData()}
+          ticker={ticker}
+          metricTypes={metricTypes}
+          onMetricTypeChange={handleMetricTypeChange}
+        />
+      )}
       
       <Card className="p-6">
         <div className="space-y-6">

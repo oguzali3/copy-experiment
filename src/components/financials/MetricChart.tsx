@@ -1,5 +1,6 @@
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { getMetricColor } from './chartUtils';
+import { getMetricColor, formatYAxis } from './chartUtils';
+import { ChartTooltip } from './ChartTooltip';
 
 interface MetricChartProps {
   data: any[];
@@ -28,13 +29,6 @@ export const MetricChart = ({
     );
   }
 
-  const formatYAxis = (value: number) => {
-    if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
-    if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
-    if (value >= 1e3) return `$${(value / 1e3).toFixed(1)}K`;
-    return `$${value}`;
-  };
-
   return (
     <div className="w-full bg-white p-4 rounded-lg border">
       <div className="h-[300px]">
@@ -56,10 +50,7 @@ export const MetricChart = ({
               axisLine={{ stroke: '#E5E7EB' }}
               tickLine={false}
             />
-            <Tooltip 
-              formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
-              labelFormatter={(label) => `Year: ${label}`}
-            />
+            <Tooltip content={<ChartTooltip ticker={ticker} />} />
             
             {metrics.map((metric, index) => {
               const color = getMetricColor(index);
@@ -82,7 +73,7 @@ export const MetricChart = ({
                   dataKey={metric}
                   fill={color}
                   name={metric}
-                  radius={[0, 0, 0, 0]}
+                  radius={[4, 4, 0, 0]}
                   maxBarSize={50}
                 />
               );
