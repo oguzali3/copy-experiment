@@ -83,11 +83,14 @@ export const CashFlow = ({
     );
   }
 
-  // Filter for annual data and sort by date
+  // Filter and sort data to show TTM first, then annual data in descending order
   const filteredData = financialData
-    .filter((item: any) => item.period === "FY")
-    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 4); // Get last 4 years
+    .sort((a: any, b: any) => {
+      if (a.period === 'TTM') return -1;
+      if (b.period === 'TTM') return 1;
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    })
+    .slice(0, 11); // Get TTM + last 10 years
 
   const metrics = [
     { id: "operatingCashFlow", label: "Operating Cash Flow" },
@@ -116,10 +119,7 @@ export const CashFlow = ({
               <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
               {filteredData.map((row: any) => (
                 <TableHead key={row.date} className="text-right min-w-[120px]">
-                  {new Date(row.date).toLocaleDateString('en-US', { 
-                    year: 'numeric',
-                    month: 'short'
-                  })}
+                  {row.period === 'TTM' ? 'TTM' : new Date(row.date).getFullYear()}
                 </TableHead>
               ))}
             </TableRow>
