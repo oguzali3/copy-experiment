@@ -96,8 +96,14 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     const data = financialData[ticker]?.[timeFrame] || [];
     const filteredData = data
       .filter(item => {
+        if (item.period === 'TTM') return true;
         const year = parseInt(item.period);
         return year >= 2019 + sliderValue[0] && year <= 2019 + sliderValue[1];
+      })
+      .sort((a, b) => {
+        if (a.period === 'TTM') return 1;  // TTM goes at the end
+        if (b.period === 'TTM') return -1;
+        return parseInt(a.period) - parseInt(b.period);
       })
       .map(item => ({
         period: item.period,
