@@ -62,7 +62,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       return parseFloat(cleanValue.replace('B', '')) * 1000000000;
     }
     
-    // Handle million format (e.g., "26.1M")
+    // Handle million format (e.g., "26.1M"))
     if (cleanValue.endsWith('M')) {
       return parseFloat(cleanValue.replace('M', '')) * 1000000;
     }
@@ -96,8 +96,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     cashAtEndOfPeriod: "cashAtEndOfPeriod",
     capitalExpenditure: "capitalExpenditure",
     freeCashFlow: "freeCashFlow",
-    investingCashFlow: "netCashUsedForInvestingActivites",
-    financingCashFlow: "netCashUsedProvidedByFinancingActivities",
+    investingCashFlow: "netCashUsedForInvestingActivities",
+    financingCashFlow: "netCashUsedForFinancingActivities",
     cashAtBeginningOfPeriod: "cashAtBeginningOfPeriod",
     changeInWorkingCapital: "changeInWorkingCapital",
     stockBasedCompensation: "stockBasedCompensation",
@@ -109,6 +109,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
   const getMetricData = (metrics: string[]) => {
     const data = financialData[ticker]?.[timeFrame] || [];
+    console.log('Raw financial data:', data);
+    
     const filteredData = data
       .filter(item => {
         if (item.period === 'TTM') return true;
