@@ -72,24 +72,39 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
   // Map frontend metric IDs to their corresponding data keys
   const metricToDataKeyMap: Record<string, string> = {
+    // Income Statement metrics
     revenue: "revenue",
     revenueGrowth: "revenueGrowth",
     costOfRevenue: "costOfRevenue",
     grossProfit: "grossProfit",
-    totalAssets: "totalAssets",
-    totalLiabilities: "totalLiabilities",
-    totalEquity: "totalEquity",
-    operatingCashFlow: "operatingCashFlow",
-    investingCashFlow: "investingCashFlow",
-    financingCashFlow: "financingCashFlow",
-    freeCashFlow: "freeCashFlow",
     sga: "sga",
     researchDevelopment: "researchDevelopment",
     operatingExpenses: "operatingExpenses",
     operatingIncome: "operatingIncome",
     netIncome: "netIncome",
     ebitda: "ebitda",
-    sellingGeneralAndAdministrativeExpenses: "sga" // Map to the correct key in the data
+    sellingGeneralAndAdministrativeExpenses: "sga",
+    
+    // Balance Sheet metrics
+    totalAssets: "totalAssets",
+    totalLiabilities: "totalLiabilities",
+    totalEquity: "totalEquity",
+    
+    // Cash Flow metrics
+    operatingCashFlow: "operatingCashFlow",
+    netCashFlow: "netCashFlow",
+    cashAtEndOfPeriod: "cashAtEndOfPeriod",
+    capitalExpenditure: "capitalExpenditure",
+    freeCashFlow: "freeCashFlow",
+    investingCashFlow: "netCashUsedForInvestingActivites",
+    financingCashFlow: "netCashUsedProvidedByFinancingActivities",
+    cashAtBeginningOfPeriod: "cashAtBeginningOfPeriod",
+    changeInWorkingCapital: "changeInWorkingCapital",
+    stockBasedCompensation: "stockBasedCompensation",
+    depreciationAndAmortization: "depreciationAndAmortization",
+    dividendsPaid: "dividendsPaid",
+    commonStockRepurchased: "commonStockRepurchased",
+    debtRepayment: "debtRepayment"
   };
 
   const getMetricData = (metrics: string[]) => {
@@ -110,6 +125,11 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
         metrics: metrics.map(metricId => {
           // Get the corresponding data key for this metric
           const dataKey = metricToDataKeyMap[metricId];
+          if (!dataKey) {
+            console.warn(`No data key mapping found for metric: ${metricId}`);
+            return { name: getMetricLabel(metricId), value: 0 };
+          }
+          
           // Get the raw value using the mapped key
           const rawValue = item[dataKey as keyof typeof item];
           console.log(`Raw value for ${metricId} (using key ${dataKey}):`, rawValue);
@@ -131,24 +151,39 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
   const getMetricLabel = (metricId: string): string => {
     const metrics = {
+      // Income Statement metrics
       revenue: "Revenue",
       revenueGrowth: "Revenue Growth",
       costOfRevenue: "Cost of Revenue",
       grossProfit: "Gross Profit",
-      totalAssets: "Total Assets",
-      totalLiabilities: "Total Liabilities",
-      totalEquity: "Total Equity",
-      operatingCashFlow: "Operating Cash Flow",
-      investingCashFlow: "Investing Cash Flow",
-      financingCashFlow: "Financing Cash Flow",
-      freeCashFlow: "Free Cash Flow",
       sga: "SG&A",
       researchDevelopment: "R&D",
       operatingExpenses: "Operating Expenses",
       operatingIncome: "Operating Income",
       netIncome: "Net Income",
       ebitda: "EBITDA",
-      sellingGeneralAndAdministrativeExpenses: "SG&A Expenses"
+      sellingGeneralAndAdministrativeExpenses: "SG&A Expenses",
+      
+      // Balance Sheet metrics
+      totalAssets: "Total Assets",
+      totalLiabilities: "Total Liabilities",
+      totalEquity: "Total Equity",
+      
+      // Cash Flow metrics
+      operatingCashFlow: "Operating Cash Flow",
+      netCashFlow: "Net Cash Flow",
+      cashAtEndOfPeriod: "Cash at End of Period",
+      capitalExpenditure: "Capital Expenditure",
+      freeCashFlow: "Free Cash Flow",
+      investingCashFlow: "Investing Cash Flow",
+      financingCashFlow: "Financing Cash Flow",
+      cashAtBeginningOfPeriod: "Cash at Beginning of Period",
+      changeInWorkingCapital: "Change in Working Capital",
+      stockBasedCompensation: "Stock-based Compensation",
+      depreciationAndAmortization: "Depreciation & Amortization",
+      dividendsPaid: "Dividends Paid",
+      commonStockRepurchased: "Stock Sale & Purchase",
+      debtRepayment: "Debt Repayment"
     };
     return metrics[metricId as keyof typeof metrics] || metricId;
   };
