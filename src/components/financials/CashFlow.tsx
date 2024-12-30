@@ -20,10 +20,10 @@ export const CashFlow = ({
   ticker 
 }: CashFlowProps) => {
   const { data: financialData, isLoading, error } = useQuery({
-    queryKey: ['cash-flow', ticker],
+    queryKey: ['cash-flow-statement', ticker],
     queryFn: async () => {
-      const data = await fetchFinancialData('cash-flow', ticker);
-      console.log('Cash Flow API Response:', data);
+      const data = await fetchFinancialData('cash-flow-statement', ticker);
+      console.log('Cash Flow Statement API Response:', data);
       return data;
     },
     enabled: !!ticker,
@@ -117,8 +117,8 @@ export const CashFlow = ({
     { id: "cashAtEndOfPeriod", label: "Cash at End of Period" },
     { id: "capitalExpenditure", label: "Capital Expenditure" },
     { id: "freeCashFlow", label: "Free Cash Flow" },
-    { id: "investingCashFlow", label: "Investing Cash Flow" },
-    { id: "financingCashFlow", label: "Financing Cash Flow" },
+    { id: "netCashUsedForInvestingActivites", label: "Investing Cash Flow" },
+    { id: "netCashUsedProvidedByFinancingActivities", label: "Financing Cash Flow" },
     { id: "cashAtBeginningOfPeriod", label: "Cash at Beginning of Period" },
     { id: "changeInWorkingCapital", label: "Change in Working Capital" },
     { id: "stockBasedCompensation", label: "Stock-based Compensation" },

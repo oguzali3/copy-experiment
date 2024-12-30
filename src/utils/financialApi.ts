@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type FinancialEndpoint = 'quote' | 'profile' | 'income-statement' | 'balance-sheet' | 'cash-flow';
+export type FinancialEndpoint = 'quote' | 'profile' | 'income-statement' | 'balance-sheet' | 'cash-flow-statement';
 
 export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: string) {
   try {
