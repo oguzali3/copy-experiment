@@ -83,16 +83,17 @@ export const CashFlow = ({
     );
   }
 
-  // Get TTM data first
+  // First, separate TTM and annual data
   const ttmData = financialData.find((item: any) => item.period === 'TTM');
   
-  // Get annual data sorted by date
+  // Get annual data and sort by date
   const annualData = financialData
     .filter((item: any) => item.period !== 'TTM')
     .sort((a: any, b: any) => {
-      const yearA = new Date(a.date).getFullYear();
-      const yearB = new Date(b.date).getFullYear();
-      return yearB - yearA;
+      // Parse dates and compare years
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateB.getTime() - dateA.getTime();
     })
     .slice(0, 10); // Get last 10 years
 
@@ -101,7 +102,8 @@ export const CashFlow = ({
 
   const formatPeriod = (row: any) => {
     if (row.period === 'TTM') return 'TTM';
-    return new Date(row.date).getFullYear().toString();
+    const date = new Date(row.date);
+    return date.getFullYear().toString();
   };
 
   const metrics = [
