@@ -1,10 +1,8 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useQuery } from "@tanstack/react-query";
-import { fetchFinancialData } from "@/utils/financialApi";
 import { Checkbox } from "@/components/ui/checkbox";
+import { financialData } from "@/data/financialData";
 
 interface CashFlowProps {
   timeFrame: "annual" | "quarterly" | "ttm";
@@ -19,12 +17,6 @@ export const CashFlow = ({
   onMetricsChange,
   ticker 
 }: CashFlowProps) => {
-  const { data: financialData, isLoading, error } = useQuery({
-    queryKey: ['cash-flow', ticker],
-    queryFn: () => fetchFinancialData('cash-flow', ticker),
-    enabled: !!ticker,
-  });
-
   const handleMetricToggle = (metricId: string) => {
     const newMetrics = selectedMetrics.includes(metricId)
       ? selectedMetrics.filter(id => id !== metricId)
@@ -47,34 +39,12 @@ export const CashFlow = ({
     return parseFloat(value.toString().replace(/,/g, ''));
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="flex space-x-4">
-            <Skeleton className="h-4 w-4" />
-            <Skeleton className="h-4 w-[200px]" />
-            <Skeleton className="h-4 w-[100px]" />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (error) {
+  // Get data from financialData object
+  const data = financialData[ticker]?.[timeFrame] || [];
+  
+  if (!data || data.length === 0) {
     return (
       <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Error loading cash flow data. Please try again later.
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!financialData || !Array.isArray(financialData) || financialData.length === 0) {
-    return (
-      <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
           No cash flow data available for {ticker}.
@@ -83,17 +53,12 @@ export const CashFlow = ({
     );
   }
 
-  // Get TTM data first
-  const ttmData = financialData.find((item: any) => item.period === 'TTM');
-  
-  // Get annual data sorted by date
-  const annualData = financialData
-    .filter((item: any) => item.period === 'FY')
-    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 10); // Get last 10 years
-
-  // Combine TTM with annual data
-  const filteredData = ttmData ? [ttmData, ...annualData] : annualData;
+  // Sort data by period (TTM first, then by year descending)
+  const sortedData = [...data].sort((a, b) => {
+    if (a.period === 'TTM') return -1;
+    if (b.period === 'TTM') return 1;
+    return parseInt(b.period) - parseInt(a.period);
+  });
 
   const metrics = [
     { id: "operatingCashFlow", label: "Operating Cash Flow" },
@@ -120,9 +85,9 @@ export const CashFlow = ({
             <TableRow>
               <TableHead className="w-[50px]"></TableHead>
               <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
-              {filteredData.map((row: any) => (
-                <TableHead key={row.date} className="text-right min-w-[120px]">
-                  {row.period === 'TTM' ? 'TTM' : new Date(row.date).getFullYear()}
+              {sortedData.map((row) => (
+                <TableHead key={row.period} className="text-right min-w-[120px]">
+                  {row.period}
                 </TableHead>
               ))}
             </TableRow>
@@ -140,8 +105,8 @@ export const CashFlow = ({
                 <TableCell className="font-medium sticky left-[50px] z-20 bg-gray-50">
                   {metric.label}
                 </TableCell>
-                {filteredData.map((row: any) => (
-                  <TableCell key={`${row.date}-${metric.id}`} className="text-right">
+                {sortedData.map((row) => (
+                  <TableCell key={`${row.period}-${metric.id}`} className="text-right">
                     {formatValue(parseNumber(row[metric.id]))}
                   </TableCell>
                 ))}
