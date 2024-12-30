@@ -7,7 +7,6 @@ import { fetchFinancialData } from "@/utils/financialApi";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface CashFlowProps {
-  timeFrame: "annual" | "quarterly" | "ttm";
   selectedMetrics: string[];
   onMetricsChange: (metrics: string[]) => void;
   ticker: string;
@@ -82,9 +81,19 @@ export const CashFlow = ({
     );
   }
 
-  // Get TTM data first
-  const ttmData = financialData.find((item: any) => item.period === 'TTM');
+  // Get quarterly data for TTM calculation
+  const quarterlyData = financialData.filter((item: any) => item.period === 'quarter').slice(0, 4);
   
+  // Calculate TTM by summing last 4 quarters
+  const ttmData = quarterlyData.reduce((acc: any, quarter: any) => {
+    Object.keys(quarter).forEach(key => {
+      if (typeof quarter[key] === 'number') {
+        acc[key] = (acc[key] || 0) + quarter[key];
+      }
+    });
+    return acc;
+  }, { period: 'TTM', date: new Date().toISOString() });
+
   // Get annual data sorted by date
   const annualData = financialData
     .filter((item: any) => item.period === 'FY')
@@ -92,7 +101,7 @@ export const CashFlow = ({
     .slice(0, 10); // Get last 10 years
 
   // Combine TTM with annual data
-  const filteredData = ttmData ? [ttmData, ...annualData] : annualData;
+  const filteredData = [ttmData, ...annualData];
 
   const metrics = [
     { id: "operatingCashFlow", label: "Operating Cash Flow" },
