@@ -91,7 +91,12 @@ export const BalanceSheet = ({
       if (timeFrame === 'quarterly' && item.period === 'Q') return true;
       return false;
     })
-    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .sort((a: any, b: any) => {
+      // Special handling for TTM to always be first
+      if (a.period === 'TTM') return -1;
+      if (b.period === 'TTM') return 1;
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    })
     .slice(0, timeFrame === 'annual' ? 10 : 4); // Get last 10 years for annual, 4 quarters for quarterly
 
   const metrics = [
@@ -119,14 +124,11 @@ export const BalanceSheet = ({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]"></TableHead>
-              <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
+              <TableHead className="w-[50px] sticky left-0 z-20 bg-white"></TableHead>
+              <TableHead className="w-[250px] sticky left-[50px] z-20 bg-gray-50 font-semibold">Metrics</TableHead>
               {filteredData.map((row: any) => (
                 <TableHead key={row.date} className="text-right min-w-[120px]">
-                  {row.period === 'TTM' ? 'TTM' : new Date(row.date).toLocaleDateString('en-US', { 
-                    year: 'numeric',
-                    month: 'short'
-                  })}
+                  {row.period === 'TTM' ? 'TTM' : new Date(row.date).getFullYear().toString()}
                 </TableHead>
               ))}
             </TableRow>
@@ -134,14 +136,14 @@ export const BalanceSheet = ({
           <TableBody>
             {metrics.map((metric) => (
               <TableRow key={metric.id}>
-                <TableCell className="w-[50px] pr-0">
+                <TableCell className="w-[50px] sticky left-0 z-20 bg-white pr-0">
                   <Checkbox
                     id={`checkbox-${metric.id}`}
                     checked={selectedMetrics.includes(metric.id)}
                     onCheckedChange={() => handleMetricToggle(metric.id)}
                   />
                 </TableCell>
-                <TableCell className="font-medium bg-gray-50">{metric.label}</TableCell>
+                <TableCell className="font-medium sticky left-[50px] z-20 bg-gray-50">{metric.label}</TableCell>
                 {filteredData.map((row: any) => (
                   <TableCell key={`${row.date}-${metric.id}`} className="text-right">
                     {formatValue(parseNumber(row[metric.id]))}
