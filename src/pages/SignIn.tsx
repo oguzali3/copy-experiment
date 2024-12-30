@@ -16,9 +16,22 @@ const SignIn = () => {
   const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      if (currentSession) {
+        navigate("/dashboard");
+      }
+    });
+
+    // Check for existing session
     if (session) {
       navigate("/dashboard");
     }
+
+    // Cleanup subscription
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [session, navigate]);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
@@ -26,14 +39,17 @@ const SignIn = () => {
     setSigningIn(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
+        options: {
+          persistSession: true // Ensure session persistence
+        }
       });
       
       if (error) {
         toast.error(error.message);
-      } else {
+      } else if (data?.user) {
         toast.success("Signed in successfully");
         navigate("/dashboard");
       }
@@ -50,7 +66,8 @@ const SignIn = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${window.location.origin}/dashboard`,
+          persistSession: true // Ensure session persistence
         }
       });
       
