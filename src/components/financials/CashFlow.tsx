@@ -21,7 +21,11 @@ export const CashFlow = ({
 }: CashFlowProps) => {
   const { data: financialData, isLoading, error } = useQuery({
     queryKey: ['cash-flow', ticker],
-    queryFn: () => fetchFinancialData('cash-flow', ticker),
+    queryFn: async () => {
+      const data = await fetchFinancialData('cash-flow', ticker);
+      console.log('Cash Flow API Response:', data);
+      return data;
+    },
     enabled: !!ticker,
   });
 
@@ -89,15 +93,22 @@ export const CashFlow = ({
   // Get annual data and sort by calendar year
   const annualData = financialData
     .filter((item: any) => item.period === 'FY')
-    .sort((a: any, b: any) => parseInt(b.calendarYear) - parseInt(a.calendarYear))
+    .sort((a: any, b: any) => {
+      const yearA = parseInt(a.calendarYear);
+      const yearB = parseInt(b.calendarYear);
+      return yearB - yearA;
+    })
     .slice(0, 10);
+
+  console.log('TTM Data:', ttmData);
+  console.log('Annual Data:', annualData);
 
   // Combine TTM with annual data
   const sortedData = ttmData ? [ttmData, ...annualData] : annualData;
 
   const formatPeriod = (row: any) => {
     if (row.period === 'TTM') return 'TTM';
-    return row.calendarYear;
+    return row.calendarYear || 'N/A';
   };
 
   const metrics = [
