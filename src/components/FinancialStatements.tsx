@@ -41,10 +41,11 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       return [];
     }
 
-    const data = financialData[ticker]?.annual || [];
-    console.log('Raw data for ticker:', ticker, data);
+    const annualData = financialData[ticker]?.annual || [];
+    const ttmData = financialData[ticker]?.ttm || [];
+    console.log('Raw data for ticker:', ticker, annualData);
 
-    if (!data.length) {
+    if (!annualData.length) {
       console.log('No data available');
       return [];
     }
@@ -53,7 +54,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     const startYear = 2019 + sliderValue[0];
     const endYear = 2019 + sliderValue[1];
     
-    const filteredData = data.filter(item => {
+    const filteredData = annualData.filter(item => {
       const year = parseInt(item.period);
       return year >= startYear && year <= endYear;
     });
@@ -76,6 +77,20 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       
       return point;
     });
+
+    // Add TTM data if available
+    if (ttmData.length > 0) {
+      const ttmPoint: Record<string, any> = { period: 'TTM' };
+      selectedMetrics.forEach(metric => {
+        const value = ttmData[0][metric];
+        if (typeof value === 'string') {
+          ttmPoint[metric] = parseFloat(value.replace(/[$,B]/g, ''));
+        } else {
+          ttmPoint[metric] = value;
+        }
+      });
+      chartData.push(ttmPoint);
+    }
 
     console.log('Final chart data:', chartData);
     return chartData;

@@ -1,6 +1,8 @@
-import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { getMetricColor, formatYAxis } from './chartUtils';
+import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { getMetricColor, formatYAxis, calculateCAGR } from './chartUtils';
 import { ChartTooltip } from './ChartTooltip';
+import { Button } from "@/components/ui/button";
+import { BarChart3, LineChart } from "lucide-react";
 
 interface MetricChartProps {
   data: any[];
@@ -15,6 +17,7 @@ export const MetricChart = ({
   metrics, 
   ticker,
   metricTypes,
+  onMetricTypeChange
 }: MetricChartProps) => {
   console.log('MetricChart received data:', data);
   console.log('MetricChart received metrics:', metrics);
@@ -29,12 +32,58 @@ export const MetricChart = ({
     );
   }
 
+  // Sort data chronologically
+  const sortedData = [...data].sort((a, b) => {
+    if (a.period === 'TTM') return 1;
+    if (b.period === 'TTM') return -1;
+    return parseInt(a.period) - parseInt(b.period);
+  });
+
+  // Calculate CAGR for each metric
+  const cagrResults: Record<string, number> = {};
+  metrics.forEach(metric => {
+    const firstValue = sortedData[0][metric];
+    const lastValue = sortedData[sortedData.length - 1][metric];
+    const years = sortedData[sortedData.length - 1].period === 'TTM' 
+      ? sortedData.length - 2 
+      : sortedData.length - 1;
+    cagrResults[metric] = calculateCAGR(firstValue, lastValue, years);
+  });
+
   return (
-    <div className="w-full bg-white p-4 rounded-lg border">
+    <div className="w-full bg-white p-4 rounded-lg border space-y-4">
+      <div className="flex flex-wrap gap-4 items-center justify-between">
+        <div className="flex gap-2 items-center">
+          {metrics.map((metric) => (
+            <div key={metric} className="flex items-center gap-2">
+              <span className="font-medium">{metric}</span>
+              <div className="flex gap-1">
+                <Button
+                  variant={metricTypes[metric] === 'bar' ? 'default' : 'outline'}
+                  size="icon"
+                  onClick={() => onMetricTypeChange(metric, 'bar')}
+                  className="h-8 w-8"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={metricTypes[metric] === 'line' ? 'default' : 'outline'}
+                  size="icon"
+                  onClick={() => onMetricTypeChange(metric, 'line')}
+                  className="h-8 w-8"
+                >
+                  <LineChart className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
-            data={data}
+            data={sortedData}
             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
@@ -80,6 +129,26 @@ export const MetricChart = ({
             })}
           </ComposedChart>
         </ResponsiveContainer>
+      </div>
+
+      <div className="mt-4 border-t pt-4 text-sm text-gray-600">
+        <div className="flex flex-wrap gap-x-6 gap-y-2">
+          <div>
+            <span className="font-medium">{ticker}</span>
+          </div>
+          {metrics.map((metric, index) => (
+            <div key={metric}>
+              <span style={{ color: getMetricColor(index) }} className="font-medium">
+                {metric}: {cagrResults[metric].toFixed(1)}% CAGR
+              </span>
+            </div>
+          ))}
+          <div>
+            <span className="font-medium">
+              {sortedData[0].period} - {sortedData[sortedData.length - 1].period}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );

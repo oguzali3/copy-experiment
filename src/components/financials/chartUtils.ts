@@ -28,6 +28,11 @@ export const formatYAxis = (value: number) => {
   return `$${value}`;
 };
 
+export const calculateCAGR = (startValue: number, endValue: number, years: number) => {
+  if (startValue <= 0 || endValue <= 0 || years <= 0) return 0;
+  return ((Math.pow(endValue / startValue, 1 / years) - 1) * 100);
+};
+
 export const transformChartData = (
   data: Array<{ period: string; metrics: Array<{ name: string; value: string | number }> }>,
   metrics: string[]
