@@ -70,6 +70,28 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     return parseFloat(cleanValue);
   };
 
+  // Map frontend metric IDs to their corresponding data keys
+  const metricToDataKeyMap: Record<string, string> = {
+    revenue: "revenue",
+    revenueGrowth: "revenueGrowth",
+    costOfRevenue: "costOfRevenue",
+    grossProfit: "grossProfit",
+    totalAssets: "totalAssets",
+    totalLiabilities: "totalLiabilities",
+    totalEquity: "totalEquity",
+    operatingCashFlow: "operatingCashFlow",
+    investingCashFlow: "investingCashFlow",
+    financingCashFlow: "financingCashFlow",
+    freeCashFlow: "freeCashFlow",
+    sga: "sga",
+    researchDevelopment: "researchDevelopment",
+    operatingExpenses: "operatingExpenses",
+    operatingIncome: "operatingIncome",
+    netIncome: "netIncome",
+    ebitda: "ebitda",
+    sellingGeneralAndAdministrativeExpenses: "sga" // Map to the correct key in the data
+  };
+
   const getMetricData = (metrics: string[]) => {
     const data = financialData[ticker]?.[timeFrame] || [];
     const filteredData = data
@@ -80,13 +102,15 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       .map(item => ({
         period: item.period,
         metrics: metrics.map(metricId => {
-          // Get the raw value from the data
-          const rawValue = item[metricId as keyof typeof item];
-          console.log(`Raw value for ${metricId}: ${rawValue}`);
+          // Get the corresponding data key for this metric
+          const dataKey = metricToDataKeyMap[metricId];
+          // Get the raw value using the mapped key
+          const rawValue = item[dataKey as keyof typeof item];
+          console.log(`Raw value for ${metricId} (using key ${dataKey}):`, rawValue);
           
           // Parse the value properly
           const parsedValue = parseValue(rawValue);
-          console.log(`Parsed value for ${metricId}: ${parsedValue}`);
+          console.log(`Parsed value for ${metricId}:`, parsedValue);
           
           return {
             name: getMetricLabel(metricId),
