@@ -20,7 +20,7 @@ export const BalanceSheet = ({
   ticker 
 }: BalanceSheetProps) => {
   const { data: financialData, isLoading, error } = useQuery({
-    queryKey: ['balance-sheet', ticker],
+    queryKey: ['balance-sheet', ticker, timeFrame],
     queryFn: () => fetchFinancialData('balance-sheet', ticker),
     enabled: !!ticker,
   });
@@ -83,11 +83,16 @@ export const BalanceSheet = ({
     );
   }
 
-  // Filter for annual data and sort by date
+  // Filter and sort data based on timeFrame
   const filteredData = financialData
-    .filter((item: any) => item.period === "FY")
+    .filter((item: any) => {
+      if (timeFrame === 'ttm' && item.period === 'TTM') return true;
+      if (timeFrame === 'annual' && item.period === 'FY') return true;
+      if (timeFrame === 'quarterly' && item.period === 'Q') return true;
+      return false;
+    })
     .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 4); // Get last 4 years
+    .slice(0, timeFrame === 'annual' ? 10 : 4); // Get last 10 years for annual, 4 quarters for quarterly
 
   const metrics = [
     { id: "totalAssets", label: "Total Assets" },
@@ -118,7 +123,7 @@ export const BalanceSheet = ({
               <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
               {filteredData.map((row: any) => (
                 <TableHead key={row.date} className="text-right min-w-[120px]">
-                  {new Date(row.date).toLocaleDateString('en-US', { 
+                  {row.period === 'TTM' ? 'TTM' : new Date(row.date).toLocaleDateString('en-US', { 
                     year: 'numeric',
                     month: 'short'
                   })}

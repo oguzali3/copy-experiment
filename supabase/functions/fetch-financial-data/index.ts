@@ -27,14 +27,12 @@ serve(async (req) => {
         const searchResponse = await fetch(url);
         const searchResults = await searchResponse.json();
         
-        // If we have search results, fetch quotes for all symbols
         if (searchResults && searchResults.length > 0) {
           const symbols = searchResults.map((result: any) => result.symbol).join(',');
           const quotesUrl = `https://financialmodelingprep.com/api/v3/quote/${symbols}?apikey=${apiKey}`;
           const quotesResponse = await fetch(quotesUrl);
           const quotesData = await quotesResponse.json();
 
-          // Merge search results with quotes data
           const enrichedResults = searchResults.map((result: any) => {
             const quote = quotesData.find((q: any) => q.symbol === result.symbol);
             return {
@@ -61,23 +59,33 @@ serve(async (req) => {
         url = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
         break;
       case "income-statement":
-        // First get TTM data
-        const ttmUrl = `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?period=quarter&limit=4&apikey=${apiKey}`;
+      case "balance-sheet":
+        // First get TTM data using quarterly statements
+        const ttmUrl = endpoint === 'income-statement' 
+          ? `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?period=quarter&limit=4&apikey=${apiKey}`
+          : `https://financialmodelingprep.com/api/v3/balance-sheet-statement/${symbol}?period=quarter&limit=4&apikey=${apiKey}`;
+        
         const ttmResponse = await fetch(ttmUrl);
         const ttmData = await ttmResponse.json();
         
-        // Calculate TTM by summing last 4 quarters
-        const ttm = ttmData.reduce((acc: any, quarter: any) => {
-          Object.keys(quarter).forEach(key => {
-            if (typeof quarter[key] === 'number') {
-              acc[key] = (acc[key] || 0) + quarter[key];
-            }
-          });
-          return acc;
-        }, { period: 'TTM', symbol, date: new Date().toISOString() });
+        // Calculate TTM by summing last 4 quarters for income statement
+        // For balance sheet, use the most recent quarter as TTM
+        const ttm = endpoint === 'income-statement'
+          ? ttmData.reduce((acc: any, quarter: any) => {
+              Object.keys(quarter).forEach(key => {
+                if (typeof quarter[key] === 'number') {
+                  acc[key] = (acc[key] || 0) + quarter[key];
+                }
+              });
+              return acc;
+            }, { period: 'TTM', symbol, date: new Date().toISOString() })
+          : { ...ttmData[0], period: 'TTM' };
 
         // Get annual data
-        url = `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?limit=10&apikey=${apiKey}`;
+        url = endpoint === 'income-statement'
+          ? `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?limit=10&apikey=${apiKey}`
+          : `https://financialmodelingprep.com/api/v3/balance-sheet-statement/${symbol}?limit=10&apikey=${apiKey}`;
+        
         const annualResponse = await fetch(url);
         const annualData = await annualResponse.json();
 
@@ -88,9 +96,6 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
-      case "balance-sheet":
-        url = `https://financialmodelingprep.com/api/v3/balance-sheet-statement/${symbol}?period=quarter&limit=12&apikey=${apiKey}`;
-        break;
       case "cash-flow":
         url = `https://financialmodelingprep.com/api/v3/cash-flow-statement/${symbol}?period=quarter&limit=12&apikey=${apiKey}`;
         break;
@@ -104,7 +109,7 @@ serve(async (req) => {
         throw new Error(`Invalid endpoint: ${endpoint}`);
     }
 
-    if (endpoint !== "search" && endpoint !== "income-statement") {
+    if (endpoint !== "search" && endpoint !== "income-statement" && endpoint !== "balance-sheet") {
       const response = await fetch(url);
       const data = await response.json();
       return new Response(JSON.stringify(data), {
