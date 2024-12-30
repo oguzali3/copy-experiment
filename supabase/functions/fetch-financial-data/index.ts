@@ -96,9 +96,38 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
-      case "cash-flow":
-        url = `https://financialmodelingprep.com/api/v3/cash-flow-statement/${symbol}?period=quarter&limit=12&apikey=${apiKey}`;
-        break;
+      case "cash-flow-statement":
+        // First get TTM data using quarterly statements
+        const cashFlowTtmUrl = `https://financialmodelingprep.com/api/v3/cash-flow-statement/${symbol}?period=quarter&limit=4&apikey=${apiKey}`;
+        const cashFlowTtmResponse = await fetch(cashFlowTtmUrl);
+        const cashFlowTtmData = await cashFlowTtmResponse.json();
+        
+        console.log('TTM Cash Flow Data:', cashFlowTtmData);
+
+        // Calculate TTM by summing last 4 quarters
+        const cashFlowTtm = cashFlowTtmData.reduce((acc: any, quarter: any) => {
+          Object.keys(quarter).forEach(key => {
+            if (typeof quarter[key] === 'number') {
+              acc[key] = (acc[key] || 0) + quarter[key];
+            }
+          });
+          return acc;
+        }, { period: 'TTM', symbol, date: new Date().toISOString() });
+
+        // Get annual data
+        const cashFlowUrl = `https://financialmodelingprep.com/api/v3/cash-flow-statement/${symbol}?limit=10&apikey=${apiKey}`;
+        const cashFlowAnnualResponse = await fetch(cashFlowUrl);
+        const cashFlowAnnualData = await cashFlowAnnualResponse.json();
+
+        console.log('Annual Cash Flow Data:', cashFlowAnnualData);
+
+        // Combine TTM with annual data
+        const combinedCashFlowData = [cashFlowTtm, ...cashFlowAnnualData];
+        
+        return new Response(JSON.stringify(combinedCashFlowData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       case "company-news":
         if (!from || !to) {
           throw new Error("From and to dates are required for company news");
@@ -109,7 +138,7 @@ serve(async (req) => {
         throw new Error(`Invalid endpoint: ${endpoint}`);
     }
 
-    if (endpoint !== "search" && endpoint !== "income-statement" && endpoint !== "balance-sheet") {
+    if (endpoint !== "search" && endpoint !== "income-statement" && endpoint !== "balance-sheet" && endpoint !== "cash-flow-statement") {
       const response = await fetch(url);
       const data = await response.json();
       return new Response(JSON.stringify(data), {
