@@ -107,14 +107,26 @@ export const IncomeStatement = ({
                   // For revenue growth in TTM period
                   if (metric.id === "revenueGrowth") {
                     // Get quarterly data (assuming it's available in the API response)
-                    const quarterlyData = financialData.filter((item: any) => item.period === "Q");
+                    const quarterlyData = financialData
+                      .filter((item: any) => item.period === "Q")
+                      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+                    console.log('Quarterly data for revenue growth:', quarterlyData);
+
                     if (quarterlyData.length >= 8) {
                       // Calculate sum of last 4 quarters
-                      const last4Q = quarterlyData.slice(0, 4).reduce((sum: number, q: any) => 
-                        sum + parseFloat(q.revenue), 0);
+                      const last4Q = quarterlyData.slice(0, 4).reduce((sum: number, q: any) => {
+                        const revenue = typeof q.revenue === 'string' ? parseFloat(q.revenue.replace(/[^0-9.-]+/g, "")) : q.revenue;
+                        return sum + revenue;
+                      }, 0);
+
                       // Calculate sum of previous 4 quarters
-                      const prev4Q = quarterlyData.slice(4, 8).reduce((sum: number, q: any) => 
-                        sum + parseFloat(q.revenue), 0);
+                      const prev4Q = quarterlyData.slice(4, 8).reduce((sum: number, q: any) => {
+                        const revenue = typeof q.revenue === 'string' ? parseFloat(q.revenue.replace(/[^0-9.-]+/g, "")) : q.revenue;
+                        return sum + revenue;
+                      }, 0);
+
+                      console.log('TTM Revenue calculation:', { last4Q, prev4Q });
                       
                       return prev4Q > 0 ? ((last4Q - prev4Q) / prev4Q * 100) : 0;
                     }
