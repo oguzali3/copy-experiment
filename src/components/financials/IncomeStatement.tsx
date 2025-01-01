@@ -1,13 +1,8 @@
-import { Table, TableBody } from "@/components/ui/table";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { fetchFinancialData } from "@/utils/financialApi";
-import { IncomeStatementHeader } from "./IncomeStatementHeader";
-import { IncomeStatementMetrics } from "./IncomeStatementMetrics";
-import { formatMetricLabel, parseNumber } from "./IncomeStatementUtils";
-import { INCOME_STATEMENT_METRICS, calculateMetricValue, getMetricDisplayName, formatValue } from "@/utils/metricDefinitions";
+import { IncomeStatementLoading } from "./IncomeStatementLoading";
+import { IncomeStatementError } from "./IncomeStatementError";
+import { FinancialDataTable } from "./FinancialDataTable";
 
 interface IncomeStatementProps {
   timeFrame: "annual" | "quarterly" | "ttm";
@@ -35,39 +30,15 @@ export const IncomeStatement = ({
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="flex space-x-4">
-            <Skeleton className="h-4 w-4" />
-            <Skeleton className="h-4 w-[200px]" />
-            <Skeleton className="h-4 w-[100px]" />
-          </div>
-        ))}
-      </div>
-    );
+    return <IncomeStatementLoading />;
   }
 
   if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          Error loading financial data. Please try again later.
-        </AlertDescription>
-      </Alert>
-    );
+    return <IncomeStatementError error={error as Error} />;
   }
 
   if (!financialData || !Array.isArray(financialData) || financialData.length === 0) {
-    return (
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          No financial data available for {ticker}.
-        </AlertDescription>
-      </Alert>
-    );
+    return <IncomeStatementError ticker={ticker} />;
   }
 
   const ttmData = financialData.find((item: any) => item.period === "TTM");
@@ -83,67 +54,15 @@ export const IncomeStatement = ({
     return new Date(item.date).getFullYear().toString();
   });
 
-  const calculateTTMGrowth = (current: any, annualData: any[]) => {
-    if (!current || !Array.isArray(annualData) || annualData.length < 2) return null;
-
-    const currentRevenue = parseFloat(String(current.revenue).replace(/[^0-9.-]+/g, ""));
-    const mostRecentAnnualRevenue = parseFloat(String(annualData[0].revenue).replace(/[^0-9.-]+/g, ""));
-    const previousAnnualRevenue = parseFloat(String(annualData[1].revenue).replace(/[^0-9.-]+/g, ""));
-
-    console.log('TTM Revenue:', currentRevenue);
-    console.log('Most Recent Annual Revenue:', mostRecentAnnualRevenue);
-    console.log('Previous Annual Revenue:', previousAnnualRevenue);
-
-    // Check if TTM matches most recent fiscal year (within 0.1% tolerance)
-    const revenueDiff = Math.abs(currentRevenue - mostRecentAnnualRevenue);
-    const tolerance = mostRecentAnnualRevenue * 0.001; // 0.1% tolerance
-
-    if (revenueDiff <= tolerance) {
-      // Use fiscal year growth rate
-      const growthRate = ((mostRecentAnnualRevenue - previousAnnualRevenue) / previousAnnualRevenue) * 100;
-      console.log('Using fiscal year growth rate:', growthRate);
-      return growthRate;
-    }
-
-    // Calculate TTM growth against previous year
-    const growthRate = ((currentRevenue - previousAnnualRevenue) / previousAnnualRevenue) * 100;
-    console.log('Using TTM growth rate:', growthRate);
-    return growthRate;
-  };
-
   return (
     <div className="space-y-6">
-      <div className="overflow-x-auto">
-        <Table>
-          <IncomeStatementHeader periods={periods} />
-          <TableBody>
-            {INCOME_STATEMENT_METRICS.map((metric) => {
-              const values = combinedData.map((current, index) => {
-                const previous = combinedData[index + 1];
-                
-                if (current.period === "TTM" && metric.id === "revenueGrowth") {
-                  return calculateTTMGrowth(current, annualData);
-                }
-                
-                return calculateMetricValue(metric, current, previous);
-              });
-
-              return (
-                <IncomeStatementMetrics
-                  key={metric.id}
-                  metricId={metric.id}
-                  label={getMetricDisplayName(metric.id)}
-                  values={values.map(v => parseNumber(v))}
-                  isSelected={selectedMetrics.includes(metric.id)}
-                  onToggle={handleMetricToggle}
-                  formatValue={formatValue}
-                  isGrowthMetric={metric.format === 'percentage'}
-                />
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      <FinancialDataTable
+        combinedData={combinedData}
+        periods={periods}
+        selectedMetrics={selectedMetrics}
+        onMetricToggle={handleMetricToggle}
+        annualData={annualData}
+      />
     </div>
   );
 };
