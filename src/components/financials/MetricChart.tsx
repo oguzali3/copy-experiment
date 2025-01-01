@@ -85,7 +85,7 @@ export const MetricChart = ({
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={sortedData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
             <XAxis 
@@ -93,6 +93,11 @@ export const MetricChart = ({
               tick={{ fontSize: 12, fill: '#6B7280' }}
               axisLine={{ stroke: '#E5E7EB' }}
               tickLine={false}
+              interval={0}  // Show all ticks
+              angle={-45}   // Rotate labels for better readability
+              textAnchor="end"  // Align rotated text
+              height={60}   // Increase height to accommodate rotated labels
+              dy={20}       // Adjust vertical position of labels
             />
             <YAxis 
               tickFormatter={formatYAxis}
