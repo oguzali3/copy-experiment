@@ -13,9 +13,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [
-    react({
-      plugins: [["@swc/plugin-emotion", {}]],
-    }),
+    react(),
   ],
   resolve: {
     alias: {
