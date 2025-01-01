@@ -1,33 +1,36 @@
-import React from 'react';
-import {
-  ResponsiveContainer,
-  ComposedChart,
-  Line,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-} from 'recharts';
+import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { getMetricColor, formatYAxis, calculateCAGR } from './chartUtils';
 import { ChartTooltip } from './ChartTooltip';
-import { ChartLegend } from './ChartLegend';
-import { getMetricColor, calculateCAGR } from './chartUtils';
+import { Button } from "@/components/ui/button";
+import { BarChart3, LineChart } from "lucide-react";
+import { getMetricDisplayName } from '@/utils/metricDefinitions';
 
 interface MetricChartProps {
   data: any[];
   metrics: string[];
+  ticker?: string;
   metricTypes: Record<string, 'bar' | 'line'>;
-  ticker: string;
-  onMetricTypeChange?: (metric: string, type: 'bar' | 'line') => void;
+  onMetricTypeChange: (metric: string, type: 'bar' | 'line') => void;
 }
 
-export const MetricChart = ({
-  data,
-  metrics,
-  metricTypes,
+export const MetricChart = ({ 
+  data, 
+  metrics, 
   ticker,
-  onMetricTypeChange,
+  metricTypes,
+  onMetricTypeChange
 }: MetricChartProps) => {
+  if (!data?.length || !metrics?.length) {
+    return (
+      <div className="w-full bg-white p-4 rounded-lg border flex items-center justify-center h-[300px]">
+        <p className="text-gray-500">
+          {!metrics?.length ? 'Select metrics to visualize' : 'No data available'}
+        </p>
+      </div>
+    );
+  }
+
+  // Sort data chronologically
   const sortedData = [...data].sort((a, b) => {
     if (a.period === 'TTM') return 1;
     if (b.period === 'TTM') return -1;
@@ -48,47 +51,86 @@ export const MetricChart = ({
   });
 
   return (
-    <div className="w-full">
-      <div className="h-[400px]">
+    <div className="w-full bg-white p-4 rounded-lg border space-y-4">
+      <div className="flex flex-wrap gap-4 items-center justify-between">
+        <div className="flex gap-2 items-center">
+          {metrics.map((metric) => (
+            <div key={metric} className="flex items-center gap-2">
+              <span className="font-medium">{getMetricDisplayName(metric)}</span>
+              <div className="flex gap-1">
+                <Button
+                  variant={metricTypes[metric] === 'bar' ? 'default' : 'outline'}
+                  size="icon"
+                  onClick={() => onMetricTypeChange(metric, 'bar')}
+                  className="h-8 w-8"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={metricTypes[metric] === 'line' ? 'default' : 'outline'}
+                  size="icon"
+                  onClick={() => onMetricTypeChange(metric, 'line')}
+                  className="h-8 w-8"
+                >
+                  <LineChart className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={sortedData}>
-            <CartesianGrid strokeDasharray="3 3" />
+          <ComposedChart
+            data={sortedData}
+            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
             <XAxis 
-              dataKey="period"
-              tick={{ fill: '#6B7280' }}
-              tickLine={{ stroke: '#6B7280' }}
+              dataKey="period" 
+              tick={{ fontSize: 12, fill: '#6B7280' }}
+              axisLine={{ stroke: '#E5E7EB' }}
+              tickLine={false}
+              interval={0}
+              angle={-45}
+              textAnchor="end"
+              height={20}
+              dy={5}
             />
             <YAxis 
-              tick={{ fill: '#6B7280' }}
-              tickLine={{ stroke: '#6B7280' }}
-              tickFormatter={(value) => {
-                if (Math.abs(value) >= 1e12) {
-                  return (value / 1e12).toFixed(1) + 'T';
-                }
-                if (Math.abs(value) >= 1e9) {
-                  return (value / 1e9).toFixed(1) + 'B';
-                }
-                if (Math.abs(value) >= 1e6) {
-                  return (value / 1e6).toFixed(1) + 'M';
-                }
-                if (Math.abs(value) >= 1e3) {
-                  return (value / 1e3).toFixed(1) + 'K';
-                }
-                return value.toString();
-              }}
+              tickFormatter={formatYAxis}
+              tick={{ fontSize: 12, fill: '#6B7280' }}
+              axisLine={{ stroke: '#E5E7EB' }}
+              tickLine={false}
             />
-            <Tooltip content={<ChartTooltip />} />
+            <Tooltip content={<ChartTooltip ticker={ticker} />} />
+            
             {metrics.map((metric, index) => {
-              const ChartType = metricTypes[metric] === 'line' ? Line : Bar;
+              const color = getMetricColor(index);
+              const displayName = getMetricDisplayName(metric);
+              
+              if (metricTypes[metric] === 'line') {
+                return (
+                  <Line
+                    key={metric}
+                    type="monotone"
+                    dataKey={metric}
+                    stroke={color}
+                    name={displayName}
+                    dot={false}
+                    strokeWidth={2}
+                  />
+                );
+              }
               return (
-                <ChartType
+                <Bar
                   key={metric}
-                  type="monotone"
                   dataKey={metric}
-                  stroke={getMetricColor(index)}
-                  fill={metricTypes[metric] === 'bar' ? getMetricColor(index) : undefined}
-                  strokeWidth={metricTypes[metric] === 'line' ? 2 : undefined}
-                  dot={metricTypes[metric] === 'line'}
+                  fill={color}
+                  name={displayName}
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={50}
                 />
               );
             })}
@@ -96,12 +138,21 @@ export const MetricChart = ({
         </ResponsiveContainer>
       </div>
 
-      <ChartLegend
-        metrics={metrics}
-        ticker={ticker}
-        cagrResults={cagrResults}
-        totalChangeResults={totalChangeResults}
-      />
+      <div className="mt-4 border-t pt-4">
+        <div className="flex flex-col gap-2">
+          {metrics.map((metric, index) => (
+            <div key={metric} className="flex items-center gap-3">
+              <div 
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: getMetricColor(index) }}
+              />
+              <span className="text-gray-900 font-medium">
+                {ticker} - {getMetricDisplayName(metric)} (Annual) (Total Change: {totalChangeResults[metric].toFixed(2)}%) (CAGR: {cagrResults[metric].toFixed(2)}%)
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

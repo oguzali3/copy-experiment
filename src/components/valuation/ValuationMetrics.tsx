@@ -194,7 +194,6 @@ export const ValuationMetrics = () => {
             metrics={selectedMetrics}
             metricTypes={metricTypes}
             onMetricTypeChange={handleMetricTypeChange}
-            ticker="DEMO" // Adding the missing ticker prop
           />
         </div>
       )}

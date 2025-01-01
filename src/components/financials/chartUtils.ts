@@ -33,14 +33,6 @@ export const calculateCAGR = (startValue: number, endValue: number, years: numbe
   return ((Math.pow(endValue / startValue, 1 / years) - 1) * 100);
 };
 
-export const getMetricDisplayName = (metricName: string): string => {
-  // Convert camelCase to Title Case with spaces
-  return metricName
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, str => str.toUpperCase())
-    .trim();
-};
-
 export const transformChartData = (
   data: Array<{ period: string; metrics: Array<{ name: string; value: string | number }> }>,
   metrics: string[]
@@ -57,6 +49,8 @@ export const transformChartData = (
           const value = typeof metricData.value === 'number' 
             ? metricData.value 
             : parseFloat(metricData.value.toString().replace(/[^0-9.-]/g, ''));
+          
+          console.log(`Transforming data for ${metricName} in period ${item.period}: ${value}`);
           
           if (!isNaN(value)) {
             transformed[metricName] = value;
