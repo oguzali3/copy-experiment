@@ -26,10 +26,32 @@ export const INCOME_METRICS: MetricDefinition[] = [
     format: 'currency'
   },
   {
+    id: 'incomeBeforeTaxRatio',
+    displayName: 'EBT Margin',
+    type: 'api',
+    format: 'percentage'
+  },
+  {
+    id: 'incomeTaxExpense',
+    displayName: 'Income Tax Expense',
+    type: 'api',
+    format: 'currency'
+  },
+  {
     id: 'netIncome',
     displayName: 'Net Income',
     type: 'api',
     format: 'currency'
+  },
+  {
+    id: 'netIncomeGrowth',
+    displayName: 'Net Income Growth',
+    type: 'calculated',
+    calculation: (current, previous) => {
+      if (!previous?.netIncome || previous.netIncome === 0) return null;
+      return ((parseFloat(current.netIncome) - parseFloat(previous.netIncome)) / Math.abs(parseFloat(previous.netIncome))) * 100;
+    },
+    format: 'percentage'
   },
   {
     id: 'netIncomeMargin',
@@ -37,7 +59,7 @@ export const INCOME_METRICS: MetricDefinition[] = [
     type: 'calculated',
     calculation: (current) => {
       if (!current.revenue) return null;
-      return (current.netIncome / current.revenue * 100);
+      return (parseFloat(current.netIncome) / parseFloat(current.revenue) * 100);
     },
     format: 'percentage'
   }
