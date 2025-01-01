@@ -23,7 +23,7 @@ export const TimeRangePanel = ({
         <span>{endDate}</span>
       </div>
       <div className="px-2 py-8">
-        <div className="relative">
+        <div className="relative mx-[10%]">
           <Slider
             min={0}
             max={timePeriods.length - 1}
@@ -36,7 +36,7 @@ export const TimeRangePanel = ({
             {timePeriods.map((_, index) => (
               <div
                 key={index}
-                className="absolute w-2 h-2 bg-white border border-primary rounded-full"
+                className="absolute w-3 h-3 bg-white border-2 border-primary rounded-full"
                 style={{
                   left: `${(index / (timePeriods.length - 1)) * 100}%`,
                   transform: 'translate(-50%, -50%)',
