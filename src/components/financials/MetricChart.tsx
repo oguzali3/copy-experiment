@@ -20,9 +20,6 @@ export const MetricChart = ({
   metricTypes,
   onMetricTypeChange
 }: MetricChartProps) => {
-  console.log('MetricChart received data:', data);
-  console.log('MetricChart received metrics:', metrics);
-
   if (!data?.length || !metrics?.length) {
     return (
       <div className="w-full bg-white p-4 rounded-lg border flex items-center justify-center h-[300px]">
@@ -93,11 +90,11 @@ export const MetricChart = ({
               tick={{ fontSize: 12, fill: '#6B7280' }}
               axisLine={{ stroke: '#E5E7EB' }}
               tickLine={false}
-              interval={0}  // Show all ticks
-              angle={-45}   // Rotate labels for better readability
-              textAnchor="end"  // Align rotated text
-              height={20}   // Reduced from 30 to 20 to decrease spacing further
-              dy={5}        // Reduced from 8 to 5 to bring labels even closer to axis
+              interval={0}
+              angle={-45}
+              textAnchor="end"
+              height={20}
+              dy={5}
             />
             <YAxis 
               tickFormatter={formatYAxis}
@@ -142,7 +139,7 @@ export const MetricChart = ({
       <div className="mt-4 border-t pt-4">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-gray-700">{ticker}</span>
+            <span className="font-medium text-gray-700 text-lg">{ticker}</span>
             <span className="text-gray-500">
               {sortedData[0].period} - {sortedData[sortedData.length - 1].period}
             </span>
@@ -154,7 +151,7 @@ export const MetricChart = ({
                   className="w-3 h-3 rounded-sm"
                   style={{ backgroundColor: getMetricColor(index) }}
                 />
-                <span className="font-medium" style={{ color: getMetricColor(index) }}>
+                <span className="text-gray-900 font-medium">
                   {getMetricDisplayName(metric)}: {cagrResults[metric].toFixed(1)}% CAGR
                 </span>
               </div>
