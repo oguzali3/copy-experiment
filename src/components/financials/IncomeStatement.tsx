@@ -92,6 +92,12 @@ export const IncomeStatement = ({
             {INCOME_STATEMENT_METRICS.map((metric) => {
               const values = combinedData.map((current, index) => {
                 const previous = combinedData[index + 1];
+                
+                // For TTM period and share-related metrics, use the most recent annual value
+                if (current.period === "TTM" && metric.format === "shares") {
+                  return calculateMetricValue(metric, annualData[0], previous);
+                }
+                
                 return calculateMetricValue(metric, current, previous);
               });
 
