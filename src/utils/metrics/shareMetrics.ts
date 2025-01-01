@@ -5,21 +5,33 @@ export const SHARE_METRICS: MetricDefinition[] = [
     id: 'weightedAverageShsOut',
     displayName: 'Shares Outstanding (Basic)',
     type: 'api',
-    format: 'shares'
+    format: 'shares',
+    calculation: (current) => {
+      if (!current?.weightedAverageShsOut) return null;
+      // Convert to billions
+      return parseFloat(current.weightedAverageShsOut) / 1000000000;
+    }
   },
   {
     id: 'weightedAverageShsOutDil',
     displayName: 'Shares Outstanding (Diluted)',
     type: 'api',
-    format: 'shares'
+    format: 'shares',
+    calculation: (current) => {
+      if (!current?.weightedAverageShsOutDil) return null;
+      // Convert to billions
+      return parseFloat(current.weightedAverageShsOutDil) / 1000000000;
+    }
   },
   {
     id: 'sharesChange',
     displayName: 'Shares Change (YoY)',
     type: 'calculated',
     calculation: (current, previous) => {
-      if (!previous?.weightedAverageShsOut) return null;
-      return ((current.weightedAverageShsOut - previous.weightedAverageShsOut) / previous.weightedAverageShsOut * 100);
+      if (!current?.weightedAverageShsOutDil || !previous?.weightedAverageShsOutDil) return null;
+      const currentShares = parseFloat(current.weightedAverageShsOutDil) / 1000000000;
+      const previousShares = parseFloat(previous.weightedAverageShsOutDil) / 1000000000;
+      return ((currentShares - previousShares) / Math.abs(previousShares)) * 100;
     },
     format: 'percentage'
   },
@@ -40,8 +52,6 @@ export const SHARE_METRICS: MetricDefinition[] = [
     displayName: 'EPS Growth',
     type: 'calculated',
     calculation: (current, previous) => {
-      // This calculation will be handled in FinancialDataTable component
-      // similar to how we handle revenue growth and net income growth
       if (!previous?.eps) return null;
       return ((parseFloat(current.eps) - parseFloat(previous.eps)) / Math.abs(parseFloat(previous.eps))) * 100;
     },
