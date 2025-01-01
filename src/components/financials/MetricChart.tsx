@@ -3,6 +3,7 @@ import { getMetricColor, formatYAxis, calculateCAGR } from './chartUtils';
 import { ChartTooltip } from './ChartTooltip';
 import { Button } from "@/components/ui/button";
 import { BarChart3, LineChart } from "lucide-react";
+import { getMetricDisplayName } from '@/utils/metricDefinitions';
 
 interface MetricChartProps {
   data: any[];
@@ -56,7 +57,7 @@ export const MetricChart = ({
         <div className="flex gap-2 items-center">
           {metrics.map((metric) => (
             <div key={metric} className="flex items-center gap-2">
-              <span className="font-medium">{metric}</span>
+              <span className="font-medium">{getMetricDisplayName(metric)}</span>
               <div className="flex gap-1">
                 <Button
                   variant={metricTypes[metric] === 'bar' ? 'default' : 'outline'}
@@ -103,6 +104,8 @@ export const MetricChart = ({
             
             {metrics.map((metric, index) => {
               const color = getMetricColor(index);
+              const displayName = getMetricDisplayName(metric);
+              
               if (metricTypes[metric] === 'line') {
                 return (
                   <Line
@@ -110,7 +113,7 @@ export const MetricChart = ({
                     type="monotone"
                     dataKey={metric}
                     stroke={color}
-                    name={metric}
+                    name={displayName}
                     dot={false}
                     strokeWidth={2}
                   />
@@ -121,7 +124,7 @@ export const MetricChart = ({
                   key={metric}
                   dataKey={metric}
                   fill={color}
-                  name={metric}
+                  name={displayName}
                   radius={[4, 4, 0, 0]}
                   maxBarSize={50}
                 />
@@ -147,7 +150,7 @@ export const MetricChart = ({
                   style={{ backgroundColor: getMetricColor(index) }}
                 />
                 <span className="font-medium" style={{ color: getMetricColor(index) }}>
-                  {metric}: {cagrResults[metric].toFixed(1)}% CAGR
+                  {getMetricDisplayName(metric)}: {cagrResults[metric].toFixed(1)}% CAGR
                 </span>
               </div>
             ))}

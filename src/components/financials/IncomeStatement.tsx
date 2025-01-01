@@ -7,6 +7,7 @@ import { fetchFinancialData } from "@/utils/financialApi";
 import { IncomeStatementHeader } from "./IncomeStatementHeader";
 import { IncomeStatementMetrics } from "./IncomeStatementMetrics";
 import { formatMetricLabel, parseNumber, formatValue } from "./IncomeStatementUtils";
+import { INCOME_STATEMENT_METRICS, calculateMetricValue, getMetricDisplayName } from "@/utils/metricDefinitions";
 
 interface IncomeStatementProps {
   timeFrame: "annual" | "quarterly" | "ttm";
@@ -69,7 +70,6 @@ export const IncomeStatement = ({
     );
   }
 
-  // Filter and sort data to get TTM and last 10 years
   const ttmData = financialData.find((item: any) => item.period === "TTM");
   const annualData = financialData
     .filter((item: any) => item.period === "FY")
@@ -83,48 +83,31 @@ export const IncomeStatement = ({
     return new Date(item.date).getFullYear().toString();
   });
 
-  const availableMetrics = Object.keys(financialData[0])
-    .filter(key => 
-      !['date', 'symbol', 'reportedCurrency', 'period', 'link', 'finalLink'].includes(key) &&
-      typeof financialData[0][key] === 'number'
-    );
-
   return (
     <div className="space-y-6">
       <div className="overflow-x-auto">
         <Table>
           <IncomeStatementHeader periods={periods} />
           <TableBody>
-            <IncomeStatementMetrics
-              metricId="revenue"
-              label="Revenue"
-              values={combinedData.map((row: any) => parseNumber(row.revenue))}
-              isSelected={selectedMetrics.includes('revenue')}
-              onToggle={handleMetricToggle}
-              formatValue={formatValue}
-            />
-            <IncomeStatementMetrics
-              metricId="revenueGrowth"
-              label="Revenue Growth (YoY)"
-              values={combinedData.map((row: any) => parseNumber(row.revenueGrowth, true))}
-              isSelected={selectedMetrics.includes('revenueGrowth')}
-              onToggle={handleMetricToggle}
-              formatValue={formatValue}
-              isGrowthMetric={true}
-            />
-            {availableMetrics
-              .filter(metricId => !['revenue', 'revenueGrowth'].includes(metricId))
-              .map((metricId) => (
+            {INCOME_STATEMENT_METRICS.map((metric) => {
+              const values = combinedData.map((current, index) => {
+                const previous = combinedData[index + 1];
+                return calculateMetricValue(metric, current, previous);
+              });
+
+              return (
                 <IncomeStatementMetrics
-                  key={metricId}
-                  metricId={metricId}
-                  label={formatMetricLabel(metricId)}
-                  values={combinedData.map((row: any) => parseNumber(row[metricId]))}
-                  isSelected={selectedMetrics.includes(metricId)}
+                  key={metric.id}
+                  metricId={metric.id}
+                  label={getMetricDisplayName(metric.id)}
+                  values={values.map(v => parseNumber(v))}
+                  isSelected={selectedMetrics.includes(metric.id)}
                   onToggle={handleMetricToggle}
                   formatValue={formatValue}
+                  isGrowthMetric={metric.format === 'percentage'}
                 />
-              ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>
