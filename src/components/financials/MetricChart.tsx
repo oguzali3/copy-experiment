@@ -96,8 +96,8 @@ export const MetricChart = ({
               interval={0}  // Show all ticks
               angle={-45}   // Rotate labels for better readability
               textAnchor="end"  // Align rotated text
-              height={60}   // Increase height to accommodate rotated labels
-              dy={20}       // Adjust vertical position of labels
+              height={40}   // Reduced from 60 to 40 to decrease spacing
+              dy={10}       // Reduced from 20 to 10 to bring labels closer to axis
             />
             <YAxis 
               tickFormatter={formatYAxis}
