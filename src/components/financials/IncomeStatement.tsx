@@ -83,6 +83,34 @@ export const IncomeStatement = ({
     return new Date(item.date).getFullYear().toString();
   });
 
+  const calculateTTMGrowth = (current: any, annualData: any[]) => {
+    if (!current || !Array.isArray(annualData) || annualData.length < 2) return null;
+
+    const currentRevenue = parseFloat(String(current.revenue).replace(/[^0-9.-]+/g, ""));
+    const mostRecentAnnualRevenue = parseFloat(String(annualData[0].revenue).replace(/[^0-9.-]+/g, ""));
+    const previousAnnualRevenue = parseFloat(String(annualData[1].revenue).replace(/[^0-9.-]+/g, ""));
+
+    console.log('TTM Revenue:', currentRevenue);
+    console.log('Most Recent Annual Revenue:', mostRecentAnnualRevenue);
+    console.log('Previous Annual Revenue:', previousAnnualRevenue);
+
+    // Check if TTM matches most recent fiscal year (within 0.1% tolerance)
+    const revenueDiff = Math.abs(currentRevenue - mostRecentAnnualRevenue);
+    const tolerance = mostRecentAnnualRevenue * 0.001; // 0.1% tolerance
+
+    if (revenueDiff <= tolerance) {
+      // Use fiscal year growth rate
+      const growthRate = ((mostRecentAnnualRevenue - previousAnnualRevenue) / previousAnnualRevenue) * 100;
+      console.log('Using fiscal year growth rate:', growthRate);
+      return growthRate;
+    }
+
+    // Calculate TTM growth against previous year
+    const growthRate = ((currentRevenue - previousAnnualRevenue) / previousAnnualRevenue) * 100;
+    console.log('Using TTM growth rate:', growthRate);
+    return growthRate;
+  };
+
   return (
     <div className="space-y-6">
       <div className="overflow-x-auto">
@@ -93,70 +121,8 @@ export const IncomeStatement = ({
               const values = combinedData.map((current, index) => {
                 const previous = combinedData[index + 1];
                 
-                if (current.period === "TTM") {
-                  if (metric.format === "shares" || metric.id === "sharesChange") {
-                    if (metric.id === "sharesChange") {
-                      return calculateMetricValue(metric, annualData[0], annualData[1]);
-                    }
-                    return calculateMetricValue(metric, annualData[0], previous);
-                  }
-                  
-                  if (metric.id === "revenueGrowth") {
-                    const quarterlyData = financialData
-                      .filter((item: any) => item.period === "Q")
-                      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-                    console.log('Processing quarterly data:', quarterlyData);
-
-                    if (quarterlyData.length >= 8) {
-                      const lastFourQuarters = quarterlyData.slice(0, 4);
-                      const lastFourQuartersRevenue = lastFourQuarters.reduce((sum, quarter) => {
-                        const revenue = parseFloat(String(quarter.revenue).replace(/[^0-9.-]+/g, ""));
-                        console.log(`Last 4Q - Quarter ${quarter.date} revenue:`, revenue);
-                        return sum + revenue;
-                      }, 0);
-
-                      const priorFourQuarters = quarterlyData.slice(4, 8);
-                      const priorFourQuartersRevenue = priorFourQuarters.reduce((sum, quarter) => {
-                        const revenue = parseFloat(String(quarter.revenue).replace(/[^0-9.-]+/g, ""));
-                        console.log(`Prior 4Q - Quarter ${quarter.date} revenue:`, revenue);
-                        return sum + revenue;
-                      }, 0);
-
-                      console.log('TTM Revenue calculation:', {
-                        lastFourQuartersRevenue,
-                        priorFourQuartersRevenue
-                      });
-
-                      if (priorFourQuartersRevenue > 0) {
-                        // Get the most recent fiscal year revenue
-                        const mostRecentAnnualRevenue = parseFloat(String(annualData[0].revenue).replace(/[^0-9.-]+/g, ""));
-                        const previousAnnualRevenue = parseFloat(String(annualData[1].revenue).replace(/[^0-9.-]+/g, ""));
-                        
-                        console.log('Most recent annual revenue:', mostRecentAnnualRevenue);
-                        console.log('Previous annual revenue:', previousAnnualRevenue);
-                        console.log('Last four quarters revenue:', lastFourQuartersRevenue);
-                        
-                        // If TTM revenue matches fiscal year revenue (within 0.1% tolerance)
-                        const revenueDiff = Math.abs(lastFourQuartersRevenue - mostRecentAnnualRevenue);
-                        const tolerance = mostRecentAnnualRevenue * 0.001; // 0.1% tolerance
-                        
-                        if (revenueDiff <= tolerance) {
-                          console.log('Using fiscal year growth rate as TTM revenue matches fiscal year revenue');
-                          const annualGrowthRate = ((mostRecentAnnualRevenue - previousAnnualRevenue) / previousAnnualRevenue) * 100;
-                          console.log('Annual growth rate:', annualGrowthRate);
-                          return annualGrowthRate;
-                        }
-
-                        const ttmGrowthRate = ((lastFourQuartersRevenue - priorFourQuartersRevenue) / priorFourQuartersRevenue) * 100;
-                        console.log('TTM growth rate:', ttmGrowthRate);
-                        return ttmGrowthRate;
-                      }
-                    }
-                    
-                    console.log('Falling back to annual comparison for revenue growth');
-                    return calculateMetricValue(metric, current, previous);
-                  }
+                if (current.period === "TTM" && metric.id === "revenueGrowth") {
+                  return calculateTTMGrowth(current, annualData);
                 }
                 
                 return calculateMetricValue(metric, current, previous);
