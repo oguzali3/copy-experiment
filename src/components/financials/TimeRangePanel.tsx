@@ -94,7 +94,7 @@ export const TimeRangePanel = ({
               [&::-webkit-slider-thumb]:w-7
               [&::-webkit-slider-thumb]:h-7
               [&::-webkit-slider-thumb]:rounded-full 
-              [&::-webkit-slider-thumb]:bg-white
+              [&::-webkit-slider-thumb]:bg-[#545454]
               [&::-webkit-slider-thumb]:border-4
               [&::-webkit-slider-thumb]:border-[#222222]
               [&::-webkit-slider-thumb]:shadow-lg
@@ -107,7 +107,7 @@ export const TimeRangePanel = ({
               [&::-moz-range-thumb]:w-7
               [&::-moz-range-thumb]:h-7
               [&::-moz-range-thumb]:rounded-full
-              [&::-moz-range-thumb]:bg-white
+              [&::-moz-range-thumb]:bg-[#545454]
               [&::-moz-range-thumb]:border-4
               [&::-moz-range-thumb]:border-[#222222]
               [&::-moz-range-thumb]:shadow-lg
@@ -132,7 +132,7 @@ export const TimeRangePanel = ({
               [&::-webkit-slider-thumb]:w-7
               [&::-webkit-slider-thumb]:h-7
               [&::-webkit-slider-thumb]:rounded-full 
-              [&::-webkit-slider-thumb]:bg-white
+              [&::-webkit-slider-thumb]:bg-[#545454]
               [&::-webkit-slider-thumb]:border-4
               [&::-webkit-slider-thumb]:border-[#222222]
               [&::-webkit-slider-thumb]:shadow-lg
@@ -145,7 +145,7 @@ export const TimeRangePanel = ({
               [&::-moz-range-thumb]:w-7
               [&::-moz-range-thumb]:h-7
               [&::-moz-range-thumb]:rounded-full
-              [&::-moz-range-thumb]:bg-white
+              [&::-moz-range-thumb]:bg-[#545454]
               [&::-moz-range-thumb]:border-4
               [&::-moz-range-thumb]:border-[#222222]
               [&::-moz-range-thumb]:shadow-lg
