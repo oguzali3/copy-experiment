@@ -23,7 +23,7 @@ export const TimeRangePanel = ({
         <span>{endDate}</span>
       </div>
       <div className="px-8 py-8">
-        <div className="relative" style={{ margin: '0 24px' }}>
+        <div className="relative mx-[10%]">
           <Slider
             min={0}
             max={timePeriods.length - 1}
