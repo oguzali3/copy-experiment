@@ -32,8 +32,9 @@ export const FinancialDataTable = ({
               if (current.period === "TTM") {
                 // Special handling for shares metrics in TTM period
                 if (metric.id === 'weightedAverageShsOut' || metric.id === 'weightedAverageShsOutDil') {
-                  // Use the most recent annual data for shares outstanding
-                  return annualData[0][metric.id] / 1000000000;
+                  // Use the most recent annual data for shares outstanding and format to 2 decimal places
+                  const sharesValue = (annualData[0][metric.id] / 1000000000).toFixed(2);
+                  return parseFloat(sharesValue); // Convert back to number for consistent handling
                 }
                 if (metric.id === 'sharesChange') {
                   const currentShares = annualData[0].weightedAverageShsOutDil / 1000000000;
@@ -95,10 +96,22 @@ export const FinancialDataTable = ({
                 key={metric.id}
                 metricId={metric.id}
                 label={getMetricDisplayName(metric.id)}
-                values={values.map(v => parseNumber(v))}
+                values={values.map(v => {
+                  // For share metrics, ensure consistent formatting with 2 decimal places
+                  if (metric.id === 'weightedAverageShsOut' || metric.id === 'weightedAverageShsOutDil') {
+                    return parseFloat(parseNumber(v).toFixed(2));
+                  }
+                  return parseNumber(v);
+                })}
                 isSelected={selectedMetrics.includes(metric.id)}
                 onToggle={onMetricToggle}
-                formatValue={formatValue}
+                formatValue={(value, format) => {
+                  // Special formatting for share metrics to always include 'B'
+                  if (metric.id === 'weightedAverageShsOut' || metric.id === 'weightedAverageShsOutDil') {
+                    return `${value.toFixed(2)}B`;
+                  }
+                  return formatValue(value, format);
+                }}
                 isGrowthMetric={metric.format === 'percentage'}
               />
             );
