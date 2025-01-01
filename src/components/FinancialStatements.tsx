@@ -21,6 +21,18 @@ interface FinancialDataResponse {
   ebitda: number;
 }
 
+interface TransformedFinancialData {
+  period: string;
+  revenue: string;
+  revenueGrowth: string;
+  costOfRevenue: string;
+  grossProfit: string;
+  operatingExpenses: string;
+  operatingIncome: string;
+  netIncome: string;
+  ebitda: string;
+}
+
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
   const [startDate, setStartDate] = useState("December 31, 2019");
@@ -53,9 +65,9 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
       if (annualError) throw annualError;
 
-      const transformedAnnual = transformFinancialData(annualData?.data || [], ticker);
+      const transformedAnnual = transformFinancialData(annualData?.data || [], ticker) as TransformedFinancialData[];
       const ttm = calculateTTM(ttmData?.data || []);
-      const transformedTTM = transformTTMData(ttm);
+      const transformedTTM = transformTTMData(ttm) as TransformedFinancialData;
 
       // Update time periods based on available data
       const years = transformedAnnual.map(item => item.period);
