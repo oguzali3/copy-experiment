@@ -76,45 +76,6 @@ export const TimeRangePanel = ({
             </React.Fragment>
           ))}
 
-          {/* Left Range Input */}
-          <input
-            type="range"
-            min={0}
-            max={maxSteps}
-            step={1}
-            value={sliderValue[0]}
-            onChange={(e) => {
-              const newValue = parseInt(e.target.value);
-              if (newValue <= sliderValue[1]) {
-                onSliderChange([newValue, sliderValue[1]]);
-              }
-            }}
-            className="absolute top-1/2 left-0 right-0 -translate-y-1/2 w-full appearance-none bg-transparent cursor-pointer z-30
-              [&::-webkit-slider-thumb]:appearance-none 
-              [&::-webkit-slider-thumb]:w-7
-              [&::-webkit-slider-thumb]:h-7
-              [&::-webkit-slider-thumb]:rounded-full 
-              [&::-webkit-slider-thumb]:bg-[#545454]
-              [&::-webkit-slider-thumb]:border-4
-              [&::-webkit-slider-thumb]:border-[#222222]
-              [&::-webkit-slider-thumb]:shadow-lg
-              [&::-webkit-slider-thumb]:cursor-pointer
-              [&::-webkit-slider-thumb]:relative
-              [&::-webkit-slider-thumb]:z-30
-              [&::-webkit-slider-thumb]:hover:scale-110
-              [&::-webkit-slider-thumb]:transition-transform
-              [&::-moz-range-thumb]:appearance-none
-              [&::-moz-range-thumb]:w-7
-              [&::-moz-range-thumb]:h-7
-              [&::-moz-range-thumb]:rounded-full
-              [&::-moz-range-thumb]:bg-[#545454]
-              [&::-moz-range-thumb]:border-4
-              [&::-moz-range-thumb]:border-[#222222]
-              [&::-moz-range-thumb]:shadow-lg
-              [&::-moz-range-thumb]:cursor-pointer
-              [&::-moz-range-thumb]:hover:scale-110
-              [&::-moz-range-thumb]:transition-transform"
-          />
           {/* Right Range Input */}
           <input
             type="range"
@@ -140,6 +101,46 @@ export const TimeRangePanel = ({
               [&::-webkit-slider-thumb]:cursor-pointer
               [&::-webkit-slider-thumb]:relative
               [&::-webkit-slider-thumb]:z-20
+              [&::-webkit-slider-thumb]:hover:scale-110
+              [&::-webkit-slider-thumb]:transition-transform
+              [&::-moz-range-thumb]:appearance-none
+              [&::-moz-range-thumb]:w-7
+              [&::-moz-range-thumb]:h-7
+              [&::-moz-range-thumb]:rounded-full
+              [&::-moz-range-thumb]:bg-[#545454]
+              [&::-moz-range-thumb]:border-4
+              [&::-moz-range-thumb]:border-[#222222]
+              [&::-moz-range-thumb]:shadow-lg
+              [&::-moz-range-thumb]:cursor-pointer
+              [&::-moz-range-thumb]:hover:scale-110
+              [&::-moz-range-thumb]:transition-transform"
+          />
+
+          {/* Left Range Input */}
+          <input
+            type="range"
+            min={0}
+            max={maxSteps}
+            step={1}
+            value={sliderValue[0]}
+            onChange={(e) => {
+              const newValue = parseInt(e.target.value);
+              if (newValue <= sliderValue[1]) {
+                onSliderChange([newValue, sliderValue[1]]);
+              }
+            }}
+            className="absolute top-1/2 left-0 right-0 -translate-y-1/2 w-full appearance-none bg-transparent cursor-pointer z-30
+              [&::-webkit-slider-thumb]:appearance-none 
+              [&::-webkit-slider-thumb]:w-7
+              [&::-webkit-slider-thumb]:h-7
+              [&::-webkit-slider-thumb]:rounded-full 
+              [&::-webkit-slider-thumb]:bg-[#545454]
+              [&::-webkit-slider-thumb]:border-4
+              [&::-webkit-slider-thumb]:border-[#222222]
+              [&::-webkit-slider-thumb]:shadow-lg
+              [&::-webkit-slider-thumb]:cursor-pointer
+              [&::-webkit-slider-thumb]:relative
+              [&::-webkit-slider-thumb]:z-30
               [&::-webkit-slider-thumb]:hover:scale-110
               [&::-webkit-slider-thumb]:transition-transform
               [&::-moz-range-thumb]:appearance-none
