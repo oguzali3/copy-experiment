@@ -35,12 +35,12 @@ interface TransformedFinancialData {
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
-  const [startDate, setStartDate] = useState("December 31, 2019");
+  const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("TTM");
-  const [sliderValue, setSliderValue] = useState([0, 5]); // Updated to include TTM
+  const [sliderValue, setSliderValue] = useState([0, 0]);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [metricTypes, setMetricTypes] = useState<Record<string, 'bar' | 'line'>>({});
-  const [timePeriods, setTimePeriods] = useState<string[]>(["2019", "2020", "2021", "2022", "2023", "TTM"]);
+  const [timePeriods, setTimePeriods] = useState<string[]>([]);
 
   // Reset selected metrics when ticker changes
   useEffect(() => {
@@ -69,13 +69,17 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       const ttm = calculateTTM(ttmData?.data || []);
       const transformedTTM = transformTTMData(ttm) as TransformedFinancialData;
 
+      // Sort annual data chronologically
+      const sortedAnnual = transformedAnnual.sort((a, b) => parseInt(a.period) - parseInt(b.period));
+
       // Update time periods based on available data
-      const years = transformedAnnual.map(item => item.period);
-      const uniqueYears = Array.from(new Set(years)).sort();
-      setTimePeriods([...uniqueYears, 'TTM']);
+      const years = sortedAnnual.map(item => item.period);
+      const uniqueYears = Array.from(new Set(years)).sort((a, b) => parseInt(a) - parseInt(b));
+      const allPeriods = [...uniqueYears, 'TTM'];
+      setTimePeriods(allPeriods);
       
-      // Update slider to show all available periods
-      setSliderValue([0, uniqueYears.length]);
+      // Set initial slider values to show all available data
+      setSliderValue([0, allPeriods.length - 1]);
       
       // Update date range display
       if (uniqueYears.length > 0) {
@@ -85,7 +89,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
       return {
         [ticker]: {
-          annual: transformedAnnual,
+          annual: sortedAnnual,
           ttm: [transformedTTM],
         }
       };
