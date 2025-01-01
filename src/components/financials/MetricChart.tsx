@@ -79,9 +79,9 @@ export const MetricChart = ({
             />
             <Tooltip content={<ChartTooltip />} />
             {metrics.map((metric, index) => {
-              const ChartComponent = metricTypes[metric] === 'line' ? Line : Bar;
+              const ChartType = metricTypes[metric] === 'line' ? Line : Bar;
               return (
-                <ChartComponent
+                <ChartType
                   key={metric}
                   type="monotone"
                   dataKey={metric}
