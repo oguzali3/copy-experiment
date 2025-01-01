@@ -7,6 +7,7 @@ import { FinancialStatementsTabs } from "./financials/FinancialStatementsTabs";
 import { INCOME_STATEMENT_METRICS, calculateMetricValue } from "@/utils/metricDefinitions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { formatDateToLongString } from "@/utils/dateFormatters";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
@@ -72,20 +73,16 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       const currentYear = currentDate.getFullYear();
       const currentMonth = currentDate.getMonth();
       
-      // Format TTM date string based on current month
-      const ttmDate = new Date(currentDate.setMonth(currentMonth - 1));
-      const ttmDateString = ttmDate.toLocaleString('default', { 
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-      });
+      // Get TTM date (last day of previous month)
+      const ttmDate = new Date(currentYear, currentMonth - 1, 0);
+      const ttmDateString = formatDateToLongString(ttmDate);
 
       if (earliestYear) {
         // Set the dates
         setStartDate(`December 31, ${earliestYear}`);
         setEndDate(ttmDateString);
 
-        // Create array of all years between earliest and TTM
+        // Create array of all years between earliest and current
         const years = [];
         for (let year = parseInt(earliestYear); year <= currentYear; year++) {
           years.push(year.toString());
@@ -111,12 +108,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       if (parseInt(endYear) === currentYear) {
         const currentDate = new Date();
         const currentMonth = currentDate.getMonth();
-        const ttmDate = new Date(currentDate.setMonth(currentMonth - 1));
-        setEndDate(ttmDate.toLocaleString('default', { 
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric'
-        }));
+        const ttmDate = new Date(currentYear, currentMonth - 1, 0);
+        setEndDate(formatDateToLongString(ttmDate));
       } else {
         setEndDate(`December 31, ${endYear}`);
       }
