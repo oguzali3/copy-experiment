@@ -36,11 +36,11 @@ export const TimeRangePanel = ({
       <div className="px-2 py-8">
         <div className="relative w-full h-12">
           {/* Track background */}
-          <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 rounded-full -translate-y-1/2" />
+          <div className="absolute top-1/2 left-0 right-0 h-1.5 bg-gray-200 rounded-full -translate-y-1/2" />
           
           {/* Active track */}
           <div 
-            className="absolute top-1/2 h-1 bg-primary rounded-full -translate-y-1/2"
+            className="absolute top-1/2 h-1.5 bg-primary rounded-full -translate-y-1/2"
             style={{
               left: `${(sliderValue[0] / maxSteps) * 100}%`,
               right: `${100 - (sliderValue[1] / maxSteps) * 100}%`
@@ -54,10 +54,11 @@ export const TimeRangePanel = ({
               <button
                 onClick={() => handleDotClick(index)}
                 className={cn(
-                  "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 transition-colors",
+                  "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 rounded-full transition-colors",
+                  "before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:w-3 before:h-3 before:rounded-full",
                   index >= sliderValue[0] && index <= sliderValue[1]
-                    ? "border-primary bg-primary"
-                    : "border-gray-300 bg-white"
+                    ? "before:bg-primary"
+                    : "before:bg-gray-300"
                 )}
                 style={{ left: `${(index / maxSteps) * 100}%` }}
               />
@@ -90,25 +91,29 @@ export const TimeRangePanel = ({
             }}
             className="absolute top-1/2 left-0 right-0 -translate-y-1/2 w-full appearance-none bg-transparent cursor-pointer z-10
               [&::-webkit-slider-thumb]:appearance-none 
-              [&::-webkit-slider-thumb]:w-5 
-              [&::-webkit-slider-thumb]:h-5 
+              [&::-webkit-slider-thumb]:w-7
+              [&::-webkit-slider-thumb]:h-7
               [&::-webkit-slider-thumb]:rounded-full 
               [&::-webkit-slider-thumb]:bg-white
-              [&::-webkit-slider-thumb]:border-[3px]
+              [&::-webkit-slider-thumb]:border-4
               [&::-webkit-slider-thumb]:border-primary
-              [&::-webkit-slider-thumb]:shadow-md
+              [&::-webkit-slider-thumb]:shadow-lg
               [&::-webkit-slider-thumb]:cursor-pointer
               [&::-webkit-slider-thumb]:relative
-              [&::-webkit-slider-thumb]:z-20
+              [&::-webkit-slider-thumb]:z-30
+              [&::-webkit-slider-thumb]:hover:scale-110
+              [&::-webkit-slider-thumb]:transition-transform
               [&::-moz-range-thumb]:appearance-none
-              [&::-moz-range-thumb]:w-5
-              [&::-moz-range-thumb]:h-5
+              [&::-moz-range-thumb]:w-7
+              [&::-moz-range-thumb]:h-7
               [&::-moz-range-thumb]:rounded-full
               [&::-moz-range-thumb]:bg-white
-              [&::-moz-range-thumb]:border-[3px]
+              [&::-moz-range-thumb]:border-4
               [&::-moz-range-thumb]:border-primary
-              [&::-moz-range-thumb]:shadow-md
-              [&::-moz-range-thumb]:cursor-pointer"
+              [&::-moz-range-thumb]:shadow-lg
+              [&::-moz-range-thumb]:cursor-pointer
+              [&::-moz-range-thumb]:hover:scale-110
+              [&::-moz-range-thumb]:transition-transform"
           />
           <input
             type="range"
@@ -124,25 +129,29 @@ export const TimeRangePanel = ({
             }}
             className="absolute top-1/2 left-0 right-0 -translate-y-1/2 w-full appearance-none bg-transparent cursor-pointer z-10
               [&::-webkit-slider-thumb]:appearance-none 
-              [&::-webkit-slider-thumb]:w-5 
-              [&::-webkit-slider-thumb]:h-5 
+              [&::-webkit-slider-thumb]:w-7
+              [&::-webkit-slider-thumb]:h-7
               [&::-webkit-slider-thumb]:rounded-full 
               [&::-webkit-slider-thumb]:bg-white
-              [&::-webkit-slider-thumb]:border-[3px]
+              [&::-webkit-slider-thumb]:border-4
               [&::-webkit-slider-thumb]:border-primary
-              [&::-webkit-slider-thumb]:shadow-md
+              [&::-webkit-slider-thumb]:shadow-lg
               [&::-webkit-slider-thumb]:cursor-pointer
               [&::-webkit-slider-thumb]:relative
-              [&::-webkit-slider-thumb]:z-20
+              [&::-webkit-slider-thumb]:z-30
+              [&::-webkit-slider-thumb]:hover:scale-110
+              [&::-webkit-slider-thumb]:transition-transform
               [&::-moz-range-thumb]:appearance-none
-              [&::-moz-range-thumb]:w-5
-              [&::-moz-range-thumb]:h-5
+              [&::-moz-range-thumb]:w-7
+              [&::-moz-range-thumb]:h-7
               [&::-moz-range-thumb]:rounded-full
               [&::-moz-range-thumb]:bg-white
-              [&::-moz-range-thumb]:border-[3px]
+              [&::-moz-range-thumb]:border-4
               [&::-moz-range-thumb]:border-primary
-              [&::-moz-range-thumb]:shadow-md
-              [&::-moz-range-thumb]:cursor-pointer"
+              [&::-moz-range-thumb]:shadow-lg
+              [&::-moz-range-thumb]:cursor-pointer
+              [&::-moz-range-thumb]:hover:scale-110
+              [&::-moz-range-thumb]:transition-transform"
           />
         </div>
       </div>
