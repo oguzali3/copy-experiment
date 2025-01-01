@@ -24,14 +24,14 @@ export const TimeRangePanel = ({
       </div>
       <div className="px-2 py-8">
         <div className="relative">
-          <div className="absolute w-full top-[9px]">
+          <div className="absolute w-full top-1/2 -translate-y-1/2">
             {timePeriods.map((_, index) => (
               <div
                 key={index}
-                className="absolute w-1.5 h-1.5 bg-white border border-primary rounded-full"
+                className="absolute w-2 h-2 bg-white border border-primary rounded-full z-10"
                 style={{
                   left: `${(index / (timePeriods.length - 1)) * 100}%`,
-                  transform: 'translate(-50%, 0)',
+                  transform: 'translate(-50%, -50%)',
                 }}
               />
             ))}
