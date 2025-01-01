@@ -6,8 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchFinancialData } from "@/utils/financialApi";
 import { IncomeStatementHeader } from "./IncomeStatementHeader";
 import { IncomeStatementMetrics } from "./IncomeStatementMetrics";
-import { formatMetricLabel, parseNumber, formatValue } from "./IncomeStatementUtils";
-import { INCOME_STATEMENT_METRICS, calculateMetricValue, getMetricDisplayName } from "@/utils/metricDefinitions";
+import { formatMetricLabel, parseNumber } from "./IncomeStatementUtils";
+import { INCOME_STATEMENT_METRICS, calculateMetricValue, getMetricDisplayName, formatValue } from "@/utils/metricDefinitions";
 
 interface IncomeStatementProps {
   timeFrame: "annual" | "quarterly" | "ttm";

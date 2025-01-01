@@ -1,6 +1,6 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { formatValue, getMetricFormat } from "@/utils/metricDefinitions";
+import { formatValue as formatMetricValue, getMetricFormat } from "@/utils/metricDefinitions";
 
 interface IncomeStatementMetricsProps {
   metricId: string;
