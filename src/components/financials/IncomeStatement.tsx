@@ -134,14 +134,9 @@ export const IncomeStatement = ({
                         console.log('Most recent annual revenue:', mostRecentAnnualRevenue);
                         console.log('Last four quarters revenue:', lastFourQuartersRevenue);
                         
-                        // Calculate the absolute difference between TTM and fiscal year revenue
-                        const revenueDiff = Math.abs(lastFourQuartersRevenue - mostRecentAnnualRevenue);
-                        console.log('Revenue difference:', revenueDiff);
-                        
-                        // If the difference is less than 0.1% of the annual revenue, use the annual growth rate
-                        const threshold = mostRecentAnnualRevenue * 0.001; // 0.1% of annual revenue
-                        if (revenueDiff < threshold) {
-                          console.log('TTM matches fiscal year (within 0.1%), using annual growth rate');
+                        // If TTM revenue exactly matches fiscal year revenue, use fiscal year growth rate
+                        if (Math.round(lastFourQuartersRevenue) === Math.round(mostRecentAnnualRevenue)) {
+                          console.log('TTM matches fiscal year exactly, using annual growth rate');
                           return calculateMetricValue(metric, annualData[0], annualData[1]);
                         }
 
