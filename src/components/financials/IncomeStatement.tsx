@@ -130,18 +130,18 @@ export const IncomeStatement = ({
                       });
 
                       if (priorFourQuartersRevenue > 0) {
-                        // Get the most recent fiscal year revenue and growth
+                        // Get the most recent fiscal year revenue
                         const mostRecentAnnualRevenue = parseFloat(annualData[0].revenue?.toString().replace(/[^0-9.-]+/g, "") || "0");
                         console.log('Most recent annual revenue:', mostRecentAnnualRevenue);
                         console.log('Last four quarters revenue:', lastFourQuartersRevenue);
                         
-                        // Calculate the percentage difference between TTM and fiscal year revenue
-                        const percentageDiff = Math.abs((lastFourQuartersRevenue - mostRecentAnnualRevenue) / mostRecentAnnualRevenue) * 100;
-                        console.log('Percentage difference between TTM and fiscal year:', percentageDiff);
-
-                        // If TTM is within 0.5% of fiscal year revenue, use fiscal year growth rate
-                        if (percentageDiff <= 0.5) {
-                          console.log('TTM matches fiscal year (within 0.5%), using annual growth rate');
+                        // Check if TTM revenue matches fiscal year revenue (using exact comparison)
+                        const revenueDiff = Math.abs(lastFourQuartersRevenue - mostRecentAnnualRevenue);
+                        console.log('Revenue difference:', revenueDiff);
+                        
+                        // If the difference is very small (less than $1M) or the values are exactly equal
+                        if (revenueDiff < 1 || lastFourQuartersRevenue === mostRecentAnnualRevenue) {
+                          console.log('TTM matches fiscal year exactly, using annual growth rate');
                           return calculateMetricValue(metric, annualData[0], annualData[1]);
                         }
 
