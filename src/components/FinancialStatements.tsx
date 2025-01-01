@@ -28,14 +28,32 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const { data: financialData, isLoading } = useQuery({
     queryKey: ['financial-data', ticker],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-        body: { endpoint: 'income-statement', symbol: ticker }
+      // First fetch TTM data (last 4 quarters)
+      const { data: ttmData, error: ttmError } = await supabase.functions.invoke('fetch-financial-data', {
+        body: { endpoint: 'income-statement', symbol: ticker, period: 'quarter', limit: 4 }
       });
 
-      if (error) throw error;
+      if (ttmError) throw ttmError;
 
-      // Transform API data to match our format
-      const transformedData = data.map((item: any) => ({
+      // Then fetch annual data
+      const { data: annualData, error: annualError } = await supabase.functions.invoke('fetch-financial-data', {
+        body: { endpoint: 'income-statement', symbol: ticker, period: 'annual' }
+      });
+
+      if (annualError) throw annualError;
+
+      // Calculate TTM by summing last 4 quarters
+      const ttm = ttmData.reduce((acc: any, quarter: any) => {
+        Object.keys(quarter).forEach(key => {
+          if (typeof quarter[key] === 'number') {
+            acc[key] = (acc[key] || 0) + quarter[key];
+          }
+        });
+        return acc;
+      }, {});
+
+      // Transform annual data
+      const transformedAnnual = annualData.map((item: any) => ({
         period: new Date(item.date).getFullYear().toString(),
         revenue: item.revenue?.toString() || "0",
         revenueGrowth: item.revenueGrowth?.toString() || "0",
@@ -45,13 +63,25 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
         operatingIncome: item.operatingIncome?.toString() || "0",
         netIncome: item.netIncome?.toString() || "0",
         ebitda: item.ebitda?.toString() || "0",
-        // Add other metrics as needed
       }));
+
+      // Transform TTM data
+      const transformedTTM = {
+        period: 'TTM',
+        revenue: ttm.revenue?.toString() || "0",
+        revenueGrowth: ttm.revenueGrowth?.toString() || "0",
+        costOfRevenue: ttm.costOfRevenue?.toString() || "0",
+        grossProfit: ttm.grossProfit?.toString() || "0",
+        operatingExpenses: ttm.operatingExpenses?.toString() || "0",
+        operatingIncome: ttm.operatingIncome?.toString() || "0",
+        netIncome: ttm.netIncome?.toString() || "0",
+        ebitda: ttm.ebitda?.toString() || "0",
+      };
 
       return {
         [ticker]: {
-          annual: transformedData,
-          ttm: [], // We'll handle TTM data separately if needed
+          annual: transformedAnnual,
+          ttm: [transformedTTM],
         }
       };
     },
@@ -78,6 +108,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     }
 
     const annualData = financialData[ticker]?.annual || [];
+    const ttmData = financialData[ticker]?.ttm || [];
     console.log('Raw data for ticker:', ticker, annualData);
 
     if (!annualData.length) {
@@ -110,6 +141,21 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       
       return point;
     });
+
+    // Add TTM data if available
+    if (ttmData.length > 0) {
+      const ttmPoint: Record<string, any> = { period: 'TTM' };
+      const previousPeriod = filteredData[0]; // Most recent annual period
+      
+      selectedMetrics.forEach(metric => {
+        const metricDef = INCOME_STATEMENT_METRICS.find(m => m.id === metric);
+        if (metricDef) {
+          ttmPoint[metric] = calculateMetricValue(metricDef, ttmData[0], previousPeriod);
+        }
+      });
+      
+      chartData.push(ttmPoint);
+    }
 
     console.log('Final chart data:', chartData);
     return chartData;
