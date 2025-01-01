@@ -9,6 +9,7 @@ interface IncomeStatementMetricsProps {
   isSelected: boolean;
   onToggle: (metricId: string) => void;
   isGrowthMetric?: boolean;
+  formatValue: (value: number | null, format?: string) => string;
 }
 
 export const IncomeStatementMetrics = ({
@@ -17,7 +18,8 @@ export const IncomeStatementMetrics = ({
   values,
   isSelected,
   onToggle,
-  isGrowthMetric
+  isGrowthMetric,
+  formatValue
 }: IncomeStatementMetricsProps) => {
   const format = getMetricFormat(metricId);
 
