@@ -68,16 +68,26 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
       // Get earliest and latest years
       const earliestYear = sortedData[0]?.period;
-      const latestYear = sortedData[sortedData.length - 1]?.period;
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth();
+      
+      // Format TTM date string based on current month
+      const ttmDate = new Date(currentDate.setMonth(currentMonth - 1));
+      const ttmDateString = ttmDate.toLocaleString('default', { 
+        month: 'long',
+        day: '31',
+        year: currentYear
+      });
 
-      if (earliestYear && latestYear) {
+      if (earliestYear) {
         // Set the dates
         setStartDate(`December 31, ${earliestYear}`);
-        setEndDate(`December 31, ${latestYear}`);
+        setEndDate(ttmDateString);
 
-        // Create array of all years between earliest and latest
+        // Create array of all years between earliest and TTM
         const years = [];
-        for (let year = parseInt(earliestYear); year <= parseInt(latestYear); year++) {
+        for (let year = parseInt(earliestYear); year <= currentYear; year++) {
           years.push(year.toString());
         }
         setTimePeriods(years);
@@ -95,7 +105,21 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       const startYear = timePeriods[value[0]];
       const endYear = timePeriods[value[1]];
       setStartDate(`December 31, ${startYear}`);
-      setEndDate(`December 31, ${endYear}`);
+      
+      // If end year is current year, use TTM date
+      const currentYear = new Date().getFullYear();
+      if (parseInt(endYear) === currentYear) {
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth();
+        const ttmDate = new Date(currentDate.setMonth(currentMonth - 1));
+        setEndDate(ttmDate.toLocaleString('default', { 
+          month: 'long',
+          day: '31',
+          year: currentYear
+        }));
+      } else {
+        setEndDate(`December 31, ${endYear}`);
+      }
     }
   };
 
