@@ -37,8 +37,9 @@ export const MetricChart = ({
     return parseInt(a.period) - parseInt(b.period);
   });
 
-  // Calculate CAGR for each metric
+  // Calculate CAGR and total change for each metric
   const cagrResults: Record<string, number> = {};
+  const totalChangeResults: Record<string, number> = {};
   metrics.forEach(metric => {
     const firstValue = sortedData[0][metric];
     const lastValue = sortedData[sortedData.length - 1][metric];
@@ -46,6 +47,7 @@ export const MetricChart = ({
       ? sortedData.length - 2 
       : sortedData.length - 1;
     cagrResults[metric] = calculateCAGR(firstValue, lastValue, years);
+    totalChangeResults[metric] = ((lastValue - firstValue) / firstValue) * 100;
   });
 
   return (
@@ -138,25 +140,17 @@ export const MetricChart = ({
 
       <div className="mt-4 border-t pt-4">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-gray-700 text-lg">{ticker}</span>
-            <span className="text-gray-500">
-              {sortedData[0].period} - {sortedData[sortedData.length - 1].period}
-            </span>
-          </div>
-          <div className="flex flex-wrap gap-x-6 gap-y-2">
-            {metrics.map((metric, index) => (
-              <div key={metric} className="flex items-center gap-2">
-                <div 
-                  className="w-3 h-3 rounded-sm"
-                  style={{ backgroundColor: getMetricColor(index) }}
-                />
-                <span className="text-gray-900 font-medium">
-                  {getMetricDisplayName(metric)}: {cagrResults[metric].toFixed(1)}% CAGR
-                </span>
-              </div>
-            ))}
-          </div>
+          {metrics.map((metric, index) => (
+            <div key={metric} className="flex items-center gap-3">
+              <div 
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: getMetricColor(index) }}
+              />
+              <span className="text-gray-900 font-medium">
+                {ticker} - {getMetricDisplayName(metric)} (Annual) (Total Change: {totalChangeResults[metric].toFixed(2)}%) (CAGR: {cagrResults[metric].toFixed(2)}%)
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
