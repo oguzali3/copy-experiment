@@ -6,8 +6,12 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      headers: corsHeaders,
+      status: 204
+    });
   }
 
   try {
@@ -74,40 +78,6 @@ serve(async (req) => {
           );
         }
       }
-
-      return new Response(
-        JSON.stringify(chartData),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else if (timeframe === '5D') {
-      // For 5D, use hourly data
-      const today = new Date();
-      const fiveDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000); // Get 7 days to ensure we have 5 trading days
-      
-      const endpoint = `https://financialmodelingprep.com/api/v3/historical-chart/1hour/${symbol}?apikey=${apiKey}`;
-      console.log('Fetching 5D hourly data from endpoint:', endpoint);
-      
-      const response = await fetch(endpoint);
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Historical hourly data received:', data?.length, 'data points');
-      
-      if (!Array.isArray(data)) {
-        throw new Error('Historical data is not in the expected format');
-      }
-
-      // Filter for the last 5 trading days and map to the required format
-      const fiveDaysAgoTimestamp = fiveDaysAgo.getTime();
-      const chartData = data
-        .filter(item => new Date(item.date).getTime() >= fiveDaysAgoTimestamp)
-        .map(item => ({
-          time: item.date,
-          price: parseFloat(item.close)
-        }))
-        .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
       return new Response(
         JSON.stringify(chartData),
