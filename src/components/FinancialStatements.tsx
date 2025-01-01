@@ -5,6 +5,7 @@ import { TimeFrameSelector } from "./financials/TimeFrameSelector";
 import { MetricsChartSection } from "./financials/MetricsChartSection";
 import { FinancialStatementsTabs } from "./financials/FinancialStatementsTabs";
 import { financialData } from "@/data/financialData";
+import { INCOME_STATEMENT_METRICS, calculateMetricValue } from "@/utils/metricDefinitions";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
@@ -62,16 +63,14 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     console.log('Filtered data:', filteredData);
 
     // Transform data for chart
-    const chartData = filteredData.map(item => {
+    const chartData = filteredData.map((item, index) => {
       const point: Record<string, any> = { period: item.period };
+      const previousItem = filteredData[index + 1];
       
       selectedMetrics.forEach(metric => {
-        const value = item[metric];
-        if (typeof value === 'string') {
-          // Remove currency symbols and convert to number
-          point[metric] = parseFloat(value.replace(/[$,B]/g, ''));
-        } else {
-          point[metric] = value;
+        const metricDef = INCOME_STATEMENT_METRICS.find(m => m.id === metric);
+        if (metricDef) {
+          point[metric] = calculateMetricValue(metricDef, item, previousItem);
         }
       });
       
@@ -81,12 +80,12 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     // Add TTM data if available
     if (ttmData.length > 0) {
       const ttmPoint: Record<string, any> = { period: 'TTM' };
+      const previousPeriod = filteredData[0];
+      
       selectedMetrics.forEach(metric => {
-        const value = ttmData[0][metric];
-        if (typeof value === 'string') {
-          ttmPoint[metric] = parseFloat(value.replace(/[$,B]/g, ''));
-        } else {
-          ttmPoint[metric] = value;
+        const metricDef = INCOME_STATEMENT_METRICS.find(m => m.id === metric);
+        if (metricDef) {
+          ttmPoint[metric] = calculateMetricValue(metricDef, ttmData[0], previousPeriod);
         }
       });
       chartData.push(ttmPoint);

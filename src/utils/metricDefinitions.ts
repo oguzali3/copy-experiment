@@ -111,12 +111,12 @@ export const INCOME_STATEMENT_METRICS: MetricDefinition[] = [
     }
   },
   {
-    id: 'epsBasic',
+    id: 'eps',
     displayName: 'EPS (Basic)',
     type: 'api'
   },
   {
-    id: 'epsDiluted',
+    id: 'epsdiluted',
     displayName: 'EPS (Diluted)',
     type: 'api'
   },
@@ -125,9 +125,10 @@ export const INCOME_STATEMENT_METRICS: MetricDefinition[] = [
     displayName: 'EPS Growth',
     type: 'calculated',
     calculation: (current, previous) => {
-      if (!previous?.epsDiluted) return null;
-      return ((current.epsDiluted - previous.epsDiluted) / previous.epsDiluted * 100);
-    }
+      if (!previous?.epsdiluted) return null;
+      return ((current.epsdiluted - previous.epsdiluted) / previous.epsdiluted * 100);
+    },
+    format: 'percentage'
   },
   {
     id: 'grossProfitRatio',
@@ -171,7 +172,12 @@ export const calculateMetricValue = (
   previousPeriod: any
 ): number | null => {
   if (metric.type === 'api') {
-    return currentPeriod[metric.id];
+    const value = currentPeriod[metric.id];
+    if (typeof value === 'string') {
+      // Remove currency symbols and convert to number
+      return parseFloat(value.replace(/[$,B]/g, ''));
+    }
+    return value;
   }
   
   if (metric.type === 'calculated' && metric.calculation) {
