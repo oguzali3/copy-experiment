@@ -29,8 +29,28 @@ export const FinancialDataTable = ({
             const values = combinedData.map((current, index) => {
               const previous = combinedData[index + 1];
               
-              if (current.period === "TTM" && metric.id === "revenueGrowth") {
-                return calculateTTMGrowth(current, annualData);
+              if (current.period === "TTM") {
+                if (metric.id === "revenueGrowth") {
+                  return calculateTTMGrowth(current, annualData);
+                }
+                if (metric.id === "netIncomeGrowth") {
+                  // Handle TTM net income growth similar to revenue growth
+                  const currentNetIncome = parseFloat(String(current.netIncome).replace(/[^0-9.-]+/g, ""));
+                  const mostRecentAnnualNetIncome = parseFloat(String(annualData[0].netIncome).replace(/[^0-9.-]+/g, ""));
+                  const previousAnnualNetIncome = parseFloat(String(annualData[1].netIncome).replace(/[^0-9.-]+/g, ""));
+
+                  // Check if TTM matches most recent fiscal year (within 0.1% tolerance)
+                  const netIncomeDiff = Math.abs(currentNetIncome - mostRecentAnnualNetIncome);
+                  const tolerance = mostRecentAnnualNetIncome * 0.001; // 0.1% tolerance
+
+                  if (netIncomeDiff <= tolerance) {
+                    // Use fiscal year growth rate
+                    return ((mostRecentAnnualNetIncome - previousAnnualNetIncome) / Math.abs(previousAnnualNetIncome)) * 100;
+                  }
+
+                  // Calculate TTM growth against previous year
+                  return ((currentNetIncome - previousAnnualNetIncome) / Math.abs(previousAnnualNetIncome)) * 100;
+                }
               }
               
               return calculateMetricValue(metric, current, previous);

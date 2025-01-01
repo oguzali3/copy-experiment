@@ -48,7 +48,9 @@ export const INCOME_METRICS: MetricDefinition[] = [
     displayName: 'Net Income Growth',
     type: 'calculated',
     calculation: (current, previous) => {
-      if (!previous?.netIncome || previous.netIncome === 0) return null;
+      // This calculation will be handled in FinancialDataTable component
+      // similar to how we handle revenue growth
+      if (!previous?.netIncome) return null;
       return ((parseFloat(current.netIncome) - parseFloat(previous.netIncome)) / Math.abs(parseFloat(previous.netIncome))) * 100;
     },
     format: 'percentage'
