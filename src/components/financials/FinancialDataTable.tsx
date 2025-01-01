@@ -32,7 +32,8 @@ export const FinancialDataTable = ({
               if (current.period === "TTM") {
                 // Special handling for shares metrics in TTM period
                 if (metric.id === 'weightedAverageShsOut' || metric.id === 'weightedAverageShsOutDil') {
-                  return parseFloat((annualData[0][metric.id] / 1000000000).toFixed(2));
+                  const sharesInBillions = annualData[0][metric.id] / 1000000000;
+                  return parseFloat(sharesInBillions.toFixed(2));
                 }
                 if (metric.id === 'sharesChange') {
                   const currentShares = annualData[0].weightedAverageShsOutDil / 1000000000;
