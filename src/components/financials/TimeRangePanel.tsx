@@ -36,7 +36,7 @@ export const TimeRangePanel = ({
             {timePeriods.map((_, index) => (
               <div
                 key={index}
-                className="absolute w-2.5 h-2.5 bg-white border border-primary rounded-full"
+                className="absolute w-5 h-5 bg-white border-2 border-primary rounded-full"
                 style={{
                   left: `${(index / (timePeriods.length - 1)) * 100}%`,
                   transform: 'translate(-50%, -50%)',
