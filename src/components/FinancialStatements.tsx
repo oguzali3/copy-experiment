@@ -69,29 +69,33 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
       // Get earliest and latest years
       const earliestYear = sortedData[0]?.period;
+      const latestYear = sortedData[sortedData.length - 1]?.period;
+      
+      // Get current date for TTM calculation
       const currentDate = new Date();
       const currentYear = currentDate.getFullYear();
       const currentMonth = currentDate.getMonth();
       
       // Get TTM date (last day of previous month)
-      const ttmDate = new Date(currentYear, currentMonth - 1, 0);
+      const ttmDate = new Date(currentYear, currentMonth, 0);
       const ttmDateString = formatDateToLongString(ttmDate);
 
-      if (earliestYear) {
-        // Set the dates
+      if (earliestYear && latestYear) {
+        // Create array of all years between earliest and latest, plus TTM
+        const years = [];
+        for (let year = parseInt(earliestYear); year <= parseInt(latestYear); year++) {
+          years.push(year.toString());
+        }
+        years.push('TTM');
+        setTimePeriods(years);
+
+        // Set initial dates
         setStartDate(`December 31, ${earliestYear}`);
         setEndDate(ttmDateString);
 
-        // Create array of all years between earliest and current
-        const years = [];
-        for (let year = parseInt(earliestYear); year <= currentYear; year++) {
-          years.push(year.toString());
-        }
-        setTimePeriods(years);
-
-        // Update slider values based on the number of years
-        const yearCount = years.length - 1;
-        setSliderValue([0, yearCount]);
+        // Update slider values based on the number of periods
+        const periodCount = years.length - 1;
+        setSliderValue([0, periodCount]);
       }
     }
   }, [financialData, ticker]);
@@ -101,14 +105,16 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     if (timePeriods.length > 0) {
       const startYear = timePeriods[value[0]];
       const endYear = timePeriods[value[1]];
+      
+      // Set start date
       setStartDate(`December 31, ${startYear}`);
       
-      // If end year is current year, use TTM date
-      const currentYear = new Date().getFullYear();
-      if (parseInt(endYear) === currentYear) {
+      // Set end date based on whether TTM is selected
+      if (endYear === 'TTM') {
         const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
         const currentMonth = currentDate.getMonth();
-        const ttmDate = new Date(currentYear, currentMonth - 1, 0);
+        const ttmDate = new Date(currentYear, currentMonth, 0);
         setEndDate(formatDateToLongString(ttmDate));
       } else {
         setEndDate(`December 31, ${endYear}`);
@@ -143,7 +149,9 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     
     const filteredData = annualData.filter(item => {
       const year = parseInt(item.period);
-      return year >= parseInt(startYear) && year <= parseInt(endYear);
+      const startYearInt = parseInt(startYear);
+      const endYearInt = endYear === 'TTM' ? new Date().getFullYear() : parseInt(endYear);
+      return year >= startYearInt && year <= endYearInt;
     });
 
     console.log('Filtered data:', filteredData);
