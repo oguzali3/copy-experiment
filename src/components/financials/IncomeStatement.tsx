@@ -93,13 +93,34 @@ export const IncomeStatement = ({
               const values = combinedData.map((current, index) => {
                 const previous = combinedData[index + 1];
                 
-                // For TTM period and share-related metrics, use the most recent annual value
-                if (current.period === "TTM" && (metric.format === "shares" || metric.id === "sharesChange")) {
-                  if (metric.id === "sharesChange") {
-                    // For shares change, calculate using annual data only
-                    return calculateMetricValue(metric, annualData[0], annualData[1]);
+                // Special handling for TTM period
+                if (current.period === "TTM") {
+                  // For share-related metrics, use the most recent annual value
+                  if (metric.format === "shares" || metric.id === "sharesChange") {
+                    if (metric.id === "sharesChange") {
+                      // For shares change, calculate using annual data only
+                      return calculateMetricValue(metric, annualData[0], annualData[1]);
+                    }
+                    return calculateMetricValue(metric, annualData[0], previous);
                   }
-                  return calculateMetricValue(metric, annualData[0], previous);
+                  
+                  // For revenue growth in TTM period
+                  if (metric.id === "revenueGrowth") {
+                    // Get quarterly data (assuming it's available in the API response)
+                    const quarterlyData = financialData.filter((item: any) => item.period === "Q");
+                    if (quarterlyData.length >= 8) {
+                      // Calculate sum of last 4 quarters
+                      const last4Q = quarterlyData.slice(0, 4).reduce((sum: number, q: any) => 
+                        sum + parseFloat(q.revenue), 0);
+                      // Calculate sum of previous 4 quarters
+                      const prev4Q = quarterlyData.slice(4, 8).reduce((sum: number, q: any) => 
+                        sum + parseFloat(q.revenue), 0);
+                      
+                      return prev4Q > 0 ? ((last4Q - prev4Q) / prev4Q * 100) : 0;
+                    }
+                    // Fallback to annual comparison if quarterly data isn't available
+                    return calculateMetricValue(metric, current, previous);
+                  }
                 }
                 
                 return calculateMetricValue(metric, current, previous);
