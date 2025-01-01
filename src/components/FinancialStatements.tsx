@@ -80,11 +80,14 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
         for (let year = parseInt(earliestYear); year <= parseInt(latestYear); year++) {
           years.push(year.toString());
         }
+        
         // Add TTM if it exists in the data
         if (ttmData) {
           years.push('TTM');
         }
+        
         setTimePeriods(years);
+        console.log('Setting time periods:', years);
 
         // Set initial dates
         setStartDate(`December 31, ${earliestYear}`);
@@ -99,9 +102,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
           setEndDate(`December 31, ${latestYear}`);
         }
 
-        // Update slider values based on the number of periods
-        const periodCount = years.length - 1;
-        setSliderValue([0, periodCount]);
+        // Update slider values based on the actual number of periods
+        setSliderValue([0, years.length - 1]);
       }
     }
   }, [financialData, ticker]);
@@ -136,15 +138,12 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
   const getMetricData = () => {
     if (!selectedMetrics.length || !financialData) {
-      console.log('No metrics selected or no data available');
       return [];
     }
 
     const annualData = financialData[ticker]?.annual || [];
-    console.log('Raw data for ticker:', ticker, annualData);
-
+    
     if (!annualData.length) {
-      console.log('No data available');
       return [];
     }
 
@@ -164,10 +163,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       return year >= startYearInt && year <= endYearInt;
     });
 
-    console.log('Filtered data:', filteredData);
-
     // Transform data for chart
-    const chartData = filteredData.map((item, index) => {
+    return filteredData.map((item, index) => {
       const point: Record<string, any> = { period: item.period };
       const previousItem = filteredData[index + 1];
       
@@ -180,9 +177,6 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       
       return point;
     });
-
-    console.log('Final chart data:', chartData);
-    return chartData;
   };
 
   if (isLoading) {
