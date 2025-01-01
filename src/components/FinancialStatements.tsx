@@ -1,30 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "./ui/card";
 import { TimeRangePanel } from "./financials/TimeRangePanel";
 import { TimeFrameSelector } from "./financials/TimeFrameSelector";
 import { MetricsChartSection } from "./financials/MetricsChartSection";
 import { FinancialStatementsTabs } from "./financials/FinancialStatementsTabs";
-import { INCOME_STATEMENT_METRICS, calculateMetricValue } from "@/utils/metricDefinitions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { transformFinancialData, calculateTTM, transformTTMData, getMetricChartData } from "@/utils/financialDataTransform";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
   const [startDate, setStartDate] = useState("December 31, 2019");
-  const [endDate, setEndDate] = useState("December 31, 2023");
-  const [sliderValue, setSliderValue] = useState([0, 4]);
+  const [endDate, setEndDate] = useState("TTM");
+  const [sliderValue, setSliderValue] = useState([0, 5]); // Updated to include TTM
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [metricTypes, setMetricTypes] = useState<Record<string, 'bar' | 'line'>>({});
+  const [timePeriods, setTimePeriods] = useState<string[]>(["2019", "2020", "2021", "2022", "2023", "TTM"]);
 
   // Reset selected metrics when ticker changes
-  React.useEffect(() => {
+  useEffect(() => {
     setSelectedMetrics([]);
     setMetricTypes({});
   }, [ticker]);
 
-  const timePeriods = ["2019", "2020", "2021", "2022", "2023"];
-
-  // Fetch financial data from API
   const { data: financialData, isLoading } = useQuery({
     queryKey: ['financial-data', ticker],
     queryFn: async () => {
@@ -42,41 +40,23 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
       if (annualError) throw annualError;
 
-      // Calculate TTM by summing last 4 quarters
-      const ttm = ttmData.reduce((acc: any, quarter: any) => {
-        Object.keys(quarter).forEach(key => {
-          if (typeof quarter[key] === 'number') {
-            acc[key] = (acc[key] || 0) + quarter[key];
-          }
-        });
-        return acc;
-      }, {});
+      const transformedAnnual = transformFinancialData(annualData, ticker);
+      const ttm = calculateTTM(ttmData);
+      const transformedTTM = transformTTMData(ttm);
 
-      // Transform annual data
-      const transformedAnnual = annualData.map((item: any) => ({
-        period: new Date(item.date).getFullYear().toString(),
-        revenue: item.revenue?.toString() || "0",
-        revenueGrowth: item.revenueGrowth?.toString() || "0",
-        costOfRevenue: item.costOfRevenue?.toString() || "0",
-        grossProfit: item.grossProfit?.toString() || "0",
-        operatingExpenses: item.operatingExpenses?.toString() || "0",
-        operatingIncome: item.operatingIncome?.toString() || "0",
-        netIncome: item.netIncome?.toString() || "0",
-        ebitda: item.ebitda?.toString() || "0",
-      }));
-
-      // Transform TTM data
-      const transformedTTM = {
-        period: 'TTM',
-        revenue: ttm.revenue?.toString() || "0",
-        revenueGrowth: ttm.revenueGrowth?.toString() || "0",
-        costOfRevenue: ttm.costOfRevenue?.toString() || "0",
-        grossProfit: ttm.grossProfit?.toString() || "0",
-        operatingExpenses: ttm.operatingExpenses?.toString() || "0",
-        operatingIncome: ttm.operatingIncome?.toString() || "0",
-        netIncome: ttm.netIncome?.toString() || "0",
-        ebitda: ttm.ebitda?.toString() || "0",
-      };
+      // Update time periods based on available data
+      const years = transformedAnnual.map(item => item.period);
+      const uniqueYears = Array.from(new Set(years)).sort();
+      setTimePeriods([...uniqueYears, 'TTM']);
+      
+      // Update slider to show all available periods
+      setSliderValue([0, uniqueYears.length]);
+      
+      // Update date range display
+      if (uniqueYears.length > 0) {
+        setStartDate(`December 31, ${uniqueYears[0]}`);
+        setEndDate('TTM');
+      }
 
       return {
         [ticker]: {
@@ -90,8 +70,10 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
   const handleSliderChange = (value: number[]) => {
     setSliderValue(value);
-    setStartDate(`December 31, 20${19 + value[0]}`);
-    setEndDate(`December 31, 20${19 + value[1]}`);
+    const startYear = timePeriods[value[0]];
+    const endPeriod = timePeriods[value[1]];
+    setStartDate(`December 31, ${startYear}`);
+    setEndDate(endPeriod === 'TTM' ? 'TTM' : `December 31, ${endPeriod}`);
   };
 
   const handleMetricTypeChange = (metric: string, type: 'bar' | 'line') => {
@@ -99,66 +81,6 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       ...prev,
       [metric]: type
     }));
-  };
-
-  const getMetricData = () => {
-    if (!selectedMetrics.length || !financialData) {
-      console.log('No metrics selected or no data available');
-      return [];
-    }
-
-    const annualData = financialData[ticker]?.annual || [];
-    const ttmData = financialData[ticker]?.ttm || [];
-    console.log('Raw data for ticker:', ticker, annualData);
-
-    if (!annualData.length) {
-      console.log('No data available');
-      return [];
-    }
-
-    // Filter years based on slider
-    const startYear = 2019 + sliderValue[0];
-    const endYear = 2019 + sliderValue[1];
-    
-    const filteredData = annualData.filter(item => {
-      const year = parseInt(item.period);
-      return year >= startYear && year <= endYear;
-    });
-
-    console.log('Filtered data:', filteredData);
-
-    // Transform data for chart
-    const chartData = filteredData.map((item, index) => {
-      const point: Record<string, any> = { period: item.period };
-      const previousItem = filteredData[index + 1];
-      
-      selectedMetrics.forEach(metric => {
-        const metricDef = INCOME_STATEMENT_METRICS.find(m => m.id === metric);
-        if (metricDef) {
-          point[metric] = calculateMetricValue(metricDef, item, previousItem);
-        }
-      });
-      
-      return point;
-    });
-
-    // Add TTM data if available
-    if (ttmData.length > 0) {
-      const ttmPoint: Record<string, any> = { period: 'TTM' };
-      const previousPeriod = filteredData[0]; // Most recent annual period
-      
-      selectedMetrics.forEach(metric => {
-        const metricDef = INCOME_STATEMENT_METRICS.find(m => m.id === metric);
-        if (metricDef) {
-          ttmPoint[metric] = calculateMetricValue(metricDef, ttmData[0], previousPeriod);
-        }
-      });
-      
-      chartData.push(ttmPoint);
-    }
-
-    console.log('Final chart data:', chartData);
-    return chartData;
   };
 
   if (isLoading) {
@@ -174,12 +96,14 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     );
   }
 
+  const chartData = getMetricChartData(selectedMetrics, financialData, ticker, sliderValue, timePeriods);
+
   return (
     <div className="space-y-6">
       {selectedMetrics.length > 0 && (
         <MetricsChartSection 
           selectedMetrics={selectedMetrics}
-          data={getMetricData()}
+          data={chartData}
           ticker={ticker}
           metricTypes={metricTypes}
           onMetricTypeChange={handleMetricTypeChange}
