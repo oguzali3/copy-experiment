@@ -51,6 +51,24 @@ export const FinancialDataTable = ({
                   // Calculate TTM growth against previous year
                   return ((currentNetIncome - previousAnnualNetIncome) / Math.abs(previousAnnualNetIncome)) * 100;
                 }
+                if (metric.id === "epsGrowth") {
+                  // Handle TTM EPS growth similar to revenue and net income growth
+                  const currentEPS = parseFloat(String(current.eps).replace(/[^0-9.-]+/g, ""));
+                  const mostRecentAnnualEPS = parseFloat(String(annualData[0].eps).replace(/[^0-9.-]+/g, ""));
+                  const previousAnnualEPS = parseFloat(String(annualData[1].eps).replace(/[^0-9.-]+/g, ""));
+
+                  // Check if TTM matches most recent fiscal year (within 0.1% tolerance)
+                  const epsDiff = Math.abs(currentEPS - mostRecentAnnualEPS);
+                  const tolerance = mostRecentAnnualEPS * 0.001; // 0.1% tolerance
+
+                  if (epsDiff <= tolerance) {
+                    // Use fiscal year growth rate
+                    return ((mostRecentAnnualEPS - previousAnnualEPS) / Math.abs(previousAnnualEPS)) * 100;
+                  }
+
+                  // Calculate TTM growth against previous year
+                  return ((currentEPS - previousAnnualEPS) / Math.abs(previousAnnualEPS)) * 100;
+                }
               }
               
               return calculateMetricValue(metric, current, previous);

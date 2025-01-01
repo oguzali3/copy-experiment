@@ -8,13 +8,9 @@ export const EBITDA_METRICS: MetricDefinition[] = [
     format: 'currency'
   },
   {
-    id: 'ebitdaMargin',
-    displayName: 'EBITDA Margin',
-    type: 'calculated',
-    calculation: (current) => {
-      if (!current.revenue) return null;
-      return (current.ebitda / current.revenue * 100);
-    },
-    format: 'percentage'
+    id: 'depreciationAndAmortization',
+    displayName: 'Depreciation & Amortization',
+    type: 'api',
+    format: 'currency'
   }
 ];
