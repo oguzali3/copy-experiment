@@ -8,6 +8,19 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { transformFinancialData, calculateTTM, transformTTMData, getMetricChartData } from "@/utils/financialDataTransform";
 
+interface FinancialDataResponse {
+  date: string;
+  symbol: string;
+  revenue: number;
+  revenueGrowth: number;
+  costOfRevenue: number;
+  grossProfit: number;
+  operatingExpenses: number;
+  operatingIncome: number;
+  netIncome: number;
+  ebitda: number;
+}
+
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
   const [startDate, setStartDate] = useState("December 31, 2019");
@@ -27,21 +40,21 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     queryKey: ['financial-data', ticker],
     queryFn: async () => {
       // First fetch TTM data (last 4 quarters)
-      const { data: ttmData, error: ttmError } = await supabase.functions.invoke('fetch-financial-data', {
+      const { data: ttmData, error: ttmError } = await supabase.functions.invoke<{ data: FinancialDataResponse[] }>('fetch-financial-data', {
         body: { endpoint: 'income-statement', symbol: ticker, period: 'quarter', limit: 4 }
       });
 
       if (ttmError) throw ttmError;
 
       // Then fetch annual data
-      const { data: annualData, error: annualError } = await supabase.functions.invoke('fetch-financial-data', {
+      const { data: annualData, error: annualError } = await supabase.functions.invoke<{ data: FinancialDataResponse[] }>('fetch-financial-data', {
         body: { endpoint: 'income-statement', symbol: ticker, period: 'annual' }
       });
 
       if (annualError) throw annualError;
 
-      const transformedAnnual = transformFinancialData(annualData, ticker);
-      const ttm = calculateTTM(ttmData);
+      const transformedAnnual = transformFinancialData(annualData?.data || [], ticker);
+      const ttm = calculateTTM(ttmData?.data || []);
       const transformedTTM = transformTTMData(ttm);
 
       // Update time periods based on available data
