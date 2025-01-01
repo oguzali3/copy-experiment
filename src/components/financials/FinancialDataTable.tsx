@@ -32,9 +32,7 @@ export const FinancialDataTable = ({
               if (current.period === "TTM") {
                 // Special handling for shares metrics in TTM period
                 if (metric.id === 'weightedAverageShsOut' || metric.id === 'weightedAverageShsOutDil') {
-                  // Use the most recent annual data for shares outstanding and format to 2 decimal places
-                  const sharesValue = (annualData[0][metric.id] / 1000000000).toFixed(2);
-                  return parseFloat(sharesValue); // Convert back to number for consistent handling
+                  return parseFloat((annualData[0][metric.id] / 1000000000).toFixed(2));
                 }
                 if (metric.id === 'sharesChange') {
                   const currentShares = annualData[0].weightedAverageShsOutDil / 1000000000;
@@ -97,16 +95,15 @@ export const FinancialDataTable = ({
                 metricId={metric.id}
                 label={getMetricDisplayName(metric.id)}
                 values={values.map(v => {
-                  // For share metrics, ensure consistent formatting with 2 decimal places
                   if (metric.id === 'weightedAverageShsOut' || metric.id === 'weightedAverageShsOutDil') {
-                    return parseFloat(parseNumber(v).toFixed(2));
+                    const sharesInBillions = parseNumber(v) / 1000000000;
+                    return parseFloat(sharesInBillions.toFixed(2));
                   }
                   return parseNumber(v);
                 })}
                 isSelected={selectedMetrics.includes(metric.id)}
                 onToggle={onMetricToggle}
                 formatValue={(value, format) => {
-                  // Special formatting for share metrics to always include 'B'
                   if (metric.id === 'weightedAverageShsOut' || metric.id === 'weightedAverageShsOutDil') {
                     return `${value.toFixed(2)}B`;
                   }
