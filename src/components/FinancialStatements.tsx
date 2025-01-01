@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "./ui/card";
 import { TimeRangePanel } from "./financials/TimeRangePanel";
 import { TimeFrameSelector } from "./financials/TimeFrameSelector";
@@ -10,19 +10,18 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
-  const [startDate, setStartDate] = useState("December 31, 2019");
-  const [endDate, setEndDate] = useState("December 31, 2023");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [sliderValue, setSliderValue] = useState([0, 4]);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [metricTypes, setMetricTypes] = useState<Record<string, 'bar' | 'line'>>({});
+  const [timePeriods, setTimePeriods] = useState<string[]>([]);
 
   // Reset selected metrics when ticker changes
   React.useEffect(() => {
     setSelectedMetrics([]);
     setMetricTypes({});
   }, [ticker]);
-
-  const timePeriods = ["2019", "2020", "2021", "2022", "2023"];
 
   // Fetch financial data from API
   const { data: financialData, isLoading } = useQuery({
@@ -45,7 +44,6 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
         operatingIncome: item.operatingIncome?.toString() || "0",
         netIncome: item.netIncome?.toString() || "0",
         ebitda: item.ebitda?.toString() || "0",
-        // Add other metrics as needed
       }));
 
       return {
@@ -58,10 +56,47 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     enabled: !!ticker,
   });
 
+  // Update dates and time periods when financial data changes
+  useEffect(() => {
+    if (financialData && financialData[ticker]?.annual) {
+      const annualData = financialData[ticker].annual;
+      
+      // Sort data by year in ascending order
+      const sortedData = [...annualData].sort((a, b) => 
+        parseInt(a.period) - parseInt(b.period)
+      );
+
+      // Get earliest and latest years
+      const earliestYear = sortedData[0]?.period;
+      const latestYear = sortedData[sortedData.length - 1]?.period;
+
+      if (earliestYear && latestYear) {
+        // Set the dates
+        setStartDate(`December 31, ${earliestYear}`);
+        setEndDate(`December 31, ${latestYear}`);
+
+        // Create array of all years between earliest and latest
+        const years = [];
+        for (let year = parseInt(earliestYear); year <= parseInt(latestYear); year++) {
+          years.push(year.toString());
+        }
+        setTimePeriods(years);
+
+        // Update slider values based on the number of years
+        const yearCount = years.length - 1;
+        setSliderValue([0, yearCount]);
+      }
+    }
+  }, [financialData, ticker]);
+
   const handleSliderChange = (value: number[]) => {
     setSliderValue(value);
-    setStartDate(`December 31, 20${19 + value[0]}`);
-    setEndDate(`December 31, 20${19 + value[1]}`);
+    if (timePeriods.length > 0) {
+      const startYear = timePeriods[value[0]];
+      const endYear = timePeriods[value[1]];
+      setStartDate(`December 31, ${startYear}`);
+      setEndDate(`December 31, ${endYear}`);
+    }
   };
 
   const handleMetricTypeChange = (metric: string, type: 'bar' | 'line') => {
@@ -85,13 +120,13 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       return [];
     }
 
-    // Filter years based on slider
-    const startYear = 2019 + sliderValue[0];
-    const endYear = 2019 + sliderValue[1];
+    // Filter years based on slider and time periods
+    const startYear = timePeriods[sliderValue[0]];
+    const endYear = timePeriods[sliderValue[1]];
     
     const filteredData = annualData.filter(item => {
       const year = parseInt(item.period);
-      return year >= startYear && year <= endYear;
+      return year >= parseInt(startYear) && year <= parseInt(endYear);
     });
 
     console.log('Filtered data:', filteredData);
