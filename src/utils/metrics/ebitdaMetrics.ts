@@ -2,12 +2,6 @@ import { MetricDefinition } from './types';
 
 export const EBITDA_METRICS: MetricDefinition[] = [
   {
-    id: 'depreciationAndAmortization',
-    displayName: 'Depreciation & Amortization',
-    type: 'api',
-    format: 'currency'
-  },
-  {
     id: 'ebitda',
     displayName: 'EBITDA',
     type: 'api',
@@ -28,5 +22,11 @@ export const EBITDA_METRICS: MetricDefinition[] = [
     displayName: 'EBITDA Margin',
     type: 'api',
     format: 'percentage'
+  },
+  {
+    id: 'depreciationAndAmortization',
+    displayName: 'D&A For EBITDA',
+    type: 'api',
+    format: 'currency'
   }
 ];
