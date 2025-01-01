@@ -4,8 +4,9 @@ import { TimeRangePanel } from "./financials/TimeRangePanel";
 import { TimeFrameSelector } from "./financials/TimeFrameSelector";
 import { MetricsChartSection } from "./financials/MetricsChartSection";
 import { FinancialStatementsTabs } from "./financials/FinancialStatementsTabs";
-import { financialData } from "@/data/financialData";
 import { INCOME_STATEMENT_METRICS, calculateMetricValue } from "@/utils/metricDefinitions";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
@@ -23,6 +24,40 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
   const timePeriods = ["2019", "2020", "2021", "2022", "2023"];
 
+  // Fetch financial data from API
+  const { data: financialData, isLoading } = useQuery({
+    queryKey: ['financial-data', ticker],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+        body: { endpoint: 'income-statement', symbol: ticker }
+      });
+
+      if (error) throw error;
+
+      // Transform API data to match our format
+      const transformedData = data.map((item: any) => ({
+        period: new Date(item.date).getFullYear().toString(),
+        revenue: item.revenue?.toString() || "0",
+        revenueGrowth: item.revenueGrowth?.toString() || "0",
+        costOfRevenue: item.costOfRevenue?.toString() || "0",
+        grossProfit: item.grossProfit?.toString() || "0",
+        operatingExpenses: item.operatingExpenses?.toString() || "0",
+        operatingIncome: item.operatingIncome?.toString() || "0",
+        netIncome: item.netIncome?.toString() || "0",
+        ebitda: item.ebitda?.toString() || "0",
+        // Add other metrics as needed
+      }));
+
+      return {
+        [ticker]: {
+          annual: transformedData,
+          ttm: [], // We'll handle TTM data separately if needed
+        }
+      };
+    },
+    enabled: !!ticker,
+  });
+
   const handleSliderChange = (value: number[]) => {
     setSliderValue(value);
     setStartDate(`December 31, 20${19 + value[0]}`);
@@ -37,13 +72,12 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   };
 
   const getMetricData = () => {
-    if (!selectedMetrics.length) {
-      console.log('No metrics selected');
+    if (!selectedMetrics.length || !financialData) {
+      console.log('No metrics selected or no data available');
       return [];
     }
 
     const annualData = financialData[ticker]?.annual || [];
-    const ttmData = financialData[ticker]?.ttm || [];
     console.log('Raw data for ticker:', ticker, annualData);
 
     if (!annualData.length) {
@@ -77,23 +111,22 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       return point;
     });
 
-    // Add TTM data if available
-    if (ttmData.length > 0) {
-      const ttmPoint: Record<string, any> = { period: 'TTM' };
-      const previousPeriod = filteredData[0];
-      
-      selectedMetrics.forEach(metric => {
-        const metricDef = INCOME_STATEMENT_METRICS.find(m => m.id === metric);
-        if (metricDef) {
-          ttmPoint[metric] = calculateMetricValue(metricDef, ttmData[0], previousPeriod);
-        }
-      });
-      chartData.push(ttmPoint);
-    }
-
     console.log('Final chart data:', chartData);
     return chartData;
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Card className="p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-32 bg-gray-200 rounded"></div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
