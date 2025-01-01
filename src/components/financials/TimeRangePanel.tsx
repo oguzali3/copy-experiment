@@ -23,7 +23,7 @@ export const TimeRangePanel = ({
         <span>{endDate}</span>
       </div>
       <div className="px-8 py-8">
-        <div className="relative">
+        <div className="relative" style={{ margin: '0 24px' }}>
           <Slider
             min={0}
             max={timePeriods.length - 1}
@@ -33,21 +33,16 @@ export const TimeRangePanel = ({
             className="w-full"
           />
           <div className="absolute w-full top-1/2 -translate-y-1/2 pointer-events-none" style={{ zIndex: 20 }}>
-            {timePeriods.map((_, index) => {
-              const isEndpoint = index === 0 || index === timePeriods.length - 1;
-              return (
-                <div
-                  key={index}
-                  className={`absolute bg-white border-2 border-primary rounded-full ${
-                    isEndpoint ? 'w-5 h-5' : 'w-3 h-3'
-                  }`}
-                  style={{
-                    left: `${(index / (timePeriods.length - 1)) * 100}%`,
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                />
-              );
-            })}
+            {timePeriods.map((_, index) => (
+              <div
+                key={index}
+                className="absolute w-3 h-3 bg-white border-2 border-primary rounded-full"
+                style={{
+                  left: `${(index / (timePeriods.length - 1)) * 100}%`,
+                  transform: 'translate(-50%, -50%)',
+                }}
+              />
+            ))}
           </div>
           <div className="absolute w-full -bottom-5 left-0 right-0">
             {timePeriods.map((period, index) => (
