@@ -7,35 +7,63 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 const Analysis = () => {
+  console.log('Analysis component rendering'); // Debug log
+  
   const [searchParams] = useSearchParams();
   const urlTicker = searchParams.get("ticker") || "AAPL";
   const [activeTab, setActiveTab] = useState("overview");
 
-  const { data: companyData, isLoading } = useQuery({
+  const { data: companyData, isLoading, error } = useQuery({
     queryKey: ['company-profile', urlTicker],
     queryFn: async () => {
+      console.log('Fetching company profile for:', urlTicker); // Debug log
       const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
         body: { endpoint: 'profile', symbol: urlTicker }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching company profile:', error); // Debug log
+        throw error;
+      }
+      console.log('Company profile data received:', data); // Debug log
       return data[0];
     },
     enabled: !!urlTicker
   });
 
-  const { data: quoteData } = useQuery({
+  const { data: quoteData, error: quoteError } = useQuery({
     queryKey: ['company-quote', urlTicker],
     queryFn: async () => {
+      console.log('Fetching company quote for:', urlTicker); // Debug log
       const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
         body: { endpoint: 'quote', symbol: urlTicker }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching company quote:', error); // Debug log
+        throw error;
+      }
+      console.log('Company quote data received:', data); // Debug log
       return data[0];
     },
     enabled: !!urlTicker
   });
+
+  useEffect(() => {
+    console.log('Analysis component mounted/updated'); // Debug log
+    console.log('Current URL ticker:', urlTicker);
+    console.log('Active tab:', activeTab);
+  }, [urlTicker, activeTab]);
+
+  if (error || quoteError) {
+    console.error('Rendering error state:', error || quoteError);
+    return <div className="p-4">Error loading company data</div>;
+  }
+
+  if (isLoading) {
+    console.log('Rendering loading state');
+    return <div className="p-4">Loading...</div>;
+  }
 
   const selectedStock = {
     name: companyData?.companyName || "Loading...",
@@ -58,12 +86,10 @@ const Analysis = () => {
     }
   };
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+  console.log('Rendering Analysis component with data:', { selectedStock, activeTab });
 
   return (
-    <>
+    <div className="w-full">
       <CompanyHeader {...selectedStock} />
       <NavigationTabs activeTab={activeTab} onTabChange={setActiveTab} />
       <AnalysisContent 
@@ -71,7 +97,7 @@ const Analysis = () => {
         selectedStock={selectedStock} 
         onTabChange={setActiveTab}
       />
-    </>
+    </div>
   );
 };
 
