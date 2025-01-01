@@ -93,9 +93,7 @@ export const IncomeStatement = ({
               const values = combinedData.map((current, index) => {
                 const previous = combinedData[index + 1];
                 
-                // Special handling for TTM period
                 if (current.period === "TTM") {
-                  // For share-related metrics, use the most recent annual value
                   if (metric.format === "shares" || metric.id === "sharesChange") {
                     if (metric.id === "sharesChange") {
                       return calculateMetricValue(metric, annualData[0], annualData[1]);
@@ -103,38 +101,38 @@ export const IncomeStatement = ({
                     return calculateMetricValue(metric, annualData[0], previous);
                   }
                   
-                  // For revenue growth in TTM period
                   if (metric.id === "revenueGrowth") {
-                    // Get quarterly data
                     const quarterlyData = financialData
                       .filter((item: any) => item.period === "Q")
                       .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-                    console.log('Raw quarterly data:', quarterlyData);
+                    console.log('Processing quarterly data:', quarterlyData);
 
                     if (quarterlyData.length >= 8) {
-                      // Parse revenue values for last 12 months
-                      const last12MonthsRevenue = quarterlyData.slice(0, 4).reduce((sum: number, q: any) => {
-                        const revenue = parseFloat(q.revenue?.toString().replace(/[^0-9.-]+/g, "") || "0");
-                        console.log('Last 12M Quarter Revenue:', revenue);
+                      // Get last 4 quarters revenue
+                      const lastFourQuarters = quarterlyData.slice(0, 4);
+                      const lastFourQuartersRevenue = lastFourQuarters.reduce((sum, quarter) => {
+                        const revenue = parseFloat(quarter.revenue?.toString().replace(/[^0-9.-]+/g, "") || "0");
+                        console.log(`Last 4Q - Quarter ${quarter.date} revenue:`, revenue);
                         return sum + revenue;
                       }, 0);
 
-                      // Parse revenue values for prior 12 months
-                      const prior12MonthsRevenue = quarterlyData.slice(4, 8).reduce((sum: number, q: any) => {
-                        const revenue = parseFloat(q.revenue?.toString().replace(/[^0-9.-]+/g, "") || "0");
-                        console.log('Prior 12M Quarter Revenue:', revenue);
+                      // Get prior 4 quarters revenue
+                      const priorFourQuarters = quarterlyData.slice(4, 8);
+                      const priorFourQuartersRevenue = priorFourQuarters.reduce((sum, quarter) => {
+                        const revenue = parseFloat(quarter.revenue?.toString().replace(/[^0-9.-]+/g, "") || "0");
+                        console.log(`Prior 4Q - Quarter ${quarter.date} revenue:`, revenue);
                         return sum + revenue;
                       }, 0);
 
                       console.log('TTM Revenue calculation:', {
-                        last12MonthsRevenue,
-                        prior12MonthsRevenue
+                        lastFourQuartersRevenue,
+                        priorFourQuartersRevenue
                       });
 
-                      if (prior12MonthsRevenue > 0) {
-                        const growth = ((last12MonthsRevenue - prior12MonthsRevenue) / prior12MonthsRevenue) * 100;
-                        console.log('TTM Revenue Growth:', growth);
+                      if (priorFourQuartersRevenue > 0) {
+                        const growth = ((lastFourQuartersRevenue - priorFourQuartersRevenue) / priorFourQuartersRevenue) * 100;
+                        console.log('Final TTM Revenue Growth:', growth);
                         return growth;
                       }
                     }
