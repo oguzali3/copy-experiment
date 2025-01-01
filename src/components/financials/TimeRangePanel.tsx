@@ -76,7 +76,7 @@ export const TimeRangePanel = ({
             </React.Fragment>
           ))}
 
-          {/* Range Inputs */}
+          {/* Left Range Input */}
           <input
             type="range"
             min={0}
@@ -115,6 +115,7 @@ export const TimeRangePanel = ({
               [&::-moz-range-thumb]:hover:scale-110
               [&::-moz-range-thumb]:transition-transform"
           />
+          {/* Right Range Input */}
           <input
             type="range"
             min={0}
