@@ -111,14 +111,14 @@ export const IncomeStatement = ({
                     if (quarterlyData.length >= 8) {
                       const lastFourQuarters = quarterlyData.slice(0, 4);
                       const lastFourQuartersRevenue = lastFourQuarters.reduce((sum, quarter) => {
-                        const revenue = parseFloat(quarter.revenue?.toString().replace(/[^0-9.-]+/g, "") || "0");
+                        const revenue = parseFloat(String(quarter.revenue).replace(/[^0-9.-]+/g, ""));
                         console.log(`Last 4Q - Quarter ${quarter.date} revenue:`, revenue);
                         return sum + revenue;
                       }, 0);
 
                       const priorFourQuarters = quarterlyData.slice(4, 8);
                       const priorFourQuartersRevenue = priorFourQuarters.reduce((sum, quarter) => {
-                        const revenue = parseFloat(quarter.revenue?.toString().replace(/[^0-9.-]+/g, "") || "0");
+                        const revenue = parseFloat(String(quarter.revenue).replace(/[^0-9.-]+/g, ""));
                         console.log(`Prior 4Q - Quarter ${quarter.date} revenue:`, revenue);
                         return sum + revenue;
                       }, 0);
@@ -130,13 +130,16 @@ export const IncomeStatement = ({
 
                       if (priorFourQuartersRevenue > 0) {
                         // Get the most recent fiscal year revenue
-                        const mostRecentAnnualRevenue = parseFloat(annualData[0].revenue?.toString().replace(/[^0-9.-]+/g, "") || "0");
+                        const mostRecentAnnualRevenue = parseFloat(String(annualData[0].revenue).replace(/[^0-9.-]+/g, ""));
                         console.log('Most recent annual revenue:', mostRecentAnnualRevenue);
                         console.log('Last four quarters revenue:', lastFourQuartersRevenue);
                         
-                        // If TTM revenue exactly matches fiscal year revenue, use fiscal year growth rate
-                        if (Math.round(lastFourQuartersRevenue) === Math.round(mostRecentAnnualRevenue)) {
-                          console.log('TTM matches fiscal year exactly, using annual growth rate');
+                        // Use annual growth rate if TTM revenue is within 1% of fiscal year revenue
+                        const revenueDiff = Math.abs(lastFourQuartersRevenue - mostRecentAnnualRevenue);
+                        const threshold = mostRecentAnnualRevenue * 0.01; // 1% of annual revenue
+                        
+                        if (revenueDiff <= threshold) {
+                          console.log('Using annual growth rate as TTM revenue is within 1% of fiscal year revenue');
                           return calculateMetricValue(metric, annualData[0], annualData[1]);
                         }
 
