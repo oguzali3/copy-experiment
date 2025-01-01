@@ -131,21 +131,26 @@ export const IncomeStatement = ({
                       if (priorFourQuartersRevenue > 0) {
                         // Get the most recent fiscal year revenue
                         const mostRecentAnnualRevenue = parseFloat(String(annualData[0].revenue).replace(/[^0-9.-]+/g, ""));
+                        const previousAnnualRevenue = parseFloat(String(annualData[1].revenue).replace(/[^0-9.-]+/g, ""));
+                        
                         console.log('Most recent annual revenue:', mostRecentAnnualRevenue);
+                        console.log('Previous annual revenue:', previousAnnualRevenue);
                         console.log('Last four quarters revenue:', lastFourQuartersRevenue);
                         
-                        // Use annual growth rate if TTM revenue is within 1% of fiscal year revenue
+                        // If TTM revenue matches fiscal year revenue (within 0.1% tolerance)
                         const revenueDiff = Math.abs(lastFourQuartersRevenue - mostRecentAnnualRevenue);
-                        const threshold = mostRecentAnnualRevenue * 0.01; // 1% of annual revenue
+                        const tolerance = mostRecentAnnualRevenue * 0.001; // 0.1% tolerance
                         
-                        if (revenueDiff <= threshold) {
-                          console.log('Using annual growth rate as TTM revenue is within 1% of fiscal year revenue');
-                          return calculateMetricValue(metric, annualData[0], annualData[1]);
+                        if (revenueDiff <= tolerance) {
+                          console.log('Using fiscal year growth rate as TTM revenue matches fiscal year revenue');
+                          const annualGrowthRate = ((mostRecentAnnualRevenue - previousAnnualRevenue) / previousAnnualRevenue) * 100;
+                          console.log('Annual growth rate:', annualGrowthRate);
+                          return annualGrowthRate;
                         }
 
-                        const growth = ((lastFourQuartersRevenue - priorFourQuartersRevenue) / priorFourQuartersRevenue) * 100;
-                        console.log('Final TTM Revenue Growth:', growth);
-                        return growth;
+                        const ttmGrowthRate = ((lastFourQuartersRevenue - priorFourQuartersRevenue) / priorFourQuartersRevenue) * 100;
+                        console.log('TTM growth rate:', ttmGrowthRate);
+                        return ttmGrowthRate;
                       }
                     }
                     
