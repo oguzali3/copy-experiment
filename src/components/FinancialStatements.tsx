@@ -36,7 +36,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
       // Transform API data to match our format
       const transformedData = data.map((item: any) => ({
-        period: new Date(item.date).getFullYear().toString(),
+        period: item.period === 'TTM' ? 'TTM' : new Date(item.date).getFullYear().toString(),
         revenue: item.revenue?.toString() || "0",
         revenueGrowth: item.revenueGrowth?.toString() || "0",
         costOfRevenue: item.costOfRevenue?.toString() || "0",
@@ -50,7 +50,6 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       return {
         [ticker]: {
           annual: transformedData,
-          ttm: [], // We'll handle TTM data separately if needed
         }
       };
     },
@@ -62,36 +61,43 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     if (financialData && financialData[ticker]?.annual) {
       const annualData = financialData[ticker].annual;
       
-      // Sort data by year in ascending order
-      const sortedData = [...annualData].sort((a, b) => 
+      // Filter out TTM entry for sorting
+      const regularData = annualData.filter(item => item.period !== 'TTM');
+      const ttmData = annualData.find(item => item.period === 'TTM');
+      
+      // Sort regular data by year in ascending order
+      const sortedData = [...regularData].sort((a, b) => 
         parseInt(a.period) - parseInt(b.period)
       );
 
-      // Get earliest and latest years
+      // Get earliest and latest years from sorted regular data
       const earliestYear = sortedData[0]?.period;
       const latestYear = sortedData[sortedData.length - 1]?.period;
       
-      // Get current date for TTM calculation
-      const currentDate = new Date();
-      const currentYear = currentDate.getFullYear();
-      const currentMonth = currentDate.getMonth();
-      
-      // Get TTM date (last day of previous month)
-      const ttmDate = new Date(currentYear, currentMonth, 0);
-      const ttmDateString = formatDateToLongString(ttmDate);
-
       if (earliestYear && latestYear) {
-        // Create array of all years between earliest and latest, plus TTM
+        // Create array of all years between earliest and latest
         const years = [];
         for (let year = parseInt(earliestYear); year <= parseInt(latestYear); year++) {
           years.push(year.toString());
         }
-        years.push('TTM');
+        // Add TTM if it exists in the data
+        if (ttmData) {
+          years.push('TTM');
+        }
         setTimePeriods(years);
 
         // Set initial dates
         setStartDate(`December 31, ${earliestYear}`);
-        setEndDate(ttmDateString);
+        
+        // Set end date based on TTM
+        if (ttmData) {
+          const currentDate = new Date();
+          const currentMonth = currentDate.getMonth();
+          const ttmDate = new Date(currentDate.getFullYear(), currentMonth, 0);
+          setEndDate(formatDateToLongString(ttmDate));
+        } else {
+          setEndDate(`December 31, ${latestYear}`);
+        }
 
         // Update slider values based on the number of periods
         const periodCount = years.length - 1;
@@ -112,9 +118,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       // Set end date based on whether TTM is selected
       if (endYear === 'TTM') {
         const currentDate = new Date();
-        const currentYear = currentDate.getFullYear();
         const currentMonth = currentDate.getMonth();
-        const ttmDate = new Date(currentYear, currentMonth, 0);
+        const ttmDate = new Date(currentDate.getFullYear(), currentMonth, 0);
         setEndDate(formatDateToLongString(ttmDate));
       } else {
         setEndDate(`December 31, ${endYear}`);
@@ -148,9 +153,14 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     const endYear = timePeriods[sliderValue[1]];
     
     const filteredData = annualData.filter(item => {
+      if (item.period === 'TTM') {
+        return endYear === 'TTM';
+      }
       const year = parseInt(item.period);
       const startYearInt = parseInt(startYear);
-      const endYearInt = endYear === 'TTM' ? new Date().getFullYear() : parseInt(endYear);
+      const endYearInt = endYear === 'TTM' ? 
+        parseInt(timePeriods[timePeriods.length - 2]) : // Get last full year before TTM
+        parseInt(endYear);
       return year >= startYearInt && year <= endYearInt;
     });
 
