@@ -1,5 +1,6 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { formatValue, getMetricFormat } from "@/utils/metricDefinitions";
 
 interface IncomeStatementMetricsProps {
   metricId: string;
@@ -7,7 +8,6 @@ interface IncomeStatementMetricsProps {
   values: number[];
   isSelected: boolean;
   onToggle: (metricId: string) => void;
-  formatValue: (value: number, isPercentage?: boolean) => string;
   isGrowthMetric?: boolean;
 }
 
@@ -17,9 +17,10 @@ export const IncomeStatementMetrics = ({
   values,
   isSelected,
   onToggle,
-  formatValue,
-  isGrowthMetric = false
+  isGrowthMetric
 }: IncomeStatementMetricsProps) => {
+  const format = getMetricFormat(metricId);
+
   return (
     <TableRow>
       <TableCell className="w-[50px] pr-0">
@@ -33,17 +34,8 @@ export const IncomeStatementMetrics = ({
         {label}
       </TableCell>
       {values.map((value, index) => (
-        <TableCell 
-          key={index} 
-          className={`text-right ${
-            isGrowthMetric && value !== 0
-              ? value > 0 
-                ? 'text-green-600' 
-                : 'text-red-600'
-              : ''
-          }`}
-        >
-          {formatValue(value, isGrowthMetric)}
+        <TableCell key={index} className="text-right">
+          {formatValue(value, format)}
         </TableCell>
       ))}
     </TableRow>

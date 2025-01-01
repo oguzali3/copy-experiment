@@ -3,18 +3,19 @@ export interface MetricDefinition {
   displayName: string;
   type: 'api' | 'calculated';
   calculation?: (current: any, previous: any) => number | null;
-  format?: 'percentage' | 'currency';
+  format?: 'currency' | 'percentage' | 'shares';
 }
 
 export const INCOME_STATEMENT_METRICS: MetricDefinition[] = [
   {
     id: 'revenue',
     displayName: 'Revenue',
-    type: 'api'
+    type: 'api',
+    format: 'currency'
   },
   {
     id: 'revenueGrowth',
-    displayName: 'Revenue Growth (YoY)',
+    displayName: 'Revenue Growth',
     type: 'calculated',
     calculation: (current, previous) => {
       if (!previous?.revenue) return null;
@@ -25,149 +26,105 @@ export const INCOME_STATEMENT_METRICS: MetricDefinition[] = [
   {
     id: 'costOfRevenue',
     displayName: 'Cost of Revenue',
-    type: 'api'
+    type: 'api',
+    format: 'currency'
   },
   {
     id: 'grossProfit',
     displayName: 'Gross Profit',
-    type: 'api'
+    type: 'api',
+    format: 'currency'
   },
   {
-    id: 'sellingGeneralAndAdministrative',
-    displayName: 'Selling, General & Admin',
-    type: 'api'
-  },
-  {
-    id: 'researchAndDevelopment',
-    displayName: 'Research & Development',
-    type: 'api'
+    id: 'grossProfitMargin',
+    displayName: 'Gross Profit Margin',
+    type: 'calculated',
+    calculation: (current) => {
+      if (!current.revenue) return null;
+      return (current.grossProfit / current.revenue * 100);
+    },
+    format: 'percentage'
   },
   {
     id: 'operatingExpenses',
     displayName: 'Operating Expenses',
-    type: 'api'
+    type: 'api',
+    format: 'currency'
   },
   {
     id: 'operatingIncome',
     displayName: 'Operating Income',
-    type: 'api'
+    type: 'api',
+    format: 'currency'
   },
   {
-    id: 'interestExpense',
-    displayName: 'Interest Expense',
-    type: 'api'
-  },
-  {
-    id: 'interestAndInvestmentIncome',
-    displayName: 'Interest & Investment Income',
-    type: 'api'
-  },
-  {
-    id: 'totalOtherIncomeExpensesNet',
-    displayName: 'Other Non Operating Income (Expenses)',
-    type: 'api'
-  },
-  {
-    id: 'incomeBeforeTax',
-    displayName: 'Pretax Income',
-    type: 'api'
-  },
-  {
-    id: 'incomeTaxExpense',
-    displayName: 'Income Tax Expense',
-    type: 'api'
+    id: 'operatingMargin',
+    displayName: 'Operating Margin',
+    type: 'calculated',
+    calculation: (current) => {
+      if (!current.revenue) return null;
+      return (current.operatingIncome / current.revenue * 100);
+    },
+    format: 'percentage'
   },
   {
     id: 'netIncome',
     displayName: 'Net Income',
-    type: 'api'
+    type: 'api',
+    format: 'currency'
   },
   {
-    id: 'netIncomeGrowth',
-    displayName: 'Net Income Growth',
+    id: 'netIncomeMargin',
+    displayName: 'Net Income Margin',
     type: 'calculated',
-    calculation: (current, previous) => {
-      if (!previous?.netIncome) return null;
-      return ((current.netIncome - previous.netIncome) / previous.netIncome * 100);
-    }
+    calculation: (current) => {
+      if (!current.revenue) return null;
+      return (current.netIncome / current.revenue * 100);
+    },
+    format: 'percentage'
   },
   {
     id: 'weightedAverageShsOut',
     displayName: 'Shares Outstanding (Basic)',
-    type: 'api'
+    type: 'api',
+    format: 'shares'
   },
   {
     id: 'weightedAverageShsOutDil',
     displayName: 'Shares Outstanding (Diluted)',
-    type: 'api'
+    type: 'api',
+    format: 'shares'
   },
   {
-    id: 'sharesChangeYoY',
+    id: 'sharesChange',
     displayName: 'Shares Change (YoY)',
     type: 'calculated',
     calculation: (current, previous) => {
       if (!previous?.weightedAverageShsOut) return null;
       return ((current.weightedAverageShsOut - previous.weightedAverageShsOut) / previous.weightedAverageShsOut * 100);
-    }
-  },
-  {
-    id: 'eps',
-    displayName: 'EPS (Basic)',
-    type: 'api'
-  },
-  {
-    id: 'epsdiluted',
-    displayName: 'EPS (Diluted)',
-    type: 'api'
-  },
-  {
-    id: 'epsGrowth',
-    displayName: 'EPS Growth',
-    type: 'calculated',
-    calculation: (current, previous) => {
-      if (!previous?.epsdiluted) return null;
-      return ((current.epsdiluted - previous.epsdiluted) / previous.epsdiluted * 100);
     },
-    format: 'percentage'
-  },
-  {
-    id: 'grossProfitRatio',
-    displayName: 'Gross Margin',
-    type: 'api',
-    format: 'percentage'
-  },
-  {
-    id: 'operatingIncomeRatio',
-    displayName: 'Operating Margin',
-    type: 'api',
-    format: 'percentage'
-  },
-  {
-    id: 'netIncomeRatio',
-    displayName: 'Profit Margin',
-    type: 'api',
     format: 'percentage'
   },
   {
     id: 'ebitda',
     displayName: 'EBITDA',
-    type: 'api'
+    type: 'api',
+    format: 'currency'
   },
   {
     id: 'ebitdaMargin',
     displayName: 'EBITDA Margin',
-    type: 'api',
+    type: 'calculated',
+    calculation: (current) => {
+      if (!current.revenue) return null;
+      return (current.ebitda / current.revenue * 100);
+    },
     format: 'percentage'
   }
 ];
 
-export const getMetricDisplayName = (metricId: string): string => {
-  const metric = INCOME_STATEMENT_METRICS.find(m => m.id === metricId);
-  return metric?.displayName || metricId;
-};
-
 export const calculateMetricValue = (
-  metric: MetricDefinition,
+  metric: typeof INCOME_STATEMENT_METRICS[0],
   currentPeriod: any,
   previousPeriod: any
 ): number | null => {
@@ -185,4 +142,38 @@ export const calculateMetricValue = (
   }
   
   return null;
+};
+
+export const formatValue = (value: number | null, format?: string): string => {
+  if (value === null) return 'N/A';
+
+  switch (format) {
+    case 'percentage':
+      return `${value.toFixed(2)}%`;
+    case 'shares':
+      // Format shares in millions/billions
+      if (Math.abs(value) >= 1e9) {
+        return `${(value / 1e9).toFixed(2)}B`;
+      } else if (Math.abs(value) >= 1e6) {
+        return `${(value / 1e6).toFixed(2)}M`;
+      }
+      return value.toLocaleString();
+    default:
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        notation: 'compact',
+        maximumFractionDigits: 1
+      }).format(value);
+  }
+};
+
+export const getMetricDisplayName = (metricId: string): string => {
+  const metric = INCOME_STATEMENT_METRICS.find(m => m.id === metricId);
+  return metric ? metric.displayName : metricId;
+};
+
+export const getMetricFormat = (metricId: string): string | undefined => {
+  const metric = INCOME_STATEMENT_METRICS.find(m => m.id === metricId);
+  return metric?.format;
 };
