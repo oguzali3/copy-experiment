@@ -24,7 +24,7 @@ export const TimeRangePanel = ({
       </div>
       <div className="px-2 py-8">
         <div className="relative mx-[10%]">
-          <div className="absolute w-full top-1/2 -translate-y-1/2" style={{ zIndex: 20 }}>
+          <div className="absolute w-full top-1/2 -translate-y-1/2 z-10">
             {timePeriods.map((_, index) => (
               <div
                 key={index}
