@@ -52,7 +52,7 @@ export const FinancialDataTable = ({
                   return ((currentNetIncome - previousAnnualNetIncome) / Math.abs(previousAnnualNetIncome)) * 100;
                 }
                 if (metric.id === "epsGrowth") {
-                  // Handle TTM EPS growth similar to revenue and net income growth
+                  // Handle TTM EPS growth similar to revenue growth
                   const currentEPS = parseFloat(String(current.eps).replace(/[^0-9.-]+/g, ""));
                   const mostRecentAnnualEPS = parseFloat(String(annualData[0].eps).replace(/[^0-9.-]+/g, ""));
                   const previousAnnualEPS = parseFloat(String(annualData[1].eps).replace(/[^0-9.-]+/g, ""));
@@ -68,6 +68,24 @@ export const FinancialDataTable = ({
 
                   // Calculate TTM growth against previous year
                   return ((currentEPS - previousAnnualEPS) / Math.abs(previousAnnualEPS)) * 100;
+                }
+                if (metric.id === "ebitdaGrowth") {
+                  // Handle TTM EBITDA growth similar to other growth metrics
+                  const currentEBITDA = parseFloat(String(current.ebitda).replace(/[^0-9.-]+/g, ""));
+                  const mostRecentAnnualEBITDA = parseFloat(String(annualData[0].ebitda).replace(/[^0-9.-]+/g, ""));
+                  const previousAnnualEBITDA = parseFloat(String(annualData[1].ebitda).replace(/[^0-9.-]+/g, ""));
+
+                  // Check if TTM matches most recent fiscal year (within 0.1% tolerance)
+                  const ebitdaDiff = Math.abs(currentEBITDA - mostRecentAnnualEBITDA);
+                  const tolerance = mostRecentAnnualEBITDA * 0.001; // 0.1% tolerance
+
+                  if (ebitdaDiff <= tolerance) {
+                    // Use fiscal year growth rate
+                    return ((mostRecentAnnualEBITDA - previousAnnualEBITDA) / Math.abs(previousAnnualEBITDA)) * 100;
+                  }
+
+                  // Calculate TTM growth against previous year
+                  return ((currentEBITDA - previousAnnualEBITDA) / Math.abs(previousAnnualEBITDA)) * 100;
                 }
               }
               
