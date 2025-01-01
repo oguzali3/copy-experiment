@@ -89,14 +89,14 @@ export const TimeRangePanel = ({
                 onSliderChange([newValue, sliderValue[1]]);
               }
             }}
-            className="absolute top-1/2 left-0 right-0 -translate-y-1/2 w-full appearance-none bg-transparent cursor-pointer z-10
+            className="absolute top-1/2 left-0 right-0 -translate-y-1/2 w-full appearance-none bg-transparent cursor-pointer z-30
               [&::-webkit-slider-thumb]:appearance-none 
               [&::-webkit-slider-thumb]:w-7
               [&::-webkit-slider-thumb]:h-7
               [&::-webkit-slider-thumb]:rounded-full 
               [&::-webkit-slider-thumb]:bg-white
               [&::-webkit-slider-thumb]:border-4
-              [&::-webkit-slider-thumb]:border-primary
+              [&::-webkit-slider-thumb]:border-[#222222]
               [&::-webkit-slider-thumb]:shadow-lg
               [&::-webkit-slider-thumb]:cursor-pointer
               [&::-webkit-slider-thumb]:relative
@@ -109,7 +109,7 @@ export const TimeRangePanel = ({
               [&::-moz-range-thumb]:rounded-full
               [&::-moz-range-thumb]:bg-white
               [&::-moz-range-thumb]:border-4
-              [&::-moz-range-thumb]:border-primary
+              [&::-moz-range-thumb]:border-[#222222]
               [&::-moz-range-thumb]:shadow-lg
               [&::-moz-range-thumb]:cursor-pointer
               [&::-moz-range-thumb]:hover:scale-110
@@ -127,18 +127,18 @@ export const TimeRangePanel = ({
                 onSliderChange([sliderValue[0], newValue]);
               }
             }}
-            className="absolute top-1/2 left-0 right-0 -translate-y-1/2 w-full appearance-none bg-transparent cursor-pointer z-10
+            className="absolute top-1/2 left-0 right-0 -translate-y-1/2 w-full appearance-none bg-transparent cursor-pointer z-20
               [&::-webkit-slider-thumb]:appearance-none 
               [&::-webkit-slider-thumb]:w-7
               [&::-webkit-slider-thumb]:h-7
               [&::-webkit-slider-thumb]:rounded-full 
               [&::-webkit-slider-thumb]:bg-white
               [&::-webkit-slider-thumb]:border-4
-              [&::-webkit-slider-thumb]:border-primary
+              [&::-webkit-slider-thumb]:border-[#222222]
               [&::-webkit-slider-thumb]:shadow-lg
               [&::-webkit-slider-thumb]:cursor-pointer
               [&::-webkit-slider-thumb]:relative
-              [&::-webkit-slider-thumb]:z-30
+              [&::-webkit-slider-thumb]:z-20
               [&::-webkit-slider-thumb]:hover:scale-110
               [&::-webkit-slider-thumb]:transition-transform
               [&::-moz-range-thumb]:appearance-none
@@ -147,7 +147,7 @@ export const TimeRangePanel = ({
               [&::-moz-range-thumb]:rounded-full
               [&::-moz-range-thumb]:bg-white
               [&::-moz-range-thumb]:border-4
-              [&::-moz-range-thumb]:border-primary
+              [&::-moz-range-thumb]:border-[#222222]
               [&::-moz-range-thumb]:shadow-lg
               [&::-moz-range-thumb]:cursor-pointer
               [&::-moz-range-thumb]:hover:scale-110
