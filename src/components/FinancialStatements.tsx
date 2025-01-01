@@ -76,8 +76,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       const ttmDate = new Date(currentDate.setMonth(currentMonth - 1));
       const ttmDateString = ttmDate.toLocaleString('default', { 
         month: 'long',
-        day: '31',
-        year: currentYear
+        day: 'numeric',
+        year: 'numeric'
       });
 
       if (earliestYear) {
@@ -114,8 +114,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
         const ttmDate = new Date(currentDate.setMonth(currentMonth - 1));
         setEndDate(ttmDate.toLocaleString('default', { 
           month: 'long',
-          day: '31',
-          year: currentYear
+          day: 'numeric',
+          year: 'numeric'
         }));
       } else {
         setEndDate(`December 31, ${endYear}`);
