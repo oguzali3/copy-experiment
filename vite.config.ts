@@ -12,6 +12,11 @@ export default defineConfig(({ mode }) => ({
     host: "0.0.0.0",
     port: 8080,
   },
+  build: {
+    outDir: "dist",
+    assetsDir: "assets",
+    sourcemap: true,
+  },
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
