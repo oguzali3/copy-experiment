@@ -37,7 +37,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("TTM");
-  const [sliderValue, setSliderValue] = useState([0, 0]);
+  const [sliderValue, setSliderValue] = useState([0, 4]);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [metricTypes, setMetricTypes] = useState<Record<string, 'bar' | 'line'>>({});
   const [timePeriods, setTimePeriods] = useState<string[]>([]);
