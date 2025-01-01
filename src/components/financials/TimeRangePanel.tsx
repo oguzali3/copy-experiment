@@ -1,4 +1,5 @@
 import React from "react";
+import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
 interface TimeRangePanelProps {
@@ -18,143 +19,50 @@ export const TimeRangePanel = ({
 }: TimeRangePanelProps) => {
   const maxSteps = timePeriods.length - 1;
 
-  const handleDotClick = (index: number) => {
-    const [start, end] = sliderValue;
-    if (Math.abs(index - start) <= Math.abs(index - end)) {
-      onSliderChange([index, end]);
-    } else {
-      onSliderChange([start, index]);
-    }
-  };
-
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center text-sm text-gray-500">
-        <span>{startDate}</span>
-        <span>{endDate}</span>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div className="space-y-1.5">
+          <p className="text-sm font-medium text-muted-foreground">Start Date</p>
+          <p className="text-sm font-semibold">{startDate}</p>
+        </div>
+        <div className="space-y-1.5 text-right">
+          <p className="text-sm font-medium text-muted-foreground">End Date</p>
+          <p className="text-sm font-semibold">{endDate}</p>
+        </div>
       </div>
-      <div className="px-2 py-8">
-        <div className="relative w-full h-12">
-          {/* Track background */}
-          <div className="absolute top-1/2 left-0 right-0 h-1.5 bg-gray-200 rounded-full -translate-y-1/2" />
-          
-          {/* Active track */}
-          <div 
-            className="absolute top-1/2 h-1.5 bg-primary rounded-full -translate-y-1/2"
-            style={{
-              left: `${(sliderValue[0] / maxSteps) * 100}%`,
-              right: `${100 - (sliderValue[1] / maxSteps) * 100}%`
-            }}
-          />
 
-          {/* Period markers and labels */}
+      <div className="relative pt-6 pb-8">
+        <Slider
+          min={0}
+          max={maxSteps}
+          step={1}
+          value={sliderValue}
+          onValueChange={onSliderChange}
+          className="[&_.relative]:cursor-grab [&_.relative:active]:cursor-grabbing"
+        />
+
+        {/* Period markers and labels */}
+        <div className="absolute left-0 right-0 top-0 -mt-1">
           {timePeriods.map((period, index) => (
-            <React.Fragment key={index}>
-              {/* Marker dot */}
-              <button
-                onClick={() => handleDotClick(index)}
-                className={cn(
-                  "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 rounded-full transition-colors",
-                  "before:content-[''] before:absolute before:top-1/2 before:left-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:w-3 before:h-3 before:rounded-full",
-                  index >= sliderValue[0] && index <= sliderValue[1]
-                    ? "before:bg-primary"
-                    : "before:bg-gray-300"
-                )}
-                style={{ left: `${(index / maxSteps) * 100}%` }}
-              />
-              {/* Period label */}
+            <div
+              key={index}
+              className="absolute -translate-x-1/2"
+              style={{ left: `${(index / maxSteps) * 100}%` }}
+            >
               <div 
-                className="absolute text-xs text-gray-500"
-                style={{ 
-                  left: `${(index / maxSteps) * 100}%`,
-                  top: '100%',
-                  transform: 'translateX(-50%)'
-                }}
-              >
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full mb-2 transition-colors",
+                  index >= sliderValue[0] && index <= sliderValue[1]
+                    ? "bg-primary"
+                    : "bg-muted"
+                )}
+              />
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
                 {period}
-              </div>
-            </React.Fragment>
+              </span>
+            </div>
           ))}
-
-          {/* Right Range Input */}
-          <input
-            type="range"
-            min={0}
-            max={maxSteps}
-            step={1}
-            value={sliderValue[1]}
-            onChange={(e) => {
-              const newValue = parseInt(e.target.value);
-              if (newValue >= sliderValue[0]) {
-                onSliderChange([sliderValue[0], newValue]);
-              }
-            }}
-            className="absolute top-1/2 left-0 right-0 -translate-y-1/2 w-full appearance-none bg-transparent cursor-pointer z-20
-              [&::-webkit-slider-thumb]:appearance-none 
-              [&::-webkit-slider-thumb]:w-7
-              [&::-webkit-slider-thumb]:h-7
-              [&::-webkit-slider-thumb]:rounded-full 
-              [&::-webkit-slider-thumb]:bg-[#545454]
-              [&::-webkit-slider-thumb]:border-4
-              [&::-webkit-slider-thumb]:border-[#222222]
-              [&::-webkit-slider-thumb]:shadow-lg
-              [&::-webkit-slider-thumb]:cursor-pointer
-              [&::-webkit-slider-thumb]:relative
-              [&::-webkit-slider-thumb]:z-20
-              [&::-webkit-slider-thumb]:hover:scale-110
-              [&::-webkit-slider-thumb]:transition-transform
-              [&::-moz-range-thumb]:appearance-none
-              [&::-moz-range-thumb]:w-7
-              [&::-moz-range-thumb]:h-7
-              [&::-moz-range-thumb]:rounded-full
-              [&::-moz-range-thumb]:bg-[#545454]
-              [&::-moz-range-thumb]:border-4
-              [&::-moz-range-thumb]:border-[#222222]
-              [&::-moz-range-thumb]:shadow-lg
-              [&::-moz-range-thumb]:cursor-pointer
-              [&::-moz-range-thumb]:hover:scale-110
-              [&::-moz-range-thumb]:transition-transform"
-          />
-
-          {/* Left Range Input */}
-          <input
-            type="range"
-            min={0}
-            max={maxSteps}
-            step={1}
-            value={sliderValue[0]}
-            onChange={(e) => {
-              const newValue = parseInt(e.target.value);
-              if (newValue <= sliderValue[1]) {
-                onSliderChange([newValue, sliderValue[1]]);
-              }
-            }}
-            className="absolute top-1/2 left-0 right-0 -translate-y-1/2 w-full appearance-none bg-transparent cursor-pointer z-30
-              [&::-webkit-slider-thumb]:appearance-none 
-              [&::-webkit-slider-thumb]:w-7
-              [&::-webkit-slider-thumb]:h-7
-              [&::-webkit-slider-thumb]:rounded-full 
-              [&::-webkit-slider-thumb]:bg-[#545454]
-              [&::-webkit-slider-thumb]:border-4
-              [&::-webkit-slider-thumb]:border-[#222222]
-              [&::-webkit-slider-thumb]:shadow-lg
-              [&::-webkit-slider-thumb]:cursor-pointer
-              [&::-webkit-slider-thumb]:relative
-              [&::-webkit-slider-thumb]:z-30
-              [&::-webkit-slider-thumb]:hover:scale-110
-              [&::-webkit-slider-thumb]:transition-transform
-              [&::-moz-range-thumb]:appearance-none
-              [&::-moz-range-thumb]:w-7
-              [&::-moz-range-thumb]:h-7
-              [&::-moz-range-thumb]:rounded-full
-              [&::-moz-range-thumb]:bg-[#545454]
-              [&::-moz-range-thumb]:border-4
-              [&::-moz-range-thumb]:border-[#222222]
-              [&::-moz-range-thumb]:shadow-lg
-              [&::-moz-range-thumb]:cursor-pointer
-              [&::-moz-range-thumb]:hover:scale-110
-              [&::-moz-range-thumb]:transition-transform"
-          />
         </div>
       </div>
     </div>
