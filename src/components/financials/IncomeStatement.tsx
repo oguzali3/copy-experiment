@@ -111,26 +111,46 @@ export const IncomeStatement = ({
                       .filter((item: any) => item.period === "Q")
                       .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-                    console.log('Quarterly data for revenue growth:', quarterlyData);
+                    console.log('Raw quarterly data:', quarterlyData);
 
                     if (quarterlyData.length >= 8) {
                       // Calculate sum of last 4 quarters
                       const last4Q = quarterlyData.slice(0, 4).reduce((sum: number, q: any) => {
-                        const revenue = typeof q.revenue === 'string' ? parseFloat(q.revenue.replace(/[^0-9.-]+/g, "")) : q.revenue;
-                        return sum + revenue;
+                        console.log('Processing quarter for last4Q:', q);
+                        const revenue = q.revenue;
+                        console.log('Revenue value:', revenue, 'Type:', typeof revenue);
+                        const parsedRevenue = typeof revenue === 'string' 
+                          ? parseFloat(revenue.replace(/[^0-9.-]+/g, "")) 
+                          : revenue;
+                        console.log('Parsed revenue:', parsedRevenue);
+                        return sum + (parsedRevenue || 0);
                       }, 0);
 
                       // Calculate sum of previous 4 quarters
                       const prev4Q = quarterlyData.slice(4, 8).reduce((sum: number, q: any) => {
-                        const revenue = typeof q.revenue === 'string' ? parseFloat(q.revenue.replace(/[^0-9.-]+/g, "")) : q.revenue;
-                        return sum + revenue;
+                        console.log('Processing quarter for prev4Q:', q);
+                        const revenue = q.revenue;
+                        console.log('Revenue value:', revenue, 'Type:', typeof revenue);
+                        const parsedRevenue = typeof revenue === 'string' 
+                          ? parseFloat(revenue.replace(/[^0-9.-]+/g, "")) 
+                          : revenue;
+                        console.log('Parsed revenue:', parsedRevenue);
+                        return sum + (parsedRevenue || 0);
                       }, 0);
 
-                      console.log('TTM Revenue calculation:', { last4Q, prev4Q });
+                      console.log('TTM Revenue calculation:', { 
+                        last4Q, 
+                        prev4Q,
+                        growth: prev4Q > 0 ? ((last4Q - prev4Q) / prev4Q * 100) : 0 
+                      });
                       
-                      return prev4Q > 0 ? ((last4Q - prev4Q) / prev4Q * 100) : 0;
+                      if (prev4Q > 0 && last4Q > 0) {
+                        return ((last4Q - prev4Q) / prev4Q * 100);
+                      }
                     }
+                    
                     // Fallback to annual comparison if quarterly data isn't available
+                    console.log('Falling back to annual comparison for revenue growth');
                     return calculateMetricValue(metric, current, previous);
                   }
                 }
