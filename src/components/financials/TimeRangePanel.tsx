@@ -16,6 +16,8 @@ export const TimeRangePanel = ({
   onSliderChange,
   timePeriods
 }: TimeRangePanelProps) => {
+  const maxSteps = timePeriods.length - 1;
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center text-sm text-gray-500">
@@ -26,19 +28,19 @@ export const TimeRangePanel = ({
         <div className="relative">
           <Slider
             min={0}
-            max={timePeriods.length - 1}
+            max={maxSteps}
             step={1}
             value={sliderValue}
             onValueChange={onSliderChange}
             className="w-full"
           />
-          <div className="absolute w-full top-1/2 -translate-y-1/2 pointer-events-none" style={{ zIndex: 20 }}>
+          <div className="absolute w-full top-1/2 -translate-y-1/2 pointer-events-none" style={{ zIndex: 10 }}>
             {timePeriods.map((_, index) => (
               <div
                 key={index}
                 className="absolute w-2 h-2 bg-white border border-primary rounded-full"
                 style={{
-                  left: `${(index / (timePeriods.length - 1)) * 100}%`,
+                  left: `${(index / maxSteps) * 100}%`,
                   transform: 'translate(-50%, -50%)',
                 }}
               />
@@ -50,7 +52,7 @@ export const TimeRangePanel = ({
                 key={index} 
                 className="absolute text-xs text-gray-500"
                 style={{ 
-                  left: `${(index / (timePeriods.length - 1)) * 100}%`,
+                  left: `${(index / maxSteps) * 100}%`,
                   transform: 'translateX(-50%)'
                 }}
               >
