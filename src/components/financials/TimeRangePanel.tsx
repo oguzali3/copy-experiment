@@ -19,7 +19,6 @@ export const TimeRangePanel = ({
   const maxSteps = timePeriods.length - 1;
 
   const handleDotClick = (index: number) => {
-    // Determine which thumb to move based on which is closer
     const [start, end] = sliderValue;
     if (Math.abs(index - start) <= Math.abs(index - end)) {
       onSliderChange([index, end]);
@@ -76,7 +75,7 @@ export const TimeRangePanel = ({
             </React.Fragment>
           ))}
 
-          {/* Range Input */}
+          {/* Range Inputs */}
           <input
             type="range"
             min={0}
@@ -89,7 +88,27 @@ export const TimeRangePanel = ({
                 onSliderChange([newValue, sliderValue[1]]);
               }
             }}
-            className="absolute top-1/2 left-0 right-0 -translate-y-1/2 w-full appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:relative [&::-webkit-slider-thumb]:z-20"
+            className="absolute top-1/2 left-0 right-0 -translate-y-1/2 w-full appearance-none bg-transparent cursor-pointer z-10
+              [&::-webkit-slider-thumb]:appearance-none 
+              [&::-webkit-slider-thumb]:w-5 
+              [&::-webkit-slider-thumb]:h-5 
+              [&::-webkit-slider-thumb]:rounded-full 
+              [&::-webkit-slider-thumb]:bg-white
+              [&::-webkit-slider-thumb]:border-[3px]
+              [&::-webkit-slider-thumb]:border-primary
+              [&::-webkit-slider-thumb]:shadow-md
+              [&::-webkit-slider-thumb]:cursor-pointer
+              [&::-webkit-slider-thumb]:relative
+              [&::-webkit-slider-thumb]:z-20
+              [&::-moz-range-thumb]:appearance-none
+              [&::-moz-range-thumb]:w-5
+              [&::-moz-range-thumb]:h-5
+              [&::-moz-range-thumb]:rounded-full
+              [&::-moz-range-thumb]:bg-white
+              [&::-moz-range-thumb]:border-[3px]
+              [&::-moz-range-thumb]:border-primary
+              [&::-moz-range-thumb]:shadow-md
+              [&::-moz-range-thumb]:cursor-pointer"
           />
           <input
             type="range"
@@ -103,7 +122,27 @@ export const TimeRangePanel = ({
                 onSliderChange([sliderValue[0], newValue]);
               }
             }}
-            className="absolute top-1/2 left-0 right-0 -translate-y-1/2 w-full appearance-none bg-transparent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:relative [&::-webkit-slider-thumb]:z-20"
+            className="absolute top-1/2 left-0 right-0 -translate-y-1/2 w-full appearance-none bg-transparent cursor-pointer z-10
+              [&::-webkit-slider-thumb]:appearance-none 
+              [&::-webkit-slider-thumb]:w-5 
+              [&::-webkit-slider-thumb]:h-5 
+              [&::-webkit-slider-thumb]:rounded-full 
+              [&::-webkit-slider-thumb]:bg-white
+              [&::-webkit-slider-thumb]:border-[3px]
+              [&::-webkit-slider-thumb]:border-primary
+              [&::-webkit-slider-thumb]:shadow-md
+              [&::-webkit-slider-thumb]:cursor-pointer
+              [&::-webkit-slider-thumb]:relative
+              [&::-webkit-slider-thumb]:z-20
+              [&::-moz-range-thumb]:appearance-none
+              [&::-moz-range-thumb]:w-5
+              [&::-moz-range-thumb]:h-5
+              [&::-moz-range-thumb]:rounded-full
+              [&::-moz-range-thumb]:bg-white
+              [&::-moz-range-thumb]:border-[3px]
+              [&::-moz-range-thumb]:border-primary
+              [&::-moz-range-thumb]:shadow-md
+              [&::-moz-range-thumb]:cursor-pointer"
           />
         </div>
       </div>
