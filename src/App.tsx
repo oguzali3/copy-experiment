@@ -23,7 +23,10 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <SessionContextProvider supabaseClient={supabase}>
+    <SessionContextProvider 
+      supabaseClient={supabase}
+      initialSession={null}
+    >
       <TooltipProvider>
         <SidebarProvider>
           <div className="min-h-screen flex w-full dark:bg-[#1c1c20] dark:text-white">
