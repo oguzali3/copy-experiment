@@ -37,9 +37,8 @@ export const TimeRangePanel = ({
             ))}
           </div>
           <Slider
-            defaultValue={[0, 4]}
             min={0}
-            max={4}
+            max={timePeriods.length - 1}
             step={1}
             value={sliderValue}
             onValueChange={onSliderChange}

@@ -13,7 +13,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [sliderValue, setSliderValue] = useState([0, 4]);
+  const [sliderValue, setSliderValue] = useState([0, 1]);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [metricTypes, setMetricTypes] = useState<Record<string, 'bar' | 'line'>>({});
   const [timePeriods, setTimePeriods] = useState<string[]>([]);
@@ -34,7 +34,6 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
       if (error) throw error;
 
-      // Transform API data to match our format
       const transformedData = data.map((item: any) => ({
         period: item.period === 'TTM' ? 'TTM' : new Date(item.date).getFullYear().toString(),
         revenue: item.revenue?.toString() || "0",
@@ -70,30 +69,23 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
         parseInt(a.period) - parseInt(b.period)
       );
 
-      // Get earliest and latest years from sorted regular data
-      const earliestYear = sortedData[0]?.period;
-      const latestYear = sortedData[sortedData.length - 1]?.period;
-      
-      if (earliestYear && latestYear) {
-        // Create array of all years between earliest and latest
-        const years = [];
-        for (let year = parseInt(earliestYear); year <= parseInt(latestYear); year++) {
-          years.push(year.toString());
-        }
+      if (sortedData.length > 0) {
+        const years = sortedData.map(item => item.period);
         
-        // Add TTM if it exists in the data
+        // Add TTM if it exists
         if (ttmData) {
           years.push('TTM');
         }
         
         setTimePeriods(years);
-        console.log('Setting time periods:', years);
 
-        // Set initial dates
+        // Set initial dates based on the actual data
+        const earliestYear = years[0];
+        const latestYear = ttmData ? 'TTM' : years[years.length - 1];
+
         setStartDate(`December 31, ${earliestYear}`);
         
-        // Set end date based on TTM
-        if (ttmData) {
+        if (latestYear === 'TTM') {
           const currentDate = new Date();
           const currentMonth = currentDate.getMonth();
           const ttmDate = new Date(currentDate.getFullYear(), currentMonth, 0);
@@ -102,30 +94,28 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
           setEndDate(`December 31, ${latestYear}`);
         }
 
-        // Update slider values based on the actual number of periods
+        // Initialize slider with full range
         setSliderValue([0, years.length - 1]);
       }
     }
   }, [financialData, ticker]);
 
   const handleSliderChange = (value: number[]) => {
+    if (timePeriods.length === 0) return;
+
     setSliderValue(value);
-    if (timePeriods.length > 0) {
-      const startYear = timePeriods[value[0]];
-      const endYear = timePeriods[value[1]];
-      
-      // Set start date
-      setStartDate(`December 31, ${startYear}`);
-      
-      // Set end date based on whether TTM is selected
-      if (endYear === 'TTM') {
-        const currentDate = new Date();
-        const currentMonth = currentDate.getMonth();
-        const ttmDate = new Date(currentDate.getFullYear(), currentMonth, 0);
-        setEndDate(formatDateToLongString(ttmDate));
-      } else {
-        setEndDate(`December 31, ${endYear}`);
-      }
+    const startYear = timePeriods[value[0]];
+    const endYear = timePeriods[value[1]];
+    
+    setStartDate(`December 31, ${startYear}`);
+    
+    if (endYear === 'TTM') {
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth();
+      const ttmDate = new Date(currentDate.getFullYear(), currentMonth, 0);
+      setEndDate(formatDateToLongString(ttmDate));
+    } else {
+      setEndDate(`December 31, ${endYear}`);
     }
   };
 
@@ -137,17 +127,11 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   };
 
   const getMetricData = () => {
-    if (!selectedMetrics.length || !financialData) {
-      return [];
-    }
+    if (!selectedMetrics.length || !financialData) return [];
 
     const annualData = financialData[ticker]?.annual || [];
-    
-    if (!annualData.length) {
-      return [];
-    }
+    if (!annualData.length) return [];
 
-    // Filter years based on slider and time periods
     const startYear = timePeriods[sliderValue[0]];
     const endYear = timePeriods[sliderValue[1]];
     
@@ -158,12 +142,12 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       const year = parseInt(item.period);
       const startYearInt = parseInt(startYear);
       const endYearInt = endYear === 'TTM' ? 
-        parseInt(timePeriods[timePeriods.length - 2]) : // Get last full year before TTM
+        parseInt(timePeriods[timePeriods.length - 2]) : 
         parseInt(endYear);
+      
       return year >= startYearInt && year <= endYearInt;
     });
 
-    // Transform data for chart
     return filteredData.map((item, index) => {
       const point: Record<string, any> = { period: item.period };
       const previousItem = filteredData[index + 1];
