@@ -33,8 +33,8 @@ const Settings = () => {
       <div className="flex-1 flex flex-col">
         <AnalysisHeader />
         <div className="max-w-3xl mx-auto w-full px-6 py-8">
-          <h1 className="text-2xl font-semibold mb-8">Account Settings</h1>
-          <div className="space-y-6">
+          <h1 className="text-3xl font-semibold mb-12">Account Settings</h1>
+          <div className="space-y-10">
             <UserSettings />
             <AppearanceSettings darkMode={darkMode} onDarkModeToggle={handleDarkModeToggle} />
             <VisibilitySettings />

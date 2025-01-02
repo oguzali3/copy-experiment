@@ -16,8 +16,8 @@ export const UserSettings = () => {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-sm font-medium text-muted-foreground">USER SETTINGS</h2>
-      <div className="bg-card rounded-lg p-4">
+      <h2 className="text-sm font-medium text-muted-foreground tracking-wider">USER SETTINGS</h2>
+      <div className="bg-card rounded-lg p-6">
         <div className="flex justify-between items-center">
           <span className="text-sm font-medium">Email</span>
           <Input
