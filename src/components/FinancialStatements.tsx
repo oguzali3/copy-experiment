@@ -44,6 +44,22 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     );
   }
 
+  const calculateMetricChange = (data: any[]) => {
+    if (data.length < 2) return null;
+    const firstValue = parseFloat(data[0]?.toString().replace(/[^0-9.-]/g, '') || '0');
+    const lastValue = parseFloat(data[data.length - 1]?.toString().replace(/[^0-9.-]/g, '') || '0');
+    if (isNaN(firstValue) || isNaN(lastValue) || firstValue === 0) return null;
+    return ((lastValue - firstValue) / Math.abs(firstValue)) * 100;
+  };
+
+  const calculateCAGR = (data: any[], years: number) => {
+    if (data.length < 2 || years <= 0) return null;
+    const firstValue = parseFloat(data[0]?.toString().replace(/[^0-9.-]/g, '') || '0');
+    const lastValue = parseFloat(data[data.length - 1]?.toString().replace(/[^0-9.-]/g, '') || '0');
+    if (isNaN(firstValue) || isNaN(lastValue) || firstValue <= 0 || lastValue <= 0) return null;
+    return ((Math.pow(lastValue / firstValue, 1 / years) - 1) * 100);
+  };
+
   const getMetricData = () => {
     if (!selectedMetrics.length) return [];
 
@@ -82,7 +98,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     });
 
     // Filter data based on selected time range
-    return transformedData.filter((item: any) => {
+    const filteredData = transformedData.filter((item: any) => {
       if (item.period === 'TTM') {
         return endYear === 'TTM';
       }
@@ -93,6 +109,36 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
         parseInt(endYear);
       
       return year >= startYearInt && year <= endYearInt;
+    });
+
+    // Calculate years for CAGR
+    const years = endYear === 'TTM' ? 
+      filteredData.length - 2 : // Exclude TTM from year count
+      filteredData.length - 1;
+
+    // Add total change and CAGR to metric names
+    return filteredData.map((item: any) => {
+      const metricValues = selectedMetrics.map(metric => {
+        const values = filteredData.map(d => d[metric]);
+        const totalChange = calculateMetricChange(values);
+        const cagr = calculateCAGR(values, years);
+        return {
+          metric,
+          values,
+          totalChange: totalChange !== null ? `${totalChange.toFixed(2)}%` : 'NaN%',
+          cagr: cagr !== null ? `${cagr.toFixed(2)}%` : 'NaN%'
+        };
+      });
+
+      const enhancedDataPoint = { ...item };
+      metricValues.forEach(({ metric, totalChange, cagr }) => {
+        if (enhancedDataPoint[metric] !== undefined) {
+          enhancedDataPoint[`${metric}_totalChange`] = totalChange;
+          enhancedDataPoint[`${metric}_cagr`] = cagr;
+        }
+      });
+
+      return enhancedDataPoint;
     });
   };
 
