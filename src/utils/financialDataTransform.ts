@@ -14,50 +14,55 @@ export const transformFinancialData = (
   const endYear = timePeriods[sliderValue[1]];
 
   // Combine and transform both income statement and balance sheet data
-  const transformedData = (financialData[ticker].annual || []).map((item: any) => {
-    const year = item.period;
-    const dataPoint: Record<string, any> = { period: year };
+  const transformedData = (financialData[ticker].annual || [])
+    .filter((item: any) => item.period !== 'TTM') // Filter out TTM from regular data
+    .map((item: any) => {
+      const year = item.period;
+      const dataPoint: Record<string, any> = { period: year };
 
-    // Add income statement metrics
-    selectedMetrics.forEach(metric => {
-      if (item[metric] !== undefined) {
-        dataPoint[metric] = item[metric];
-      }
-    });
-
-    // Find and add corresponding balance sheet metrics
-    const balanceSheetItem = balanceSheetData?.find((bsItem: any) => {
-      const bsYear = bsItem.date ? new Date(bsItem.date).getFullYear().toString() : 'TTM';
-      return bsYear === year;
-    });
-
-    if (balanceSheetItem) {
+      // Add income statement metrics
       selectedMetrics.forEach(metric => {
-        if (balanceSheetItem[metric] !== undefined && !dataPoint[metric]) {
-          dataPoint[metric] = balanceSheetItem[metric];
+        if (item[metric] !== undefined) {
+          dataPoint[metric] = parseFloat(item[metric]);
         }
       });
-    }
 
-    return dataPoint;
-  });
+      // Find and add corresponding balance sheet metrics
+      const balanceSheetItem = balanceSheetData?.find((bsItem: any) => {
+        if (bsItem.period === 'TTM') return false;
+        const bsYear = bsItem.date ? new Date(bsItem.date).getFullYear().toString() : bsItem.period;
+        return bsYear === year;
+      });
 
-  // Add TTM data if available
-  const ttmIncomeStatement = financialData[ticker].annual.find((item: any) => item.period === 'TTM');
-  const ttmBalanceSheet = balanceSheetData?.find((item: any) => item.period === 'TTM');
-
-  if (ttmIncomeStatement || ttmBalanceSheet) {
-    const ttmDataPoint: Record<string, any> = { period: 'TTM' };
-    
-    selectedMetrics.forEach(metric => {
-      if (ttmIncomeStatement?.[metric] !== undefined) {
-        ttmDataPoint[metric] = ttmIncomeStatement[metric];
-      } else if (ttmBalanceSheet?.[metric] !== undefined) {
-        ttmDataPoint[metric] = ttmBalanceSheet[metric];
+      if (balanceSheetItem) {
+        selectedMetrics.forEach(metric => {
+          if (balanceSheetItem[metric] !== undefined && !dataPoint[metric]) {
+            dataPoint[metric] = parseFloat(balanceSheetItem[metric]);
+          }
+        });
       }
+
+      return dataPoint;
     });
 
-    transformedData.push(ttmDataPoint);
+  // Add TTM data if available and selected
+  if (endYear === 'TTM') {
+    const ttmIncomeStatement = financialData[ticker].annual.find((item: any) => item.period === 'TTM');
+    const ttmBalanceSheet = balanceSheetData?.find((item: any) => item.period === 'TTM');
+
+    if (ttmIncomeStatement || ttmBalanceSheet) {
+      const ttmDataPoint: Record<string, any> = { period: 'TTM' };
+      
+      selectedMetrics.forEach(metric => {
+        if (ttmIncomeStatement?.[metric] !== undefined) {
+          ttmDataPoint[metric] = parseFloat(ttmIncomeStatement[metric]);
+        } else if (ttmBalanceSheet?.[metric] !== undefined) {
+          ttmDataPoint[metric] = parseFloat(ttmBalanceSheet[metric]);
+        }
+      });
+
+      transformedData.push(ttmDataPoint);
+    }
   }
 
   // Filter data based on selected time range
@@ -74,15 +79,20 @@ export const transformFinancialData = (
     return year >= startYearInt && year <= endYearInt;
   });
 
-  // Calculate years for CAGR
-  const years = endYear === 'TTM' ? 
-    filteredData.length - 2 : // Exclude TTM from year count
-    filteredData.length - 1;
+  // Sort data chronologically
+  filteredData.sort((a: any, b: any) => {
+    if (a.period === 'TTM') return 1;
+    if (b.period === 'TTM') return -1;
+    return parseInt(a.period) - parseInt(b.period);
+  });
 
-  // Add total change and CAGR to metric names
+  // Calculate years for CAGR (excluding TTM)
+  const nonTTMData = filteredData.filter(item => item.period !== 'TTM');
+  const years = nonTTMData.length - 1;
+
   return filteredData.map((item: any) => {
     const metricValues = selectedMetrics.map(metric => {
-      const values = filteredData.map(d => d[metric]);
+      const values = nonTTMData.map(d => d[metric]);
       const totalChange = calculateMetricChange(values);
       const cagr = calculateCAGR(values, years);
       return {
