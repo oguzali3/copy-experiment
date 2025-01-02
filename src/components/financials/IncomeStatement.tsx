@@ -54,18 +54,14 @@ export const IncomeStatement = ({
     return new Date(item.date).getFullYear().toString();
   });
 
-  const metrics = selectedMetrics.map(metricId => ({
-    id: metricId,
-    label: metricId,
-    type: "value"
-  }));
-
   return (
     <div className="space-y-6">
       <FinancialDataTable
-        data={combinedData}
-        metrics={metrics}
-        timePeriods={periods}
+        combinedData={combinedData}
+        periods={periods}
+        selectedMetrics={selectedMetrics}
+        onMetricToggle={handleMetricToggle}
+        annualData={annualData}
       />
     </div>
   );

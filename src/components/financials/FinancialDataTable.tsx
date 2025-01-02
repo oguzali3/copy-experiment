@@ -1,74 +1,124 @@
-import React from 'react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { parseNumber, calculateGrowth } from './BalanceSheetUtils';
+import { Table, TableBody } from "@/components/ui/table";
+import { IncomeStatementHeader } from "./IncomeStatementHeader";
+import { IncomeStatementMetrics } from "./IncomeStatementMetrics";
+import { INCOME_STATEMENT_METRICS, calculateMetricValue, getMetricDisplayName, formatValue } from "@/utils/metricDefinitions";
+import { calculateTTMGrowth } from "@/utils/ttmGrowthCalculator";
+import { parseNumber } from "./IncomeStatementUtils";
 
 interface FinancialDataTableProps {
-  data: any[];
-  metrics: Array<{
-    id: string;
-    label: string;
-    type?: string;
-    calculation?: (current: any, previous: any) => number;
-    format?: string;
-  }>;
-  timePeriods: string[];
+  combinedData: any[];
+  periods: string[];
+  selectedMetrics: string[];
+  onMetricToggle: (metricId: string) => void;
+  annualData: any[];
 }
 
-export const FinancialDataTable = ({ data, metrics, timePeriods }: FinancialDataTableProps) => {
-  const formatValue = (value: number | string, format?: string) => {
-    if (format === "percentage") {
-      return `${Number(value).toFixed(2)}%`;
-    }
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      notation: 'compact',
-      maximumFractionDigits: 1
-    }).format(Number(value));
-  };
-
-  const getValue = (metric: any, periodData: any, previousPeriodData: any) => {
-    if (metric.type === "calculated" && metric.calculation) {
-      return metric.calculation(periodData, previousPeriodData);
-    }
-    return parseNumber(periodData[metric.id]);
-  };
-
+export const FinancialDataTable = ({
+  combinedData,
+  periods,
+  selectedMetrics,
+  onMetricToggle,
+  annualData
+}: FinancialDataTableProps) => {
   return (
-    <ScrollArea className="h-[600px]">
+    <div className="overflow-x-auto">
       <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[200px] bg-white sticky left-0 z-10">Metric</TableHead>
-            {timePeriods.map((period) => (
-              <TableHead key={period} className="text-right min-w-[120px]">{period}</TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
+        <IncomeStatementHeader periods={periods} />
         <TableBody>
-          {metrics.map((metric) => (
-            <TableRow key={metric.id}>
-              <TableCell className="font-medium bg-white sticky left-0">{metric.label}</TableCell>
-              {timePeriods.map((period, index) => {
-                const periodData = data.find(d => d.period === period);
-                const previousPeriodData = index < timePeriods.length - 1 
-                  ? data.find(d => d.period === timePeriods[index + 1])
-                  : null;
-                
-                if (!periodData) return <TableCell key={period} className="text-right">-</TableCell>;
-                
-                const value = getValue(metric, periodData, previousPeriodData);
-                return (
-                  <TableCell key={period} className="text-right">
-                    {formatValue(value, metric.format)}
-                  </TableCell>
-                );
-              })}
-            </TableRow>
-          ))}
+          {INCOME_STATEMENT_METRICS.map((metric) => {
+            const values = combinedData.map((current, index) => {
+              const previous = combinedData[index + 1];
+              
+              if (current.period === "TTM") {
+                // Special handling for shares metrics in TTM period
+                if (metric.id === 'weightedAverageShsOut' || metric.id === 'weightedAverageShsOutDil') {
+                  const sharesInBillions = annualData[0][metric.id] / 1000000000;
+                  return `${sharesInBillions.toFixed(2)}B`;
+                }
+                if (metric.id === 'sharesChange') {
+                  const currentShares = annualData[0].weightedAverageShsOutDil / 1000000000;
+                  const previousShares = annualData[1].weightedAverageShsOutDil / 1000000000;
+                  return ((currentShares - previousShares) / Math.abs(previousShares)) * 100;
+                }
+                if (metric.id === "revenueGrowth") {
+                  return calculateTTMGrowth(current, annualData);
+                }
+                if (metric.id === "netIncomeGrowth") {
+                  const currentNetIncome = parseFloat(String(current.netIncome).replace(/[^0-9.-]+/g, ""));
+                  const mostRecentAnnualNetIncome = parseFloat(String(annualData[0].netIncome).replace(/[^0-9.-]+/g, ""));
+                  const previousAnnualNetIncome = parseFloat(String(annualData[1].netIncome).replace(/[^0-9.-]+/g, ""));
+
+                  const netIncomeDiff = Math.abs(currentNetIncome - mostRecentAnnualNetIncome);
+                  const tolerance = mostRecentAnnualNetIncome * 0.001;
+
+                  if (netIncomeDiff <= tolerance) {
+                    return ((mostRecentAnnualNetIncome - previousAnnualNetIncome) / Math.abs(previousAnnualNetIncome)) * 100;
+                  }
+
+                  return ((currentNetIncome - previousAnnualNetIncome) / Math.abs(previousAnnualNetIncome)) * 100;
+                }
+                if (metric.id === "epsGrowth") {
+                  const currentEPS = parseFloat(String(current.eps).replace(/[^0-9.-]+/g, ""));
+                  const mostRecentAnnualEPS = parseFloat(String(annualData[0].eps).replace(/[^0-9.-]+/g, ""));
+                  const previousAnnualEPS = parseFloat(String(annualData[1].eps).replace(/[^0-9.-]+/g, ""));
+
+                  const epsDiff = Math.abs(currentEPS - mostRecentAnnualEPS);
+                  const tolerance = mostRecentAnnualEPS * 0.001;
+
+                  if (epsDiff <= tolerance) {
+                    return ((mostRecentAnnualEPS - previousAnnualEPS) / Math.abs(previousAnnualEPS)) * 100;
+                  }
+
+                  return ((currentEPS - previousAnnualEPS) / Math.abs(previousAnnualEPS)) * 100;
+                }
+                if (metric.id === "ebitdaGrowth") {
+                  const currentEBITDA = parseFloat(String(current.ebitda).replace(/[^0-9.-]+/g, ""));
+                  const mostRecentAnnualEBITDA = parseFloat(String(annualData[0].ebitda).replace(/[^0-9.-]+/g, ""));
+                  const previousAnnualEBITDA = parseFloat(String(annualData[1].ebitda).replace(/[^0-9.-]+/g, ""));
+
+                  const ebitdaDiff = Math.abs(currentEBITDA - mostRecentAnnualEBITDA);
+                  const tolerance = mostRecentAnnualEBITDA * 0.001;
+
+                  if (ebitdaDiff <= tolerance) {
+                    return ((mostRecentAnnualEBITDA - previousAnnualEBITDA) / Math.abs(previousAnnualEBITDA)) * 100;
+                  }
+
+                  return ((currentEBITDA - previousAnnualEBITDA) / Math.abs(previousAnnualEBITDA)) * 100;
+                }
+              }
+              
+              return calculateMetricValue(metric, current, previous);
+            });
+
+            return (
+              <IncomeStatementMetrics
+                key={metric.id}
+                metricId={metric.id}
+                label={getMetricDisplayName(metric.id)}
+                values={values.map(v => {
+                  if (metric.id === 'weightedAverageShsOut' || metric.id === 'weightedAverageShsOutDil') {
+                    if (typeof v === 'string' && v.endsWith('B')) {
+                      return parseFloat(v);
+                    }
+                    const sharesInBillions = parseNumber(v) / 1000000000;
+                    return parseFloat(sharesInBillions.toFixed(2));
+                  }
+                  return parseNumber(v);
+                })}
+                isSelected={selectedMetrics.includes(metric.id)}
+                onToggle={onMetricToggle}
+                formatValue={(value, format) => {
+                  if (metric.id === 'weightedAverageShsOut' || metric.id === 'weightedAverageShsOutDil') {
+                    return `${value.toFixed(2)}B`;
+                  }
+                  return formatValue(value, format);
+                }}
+                isGrowthMetric={metric.format === 'percentage'}
+              />
+            );
+          })}
         </TableBody>
       </Table>
-    </ScrollArea>
+    </div>
   );
 };

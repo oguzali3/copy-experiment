@@ -13,27 +13,12 @@ export const parseNumber = (value: any): number => {
   return parseFloat(value.toString().replace(/,/g, ''));
 };
 
-export const calculateGrowth = (current: number, previous: number): number => {
-  if (!previous || previous === 0) return 0;
-  return ((current - previous) / previous) * 100;
-};
-
 export const metrics = [
   // Assets
   { id: "cashAndCashEquivalents", label: "Cash & Equivalents" },
   { id: "shortTermInvestments", label: "Short-Term Investments" },
   { id: "cashAndShortTermInvestments", label: "Cash & Short-Term Investments" },
-  { 
-    id: "cashGrowth", 
-    label: "Cash Growth",
-    type: "calculated",
-    calculation: (current: any, previous: any) => {
-      const currentCash = parseNumber(current.cashAndShortTermInvestments);
-      const previousCash = parseNumber(previous?.cashAndShortTermInvestments);
-      return calculateGrowth(currentCash, previousCash);
-    },
-    format: "percentage"
-  },
+  { id: "cashGrowth", label: "Cash Growth" },
   { id: "netReceivables", label: "Receivables" },
   { id: "inventory", label: "Inventory" },
   { id: "prepaidExpenses", label: "Prepaid Expenses" },
