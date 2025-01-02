@@ -27,7 +27,7 @@ export const FinancialDataTable = ({
     const previousCash = parseNumber(previous.cashAndShortTermInvestments);
     
     if (previousCash === 0) return 0;
-    return ((currentCash - previousCash) / Math.abs(previousCash)) * 100;
+    return (currentCash / previousCash - 1) * 100;
   };
 
   return (
@@ -56,7 +56,8 @@ export const FinancialDataTable = ({
                 if (metric.id === "cashGrowth") {
                   const currentCash = parseNumber(current.cashAndShortTermInvestments);
                   const previousYearCash = parseNumber(annualData[1].cashAndShortTermInvestments);
-                  return ((currentCash - previousYearCash) / Math.abs(previousYearCash)) * 100;
+                  if (previousYearCash === 0) return 0;
+                  return (currentCash / previousYearCash - 1) * 100;
                 }
                 if (metric.id === "netIncomeGrowth") {
                   const currentNetIncome = parseFloat(String(current.netIncome).replace(/[^0-9.-]+/g, ""));
