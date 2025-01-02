@@ -63,13 +63,13 @@ export const metrics = [
     label: "Book Value Per Share",
     type: "calculated",
     calculate: (row: any) => {
-      const totalEquity = parseNumber(row.totalStockholdersEquity);
-      const sharesOutstanding = parseNumber(row.weightedAverageShsOutDil);
+      // Both values are in millions, so we need to convert them to the same unit
+      const totalEquity = parseNumber(row.totalStockholdersEquity); // in millions
+      const sharesOutstanding = parseNumber(row.weightedAverageShsOutDil); // in millions
       
       if (!totalEquity || !sharesOutstanding) return 0;
       
-      // Both values are already in their base units (not in billions)
-      // totalEquity is in millions, sharesOutstanding is in millions
+      // Since both values are in millions, dividing them directly gives us the per-share value
       return totalEquity / sharesOutstanding;
     }
   }

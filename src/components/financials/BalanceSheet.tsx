@@ -78,7 +78,7 @@ export const BalanceSheet = ({
     };
   });
 
-  // Add TTM data if available, ensuring proper data combination
+  // Add TTM data if available
   const filteredData = ttmBalanceSheet && ttmIncomeStatement
     ? [{ 
         ...ttmBalanceSheet,
@@ -89,12 +89,6 @@ export const BalanceSheet = ({
       ...combinedData
     ] 
     : combinedData;
-
-  console.log('TTM Data:', {
-    equity: ttmBalanceSheet?.totalStockholdersEquity,
-    shares: ttmIncomeStatement?.weightedAverageShsOutDil,
-    calculated: ttmBalanceSheet?.totalStockholdersEquity / ttmIncomeStatement?.weightedAverageShsOutDil
-  });
 
   return (
     <div className="space-y-6">
