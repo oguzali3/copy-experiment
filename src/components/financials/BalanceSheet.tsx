@@ -20,9 +20,17 @@ export const BalanceSheet = ({
   onMetricsChange,
   ticker 
 }: BalanceSheetProps) => {
-  const { data: financialData, isLoading, error } = useQuery({
+  // Fetch balance sheet data
+  const { data: balanceSheetData, isLoading: isBalanceSheetLoading, error: balanceSheetError } = useQuery({
     queryKey: ['balance-sheet', ticker],
     queryFn: () => fetchFinancialData('balance-sheet', ticker),
+    enabled: !!ticker,
+  });
+
+  // Fetch income statement data for shares outstanding
+  const { data: incomeStatementData, isLoading: isIncomeStatementLoading } = useQuery({
+    queryKey: ['income-statement', ticker],
+    queryFn: () => fetchFinancialData('income-statement', ticker),
     enabled: !!ticker,
   });
 
@@ -33,25 +41,52 @@ export const BalanceSheet = ({
     onMetricsChange(newMetrics);
   };
 
+  const isLoading = isBalanceSheetLoading || isIncomeStatementLoading;
+
   if (isLoading) {
     return <BalanceSheetLoading />;
   }
 
-  if (error || !financialData || !Array.isArray(financialData) || financialData.length === 0) {
-    return <BalanceSheetError error={error as Error} ticker={ticker} />;
+  if (balanceSheetError || !balanceSheetData || !Array.isArray(balanceSheetData) || balanceSheetData.length === 0) {
+    return <BalanceSheetError error={balanceSheetError as Error} ticker={ticker} />;
   }
 
   // Get TTM data first
-  const ttmData = financialData.find((item: any) => item.period === 'TTM');
+  const ttmBalanceSheet = balanceSheetData.find((item: any) => item.period === 'TTM');
+  const ttmIncomeStatement = incomeStatementData?.find((item: any) => item.period === 'TTM');
   
   // Get annual data sorted by date
-  const annualData = financialData
+  const annualBalanceSheet = balanceSheetData
     .filter((item: any) => item.period === 'FY')
     .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 10); // Get last 10 years
+    .slice(0, 10);
 
-  // Combine TTM with annual data
-  const filteredData = ttmData ? [ttmData, ...annualData] : annualData;
+  // Get corresponding income statement data
+  const annualIncomeStatement = incomeStatementData
+    ?.filter((item: any) => item.period === 'FY')
+    .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 10);
+
+  // Combine balance sheet and income statement data by date
+  const combinedData = annualBalanceSheet.map((balanceSheet: any) => {
+    const matchingIncomeStatement = annualIncomeStatement?.find(
+      (income: any) => new Date(income.date).getFullYear() === new Date(balanceSheet.date).getFullYear()
+    );
+    return {
+      ...balanceSheet,
+      weightedAverageShsOutDil: matchingIncomeStatement?.weightedAverageShsOutDil
+    };
+  });
+
+  // Add TTM data if available
+  const filteredData = ttmBalanceSheet 
+    ? [{ 
+        ...ttmBalanceSheet, 
+        weightedAverageShsOutDil: ttmIncomeStatement?.weightedAverageShsOutDil 
+      }, 
+      ...combinedData
+    ] 
+    : combinedData;
 
   return (
     <div className="space-y-6">
