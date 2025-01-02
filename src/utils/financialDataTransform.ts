@@ -27,41 +27,60 @@ export const transformFinancialData = (
   // Check if we're dealing with cash flow metrics
   const isCashFlowMetric = (metric: string) => {
     const cashFlowMetrics = [
-      "netIncome", "depreciationAndAmortization", "deferredIncomeTax",
-      "stockBasedCompensation", "changeInWorkingCapital", "accountsReceivables",
-      "inventory", "accountsPayables", "otherWorkingCapital", "otherNonCashItems",
-      "netCashProvidedByOperatingActivities", "investmentsInPropertyPlantAndEquipment",
-      "acquisitionsNet", "purchasesOfInvestments", "salesMaturitiesOfInvestments",
-      "otherInvestingActivites", "netCashUsedForInvestingActivites", "debtRepayment",
-      "commonStockIssued", "commonStockRepurchased", "dividendsPaid",
-      "otherFinancingActivites", "netCashUsedProvidedByFinancingActivities",
-      "effectOfForexChangesOnCash", "netChangeInCash", "cashAtEndOfPeriod",
-      "cashAtBeginningOfPeriod", "operatingCashFlow", "capitalExpenditure",
-      "freeCashFlow"
+      "operatingCashFlow", "investingCashFlow", "financingCashFlow", 
+      "netCashFlow", "freeCashFlow", "capitalExpenditure"
     ];
     return cashFlowMetrics.includes(metric);
   };
 
+  // Check if we're dealing with balance sheet metrics
+  const isBalanceSheetMetric = (metric: string) => {
+    const balanceSheetMetrics = [
+      "totalAssets", "totalLiabilities", "totalEquity", "cashAndCashEquivalents",
+      "shortTermInvestments", "netReceivables", "inventory", "propertyPlantAndEquipment",
+      "goodwill", "intangibleAssets", "longTermInvestments", "shortTermDebt",
+      "accountsPayable", "deferredRevenue", "longTermDebt", "retainedEarnings"
+    ];
+    return balanceSheetMetrics.includes(metric);
+  };
+
   const hasCashFlowMetrics = selectedMetrics.some(isCashFlowMetric);
+  const hasBalanceSheetMetrics = selectedMetrics.some(isBalanceSheetMetric);
+  const hasIncomeStatementMetrics = selectedMetrics.some(m => 
+    !isCashFlowMetric(m) && !isBalanceSheetMetric(m));
 
   // Get annual data without TTM
   const annualData = financialData[ticker].annual.filter((item: any) => item.period !== 'TTM');
   
-  // Transform data based on metric type
-  let transformedData;
-  if (hasCashFlowMetrics) {
-    transformedData = transformCashFlowMetrics(annualData, selectedMetrics);
-  } else {
-    transformedData = annualData.map((item: any) => {
-      const baseData = transformIncomeStatementMetrics(item, selectedMetrics);
-      return transformBalanceSheetMetrics(
-        balanceSheetData?.filter((d: any) => d.period !== 'TTM'),
-        item.period,
-        selectedMetrics,
-        baseData
+  // Transform data based on metric types
+  let transformedData = annualData.map((item: any) => {
+    let periodData: Record<string, any> = {
+      period: item.period === 'TTM' ? 'TTM' : 
+        (item.calendarYear ? item.calendarYear.toString() : 
+          new Date(item.date).getFullYear().toString())
+    };
+
+    // Transform income statement metrics
+    if (hasIncomeStatementMetrics) {
+      periodData = {
+        ...periodData,
+        ...transformIncomeStatementMetrics(item, selectedMetrics.filter(m => 
+          !isCashFlowMetric(m) && !isBalanceSheetMetric(m)))
+      };
+    }
+
+    // Transform balance sheet metrics
+    if (hasBalanceSheetMetrics && balanceSheetData) {
+      periodData = transformBalanceSheetMetrics(
+        balanceSheetData,
+        periodData.period,
+        selectedMetrics.filter(isBalanceSheetMetric),
+        periodData
       );
-    });
-  }
+    }
+
+    return periodData;
+  });
 
   // Add TTM data if it exists and is selected
   if (endYear === 'TTM') {
@@ -69,10 +88,7 @@ export const transformFinancialData = (
     const ttmBalanceSheet = balanceSheetData?.find((item: any) => item.period === 'TTM');
 
     if (ttmData || ttmBalanceSheet) {
-      const transformedTTM = hasCashFlowMetrics
-        ? transformCashFlowMetrics([ttmData], selectedMetrics)[0]
-        : transformTTMData(ttmData, ttmBalanceSheet, selectedMetrics);
-      
+      const transformedTTM = transformTTMData(ttmData, ttmBalanceSheet, selectedMetrics);
       if (transformedTTM) {
         transformedData = [transformedTTM, ...transformedData];
       }
@@ -83,7 +99,7 @@ export const transformFinancialData = (
   transformedData = filterByTimeRange(transformedData, startYear, endYear);
   transformedData = sortChronologically(transformedData);
 
-  // Remove duplicate TTM entries if they exist
+  // Remove duplicate TTM entries
   const seen = new Set();
   transformedData = transformedData.filter((item: any) => {
     const key = item.period;

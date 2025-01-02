@@ -20,7 +20,10 @@ export const transformIncomeStatementMetrics = (item: any, selectedMetrics: stri
       }
     } else if (item[metric] !== undefined) {
       // Handle direct properties
-      transformedData[metric] = parseFloat(item[metric]);
+      const value = typeof item[metric] === 'string' 
+        ? parseFloat(item[metric].replace(/,/g, '')) 
+        : item[metric];
+      transformedData[metric] = value;
     } else {
       transformedData[metric] = 0;
     }
@@ -37,15 +40,17 @@ export const transformBalanceSheetMetrics = (
 ) => {
   if (!balanceSheetData?.length) return baseData;
 
-  const periodData = balanceSheetData.find(item => 
-    (item.period === period) || 
-    (item.calendarYear && item.calendarYear.toString() === period)
-  );
+  const periodData = balanceSheetData.find(item => {
+    const itemPeriod = item.period === 'TTM' ? 'TTM' : 
+      (item.calendarYear ? item.calendarYear.toString() : 
+        new Date(item.date).getFullYear().toString());
+    return itemPeriod === period;
+  });
 
   if (!periodData) return baseData;
 
   selectedMetrics.forEach(metric => {
-    if (baseData[metric] === undefined && periodData[metric] !== undefined) {
+    if (periodData[metric] !== undefined) {
       const value = typeof periodData[metric] === 'string' 
         ? parseFloat(periodData[metric].replace(/,/g, ''))
         : periodData[metric];
@@ -94,7 +99,9 @@ export const transformCashFlowMetrics = (data: any[], selectedMetrics: string[])
 
   return data.map(item => {
     const transformedItem: Record<string, any> = {
-      period: item.period === 'TTM' ? 'TTM' : item.period
+      period: item.period === 'TTM' ? 'TTM' : 
+        (item.calendarYear ? item.calendarYear.toString() : 
+          new Date(item.date).getFullYear().toString())
     };
 
     selectedMetrics.forEach(metric => {
