@@ -8,6 +8,7 @@ import { useFinancialData } from "@/hooks/useFinancialData";
 import { useTimePeriods } from "@/hooks/useTimePeriods";
 import { useMetrics } from "@/hooks/useMetrics";
 import { useBalanceSheetData } from "@/hooks/useBalanceSheetData";
+import { transformFinancialData } from "@/utils/financialDataTransform";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
@@ -44,119 +45,14 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     );
   }
 
-  const calculateMetricChange = (data: any[]) => {
-    if (data.length < 2) return null;
-    const values = data.map(value => {
-      if (typeof value === 'string') {
-        return parseFloat(value.replace(/[^0-9.-]/g, '') || '0');
-      }
-      return value;
-    }).filter(value => !isNaN(value));
-
-    if (values.length < 2) return null;
-    const firstValue = values[0];
-    const lastValue = values[values.length - 1];
-    
-    if (firstValue === 0) return null;
-    return ((lastValue - firstValue) / Math.abs(firstValue)) * 100;
-  };
-
-  const calculateCAGR = (data: any[], years: number) => {
-    if (data.length < 2 || years <= 0) return null;
-    const values = data.map(value => {
-      if (typeof value === 'string') {
-        return parseFloat(value.replace(/[^0-9.-]/g, '') || '0');
-      }
-      return value;
-    }).filter(value => !isNaN(value));
-
-    if (values.length < 2) return null;
-    const firstValue = values[0];
-    const lastValue = values[values.length - 1];
-    
-    if (firstValue <= 0 || lastValue <= 0) return null;
-    return ((Math.pow(lastValue / firstValue, 1 / years) - 1) * 100);
-  };
-
-  const getMetricData = () => {
-    if (!selectedMetrics.length) return [];
-
-    const startYear = timePeriods[sliderValue[0]];
-    const endYear = timePeriods[sliderValue[1]];
-
-    // Combine and transform both income statement and balance sheet data
-    const transformedData = (financialData?.[ticker]?.annual || []).map((item: any) => {
-      const year = item.period;
-      const dataPoint: Record<string, any> = { period: year };
-
-      // Add income statement metrics
-      selectedMetrics.forEach(metric => {
-        if (item[metric] !== undefined) {
-          dataPoint[metric] = item[metric];
-        }
-      });
-
-      // Find and add corresponding balance sheet metrics
-      const balanceSheetItem = balanceSheetData?.find((bsItem: any) => {
-        const bsYear = bsItem.date ? new Date(bsItem.date).getFullYear().toString() : 'TTM';
-        return bsYear === year;
-      });
-
-      if (balanceSheetItem) {
-        selectedMetrics.forEach(metric => {
-          if (balanceSheetItem[metric] !== undefined && !dataPoint[metric]) {
-            dataPoint[metric] = balanceSheetItem[metric];
-          }
-        });
-      }
-
-      return dataPoint;
-    });
-
-    // Filter data based on selected time range
-    const filteredData = transformedData.filter((item: any) => {
-      if (item.period === 'TTM') {
-        return endYear === 'TTM';
-      }
-      const year = parseInt(item.period);
-      const startYearInt = parseInt(startYear);
-      const endYearInt = endYear === 'TTM' ? 
-        parseInt(timePeriods[timePeriods.length - 2]) : 
-        parseInt(endYear);
-      
-      return year >= startYearInt && year <= endYearInt;
-    });
-
-    // Calculate years for CAGR
-    const years = endYear === 'TTM' ? 
-      filteredData.length - 2 : // Exclude TTM from year count
-      filteredData.length - 1;
-
-    // Add total change and CAGR to metric names
-    return filteredData.map((item: any) => {
-      const metricValues = selectedMetrics.map(metric => {
-        const values = filteredData.map(d => d[metric]);
-        const totalChange = calculateMetricChange(values);
-        const cagr = calculateCAGR(values, years);
-        return {
-          metric,
-          values,
-          totalChange: totalChange !== null ? `${totalChange.toFixed(2)}%` : 'NaN%',
-          cagr: cagr !== null ? `${cagr.toFixed(2)}%` : 'NaN%'
-        };
-      });
-
-      const enhancedDataPoint = { ...item };
-      metricValues.forEach(({ metric, totalChange, cagr }) => {
-        enhancedDataPoint[`${metric}_totalChange`] = totalChange;
-        enhancedDataPoint[`${metric}_cagr`] = cagr;
-      });
-
-      return enhancedDataPoint;
-    });
-  };
-
-  const metricData = getMetricData();
+  const metricData = transformFinancialData(
+    financialData,
+    balanceSheetData,
+    selectedMetrics,
+    timePeriods,
+    sliderValue,
+    ticker
+  );
 
   return (
     <div className="space-y-6">
