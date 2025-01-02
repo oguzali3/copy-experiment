@@ -7,10 +7,12 @@ import { FinancialStatementsTabs } from "./financials/FinancialStatementsTabs";
 import { useFinancialData } from "@/hooks/useFinancialData";
 import { useTimePeriods } from "@/hooks/useTimePeriods";
 import { useMetrics } from "@/hooks/useMetrics";
+import { useBalanceSheetData } from "@/hooks/useBalanceSheetData";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
-  const { financialData, isLoading } = useFinancialData(ticker);
+  const { financialData, isLoading: isIncomeStatementLoading } = useFinancialData(ticker);
+  const { filteredData: balanceSheetData, isLoading: isBalanceSheetLoading } = useBalanceSheetData(ticker);
   
   const {
     startDate,
@@ -25,8 +27,9 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     setSelectedMetrics,
     metricTypes,
     handleMetricTypeChange,
-    getMetricData
   } = useMetrics(ticker);
+
+  const isLoading = isIncomeStatementLoading || isBalanceSheetLoading;
 
   if (isLoading) {
     return (
@@ -41,11 +44,59 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     );
   }
 
-  const metricData = getMetricData(
-    financialData?.[ticker]?.annual || [],
-    timePeriods,
-    sliderValue
-  );
+  const getMetricData = () => {
+    if (!selectedMetrics.length) return [];
+
+    const startYear = timePeriods[sliderValue[0]];
+    const endYear = timePeriods[sliderValue[1]];
+
+    // Combine and transform both income statement and balance sheet data
+    const transformedData = (financialData?.[ticker]?.annual || []).map((item: any) => {
+      const year = item.period;
+      const dataPoint: Record<string, any> = { period: year };
+
+      // Add income statement metrics
+      selectedMetrics.forEach(metric => {
+        if (item[metric] !== undefined) {
+          const value = parseFloat(item[metric]?.toString().replace(/[^0-9.-]/g, '') || '0');
+          dataPoint[metric] = isNaN(value) ? 0 : value;
+        }
+      });
+
+      // Find and add corresponding balance sheet metrics
+      const balanceSheetItem = balanceSheetData?.find((bsItem: any) => {
+        const bsYear = bsItem.date ? new Date(bsItem.date).getFullYear().toString() : 'TTM';
+        return bsYear === year;
+      });
+
+      if (balanceSheetItem) {
+        selectedMetrics.forEach(metric => {
+          if (balanceSheetItem[metric] !== undefined && !dataPoint[metric]) {
+            const value = parseFloat(balanceSheetItem[metric]?.toString().replace(/[^0-9.-]/g, '') || '0');
+            dataPoint[metric] = isNaN(value) ? 0 : value;
+          }
+        });
+      }
+
+      return dataPoint;
+    });
+
+    // Filter data based on selected time range
+    return transformedData.filter((item: any) => {
+      if (item.period === 'TTM') {
+        return endYear === 'TTM';
+      }
+      const year = parseInt(item.period);
+      const startYearInt = parseInt(startYear);
+      const endYearInt = endYear === 'TTM' ? 
+        parseInt(timePeriods[timePeriods.length - 2]) : 
+        parseInt(endYear);
+      
+      return year >= startYearInt && year <= endYearInt;
+    });
+  };
+
+  const metricData = getMetricData();
 
   return (
     <div className="space-y-6">
