@@ -14,7 +14,8 @@ import { calculateMetricStatistics } from './financialTransformers/metricCalcula
 const isCashFlowMetric = (metric: string) => {
   const cashFlowMetrics = [
     "operatingCashFlow", "investingCashFlow", "financingCashFlow", 
-    "netCashFlow", "freeCashFlow", "capitalExpenditure", "investmentsInPropertyPlantAndEquipment"
+    "netCashFlow", "freeCashFlow", "capitalExpenditure", 
+    "investmentsInPropertyPlantAndEquipment", "depreciationAndAmortization"
   ];
   return cashFlowMetrics.includes(metric);
 };
