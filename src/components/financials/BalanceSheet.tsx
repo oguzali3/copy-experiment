@@ -75,7 +75,9 @@ export const BalanceSheet = ({
                     </TableCell>
                     {filteredData.map((row: any) => (
                       <TableCell key={`${row.date}-${metric.id}`} className="text-right">
-                        {formatValue(parseNumber(row[metric.id]))}
+                        {metric.type === "calculated" 
+                          ? formatValue(metric.calculate(row))
+                          : formatValue(parseNumber(row[metric.id]))}
                       </TableCell>
                     ))}
                   </TableRow>
