@@ -6,7 +6,8 @@ import {
 import {
   transformIncomeStatementMetrics,
   transformBalanceSheetMetrics,
-  transformTTMData
+  transformTTMData,
+  transformCashFlowMetrics
 } from './financialTransformers/metricTransformers';
 import { calculateMetricStatistics } from './financialTransformers/metricCalculations';
 
@@ -24,17 +25,45 @@ export const transformFinancialData = (
   const endYear = timePeriods[sliderValue[1]];
 
   // Transform regular annual data
-  let transformedData = (financialData[ticker].annual || [])
-    .filter(item => item.period !== 'TTM')
-    .map((item: any) => {
-      const baseData = transformIncomeStatementMetrics(item, selectedMetrics);
-      return transformBalanceSheetMetrics(
-        balanceSheetData,
-        item.period,
-        selectedMetrics,
-        baseData
-      );
-    });
+  let transformedData;
+  
+  // Check if we're dealing with cash flow metrics
+  const isCashFlowMetric = (metric: string) => {
+    const cashFlowMetrics = [
+      "netIncome", "depreciationAndAmortization", "deferredIncomeTax",
+      "stockBasedCompensation", "changeInWorkingCapital", "accountsReceivables",
+      "inventory", "accountsPayables", "otherWorkingCapital", "otherNonCashItems",
+      "netCashProvidedByOperatingActivities", "investmentsInPropertyPlantAndEquipment",
+      "acquisitionsNet", "purchasesOfInvestments", "salesMaturitiesOfInvestments",
+      "otherInvestingActivites", "netCashUsedForInvestingActivites", "debtRepayment",
+      "commonStockIssued", "commonStockRepurchased", "dividendsPaid",
+      "otherFinancingActivites", "netCashUsedProvidedByFinancingActivities",
+      "effectOfForexChangesOnCash", "netChangeInCash", "cashAtEndOfPeriod",
+      "cashAtBeginningOfPeriod", "operatingCashFlow", "capitalExpenditure",
+      "freeCashFlow"
+    ];
+    return cashFlowMetrics.includes(metric);
+  };
+
+  const hasCashFlowMetrics = selectedMetrics.some(isCashFlowMetric);
+
+  if (hasCashFlowMetrics) {
+    // Use cash flow specific transformation
+    transformedData = transformCashFlowMetrics(financialData[ticker].annual, selectedMetrics);
+  } else {
+    // Use regular transformation for income statement and balance sheet
+    transformedData = financialData[ticker].annual
+      .filter((item: any) => item.period !== 'TTM')
+      .map((item: any) => {
+        const baseData = transformIncomeStatementMetrics(item, selectedMetrics);
+        return transformBalanceSheetMetrics(
+          balanceSheetData,
+          item.period,
+          selectedMetrics,
+          baseData
+        );
+      });
+  }
 
   // Add TTM data if available and selected
   if (endYear === 'TTM') {

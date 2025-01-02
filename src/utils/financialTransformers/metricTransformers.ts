@@ -1,38 +1,52 @@
+import { filterOutTTM, sortChronologically } from './dataFilters';
+
 export const transformIncomeStatementMetrics = (item: any, selectedMetrics: string[]) => {
-  const dataPoint: Record<string, any> = { period: item.period };
-  
+  const transformedData: Record<string, any> = {
+    period: item.period
+  };
+
   selectedMetrics.forEach(metric => {
-    if (item[metric] !== undefined) {
-      dataPoint[metric] = parseFloat(item[metric]);
+    if (item.metrics) {
+      const metricData = item.metrics.find((m: any) => m.name === metric);
+      if (metricData) {
+        transformedData[metric] = parseFloat(metricData.value);
+      } else {
+        // If the metric is directly available on the item
+        if (item[metric] !== undefined) {
+          transformedData[metric] = parseFloat(item[metric]);
+        } else {
+          transformedData[metric] = 0;
+        }
+      }
+    } else if (item[metric] !== undefined) {
+      // Handle direct properties
+      transformedData[metric] = parseFloat(item[metric]);
+    } else {
+      transformedData[metric] = 0;
     }
   });
-  
-  return dataPoint;
+
+  return transformedData;
 };
 
 export const transformBalanceSheetMetrics = (
   balanceSheetData: any[],
-  year: string,
+  period: string,
   selectedMetrics: string[],
-  existingData: Record<string, any>
+  baseData: Record<string, any>
 ) => {
-  const balanceSheetItem = balanceSheetData?.find((bsItem: any) => {
-    if (bsItem.period === 'TTM') return false;
-    const bsYear = bsItem.date ? 
-      new Date(bsItem.date).getFullYear().toString() : 
-      bsItem.period;
-    return bsYear === year;
+  if (!balanceSheetData?.length) return baseData;
+
+  const periodData = balanceSheetData.find(item => item.period === period);
+  if (!periodData) return baseData;
+
+  selectedMetrics.forEach(metric => {
+    if (baseData[metric] === undefined && periodData[metric] !== undefined) {
+      baseData[metric] = parseFloat(periodData[metric]);
+    }
   });
 
-  if (balanceSheetItem) {
-    selectedMetrics.forEach(metric => {
-      if (balanceSheetItem[metric] !== undefined && !existingData[metric]) {
-        existingData[metric] = parseFloat(balanceSheetItem[metric]);
-      }
-    });
-  }
-
-  return existingData;
+  return baseData;
 };
 
 export const transformTTMData = (
@@ -40,15 +54,44 @@ export const transformTTMData = (
   ttmBalanceSheet: any,
   selectedMetrics: string[]
 ) => {
-  const ttmDataPoint: Record<string, any> = { period: 'TTM' };
-  
+  const transformedData: Record<string, any> = {
+    period: 'TTM'
+  };
+
   selectedMetrics.forEach(metric => {
+    // Check TTM income statement first
     if (ttmIncomeStatement?.[metric] !== undefined) {
-      ttmDataPoint[metric] = parseFloat(ttmIncomeStatement[metric]);
-    } else if (ttmBalanceSheet?.[metric] !== undefined) {
-      ttmDataPoint[metric] = parseFloat(ttmBalanceSheet[metric]);
+      transformedData[metric] = parseFloat(ttmIncomeStatement[metric]);
+    }
+    // Then check TTM balance sheet
+    else if (ttmBalanceSheet?.[metric] !== undefined) {
+      transformedData[metric] = parseFloat(ttmBalanceSheet[metric]);
+    }
+    // If neither has the metric, set to 0
+    else {
+      transformedData[metric] = 0;
     }
   });
 
-  return ttmDataPoint;
+  return transformedData;
+};
+
+export const transformCashFlowMetrics = (data: any[], selectedMetrics: string[]) => {
+  if (!data?.length) return [];
+
+  return data.map(item => {
+    const transformedItem: Record<string, any> = {
+      period: item.period
+    };
+
+    selectedMetrics.forEach(metric => {
+      if (item[metric] !== undefined) {
+        transformedItem[metric] = parseFloat(item[metric]);
+      } else {
+        transformedItem[metric] = 0;
+      }
+    });
+
+    return transformedItem;
+  });
 };
