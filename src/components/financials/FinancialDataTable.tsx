@@ -20,6 +20,16 @@ export const FinancialDataTable = ({
   onMetricToggle,
   annualData
 }: FinancialDataTableProps) => {
+  const calculateCashGrowth = (current: any, previous: any) => {
+    if (!previous) return null;
+    
+    const currentCash = parseNumber(current.cashAndShortTermInvestments);
+    const previousCash = parseNumber(previous.cashAndShortTermInvestments);
+    
+    if (previousCash === 0) return 0;
+    return ((currentCash - previousCash) / Math.abs(previousCash)) * 100;
+  };
+
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -42,6 +52,11 @@ export const FinancialDataTable = ({
                 }
                 if (metric.id === "revenueGrowth") {
                   return calculateTTMGrowth(current, annualData);
+                }
+                if (metric.id === "cashGrowth") {
+                  const currentCash = parseNumber(current.cashAndShortTermInvestments);
+                  const previousYearCash = parseNumber(annualData[1].cashAndShortTermInvestments);
+                  return ((currentCash - previousYearCash) / Math.abs(previousYearCash)) * 100;
                 }
                 if (metric.id === "netIncomeGrowth") {
                   const currentNetIncome = parseFloat(String(current.netIncome).replace(/[^0-9.-]+/g, ""));
@@ -87,6 +102,10 @@ export const FinancialDataTable = ({
                 }
               }
               
+              if (metric.id === 'cashGrowth') {
+                return calculateCashGrowth(current, previous);
+              }
+              
               return calculateMetricValue(metric, current, previous);
             });
 
@@ -113,7 +132,7 @@ export const FinancialDataTable = ({
                   }
                   return formatValue(value, format);
                 }}
-                isGrowthMetric={metric.format === 'percentage'}
+                isGrowthMetric={metric.format === 'percentage' || metric.id === 'cashGrowth'}
               />
             );
           })}

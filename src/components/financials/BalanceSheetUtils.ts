@@ -18,7 +18,7 @@ export const metrics = [
   { id: "cashAndCashEquivalents", label: "Cash & Equivalents" },
   { id: "shortTermInvestments", label: "Short-Term Investments" },
   { id: "cashAndShortTermInvestments", label: "Cash & Short-Term Investments" },
-  { id: "cashGrowth", label: "Cash Growth" },
+  { id: "cashGrowth", label: "Cash Growth", format: "percentage" },
   { id: "netReceivables", label: "Receivables" },
   { id: "inventory", label: "Inventory" },
   { id: "prepaidExpenses", label: "Prepaid Expenses" },
