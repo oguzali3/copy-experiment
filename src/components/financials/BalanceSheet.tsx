@@ -53,6 +53,22 @@ export const BalanceSheet = ({
   // Combine TTM with annual data
   const filteredData = ttmData ? [ttmData, ...annualData] : annualData;
 
+  // Calculate book value per share for each period
+  filteredData.forEach((period: any, index: number) => {
+    metrics
+      .filter(metric => metric.type === 'calculated')
+      .forEach(metric => {
+        if (metric.calculation) {
+          period[metric.id] = metric.calculation(period);
+        }
+        if (metric.growthCalculation && index < filteredData.length - 1) {
+          const currentPeriod = period;
+          const previousPeriod = filteredData[index + 1];
+          period[`${metric.id}Growth`] = metric.growthCalculation(currentPeriod, previousPeriod);
+        }
+      });
+  });
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg border">
