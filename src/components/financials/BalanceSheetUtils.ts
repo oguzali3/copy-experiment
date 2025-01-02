@@ -67,8 +67,10 @@ export const metrics = [
       const sharesOutstanding = parseNumber(row.weightedAverageShsOutDil);
       
       if (!totalEquity || !sharesOutstanding) return 0;
-      // Convert both values to billions for correct calculation
-      return (totalEquity / 1000000000) / (sharesOutstanding / 1000000000);
+      
+      // Both values are already in their base units (not in billions)
+      // totalEquity is in millions, sharesOutstanding is in millions
+      return totalEquity / sharesOutstanding;
     }
   }
 ];

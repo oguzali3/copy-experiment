@@ -78,15 +78,23 @@ export const BalanceSheet = ({
     };
   });
 
-  // Add TTM data if available
-  const filteredData = ttmBalanceSheet 
+  // Add TTM data if available, ensuring proper data combination
+  const filteredData = ttmBalanceSheet && ttmIncomeStatement
     ? [{ 
-        ...ttmBalanceSheet, 
-        weightedAverageShsOutDil: ttmIncomeStatement?.weightedAverageShsOutDil 
+        ...ttmBalanceSheet,
+        weightedAverageShsOutDil: ttmIncomeStatement.weightedAverageShsOutDil,
+        date: ttmBalanceSheet.date,
+        period: 'TTM'
       }, 
       ...combinedData
     ] 
     : combinedData;
+
+  console.log('TTM Data:', {
+    equity: ttmBalanceSheet?.totalStockholdersEquity,
+    shares: ttmIncomeStatement?.weightedAverageShsOutDil,
+    calculated: ttmBalanceSheet?.totalStockholdersEquity / ttmIncomeStatement?.weightedAverageShsOutDil
+  });
 
   return (
     <div className="space-y-6">
