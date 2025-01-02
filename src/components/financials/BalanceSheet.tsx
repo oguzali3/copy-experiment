@@ -47,12 +47,12 @@ export const BalanceSheet = ({
     return <BalanceSheetError error={error as Error} ticker={ticker} />;
   }
 
-  // Transform data for the chart
+  // Transform data for the chart - ensure numeric values
   const chartData = filteredData.map(item => ({
-    period: item.date,
+    period: item.date.split('-')[0], // Extract year from date
     ...selectedMetrics.reduce((acc, metric) => ({
       ...acc,
-      [metric]: parseFloat(item[metric]?.toString().replace(/,/g, '') || '0')
+      [metric]: parseFloat(String(item[metric]).replace(/,/g, '')) || 0
     }), {})
   }));
 
