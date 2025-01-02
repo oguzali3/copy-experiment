@@ -15,7 +15,16 @@ const isCashFlowMetric = (metric: string) => {
   const cashFlowMetrics = [
     "operatingCashFlow", "investingCashFlow", "financingCashFlow", 
     "netCashFlow", "freeCashFlow", "capitalExpenditure", 
-    "investmentsInPropertyPlantAndEquipment", "depreciationAndAmortization"
+    "investmentsInPropertyPlantAndEquipment", "depreciationAndAmortization",
+    "stockBasedCompensation", "deferredIncomeTax", "otherNonCashItems",
+    "changeInWorkingCapital", "accountsReceivables", "inventory",
+    "accountsPayables", "otherWorkingCapital", "netCashProvidedByOperatingActivities",
+    "acquisitionsNet", "purchasesOfInvestments", "salesMaturitiesOfInvestments",
+    "otherInvestingActivites", "netCashUsedForInvestingActivites", "debtRepayment",
+    "commonStockIssued", "commonStockRepurchased", "dividendsPaid",
+    "otherFinancingActivites", "netCashUsedProvidedByFinancingActivities",
+    "effectOfForexChangesOnCash", "netChangeInCash", "cashAtEndOfPeriod",
+    "cashAtBeginningOfPeriod"
   ];
   return cashFlowMetrics.includes(metric);
 };
@@ -70,12 +79,9 @@ export const transformFinancialData = (
           new Date(cf.date).getFullYear().toString() === period
         );
         if (cashFlowItem) {
-          // For cash flow items, check both the original metric name and potential variations
-          const value = cashFlowItem[metric] || cashFlowItem[metric.toLowerCase()] || 
-                       cashFlowItem[metric.replace(/([A-Z])/g, '_$1').toLowerCase()];
-          periodData[metric] = typeof value === 'string'
-            ? parseFloat(value.replace(/,/g, ''))
-            : value;
+          periodData[metric] = typeof cashFlowItem[metric] === 'string'
+            ? parseFloat(cashFlowItem[metric].replace(/,/g, ''))
+            : cashFlowItem[metric];
         }
       } else {
         // Income statement metrics
@@ -87,7 +93,6 @@ export const transformFinancialData = (
       // Ensure all metrics have a value
       if (periodData[metric] === undefined) {
         periodData[metric] = 0;
-        console.log(`No value found for metric ${metric} in period ${period}`);
       }
     });
 
@@ -109,11 +114,9 @@ export const transformFinancialData = (
             ? parseFloat(ttmBalanceSheet[metric].replace(/,/g, ''))
             : ttmBalanceSheet[metric];
         } else if (isCashFlowMetric(metric) && ttmCashFlow) {
-          const value = ttmCashFlow[metric] || ttmCashFlow[metric.toLowerCase()] || 
-                       ttmCashFlow[metric.replace(/([A-Z])/g, '_$1').toLowerCase()];
-          ttmData[metric] = typeof value === 'string'
-            ? parseFloat(value.replace(/,/g, ''))
-            : value;
+          ttmData[metric] = typeof ttmCashFlow[metric] === 'string'
+            ? parseFloat(ttmCashFlow[metric].replace(/,/g, ''))
+            : ttmCashFlow[metric];
         } else if (ttmIncomeStatement) {
           ttmData[metric] = typeof ttmIncomeStatement[metric] === 'string'
             ? parseFloat(ttmIncomeStatement[metric].replace(/,/g, ''))
@@ -122,7 +125,6 @@ export const transformFinancialData = (
 
         if (ttmData[metric] === undefined) {
           ttmData[metric] = 0;
-          console.log(`No TTM value found for metric ${metric}`);
         }
       });
 

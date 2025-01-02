@@ -9,45 +9,13 @@ import { useTimePeriods } from "@/hooks/useTimePeriods";
 import { useMetrics } from "@/hooks/useMetrics";
 import { useBalanceSheetData } from "@/hooks/useBalanceSheetData";
 import { transformFinancialData } from "@/utils/financialDataTransform";
+import { useCashFlowData } from "@/hooks/useCashFlowData";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
   const { financialData, isLoading: isIncomeStatementLoading } = useFinancialData(ticker);
   const { filteredData: balanceSheetData, isLoading: isBalanceSheetLoading } = useBalanceSheetData(ticker);
-  
-  // Mock cash flow data for now - in a real app this would come from an API
-  const cashFlowData = [
-    {
-      date: "2023-12-31",
-      period: "2023",
-      investmentsInPropertyPlantAndEquipment: "25000000000",
-      depreciationAndAmortization: "11000000000"
-    },
-    {
-      date: "2022-12-31",
-      period: "2022",
-      investmentsInPropertyPlantAndEquipment: "24000000000",
-      depreciationAndAmortization: "10000000000"
-    },
-    {
-      date: "2021-12-31",
-      period: "2021",
-      investmentsInPropertyPlantAndEquipment: "23000000000",
-      depreciationAndAmortization: "9000000000"
-    },
-    {
-      date: "2020-12-31",
-      period: "2020",
-      investmentsInPropertyPlantAndEquipment: "22000000000",
-      depreciationAndAmortization: "8000000000"
-    },
-    {
-      date: "2019-12-31",
-      period: "2019",
-      investmentsInPropertyPlantAndEquipment: "21000000000",
-      depreciationAndAmortization: "7000000000"
-    }
-  ];
+  const { data: cashFlowData, isLoading: isCashFlowLoading } = useCashFlowData(ticker);
   
   const {
     startDate,
@@ -64,7 +32,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     handleMetricTypeChange,
   } = useMetrics(ticker);
 
-  const isLoading = isIncomeStatementLoading || isBalanceSheetLoading;
+  const isLoading = isIncomeStatementLoading || isBalanceSheetLoading || isCashFlowLoading;
 
   if (isLoading) {
     return (
