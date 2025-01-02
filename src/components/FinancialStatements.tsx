@@ -46,17 +46,35 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
   const calculateMetricChange = (data: any[]) => {
     if (data.length < 2) return null;
-    const firstValue = parseFloat(data[0]?.toString().replace(/[^0-9.-]/g, '') || '0');
-    const lastValue = parseFloat(data[data.length - 1]?.toString().replace(/[^0-9.-]/g, '') || '0');
-    if (isNaN(firstValue) || isNaN(lastValue) || firstValue === 0) return null;
+    const values = data.map(value => {
+      if (typeof value === 'string') {
+        return parseFloat(value.replace(/[^0-9.-]/g, '') || '0');
+      }
+      return value;
+    }).filter(value => !isNaN(value));
+
+    if (values.length < 2) return null;
+    const firstValue = values[0];
+    const lastValue = values[values.length - 1];
+    
+    if (firstValue === 0) return null;
     return ((lastValue - firstValue) / Math.abs(firstValue)) * 100;
   };
 
   const calculateCAGR = (data: any[], years: number) => {
     if (data.length < 2 || years <= 0) return null;
-    const firstValue = parseFloat(data[0]?.toString().replace(/[^0-9.-]/g, '') || '0');
-    const lastValue = parseFloat(data[data.length - 1]?.toString().replace(/[^0-9.-]/g, '') || '0');
-    if (isNaN(firstValue) || isNaN(lastValue) || firstValue <= 0 || lastValue <= 0) return null;
+    const values = data.map(value => {
+      if (typeof value === 'string') {
+        return parseFloat(value.replace(/[^0-9.-]/g, '') || '0');
+      }
+      return value;
+    }).filter(value => !isNaN(value));
+
+    if (values.length < 2) return null;
+    const firstValue = values[0];
+    const lastValue = values[values.length - 1];
+    
+    if (firstValue <= 0 || lastValue <= 0) return null;
     return ((Math.pow(lastValue / firstValue, 1 / years) - 1) * 100);
   };
 
@@ -74,8 +92,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       // Add income statement metrics
       selectedMetrics.forEach(metric => {
         if (item[metric] !== undefined) {
-          const value = parseFloat(item[metric]?.toString().replace(/[^0-9.-]/g, '') || '0');
-          dataPoint[metric] = isNaN(value) ? 0 : value;
+          dataPoint[metric] = item[metric];
         }
       });
 
@@ -88,8 +105,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       if (balanceSheetItem) {
         selectedMetrics.forEach(metric => {
           if (balanceSheetItem[metric] !== undefined && !dataPoint[metric]) {
-            const value = parseFloat(balanceSheetItem[metric]?.toString().replace(/[^0-9.-]/g, '') || '0');
-            dataPoint[metric] = isNaN(value) ? 0 : value;
+            dataPoint[metric] = balanceSheetItem[metric];
           }
         });
       }
@@ -132,10 +148,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
       const enhancedDataPoint = { ...item };
       metricValues.forEach(({ metric, totalChange, cagr }) => {
-        if (enhancedDataPoint[metric] !== undefined) {
-          enhancedDataPoint[`${metric}_totalChange`] = totalChange;
-          enhancedDataPoint[`${metric}_cagr`] = cagr;
-        }
+        enhancedDataPoint[`${metric}_totalChange`] = totalChange;
+        enhancedDataPoint[`${metric}_cagr`] = cagr;
       });
 
       return enhancedDataPoint;
