@@ -1,9 +1,9 @@
+import React, { useState, useEffect } from "react";
 import { BalanceSheetLoading } from "./BalanceSheetLoading";
 import { BalanceSheetError } from "./BalanceSheetError";
 import { BalanceSheetTable } from "./BalanceSheetTable";
 import { useBalanceSheetData } from "@/hooks/useBalanceSheetData";
 import { MetricsChartSection } from "./MetricsChartSection";
-import { useState } from "react";
 
 interface BalanceSheetProps {
   timeFrame: "annual" | "quarterly" | "ttm";
@@ -28,7 +28,7 @@ export const BalanceSheet = ({
   };
 
   // Initialize chart type for new metrics
-  React.useEffect(() => {
+  useEffect(() => {
     const newMetricTypes = { ...metricTypes };
     selectedMetrics.forEach(metric => {
       if (!newMetricTypes[metric]) {
