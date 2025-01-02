@@ -23,8 +23,8 @@ export const FinancialDataTable = ({
   const calculateCashGrowth = (current: any, previous: any) => {
     if (!previous) return null;
     
-    const currentCash = parseFloat(String(current.cashAndShortTermInvestments).replace(/[^0-9.-]+/g, ""));
-    const previousCash = parseFloat(String(previous.cashAndShortTermInvestments).replace(/[^0-9.-]+/g, ""));
+    const currentCash = parseNumber(current.cashAndShortTermInvestments);
+    const previousCash = parseNumber(previous.cashAndShortTermInvestments);
     
     if (previousCash === 0) return 0;
     return ((currentCash - previousCash) / Math.abs(previousCash)) * 100;
@@ -54,8 +54,8 @@ export const FinancialDataTable = ({
                   return calculateTTMGrowth(current, annualData);
                 }
                 if (metric.id === "cashGrowth") {
-                  const currentCash = parseFloat(String(current.cashAndShortTermInvestments).replace(/[^0-9.-]+/g, ""));
-                  const previousYearCash = parseFloat(String(annualData[1].cashAndShortTermInvestments).replace(/[^0-9.-]+/g, ""));
+                  const currentCash = parseNumber(current.cashAndShortTermInvestments);
+                  const previousYearCash = parseNumber(annualData[1].cashAndShortTermInvestments);
                   return ((currentCash - previousYearCash) / Math.abs(previousYearCash)) * 100;
                 }
                 if (metric.id === "netIncomeGrowth") {
@@ -129,6 +129,9 @@ export const FinancialDataTable = ({
                 formatValue={(value, format) => {
                   if (metric.id === 'weightedAverageShsOut' || metric.id === 'weightedAverageShsOutDil') {
                     return `${value.toFixed(2)}B`;
+                  }
+                  if (metric.id === 'cashGrowth') {
+                    return `${value.toFixed(1)}%`;
                   }
                   return formatValue(value, format);
                 }}
