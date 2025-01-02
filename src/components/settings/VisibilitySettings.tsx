@@ -3,16 +3,16 @@ import { Lock } from "lucide-react";
 
 export const VisibilitySettings = () => {
   return (
-    <section>
-      <h2 className="text-sm font-medium text-muted-foreground mb-4">VISIBILITY</h2>
-      <div className="bg-white dark:bg-[#2b2b35] rounded-lg p-4 shadow-lg border border-gray-100 dark:border-gray-800 hover:shadow-xl transition-shadow">
+    <section className="space-y-4">
+      <h2 className="text-sm font-medium text-muted-foreground">VISIBILITY</h2>
+      <div className="bg-card rounded-lg p-4">
         <div className="flex justify-between items-center">
           <div>
             <div className="flex items-center gap-2">
-              <span>Owner Mode</span>
-              <Lock className="h-4 w-4" />
+              <span className="text-sm font-medium">Owner Mode</span>
+              <Lock className="h-4 w-4 text-muted-foreground" />
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground mt-1">
               Hides all stock prices to analyze businesses like an owner would.
             </p>
           </div>
