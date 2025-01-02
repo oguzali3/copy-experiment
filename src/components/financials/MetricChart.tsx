@@ -22,7 +22,7 @@ export const MetricChart = ({
 }: MetricChartProps) => {
   if (!data?.length || !metrics?.length) {
     return (
-      <div className="w-full bg-white p-4 rounded-lg border flex items-center justify-center h-[300px]">
+      <div className="w-full bg-white p-4 rounded-lg flex items-center justify-center h-[300px]">
         <p className="text-gray-500">
           {!metrics?.length ? 'Select metrics to visualize' : 'No data available'}
         </p>
@@ -51,7 +51,7 @@ export const MetricChart = ({
   });
 
   return (
-    <div className="w-full bg-white p-4 rounded-lg border space-y-4">
+    <div className="w-full bg-white p-4 rounded-lg space-y-4">
       <div className="flex flex-wrap gap-4 items-center justify-between">
         <div className="flex gap-2 items-center">
           {metrics.map((metric) => (
