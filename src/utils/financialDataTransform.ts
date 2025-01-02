@@ -24,9 +24,6 @@ export const transformFinancialData = (
   const startYear = timePeriods[sliderValue[0]];
   const endYear = timePeriods[sliderValue[1]];
 
-  // Transform regular annual data
-  let transformedData;
-  
   // Check if we're dealing with cash flow metrics
   const isCashFlowMetric = (metric: string) => {
     const cashFlowMetrics = [
@@ -46,6 +43,7 @@ export const transformFinancialData = (
   };
 
   const hasCashFlowMetrics = selectedMetrics.some(isCashFlowMetric);
+  let transformedData;
 
   if (hasCashFlowMetrics) {
     // Use cash flow specific transformation
@@ -80,13 +78,15 @@ export const transformFinancialData = (
         ttmBalanceSheet,
         selectedMetrics
       );
-      transformedData.push(ttmData);
+      transformedData.unshift(ttmData);
     }
   }
 
   // Filter and sort data
   transformedData = filterByTimeRange(transformedData, startYear, endYear);
   transformedData = sortChronologically(transformedData);
+
+  console.log('Transformed financial data:', transformedData);
 
   // Calculate statistics
   return calculateMetricStatistics(transformedData, selectedMetrics);

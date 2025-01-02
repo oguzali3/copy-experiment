@@ -37,7 +37,11 @@ export const transformBalanceSheetMetrics = (
 ) => {
   if (!balanceSheetData?.length) return baseData;
 
-  const periodData = balanceSheetData.find(item => item.period === period);
+  const periodData = balanceSheetData.find(item => 
+    item.period === period || 
+    (item.calendarYear && item.calendarYear.toString() === period)
+  );
+  
   if (!periodData) return baseData;
 
   selectedMetrics.forEach(metric => {
@@ -81,12 +85,16 @@ export const transformCashFlowMetrics = (data: any[], selectedMetrics: string[])
 
   return data.map(item => {
     const transformedItem: Record<string, any> = {
-      period: item.period
+      period: item.period === 'TTM' ? 'TTM' : 
+        (item.calendarYear ? item.calendarYear.toString() : item.period)
     };
 
     selectedMetrics.forEach(metric => {
       if (item[metric] !== undefined) {
-        transformedItem[metric] = parseFloat(item[metric]);
+        const value = typeof item[metric] === 'string' ? 
+          parseFloat(item[metric].replace(/,/g, '')) : 
+          item[metric];
+        transformedItem[metric] = value;
       } else {
         transformedItem[metric] = 0;
       }
