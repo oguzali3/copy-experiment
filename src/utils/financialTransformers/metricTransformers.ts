@@ -2,7 +2,7 @@ import { filterOutTTM, sortChronologically } from './dataFilters';
 
 export const transformIncomeStatementMetrics = (item: any, selectedMetrics: string[]) => {
   const transformedData: Record<string, any> = {
-    period: item.period
+    period: item.period === 'TTM' ? 'TTM' : item.period
   };
 
   selectedMetrics.forEach(metric => {
@@ -38,15 +38,18 @@ export const transformBalanceSheetMetrics = (
   if (!balanceSheetData?.length) return baseData;
 
   const periodData = balanceSheetData.find(item => 
-    item.period === period || 
+    (item.period === period) || 
     (item.calendarYear && item.calendarYear.toString() === period)
   );
-  
+
   if (!periodData) return baseData;
 
   selectedMetrics.forEach(metric => {
     if (baseData[metric] === undefined && periodData[metric] !== undefined) {
-      baseData[metric] = parseFloat(periodData[metric]);
+      const value = typeof periodData[metric] === 'string' 
+        ? parseFloat(periodData[metric].replace(/,/g, ''))
+        : periodData[metric];
+      baseData[metric] = value;
     }
   });
 
@@ -58,23 +61,29 @@ export const transformTTMData = (
   ttmBalanceSheet: any,
   selectedMetrics: string[]
 ) => {
+  if (!ttmIncomeStatement && !ttmBalanceSheet) return null;
+
   const transformedData: Record<string, any> = {
     period: 'TTM'
   };
 
   selectedMetrics.forEach(metric => {
+    let value = 0;
+    
     // Check TTM income statement first
     if (ttmIncomeStatement?.[metric] !== undefined) {
-      transformedData[metric] = parseFloat(ttmIncomeStatement[metric]);
+      value = typeof ttmIncomeStatement[metric] === 'string'
+        ? parseFloat(ttmIncomeStatement[metric].replace(/,/g, ''))
+        : ttmIncomeStatement[metric];
     }
     // Then check TTM balance sheet
     else if (ttmBalanceSheet?.[metric] !== undefined) {
-      transformedData[metric] = parseFloat(ttmBalanceSheet[metric]);
+      value = typeof ttmBalanceSheet[metric] === 'string'
+        ? parseFloat(ttmBalanceSheet[metric].replace(/,/g, ''))
+        : ttmBalanceSheet[metric];
     }
-    // If neither has the metric, set to 0
-    else {
-      transformedData[metric] = 0;
-    }
+
+    transformedData[metric] = value;
   });
 
   return transformedData;
@@ -85,15 +94,14 @@ export const transformCashFlowMetrics = (data: any[], selectedMetrics: string[])
 
   return data.map(item => {
     const transformedItem: Record<string, any> = {
-      period: item.period === 'TTM' ? 'TTM' : 
-        (item.calendarYear ? item.calendarYear.toString() : item.period)
+      period: item.period === 'TTM' ? 'TTM' : item.period
     };
 
     selectedMetrics.forEach(metric => {
       if (item[metric] !== undefined) {
-        const value = typeof item[metric] === 'string' ? 
-          parseFloat(item[metric].replace(/,/g, '')) : 
-          item[metric];
+        const value = typeof item[metric] === 'string' 
+          ? parseFloat(item[metric].replace(/,/g, '')) 
+          : item[metric];
         transformedItem[metric] = value;
       } else {
         transformedItem[metric] = 0;

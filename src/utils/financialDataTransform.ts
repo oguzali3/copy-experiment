@@ -43,48 +43,54 @@ export const transformFinancialData = (
   };
 
   const hasCashFlowMetrics = selectedMetrics.some(isCashFlowMetric);
-  let transformedData;
 
+  // Get annual data without TTM
+  const annualData = financialData[ticker].annual.filter((item: any) => item.period !== 'TTM');
+  
+  // Transform data based on metric type
+  let transformedData;
   if (hasCashFlowMetrics) {
-    // Use cash flow specific transformation
-    transformedData = transformCashFlowMetrics(financialData[ticker].annual, selectedMetrics);
+    transformedData = transformCashFlowMetrics(annualData, selectedMetrics);
   } else {
-    // Use regular transformation for income statement and balance sheet
-    transformedData = financialData[ticker].annual
-      .filter((item: any) => item.period !== 'TTM')
-      .map((item: any) => {
-        const baseData = transformIncomeStatementMetrics(item, selectedMetrics);
-        return transformBalanceSheetMetrics(
-          balanceSheetData,
-          item.period,
-          selectedMetrics,
-          baseData
-        );
-      });
+    transformedData = annualData.map((item: any) => {
+      const baseData = transformIncomeStatementMetrics(item, selectedMetrics);
+      return transformBalanceSheetMetrics(
+        balanceSheetData?.filter((d: any) => d.period !== 'TTM'),
+        item.period,
+        selectedMetrics,
+        baseData
+      );
+    });
   }
 
-  // Add TTM data if available and selected
+  // Add TTM data if it exists and is selected
   if (endYear === 'TTM') {
-    const ttmIncomeStatement = financialData[ticker].annual.find(
-      (item: any) => item.period === 'TTM'
-    );
-    const ttmBalanceSheet = balanceSheetData?.find(
-      (item: any) => item.period === 'TTM'
-    );
+    const ttmData = financialData[ticker].annual.find((item: any) => item.period === 'TTM');
+    const ttmBalanceSheet = balanceSheetData?.find((item: any) => item.period === 'TTM');
 
-    if (ttmIncomeStatement || ttmBalanceSheet) {
-      const ttmData = transformTTMData(
-        ttmIncomeStatement,
-        ttmBalanceSheet,
-        selectedMetrics
-      );
-      transformedData.unshift(ttmData);
+    if (ttmData || ttmBalanceSheet) {
+      const transformedTTM = hasCashFlowMetrics
+        ? transformCashFlowMetrics([ttmData], selectedMetrics)[0]
+        : transformTTMData(ttmData, ttmBalanceSheet, selectedMetrics);
+      
+      if (transformedTTM) {
+        transformedData = [transformedTTM, ...transformedData];
+      }
     }
   }
 
   // Filter and sort data
   transformedData = filterByTimeRange(transformedData, startYear, endYear);
   transformedData = sortChronologically(transformedData);
+
+  // Remove duplicate TTM entries if they exist
+  const seen = new Set();
+  transformedData = transformedData.filter((item: any) => {
+    const key = item.period;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
   console.log('Transformed financial data:', transformedData);
 
