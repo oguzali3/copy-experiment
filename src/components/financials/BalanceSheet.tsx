@@ -51,17 +51,12 @@ export const BalanceSheet = ({
     return <BalanceSheetError error={balanceSheetError as Error} ticker={ticker} />;
   }
 
-  // Get TTM data first
-  const ttmBalanceSheet = balanceSheetData.find((item: any) => item.period === 'TTM');
-  const ttmIncomeStatement = incomeStatementData?.find((item: any) => item.period === 'TTM');
-  
   // Get annual data sorted by date
   const annualBalanceSheet = balanceSheetData
     .filter((item: any) => item.period === 'FY')
     .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 10);
 
-  // Get corresponding income statement data
   const annualIncomeStatement = incomeStatementData
     ?.filter((item: any) => item.period === 'FY')
     .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -78,11 +73,24 @@ export const BalanceSheet = ({
     };
   });
 
+  // Get TTM data
+  const ttmBalanceSheet = balanceSheetData.find((item: any) => item.period === 'TTM');
+  const ttmIncomeStatement = incomeStatementData?.find((item: any) => item.period === 'TTM');
+
+  // If TTM values match the most recent annual values, use the annual values
+  const mostRecentAnnual = combinedData[0];
+  const shouldUseMostRecentAnnual = 
+    ttmBalanceSheet && 
+    mostRecentAnnual && 
+    Math.abs(parseNumber(ttmBalanceSheet.totalStockholdersEquity) - parseNumber(mostRecentAnnual.totalStockholdersEquity)) < 0.01;
+
   // Add TTM data if available
   const filteredData = ttmBalanceSheet && ttmIncomeStatement
     ? [{ 
         ...ttmBalanceSheet,
-        weightedAverageShsOutDil: ttmIncomeStatement.weightedAverageShsOutDil,
+        weightedAverageShsOutDil: shouldUseMostRecentAnnual 
+          ? mostRecentAnnual.weightedAverageShsOutDil 
+          : ttmIncomeStatement.weightedAverageShsOutDil,
         date: ttmBalanceSheet.date,
         period: 'TTM'
       }, 
