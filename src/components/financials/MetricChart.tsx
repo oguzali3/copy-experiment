@@ -56,24 +56,26 @@ export const MetricChart = ({
         <div className="flex gap-2 items-center">
           {metrics.map((metric) => (
             <div key={metric} className="flex items-center gap-2">
-              <span className="font-medium">{getMetricDisplayName(metric)}</span>
-              <div className="flex gap-1">
-                <Button
-                  variant={metricTypes[metric] === 'bar' ? 'default' : 'outline'}
-                  size="icon"
-                  onClick={() => onMetricTypeChange(metric, 'bar')}
-                  className="h-8 w-8"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={metricTypes[metric] === 'line' ? 'default' : 'outline'}
-                  size="icon"
-                  onClick={() => onMetricTypeChange(metric, 'line')}
-                  className="h-8 w-8"
-                >
-                  <LineChart className="h-4 w-4" />
-                </Button>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md" style={{ backgroundColor: `${getMetricColor(metrics.indexOf(metric))}20` }}>
+                <span className="font-medium">{getMetricDisplayName(metric)}</span>
+                <div className="flex gap-1">
+                  <Button
+                    variant={metricTypes[metric] === 'bar' ? 'default' : 'outline'}
+                    size="icon"
+                    onClick={() => onMetricTypeChange(metric, 'bar')}
+                    className="h-8 w-8"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={metricTypes[metric] === 'line' ? 'default' : 'outline'}
+                    size="icon"
+                    onClick={() => onMetricTypeChange(metric, 'line')}
+                    className="h-8 w-8"
+                  >
+                    <LineChart className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
