@@ -15,6 +15,35 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const { financialData, isLoading: isIncomeStatementLoading } = useFinancialData(ticker);
   const { filteredData: balanceSheetData, isLoading: isBalanceSheetLoading } = useBalanceSheetData(ticker);
   
+  // Mock cash flow data for now - in a real app this would come from an API
+  const cashFlowData = [
+    {
+      date: "2023-12-31",
+      period: "2023",
+      investmentsInPropertyPlantAndEquipment: "25000000000"
+    },
+    {
+      date: "2022-12-31",
+      period: "2022",
+      investmentsInPropertyPlantAndEquipment: "24000000000"
+    },
+    {
+      date: "2021-12-31",
+      period: "2021",
+      investmentsInPropertyPlantAndEquipment: "23000000000"
+    },
+    {
+      date: "2020-12-31",
+      period: "2020",
+      investmentsInPropertyPlantAndEquipment: "22000000000"
+    },
+    {
+      date: "2019-12-31",
+      period: "2019",
+      investmentsInPropertyPlantAndEquipment: "21000000000"
+    }
+  ];
+  
   const {
     startDate,
     endDate,
@@ -48,7 +77,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const metricData = transformFinancialData(
     financialData,
     balanceSheetData,
-    [], // Add empty array for cashFlowData as the third parameter
+    cashFlowData,
     selectedMetrics,
     timePeriods,
     sliderValue,
