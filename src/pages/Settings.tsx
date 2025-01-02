@@ -9,7 +9,6 @@ import { VisibilitySettings } from "@/components/settings/VisibilitySettings";
 import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
 import { BillingSettings } from "@/components/settings/BillingSettings";
 import { HelpSettings } from "@/components/settings/HelpSettings";
-import { Card } from "@/components/ui/card";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -33,40 +32,23 @@ const Settings = () => {
       <DashboardSidebar />
       <div className="flex-1 flex flex-col">
         <AnalysisHeader />
-        <div className="max-w-3xl mx-auto w-full px-6 py-8">
-          <h1 className="text-4xl font-bold mb-12">Account Settings</h1>
+        <div className="p-8">
+          <h1 className="text-2xl font-bold mb-8">Account Settings</h1>
+
           <div className="space-y-8">
-            <section>
-              <h2 className="text-lg font-semibold text-muted-foreground mb-4">User Settings</h2>
-              <Card className="p-6">
-                <UserSettings />
-              </Card>
-            </section>
-
-            <section>
-              <h2 className="text-lg font-semibold text-muted-foreground mb-4">Appearance</h2>
-              <Card className="p-6">
-                <AppearanceSettings darkMode={darkMode} onDarkModeToggle={handleDarkModeToggle} />
-              </Card>
-            </section>
-
-            <section>
-              <h2 className="text-lg font-semibold text-muted-foreground mb-4">Visibility</h2>
-              <Card className="p-6">
-                <VisibilitySettings />
-              </Card>
-            </section>
-
+            <UserSettings />
+            <AppearanceSettings darkMode={darkMode} onDarkModeToggle={handleDarkModeToggle} />
+            <VisibilitySettings />
             <SubscriptionSettings />
             <BillingSettings />
             <HelpSettings />
 
             <Button 
               variant="destructive" 
-              className="w-full mt-8" 
+              className="w-full" 
               onClick={handleLogout}
             >
-              Sign Out
+              LOGOUT
             </Button>
           </div>
         </div>

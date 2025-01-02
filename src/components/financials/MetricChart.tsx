@@ -22,7 +22,7 @@ export const MetricChart = ({
 }: MetricChartProps) => {
   if (!data?.length || !metrics?.length) {
     return (
-      <div className="w-full bg-white p-4 rounded-lg border flex items-center justify-center h-[300px]">
+      <div className="w-full bg-white p-4 rounded-lg flex items-center justify-center h-[300px]">
         <p className="text-gray-500">
           {!metrics?.length ? 'Select metrics to visualize' : 'No data available'}
         </p>
@@ -51,29 +51,31 @@ export const MetricChart = ({
   });
 
   return (
-    <div className="w-full bg-white p-4 rounded-lg border space-y-4">
+    <div className="w-full bg-white p-4 rounded-lg space-y-4">
       <div className="flex flex-wrap gap-4 items-center justify-between">
         <div className="flex gap-2 items-center">
           {metrics.map((metric) => (
             <div key={metric} className="flex items-center gap-2">
-              <span className="font-medium">{getMetricDisplayName(metric)}</span>
-              <div className="flex gap-1">
-                <Button
-                  variant={metricTypes[metric] === 'bar' ? 'default' : 'outline'}
-                  size="icon"
-                  onClick={() => onMetricTypeChange(metric, 'bar')}
-                  className="h-8 w-8"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={metricTypes[metric] === 'line' ? 'default' : 'outline'}
-                  size="icon"
-                  onClick={() => onMetricTypeChange(metric, 'line')}
-                  className="h-8 w-8"
-                >
-                  <LineChart className="h-4 w-4" />
-                </Button>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md" style={{ backgroundColor: `${getMetricColor(metrics.indexOf(metric))}20` }}>
+                <span className="font-medium">{getMetricDisplayName(metric)}</span>
+                <div className="flex gap-1">
+                  <Button
+                    variant={metricTypes[metric] === 'bar' ? 'default' : 'outline'}
+                    size="icon"
+                    onClick={() => onMetricTypeChange(metric, 'bar')}
+                    className="h-8 w-8"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={metricTypes[metric] === 'line' ? 'default' : 'outline'}
+                    size="icon"
+                    onClick={() => onMetricTypeChange(metric, 'line')}
+                    className="h-8 w-8"
+                  >
+                    <LineChart className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
