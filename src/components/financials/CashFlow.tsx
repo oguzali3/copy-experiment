@@ -87,10 +87,8 @@ export const CashFlow = ({
     );
   }
 
-  // Get TTM data if it exists
   const ttmData = financialData.find((item: any) => item.period === 'TTM');
   
-  // Get annual data and sort by calendar year
   const annualData = financialData
     .filter((item: any) => item.period === 'FY')
     .sort((a: any, b: any) => {
@@ -100,10 +98,6 @@ export const CashFlow = ({
     })
     .slice(0, 10);
 
-  console.log('TTM Data:', ttmData);
-  console.log('Annual Data:', annualData);
-
-  // Combine TTM with annual data
   const sortedData = ttmData ? [ttmData, ...annualData] : annualData;
 
   const formatPeriod = (row: any) => {
@@ -112,20 +106,36 @@ export const CashFlow = ({
   };
 
   const metrics = [
-    { id: "operatingCashFlow", label: "Operating Cash Flow" },
-    { id: "netCashFlow", label: "Net Cash Flow" },
-    { id: "cashAtEndOfPeriod", label: "Cash at End of Period" },
-    { id: "capitalExpenditure", label: "Capital Expenditure" },
-    { id: "freeCashFlow", label: "Free Cash Flow" },
-    { id: "netCashUsedForInvestingActivites", label: "Investing Cash Flow" },
-    { id: "netCashUsedProvidedByFinancingActivities", label: "Financing Cash Flow" },
-    { id: "cashAtBeginningOfPeriod", label: "Cash at Beginning of Period" },
-    { id: "changeInWorkingCapital", label: "Change in Working Capital" },
-    { id: "stockBasedCompensation", label: "Stock-based Compensation" },
+    { id: "netIncome", label: "Net Income" },
     { id: "depreciationAndAmortization", label: "Depreciation & Amortization" },
+    { id: "deferredIncomeTax", label: "Deferred Income Tax" },
+    { id: "stockBasedCompensation", label: "Stock Based Compensation" },
+    { id: "changeInWorkingCapital", label: "Change in Working Capital" },
+    { id: "accountsReceivables", label: "Accounts Receivables" },
+    { id: "inventory", label: "Inventory" },
+    { id: "accountsPayables", label: "Accounts Payables" },
+    { id: "otherWorkingCapital", label: "Other Working Capital" },
+    { id: "otherNonCashItems", label: "Other Non-Cash Items" },
+    { id: "netCashProvidedByOperatingActivities", label: "Net Cash from Operating Activities" },
+    { id: "investmentsInPropertyPlantAndEquipment", label: "Investments in PP&E" },
+    { id: "acquisitionsNet", label: "Acquisitions (Net)" },
+    { id: "purchasesOfInvestments", label: "Purchases of Investments" },
+    { id: "salesMaturitiesOfInvestments", label: "Sales/Maturities of Investments" },
+    { id: "otherInvestingActivites", label: "Other Investing Activities" },
+    { id: "netCashUsedForInvestingActivites", label: "Net Cash from Investing Activities" },
+    { id: "debtRepayment", label: "Debt Repayment" },
+    { id: "commonStockIssued", label: "Common Stock Issued" },
+    { id: "commonStockRepurchased", label: "Common Stock Repurchased" },
     { id: "dividendsPaid", label: "Dividends Paid" },
-    { id: "commonStockRepurchased", label: "Stock Sale & Purchase" },
-    { id: "debtRepayment", label: "Debt Repayment" }
+    { id: "otherFinancingActivites", label: "Other Financing Activities" },
+    { id: "netCashUsedProvidedByFinancingActivities", label: "Net Cash from Financing Activities" },
+    { id: "effectOfForexChangesOnCash", label: "Effect of Forex on Cash" },
+    { id: "netChangeInCash", label: "Net Change in Cash" },
+    { id: "cashAtEndOfPeriod", label: "Cash at End of Period" },
+    { id: "cashAtBeginningOfPeriod", label: "Cash at Beginning of Period" },
+    { id: "operatingCashFlow", label: "Operating Cash Flow" },
+    { id: "capitalExpenditure", label: "Capital Expenditure" },
+    { id: "freeCashFlow", label: "Free Cash Flow" }
   ];
 
   return (
