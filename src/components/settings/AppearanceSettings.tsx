@@ -7,14 +7,12 @@ interface AppearanceSettingsProps {
 
 export const AppearanceSettings = ({ darkMode, onDarkModeToggle }: AppearanceSettingsProps) => {
   return (
-    <div className="bg-card rounded-lg p-4">
-      <div className="flex justify-between items-center">
-        <span className="text-sm font-medium">Dark Mode</span>
-        <Switch
-          checked={darkMode}
-          onCheckedChange={onDarkModeToggle}
-        />
-      </div>
+    <div className="flex justify-between items-center">
+      <span className="text-base font-medium">Dark Mode</span>
+      <Switch
+        checked={darkMode}
+        onCheckedChange={onDarkModeToggle}
+      />
     </div>
   );
 };

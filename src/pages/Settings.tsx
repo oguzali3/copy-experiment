@@ -9,6 +9,7 @@ import { VisibilitySettings } from "@/components/settings/VisibilitySettings";
 import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
 import { BillingSettings } from "@/components/settings/BillingSettings";
 import { HelpSettings } from "@/components/settings/HelpSettings";
+import { Card } from "@/components/ui/card";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -33,23 +34,33 @@ const Settings = () => {
       <div className="flex-1 flex flex-col">
         <AnalysisHeader />
         <div className="max-w-3xl mx-auto w-full px-6 py-8">
-          <h1 className="text-3xl font-semibold mb-12">Account Settings</h1>
-          <div className="space-y-10">
+          <h1 className="text-4xl font-bold mb-12">Account Settings</h1>
+          <div className="space-y-8">
             <section>
-              <h2 className="text-sm font-medium text-muted-foreground tracking-wider mb-4">USER SETTINGS</h2>
-              <UserSettings />
+              <h2 className="text-lg font-semibold text-muted-foreground mb-4">User Settings</h2>
+              <Card className="p-6">
+                <UserSettings />
+              </Card>
             </section>
+
             <section>
-              <h2 className="text-sm font-medium text-muted-foreground tracking-wider mb-4">APPEARANCE</h2>
-              <AppearanceSettings darkMode={darkMode} onDarkModeToggle={handleDarkModeToggle} />
+              <h2 className="text-lg font-semibold text-muted-foreground mb-4">Appearance</h2>
+              <Card className="p-6">
+                <AppearanceSettings darkMode={darkMode} onDarkModeToggle={handleDarkModeToggle} />
+              </Card>
             </section>
+
             <section>
-              <h2 className="text-sm font-medium text-muted-foreground tracking-wider mb-4">VISIBILITY</h2>
-              <VisibilitySettings />
+              <h2 className="text-lg font-semibold text-muted-foreground mb-4">Visibility</h2>
+              <Card className="p-6">
+                <VisibilitySettings />
+              </Card>
             </section>
+
             <SubscriptionSettings />
             <BillingSettings />
             <HelpSettings />
+
             <Button 
               variant="destructive" 
               className="w-full mt-8" 

@@ -15,17 +15,15 @@ export const UserSettings = () => {
   };
 
   return (
-    <div className="bg-card rounded-lg p-6">
-      <div className="flex justify-between items-center">
-        <span className="text-sm font-medium">Email</span>
-        <Input
-          type="email"
-          value={email}
-          onChange={handleEmailChange}
-          className="max-w-[300px]"
-          placeholder="Enter your email"
-        />
-      </div>
+    <div className="flex justify-between items-center space-x-4">
+      <span className="text-base font-medium">Email</span>
+      <Input
+        type="email"
+        value={email}
+        onChange={handleEmailChange}
+        className="max-w-[300px]"
+        placeholder="Enter your email"
+      />
     </div>
   );
 };
