@@ -48,6 +48,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const metricData = transformFinancialData(
     financialData,
     balanceSheetData,
+    [], // Add empty array for cashFlowData as the third parameter
     selectedMetrics,
     timePeriods,
     sliderValue,
