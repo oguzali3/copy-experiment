@@ -21,13 +21,20 @@ export const FinancialDataTable = ({
   annualData
 }: FinancialDataTableProps) => {
   const calculateCashGrowth = (current: any, previous: any) => {
-    if (!previous) return null;
+    if (!current || !previous) return null;
     
-    const currentCash = parseNumber(current.cashAndShortTermInvestments);
-    const previousCash = parseNumber(previous.cashAndShortTermInvestments);
+    const currentCash = parseFloat(String(current.cashAndShortTermInvestments).replace(/[^0-9.-]+/g, ""));
+    const previousCash = parseFloat(String(previous.cashAndShortTermInvestments).replace(/[^0-9.-]+/g, ""));
     
-    if (previousCash === 0) return 0;
-    return (currentCash / previousCash - 1) * 100;
+    console.log('Cash Growth Calculation:', {
+      currentCash,
+      previousCash,
+      currentPeriod: current.period,
+      previousPeriod: previous?.period
+    });
+    
+    if (!previousCash || previousCash === 0) return null;
+    return ((currentCash / previousCash) - 1) * 100;
   };
 
   return (
@@ -54,10 +61,17 @@ export const FinancialDataTable = ({
                   return calculateTTMGrowth(current, annualData);
                 }
                 if (metric.id === "cashGrowth") {
-                  const currentCash = parseNumber(current.cashAndShortTermInvestments);
-                  const previousYearCash = parseNumber(annualData[1].cashAndShortTermInvestments);
-                  if (previousYearCash === 0) return 0;
-                  return (currentCash / previousYearCash - 1) * 100;
+                  const currentCash = parseFloat(String(current.cashAndShortTermInvestments).replace(/[^0-9.-]+/g, ""));
+                  const previousYearCash = parseFloat(String(annualData[1].cashAndShortTermInvestments).replace(/[^0-9.-]+/g, ""));
+                  
+                  console.log('TTM Cash Growth:', {
+                    currentCash,
+                    previousYearCash,
+                    result: previousYearCash ? ((currentCash / previousYearCash) - 1) * 100 : null
+                  });
+                  
+                  if (!previousYearCash || previousYearCash === 0) return null;
+                  return ((currentCash / previousYearCash) - 1) * 100;
                 }
                 if (metric.id === "netIncomeGrowth") {
                   const currentNetIncome = parseFloat(String(current.netIncome).replace(/[^0-9.-]+/g, ""));
@@ -128,6 +142,7 @@ export const FinancialDataTable = ({
                 isSelected={selectedMetrics.includes(metric.id)}
                 onToggle={onMetricToggle}
                 formatValue={(value, format) => {
+                  if (value === null) return 'N/A';
                   if (metric.id === 'weightedAverageShsOut' || metric.id === 'weightedAverageShsOutDil') {
                     return `${value.toFixed(2)}B`;
                   }
