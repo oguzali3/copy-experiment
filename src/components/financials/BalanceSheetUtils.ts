@@ -57,22 +57,5 @@ export const metrics = [
   { id: "totalLiabilitiesAndTotalEquity", label: "Total Liabilities & Total Equity" },
   { id: "totalInvestments", label: "Total Investments" },
   { id: "totalDebt", label: "Total Debt" },
-  { id: "netDebt", label: "Net Debt" },
-  { 
-    id: "bookValuePerShare", 
-    label: "Book Value Per Share",
-    type: "calculated",
-    calculation: (data) => {
-      const totalEquity = parseNumber(data.totalStockholdersEquity);
-      const sharesOutstanding = parseNumber(data.weightedAverageShsOutDil);
-      
-      if (!totalEquity || !sharesOutstanding) return null;
-      return totalEquity / sharesOutstanding;
-    },
-    growthCalculation: (current, previous) => {
-      if (!current?.bookValuePerShare || !previous?.bookValuePerShare) return null;
-      return ((current.bookValuePerShare - previous.bookValuePerShare) / 
-              Math.abs(previous.bookValuePerShare) * 100);
-    }
-  }
+  { id: "netDebt", label: "Net Debt" }
 ];
