@@ -15,20 +15,17 @@ export const UserSettings = () => {
   };
 
   return (
-    <section className="space-y-4">
-      <h2 className="text-sm font-medium text-muted-foreground tracking-wider">USER SETTINGS</h2>
-      <div className="bg-card rounded-lg p-6">
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-medium">Email</span>
-          <Input
-            type="email"
-            value={email}
-            onChange={handleEmailChange}
-            className="max-w-[300px]"
-            placeholder="Enter your email"
-          />
-        </div>
+    <div className="bg-card rounded-lg p-6">
+      <div className="flex justify-between items-center">
+        <span className="text-sm font-medium">Email</span>
+        <Input
+          type="email"
+          value={email}
+          onChange={handleEmailChange}
+          className="max-w-[300px]"
+          placeholder="Enter your email"
+        />
       </div>
-    </section>
+    </div>
   );
 };

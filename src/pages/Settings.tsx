@@ -35,9 +35,18 @@ const Settings = () => {
         <div className="max-w-3xl mx-auto w-full px-6 py-8">
           <h1 className="text-3xl font-semibold mb-12">Account Settings</h1>
           <div className="space-y-10">
-            <UserSettings />
-            <AppearanceSettings darkMode={darkMode} onDarkModeToggle={handleDarkModeToggle} />
-            <VisibilitySettings />
+            <section>
+              <h2 className="text-sm font-medium text-muted-foreground tracking-wider mb-4">USER SETTINGS</h2>
+              <UserSettings />
+            </section>
+            <section>
+              <h2 className="text-sm font-medium text-muted-foreground tracking-wider mb-4">APPEARANCE</h2>
+              <AppearanceSettings darkMode={darkMode} onDarkModeToggle={handleDarkModeToggle} />
+            </section>
+            <section>
+              <h2 className="text-sm font-medium text-muted-foreground tracking-wider mb-4">VISIBILITY</h2>
+              <VisibilitySettings />
+            </section>
             <SubscriptionSettings />
             <BillingSettings />
             <HelpSettings />
