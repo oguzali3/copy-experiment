@@ -5,6 +5,44 @@ import { INCOME_METRICS } from './incomeMetrics';
 import { SHARE_METRICS } from './shareMetrics';
 import { EBITDA_METRICS } from './ebitdaMetrics';
 
+// Balance Sheet metric display names mapping
+const BALANCE_SHEET_DISPLAY_NAMES: Record<string, string> = {
+  cashAndCashEquivalents: "Cash and Cash Equivalents",
+  shortTermInvestments: "Short Term Investments",
+  netReceivables: "Net Receivables",
+  inventory: "Inventory",
+  otherCurrentAssets: "Other Current Assets",
+  totalCurrentAssets: "Total Current Assets",
+  propertyPlantEquipmentNet: "Property Plant & Equipment",
+  goodwill: "Goodwill",
+  intangibleAssets: "Intangible Assets",
+  longTermInvestments: "Long Term Investments",
+  otherNonCurrentAssets: "Other Non-Current Assets",
+  totalNonCurrentAssets: "Total Non-Current Assets",
+  totalAssets: "Total Assets",
+  accountPayables: "Account Payables",
+  shortTermDebt: "Short Term Debt",
+  taxPayables: "Tax Payables",
+  deferredRevenue: "Deferred Revenue",
+  otherCurrentLiabilities: "Other Current Liabilities",
+  totalCurrentLiabilities: "Total Current Liabilities",
+  longTermDebt: "Long Term Debt",
+  deferredRevenueNonCurrent: "Deferred Revenue Non-Current",
+  deferredTaxLiabilitiesNonCurrent: "Deferred Tax Liabilities",
+  otherNonCurrentLiabilities: "Other Non-Current Liabilities",
+  totalNonCurrentLiabilities: "Total Non-Current Liabilities",
+  totalLiabilities: "Total Liabilities",
+  commonStock: "Common Stock",
+  retainedEarnings: "Retained Earnings",
+  accumulatedOtherComprehensiveIncomeLoss: "Accumulated Other Comprehensive Income/Loss",
+  othertotalStockholdersEquity: "Other Stockholders Equity",
+  totalStockholdersEquity: "Total Stockholders Equity",
+  totalLiabilitiesAndStockholdersEquity: "Total Liabilities and Stockholders Equity",
+  totalInvestments: "Total Investments",
+  totalDebt: "Total Debt",
+  netDebt: "Net Debt"
+};
+
 export const INCOME_STATEMENT_METRICS: MetricDefinition[] = [
   ...REVENUE_METRICS,
   ...OPERATING_METRICS,
@@ -57,8 +95,23 @@ export const formatValue = (value: number | null, format?: string): string => {
 };
 
 export const getMetricDisplayName = (metricId: string): string => {
-  const metric = INCOME_STATEMENT_METRICS.find(m => m.id === metricId);
-  return metric ? metric.displayName : metricId;
+  // First check if it's an income statement metric
+  const incomeMetric = INCOME_STATEMENT_METRICS.find(m => m.id === metricId);
+  if (incomeMetric) {
+    return incomeMetric.displayName;
+  }
+  
+  // Then check if it's a balance sheet metric
+  const balanceSheetDisplayName = BALANCE_SHEET_DISPLAY_NAMES[metricId];
+  if (balanceSheetDisplayName) {
+    return balanceSheetDisplayName;
+  }
+  
+  // If no display name is found, format the metric ID as a fallback
+  return metricId
+    .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+    .replace(/^./, str => str.toUpperCase()) // Capitalize first letter
+    .trim();
 };
 
 export const getMetricFormat = (metricId: string): string | undefined => {
