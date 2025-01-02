@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { Button } from "@/components/ui/button";
-import { AnalysisHeader } from "@/components/analysis/AnalysisHeader";
 import { UserSettings } from "@/components/settings/UserSettings";
 import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
 import { VisibilitySettings } from "@/components/settings/VisibilitySettings";
@@ -31,7 +30,6 @@ const Settings = () => {
     <>
       <DashboardSidebar />
       <div className="flex-1 flex flex-col">
-        <AnalysisHeader />
         <div className="p-8">
           <h1 className="text-2xl font-bold mb-8">Account Settings</h1>
 
