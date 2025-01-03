@@ -9,12 +9,12 @@ interface AnalysisOverviewProps {
 }
 
 export const AnalysisOverview = ({ selectedStock, onTabChange }: AnalysisOverviewProps) => {
-  console.log('AnalysisOverview rendering with stock:', selectedStock); // Debug log
+  console.log('AnalysisOverview rendering with stock:', selectedStock);
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CompanyOverview {...selectedStock} />
+        <CompanyOverview {...selectedStock} ticker={selectedStock.ticker} />
         <div className="h-[500px]">
           <StockChart ticker={selectedStock.ticker} />
         </div>
