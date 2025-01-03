@@ -29,31 +29,31 @@ export const EstimatesTable = ({ data, selectedMetric, formatValue }: EstimatesT
     switch (selectedMetric) {
       case 'revenue':
         return {
-          actual: item.revenueEstimatedActual,
-          consensus: item.revenueEstimated,
-          high: item.revenueEstimatedHighEstimate,
-          low: item.revenueEstimatedLowEstimate
+          actual: item.estimatedRevenueAvg,
+          consensus: item.estimatedRevenueAvg,
+          high: item.estimatedRevenueHigh,
+          low: item.estimatedRevenueLow
         };
       case 'eps':
         return {
-          actual: item.epsActual,
-          consensus: item.epsEstimated,
-          high: item.epsHighEstimate,
-          low: item.epsLowEstimate
+          actual: item.estimatedEpsAvg,
+          consensus: item.estimatedEpsAvg,
+          high: item.estimatedEpsHigh,
+          low: item.estimatedEpsLow
         };
       case 'ebitda':
         return {
-          actual: item.ebitdaActual,
-          consensus: item.ebitdaEstimated,
-          high: item.ebitdaHighEstimate,
-          low: item.ebitdaLowEstimate
+          actual: item.estimatedEbitdaAvg,
+          consensus: item.estimatedEbitdaAvg,
+          high: item.estimatedEbitdaHigh,
+          low: item.estimatedEbitdaLow
         };
       case 'netIncome':
         return {
-          actual: item.netIncomeActual,
-          consensus: item.netIncomeEstimated,
-          high: item.netIncomeHighEstimate,
-          low: item.netIncomeLowEstimate
+          actual: item.estimatedNetIncomeAvg,
+          consensus: item.estimatedNetIncomeAvg,
+          high: item.estimatedNetIncomeHigh,
+          low: item.estimatedNetIncomeLow
         };
       default:
         return { actual: null, consensus: null, high: null, low: null };
