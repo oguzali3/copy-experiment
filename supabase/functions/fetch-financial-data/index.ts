@@ -14,17 +14,40 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, from, to, page, query } = await req.json();
+    const { endpoint, symbol, year, quarter, from, to, page, query } = await req.json();
     const apiKey = Deno.env.get("FMP_API_KEY");
 
     if (!apiKey) {
       throw new Error("FMP_API_KEY is not set");
     }
 
-    console.log('Received request with params:', { endpoint, symbol, from, to, page, query });
+    console.log('Received request with params:', { endpoint, symbol, from, to, page, query, year, quarter });
 
     let url;
     switch (endpoint) {
+      case "transcript-dates":
+        url = `https://financialmodelingprep.com/api/v4/earning_call_transcript?symbol=${symbol}&apikey=${apiKey}`;
+        console.log('Fetching transcript dates from URL:', url);
+        const datesResponse = await fetch(url);
+        const datesData = await datesResponse.json();
+        console.log('Raw transcript dates API response:', datesData);
+        return new Response(JSON.stringify(datesData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
+      case "transcript":
+        if (!year || !quarter) {
+          throw new Error("Year and quarter are required for transcript endpoint");
+        }
+        url = `https://financialmodelingprep.com/api/v3/earning_call_transcript/${symbol}?year=${year}&quarter=${quarter}&apikey=${apiKey}`;
+        console.log('Fetching transcript from URL:', url);
+        const transcriptResponse = await fetch(url);
+        const transcriptData = await transcriptResponse.json();
+        console.log('Raw transcript API response:', transcriptData);
+        return new Response(JSON.stringify(transcriptData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       case "dcf":
         url = `https://financialmodelingprep.com/api/v3/discounted-cash-flow/${symbol}?apikey=${apiKey}`;
         console.log('Fetching DCF from URL:', url);
@@ -172,14 +195,13 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
-      default:
-        throw new Error(`Invalid endpoint: ${endpoint}`);
     }
 
     if (endpoint !== "search" && endpoint !== "income-statement" && 
         endpoint !== "balance-sheet" && endpoint !== "cash-flow-statement" && 
         endpoint !== "estimates" && endpoint !== "key-metrics-ttm" && 
-        endpoint !== "key-metrics-historical") {
+        endpoint !== "key-metrics-historical" && endpoint !== "transcript" &&
+        endpoint !== "transcript-dates") {
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

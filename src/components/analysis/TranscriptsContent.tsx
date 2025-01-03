@@ -1,88 +1,172 @@
 import { useState } from "react";
-import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationItem, 
-  PaginationLink, 
-  PaginationNext, 
-  PaginationPrevious 
-} from "@/components/ui/pagination";
-import { TranscriptDetail } from "./TranscriptDetail";
-import { TranscriptTable } from "./TranscriptTable";
-import { transcriptData } from "@/data/transcriptData";
-import { Transcript } from "@/types/transcript";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2 } from "lucide-react";
 
 interface TranscriptsContentProps {
   ticker?: string;
 }
 
-export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps) => {
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedTranscript, setSelectedTranscript] = useState<Transcript | null>(null);
-  const itemsPerPage = 10;
+interface TranscriptDate {
+  date: string;
+  quarter: number;
+  year: number;
+}
 
-  const transcripts = transcriptData[ticker] || [];
-  
-  const sortedTranscripts = [...transcripts].sort((a, b) => {
-    const dateA = new Date(a.date).getTime();
-    const dateB = new Date(b.date).getTime();
-    return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
+interface Transcript {
+  symbol: string;
+  quarter: string;
+  year: string;
+  date: string;
+  content: string;
+}
+
+export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps) => {
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [selectedQuarter, setSelectedQuarter] = useState<string>("");
+
+  const { data: transcriptDates, isLoading: isLoadingDates } = useQuery({
+    queryKey: ['transcript-dates', ticker],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+        body: { endpoint: 'transcript-dates', symbol: ticker }
+      });
+      if (error) throw error;
+      return data as TranscriptDate[];
+    },
+    enabled: !!ticker
   });
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentTranscripts = sortedTranscripts.slice(startIndex, endIndex);
-  const totalPages = Math.ceil(sortedTranscripts.length / itemsPerPage);
+  const { data: transcript, isLoading: isLoadingTranscript } = useQuery({
+    queryKey: ['transcript', ticker, selectedYear, selectedQuarter],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+        body: { 
+          endpoint: 'transcript',
+          symbol: ticker,
+          year: selectedYear,
+          quarter: selectedQuarter
+        }
+      });
+      if (error) throw error;
+      return data as Transcript[];
+    },
+    enabled: !!ticker && !!selectedYear && !!selectedQuarter
+  });
 
-  const toggleSort = () => {
-    setSortDirection(prev => prev === "asc" ? "desc" : "asc");
-  };
+  const years = transcriptDates 
+    ? [...new Set(transcriptDates.map(date => date.year))].sort((a, b) => b - a)
+    : [];
 
-  if (selectedTranscript) {
+  const quarters = transcriptDates && selectedYear
+    ? [...new Set(transcriptDates
+        .filter(date => date.year === parseInt(selectedYear))
+        .map(date => date.quarter))]
+        .sort((a, b) => b - a)
+    : [];
+
+  if (isLoadingDates) {
     return (
-      <TranscriptDetail 
-        transcript={selectedTranscript} 
-        onBack={() => setSelectedTranscript(null)} 
-      />
+      <div className="flex items-center justify-center h-48">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <TranscriptTable 
-        transcripts={currentTranscripts}
-        sortDirection={sortDirection}
-        onSort={toggleSort}
-        onTranscriptClick={setSelectedTranscript}
-      />
+    <div className="space-y-6">
+      <Card className="p-6">
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Year
+            </label>
+            <Select
+              value={selectedYear}
+              onValueChange={(value) => {
+                setSelectedYear(value);
+                setSelectedQuarter("");
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Quarter
+            </label>
+            <Select
+              value={selectedQuarter}
+              onValueChange={setSelectedQuarter}
+              disabled={!selectedYear}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select quarter" />
+              </SelectTrigger>
+              <SelectContent>
+                {quarters.map((quarter) => (
+                  <SelectItem key={quarter} value={quarter.toString()}>
+                    Q{quarter}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious 
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-            />
-          </PaginationItem>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-            <PaginationItem key={page}>
-              <PaginationLink
-                onClick={() => setCurrentPage(page)}
-                isActive={currentPage === page}
-              >
-                {page}
-              </PaginationLink>
-            </PaginationItem>
-          ))}
-          <PaginationItem>
-            <PaginationNext 
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+        {isLoadingTranscript ? (
+          <div className="flex items-center justify-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+          </div>
+        ) : transcript && transcript.length > 0 ? (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">
+                {ticker} - Q{transcript[0].quarter} {transcript[0].year} Earnings Call Transcript
+              </h3>
+              <span className="text-sm text-gray-500">
+                {new Date(transcript[0].date).toLocaleDateString()}
+              </span>
+            </div>
+            <ScrollArea className="h-[600px] rounded-md border p-4">
+              <div className="prose max-w-none">
+                {transcript[0].content.split('\n').map((paragraph, index) => (
+                  <p key={index} className="mb-4">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        ) : selectedYear && selectedQuarter ? (
+          <div className="text-center text-gray-500 py-12">
+            No transcript available for the selected period.
+          </div>
+        ) : (
+          <div className="text-center text-gray-500 py-12">
+            Select a year and quarter to view the transcript.
+          </div>
+        )}
+      </Card>
     </div>
   );
 };
