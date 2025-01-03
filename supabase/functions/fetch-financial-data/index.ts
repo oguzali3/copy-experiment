@@ -61,6 +61,21 @@ serve(async (req) => {
         url = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
         break;
 
+      case "income-statement":
+        url = `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?apikey=${apiKey}`;
+        console.log('Fetching income statement from URL:', url);
+        break;
+
+      case "balance-sheet":
+        url = `https://financialmodelingprep.com/api/v3/balance-sheet-statement/${symbol}?apikey=${apiKey}`;
+        console.log('Fetching balance sheet from URL:', url);
+        break;
+
+      case "cash-flow-statement":
+        url = `https://financialmodelingprep.com/api/v3/cash-flow-statement/${symbol}?apikey=${apiKey}`;
+        console.log('Fetching cash flow statement from URL:', url);
+        break;
+
       default:
         throw new Error(`Invalid endpoint: ${endpoint}`);
     }
