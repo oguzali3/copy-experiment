@@ -1,164 +1,198 @@
 import { useState } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceDot,
+  ReferenceArea,
+} from "recharts";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
-import { EstimatesTable, estimatesData } from "./EstimatesTable";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface EstimatesChartProps {
   ticker?: string;
 }
 
 const metrics = [
-  { id: "revenue", label: "Revenue" },
-  { id: "eps", label: "EPS" },
-  { id: "priceTargets", label: "Price Targets" },
-  { id: "ebitda", label: "EBITDA" },
-  { id: "ebit", label: "EBIT" },
-  { id: "freeCashFlow", label: "Free Cash Flow" },
-  { id: "navShare", label: "NAV/Share" },
-  { id: "bookValue", label: "Book Value/Share" },
-  { id: "capex", label: "CapEx" },
+  { id: "revenue", label: "Revenue", prefix: "$", suffix: "" },
+  { id: "eps", label: "EPS", prefix: "$", suffix: "" },
+  { id: "ebitda", label: "EBITDA", prefix: "$", suffix: "" },
+  { id: "netIncome", label: "Net Income", prefix: "$", suffix: "" },
 ];
-
-const formatters = {
-  revenue: (value: number) => `$${(value / 1000).toFixed(2)}K`,
-  eps: (value: number) => `$${value.toFixed(2)}`,
-  default: (value: number) => value.toString(),
-};
 
 export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
   const [selectedMetric, setSelectedMetric] = useState("revenue");
-  const [timeframe, setTimeframe] = useState("annual");
 
-  const handleDownload = () => {
-    console.log("Downloading data...");
+  const { data: estimatesData, isLoading, error } = useQuery({
+    queryKey: ['analyst-estimates', ticker],
+    queryFn: async () => {
+      if (!ticker) return [];
+      
+      const { data, error } = await supabase.functions.invoke('fetch-analyst-estimates', {
+        body: { symbol: ticker }
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!ticker,
+  });
+
+  const formatValue = (value: number) => {
+    if (Math.abs(value) >= 1e9) {
+      return `${(value / 1e9).toFixed(2)}B`;
+    }
+    if (Math.abs(value) >= 1e6) {
+      return `${(value / 1e6).toFixed(2)}M`;
+    }
+    if (Math.abs(value) >= 1e3) {
+      return `${(value / 1e3).toFixed(2)}K`;
+    }
+    return value.toFixed(2);
   };
 
-  const chartData = estimatesData[selectedMetric as keyof typeof estimatesData]?.map(
-    (item) => ({
-      period: item.period,
-      value: item.actual || item.mean,
-    })
-  );
+  if (!ticker) {
+    return (
+      <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm flex items-center justify-center">
+        <p className="text-gray-500">Select a stock to view estimates</p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm flex items-center justify-center">
+        <p className="text-gray-500">Loading estimates data...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Error loading estimates data. Please try again later.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="space-y-6 border rounded-xl p-6">
-        {/* Metrics Navigation */}
-        <div className="flex gap-4 overflow-x-auto pb-2">
+      <div className="bg-white p-6 rounded-xl shadow-sm">
+        <div className="flex gap-2 mb-6">
           {metrics.map((metric) => (
             <Button
               key={metric.id}
-              variant={selectedMetric === metric.id ? "default" : "ghost"}
+              variant={selectedMetric === metric.id ? "default" : "outline"}
               onClick={() => setSelectedMetric(metric.id)}
-              className={`whitespace-nowrap ${
-                selectedMetric === metric.id
-                  ? "bg-primary hover:bg-primary/90"
-                  : "text-gray-500 hover:text-gray-900"
-              }`}
             >
               {metric.label}
             </Button>
           ))}
         </div>
 
-        {/* Time Frame and Display Options */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                className="form-checkbox h-4 w-4 text-primary"
-              />
-              <span className="text-gray-600">% Chg.</span>
-            </label>
-            <div className="flex gap-2">
-              {["K", "M", "B"].map((unit) => (
-                <Button
-                  key={unit}
-                  variant="ghost"
-                  size="sm"
-                  className="text-gray-500 hover:text-gray-900"
-                >
-                  {unit}
-                </Button>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant={timeframe === "annual" ? "default" : "ghost"}
-              onClick={() => setTimeframe("annual")}
-              className={timeframe === "annual" ? "bg-primary hover:bg-primary/90" : ""}
-            >
-              Annual
-            </Button>
-            <Button
-              variant={timeframe === "quarterly" ? "default" : "ghost"}
-              onClick={() => setTimeframe("quarterly")}
-              className={timeframe === "quarterly" ? "bg-primary hover:bg-primary/90" : ""}
-            >
-              Quarterly
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleDownload}
-              className="text-primary hover:text-primary/90"
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Chart */}
-        <div className="h-[400px] w-full">
+        <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={chartData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              data={estimatesData}
+              margin={{ top: 20, right: 30, left: 40, bottom: 20 }}
             >
               <XAxis
                 dataKey="period"
-                stroke="#6B7280"
-                tick={{ fill: "#374151" }}
+                tickFormatter={(value) => value.split("-")[0]}
               />
               <YAxis
-                stroke="#6B7280"
-                tick={{ fill: "#374151" }}
-                tickFormatter={(value) =>
-                  (formatters[selectedMetric as keyof typeof formatters] ||
-                    formatters.default)(value)
-                }
+                tickFormatter={(value) => formatValue(value)}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "0.5rem",
-                  color: "#111827",
-                }}
-                formatter={(value: number) =>
-                  (formatters[selectedMetric as keyof typeof formatters] ||
-                    formatters.default)(value)
-                }
+                formatter={(value: any) => formatValue(value)}
+                labelFormatter={(label) => `Period: ${label}`}
               />
+              
+              {/* Actual values line */}
               <Line
                 type="monotone"
-                dataKey="value"
-                data={chartData}
+                dataKey={`${selectedMetric}.actual`}
                 stroke="#2563eb"
                 strokeWidth={2}
-                dot={false}
-                connectNulls
+                dot={{ r: 4 }}
+                name="Actual"
+              />
+              
+              {/* Mean estimate line */}
+              <Line
+                type="monotone"
+                dataKey={`${selectedMetric}.mean`}
+                stroke="#4f46e5"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={{ r: 4 }}
+                name="Consensus"
+              />
+
+              {/* Range area between high and low estimates */}
+              <ReferenceArea
+                y1={`${selectedMetric}.high`}
+                y2={`${selectedMetric}.low`}
+                fill="#4f46e5"
+                fillOpacity={0.1}
+                ifOverflow="extendDomain"
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
-      
-      {/* Estimates Table */}
-      <EstimatesTable metric={selectedMetric} />
+
+      <div className="bg-white p-6 rounded-xl shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Period</TableHead>
+              <TableHead className="text-right">Actual</TableHead>
+              <TableHead className="text-right">Consensus</TableHead>
+              <TableHead className="text-right">High</TableHead>
+              <TableHead className="text-right">Low</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {estimatesData?.map((estimate: any) => (
+              <TableRow key={estimate.period}>
+                <TableCell>{estimate.period}</TableCell>
+                <TableCell className="text-right">
+                  {formatValue(estimate[selectedMetric].actual || 0)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatValue(estimate[selectedMetric].mean || 0)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatValue(estimate[selectedMetric].high || 0)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatValue(estimate[selectedMetric].low || 0)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };
