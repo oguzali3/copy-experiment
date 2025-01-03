@@ -28,18 +28,38 @@ serve(async (req) => {
 
     console.log(`Fetching analyst estimates for symbol: ${symbol}`);
     const url = `https://financialmodelingprep.com/api/v3/analyst-estimates/${symbol}?apikey=${apiKey}`;
+    
+    // Log the URL we're fetching (without the API key)
+    console.log(`Fetching from: https://financialmodelingprep.com/api/v3/analyst-estimates/${symbol}`);
+    
     const response = await fetch(url);
+    
+    // Log the response status
+    console.log(`API Response status: ${response.status}`);
     
     if (!response.ok) {
       console.error(`FMP API responded with status: ${response.status}`);
       throw new Error(`Failed to fetch data from FMP API: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    console.log(`Successfully fetched data for ${symbol}`);
+    const rawData = await response.json();
+    console.log('Raw API response:', JSON.stringify(rawData).slice(0, 200) + '...'); // Log first 200 chars of response
+
+    // Check if we got an error message from FMP
+    if (Array.isArray(rawData) && rawData.length === 0) {
+      console.log('FMP API returned empty array');
+      return new Response(JSON.stringify([]), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (typeof rawData === 'object' && 'Error Message' in rawData) {
+      console.error('FMP API returned error:', rawData);
+      throw new Error(rawData['Error Message']);
+    }
 
     // Transform data for chart visualization
-    const transformedData = data.map((estimate: any) => ({
+    const transformedData = rawData.map((estimate: any) => ({
       period: estimate.date,
       revenue: {
         mean: estimate.estimatedRevenue,
@@ -66,6 +86,9 @@ serve(async (req) => {
         actual: estimate.actualNetIncome
       }
     }));
+
+    console.log(`Successfully transformed data. Number of periods: ${transformedData.length}`);
+    console.log('First transformed entry:', JSON.stringify(transformedData[0]));
 
     return new Response(JSON.stringify(transformedData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
