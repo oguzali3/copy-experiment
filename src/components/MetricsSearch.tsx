@@ -15,11 +15,11 @@ const categories = [
   {
     name: "Income Statement",
     metrics: [
-      { id: "revenue", name: "Revenue", description: "Company's total revenue" },
-      { id: "revenueGrowth", name: "Revenue Growth", description: "Year-over-year revenue growth (%)" },
+      { id: "revenue", name: "Revenue", description: "Total revenue" },
       { id: "grossProfit", name: "Gross Profit", description: "Revenue minus cost of goods sold" },
       { id: "operatingIncome", name: "Operating Income", description: "Profit from operations" },
-      { id: "netIncome", name: "Net Income", description: "Total earnings or profit" },
+      { id: "netIncome", name: "Net Income", description: "Total earnings" },
+      { id: "eps", name: "EPS", description: "Earnings per share" },
       { id: "ebitda", name: "EBITDA", description: "Earnings before interest, taxes, depreciation, and amortization" }
     ]
   },
@@ -28,16 +28,37 @@ const categories = [
     metrics: [
       { id: "totalAssets", name: "Total Assets", description: "Sum of all assets" },
       { id: "totalLiabilities", name: "Total Liabilities", description: "Sum of all liabilities" },
-      { id: "totalEquity", name: "Total Equity", description: "Net worth of the company" }
+      { id: "totalEquity", name: "Total Equity", description: "Net worth" },
+      { id: "cashAndEquivalents", name: "Cash & Equivalents", description: "Liquid assets" },
+      { id: "totalDebt", name: "Total Debt", description: "Sum of all debt" }
     ]
   },
   {
     name: "Cash Flow",
     metrics: [
-      { id: "operatingCashFlow", name: "Operating Cash Flow", description: "Cash from operating activities" },
-      { id: "investingCashFlow", name: "Investing Cash Flow", description: "Cash used in investing activities" },
-      { id: "financingCashFlow", name: "Financing Cash Flow", description: "Cash from financing activities" },
+      { id: "operatingCashFlow", name: "Operating Cash Flow", description: "Cash from operations" },
+      { id: "investingCashFlow", name: "Investing Cash Flow", description: "Cash from investments" },
+      { id: "financingCashFlow", name: "Financing Cash Flow", description: "Cash from financing" },
       { id: "freeCashFlow", name: "Free Cash Flow", description: "Operating cash flow minus capital expenditures" }
+    ]
+  },
+  {
+    name: "Key Ratios",
+    metrics: [
+      { id: "peRatio", name: "P/E Ratio", description: "Price to earnings ratio" },
+      { id: "pbRatio", name: "P/B Ratio", description: "Price to book ratio" },
+      { id: "debtToEquity", name: "Debt to Equity", description: "Total debt divided by equity" },
+      { id: "currentRatio", name: "Current Ratio", description: "Current assets divided by current liabilities" },
+      { id: "quickRatio", name: "Quick Ratio", description: "Liquid assets divided by current liabilities" }
+    ]
+  },
+  {
+    name: "Growth Metrics",
+    metrics: [
+      { id: "revenueGrowth", name: "Revenue Growth", description: "Year-over-year revenue growth" },
+      { id: "netIncomeGrowth", name: "Net Income Growth", description: "Year-over-year net income growth" },
+      { id: "epsgrowth", name: "EPS Growth", description: "Year-over-year EPS growth" },
+      { id: "fcfGrowth", name: "FCF Growth", description: "Year-over-year free cash flow growth" }
     ]
   }
 ];
@@ -57,11 +78,6 @@ export const MetricsSearch = ({ onMetricSelect }: MetricsSearchProps) => {
       metric.description.toLowerCase().includes(searchQuery.toLowerCase())
     )
   })).filter(category => category.metrics.length > 0);
-
-  const handleMetricSelect = (metricId: string) => {
-    onMetricSelect(metricId);
-    setOpen(false);
-  };
 
   return (
     <div className="relative w-full">
@@ -88,7 +104,10 @@ export const MetricsSearch = ({ onMetricSelect }: MetricsSearchProps) => {
                   <CommandItem
                     key={metric.id}
                     className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
-                    onSelect={() => handleMetricSelect(metric.id)}
+                    onSelect={() => {
+                      onMetricSelect(metric.id);
+                      setOpen(false);
+                    }}
                   >
                     <div>
                       <p className="text-sm font-medium">{metric.name}</p>
