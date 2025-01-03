@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { MetricsSearch } from "@/components/MetricsSearch";
 import { CompanySearch } from "@/components/CompanySearch";
 import { MetricChart } from "@/components/financials/MetricChart";
+import { MetricsDataTable } from "@/components/financials/MetricsDataTable";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -99,7 +100,7 @@ const Charting = () => {
             <p>Select a company and metrics to start charting</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {selectedCompany && (
               <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
                 <div>
@@ -133,13 +134,20 @@ const Charting = () => {
                 <p className="text-gray-500">Loading chart data...</p>
               </div>
             ) : financialData && selectedMetrics.length > 0 ? (
-              <div className="h-[500px]">
-                <MetricChart 
+              <div className="space-y-6">
+                <div className="h-[500px]">
+                  <MetricChart 
+                    data={financialData}
+                    metrics={selectedMetrics}
+                    ticker={selectedCompany.symbol}
+                    metricTypes={metricTypes}
+                    onMetricTypeChange={handleMetricTypeChange}
+                  />
+                </div>
+                <MetricsDataTable 
                   data={financialData}
                   metrics={selectedMetrics}
                   ticker={selectedCompany.symbol}
-                  metricTypes={metricTypes}
-                  onMetricTypeChange={handleMetricTypeChange}
                 />
               </div>
             ) : null}
