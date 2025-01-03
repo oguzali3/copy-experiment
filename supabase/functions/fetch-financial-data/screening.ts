@@ -40,18 +40,30 @@ export async function handleScreening(criteria: ScreeningCriteria) {
     });
 
     // Apply country filters
-    if (criteria.countries.length > 0) {
-      query = query.ilike('country', `%${criteria.countries[0]}%`);
+    if (criteria.countries && criteria.countries.length > 0) {
+      query = query.or(
+        criteria.countries.map(country => 
+          `country.ilike.%${country}%`
+        ).join(',')
+      );
     }
 
     // Apply industry filters
-    if (criteria.industries.length > 0) {
-      query = query.in('industry', criteria.industries);
+    if (criteria.industries && criteria.industries.length > 0) {
+      query = query.or(
+        criteria.industries.map(industry => 
+          `industry.ilike.%${industry}%`
+        ).join(',')
+      );
     }
 
     // Apply exchange filters
-    if (criteria.exchanges.length > 0) {
-      query = query.in('exchange', criteria.exchanges);
+    if (criteria.exchanges && criteria.exchanges.length > 0) {
+      query = query.or(
+        criteria.exchanges.map(exchange => 
+          `exchange.ilike.%${exchange}%`
+        ).join(',')
+      );
     }
 
     // Add pagination
