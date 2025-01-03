@@ -47,7 +47,6 @@ export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps)
       }
       console.log('Transcript dates received:', data);
       
-      // Transform the array data into the expected format
       return data.map((item: any[]) => ({
         quarter: item[0],
         year: item[1],
@@ -119,7 +118,7 @@ export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps)
               <SelectTrigger>
                 <SelectValue placeholder="Select year" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" side="bottom" align="start" className="max-h-[300px] overflow-y-auto">
                 {years.map((year) => (
                   <SelectItem key={year} value={year.toString()}>
                     {year}
@@ -140,7 +139,7 @@ export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps)
               <SelectTrigger>
                 <SelectValue placeholder="Select quarter" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" side="bottom" align="start">
                 {quarters.map((quarter) => (
                   <SelectItem key={quarter} value={quarter.toString()}>
                     Q{quarter}
