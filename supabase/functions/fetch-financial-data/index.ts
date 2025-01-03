@@ -25,6 +25,32 @@ serve(async (req) => {
 
     let url;
     switch (endpoint) {
+      case "screening":
+        // Get all available stocks for screening
+        url = `https://financialmodelingprep.com/api/v3/stock-screener?apikey=${apiKey}`;
+        console.log('Fetching screening data from URL:', url);
+        const screeningResponse = await fetch(url);
+        const screeningData = await screeningResponse.json();
+        
+        // Get additional company details for the screened stocks
+        const symbols = screeningData.map((stock: any) => stock.symbol).join(',');
+        const detailsUrl = `https://financialmodelingprep.com/api/v3/profile/${symbols}?apikey=${apiKey}`;
+        const detailsResponse = await fetch(detailsUrl);
+        const detailsData = await detailsResponse.json();
+
+        // Combine screening and company details data
+        const enrichedData = screeningData.map((stock: any) => {
+          const details = detailsData.find((d: any) => d.symbol === stock.symbol);
+          return {
+            ...stock,
+            ...details
+          };
+        });
+
+        return new Response(JSON.stringify(enrichedData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       case "transcript-dates":
         url = `https://financialmodelingprep.com/api/v4/earning_call_transcript?symbol=${symbol}&apikey=${apiKey}`;
         console.log('Fetching transcript dates from URL:', url);
@@ -197,7 +223,7 @@ serve(async (req) => {
 
     }
 
-    if (endpoint !== "search" && endpoint !== "income-statement" && 
+    if (endpoint !== "screening" && endpoint !== "search" && endpoint !== "income-statement" && 
         endpoint !== "balance-sheet" && endpoint !== "cash-flow-statement" && 
         endpoint !== "estimates" && endpoint !== "key-metrics-ttm" && 
         endpoint !== "key-metrics-historical" && endpoint !== "transcript" &&
