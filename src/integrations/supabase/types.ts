@@ -36,6 +36,71 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_screens: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      screen_criteria: {
+        Row: {
+          created_at: string
+          id: string
+          metric_id: string
+          operator: Database["public"]["Enums"]["metric_operator"]
+          screen_id: string | null
+          value_max: number | null
+          value_min: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metric_id: string
+          operator: Database["public"]["Enums"]["metric_operator"]
+          screen_id?: string | null
+          value_max?: number | null
+          value_min?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metric_id?: string
+          operator?: Database["public"]["Enums"]["metric_operator"]
+          screen_id?: string | null
+          value_max?: number | null
+          value_min?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "screen_criteria_screen_id_fkey"
+            columns: ["screen_id"]
+            isOneToOne: false
+            referencedRelation: "saved_screens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -44,7 +109,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      metric_operator:
+        | "greater_than"
+        | "less_than"
+        | "equal_to"
+        | "between"
+        | "not_equal_to"
     }
     CompositeTypes: {
       [_ in never]: never
