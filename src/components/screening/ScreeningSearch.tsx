@@ -14,19 +14,38 @@ import { useState } from "react";
 import { ScreeningMetric } from "@/types/screening";
 
 const countries = [
-  "United States", "China", "Japan", "Germany", "United Kingdom",
-  "France", "India", "Italy", "Canada", "South Korea"
+  "United States", "Turkey", "China", "Japan", "Germany", 
+  "United Kingdom", "France", "India", "Italy", "Canada", 
+  "South Korea", "Brazil", "Australia", "Spain", "Mexico",
+  "Indonesia", "Netherlands", "Saudi Arabia", "Switzerland",
+  "Argentina", "Sweden", "Poland", "Belgium", "Thailand",
+  "Austria", "Norway", "United Arab Emirates", "Israel",
+  "Denmark", "Singapore", "Hong Kong", "Malaysia", "Ireland",
+  "Philippines", "Pakistan", "Bangladesh", "Vietnam", "Greece",
+  "Portugal", "Czech Republic", "Romania", "New Zealand",
+  "Hungary", "Kuwait", "Morocco", "Qatar", "Slovakia",
+  "Iraq", "Oman", "Croatia", "Luxembourg", "Jordan"
 ];
 
 const industries = [
-  "Technology", "Healthcare", "Financial Services", "Consumer Goods",
-  "Energy", "Materials", "Industrials", "Utilities", "Real Estate",
-  "Communication Services"
+  "Technology", "Healthcare", "Financial Services", 
+  "Consumer Goods", "Energy", "Materials", "Industrials",
+  "Utilities", "Real Estate", "Communication Services",
+  "Consumer Discretionary", "Consumer Staples", "Basic Materials",
+  "Telecommunications", "Transportation", "Capital Goods",
+  "Aerospace & Defense", "Automotive", "Banking",
+  "Biotechnology", "Chemicals", "Construction",
+  "Electronics", "Entertainment", "Food & Beverage",
+  "Insurance", "Media", "Mining", "Oil & Gas",
+  "Pharmaceuticals", "Retail", "Semiconductors",
+  "Software", "Steel", "Travel & Leisure"
 ];
 
 const exchanges = [
-  "NYSE", "NASDAQ", "LSE", "TSE", "SSE",
-  "HKEX", "Euronext", "Deutsche Börse", "BSE", "NSE"
+  "NYSE", "NASDAQ", "LSE", "TSE", "SSE", "HKEX",
+  "Euronext", "Deutsche Börse", "BSE", "NSE",
+  "JSE", "BM&F Bovespa", "ASX", "SIX", "KRX",
+  "TSX", "IDX", "BME", "SGX", "TWSE"
 ];
 
 const metrics = [
@@ -62,40 +81,11 @@ export const ScreeningSearch = ({
   const getItems = () => {
     switch (type) {
       case "countries":
-        return [
-          "United States", "Turkey", "China", "Japan", "Germany", 
-          "United Kingdom", "France", "India", "Italy", "Canada", 
-          "South Korea", "Brazil", "Australia", "Spain", "Mexico",
-          "Indonesia", "Netherlands", "Saudi Arabia", "Switzerland",
-          "Argentina", "Sweden", "Poland", "Belgium", "Thailand",
-          "Austria", "Norway", "United Arab Emirates", "Israel",
-          "Denmark", "Singapore", "Hong Kong", "Malaysia", "Ireland",
-          "Philippines", "Pakistan", "Bangladesh", "Vietnam", "Greece",
-          "Portugal", "Czech Republic", "Romania", "New Zealand",
-          "Hungary", "Kuwait", "Morocco", "Qatar", "Slovakia",
-          "Iraq", "Oman", "Croatia", "Luxembourg", "Jordan"
-        ];
+        return countries;
       case "industries":
-        return [
-          "Technology", "Healthcare", "Financial Services", 
-          "Consumer Goods", "Energy", "Materials", "Industrials",
-          "Utilities", "Real Estate", "Communication Services",
-          "Consumer Discretionary", "Consumer Staples", "Basic Materials",
-          "Telecommunications", "Transportation", "Capital Goods",
-          "Aerospace & Defense", "Automotive", "Banking",
-          "Biotechnology", "Chemicals", "Construction",
-          "Electronics", "Entertainment", "Food & Beverage",
-          "Insurance", "Media", "Mining", "Oil & Gas",
-          "Pharmaceuticals", "Retail", "Semiconductors",
-          "Software", "Steel", "Travel & Leisure"
-        ];
+        return industries;
       case "exchanges":
-        return [
-          "NYSE", "NASDAQ", "LSE", "TSE", "SSE", "HKEX",
-          "Euronext", "Deutsche Börse", "BSE", "NSE",
-          "JSE", "BM&F Bovespa", "ASX", "SIX", "KRX",
-          "TSX", "IDX", "BME", "SGX", "TWSE"
-        ];
+        return exchanges;
       case "metrics":
         return metrics;
       default:

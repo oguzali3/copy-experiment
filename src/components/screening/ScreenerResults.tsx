@@ -44,6 +44,8 @@ export const ScreenerResults = ({
         page: currentPage
       };
 
+      console.log('Sending screening criteria:', screeningCriteria);
+
       const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
         body: { 
           endpoint: 'screening',
@@ -52,6 +54,7 @@ export const ScreenerResults = ({
       });
 
       if (error) {
+        console.error('Screening error:', error);
         toast({
           title: "Error",
           description: "Failed to fetch screening results. Please try again.",
@@ -60,6 +63,7 @@ export const ScreenerResults = ({
         throw error;
       }
 
+      console.log('Received screening results:', data);
       return data || { data: [], page: 0, hasMore: false };
     },
     enabled: false
