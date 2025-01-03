@@ -16,8 +16,9 @@ interface EstimatesTableProps {
 export const EstimatesTable = ({ data, selectedMetric, formatValue }: EstimatesTableProps) => {
   // Filter and sort data to show only last 2 years actual and next 2 years estimates
   const currentYear = new Date().getFullYear();
-  const relevantData = data
+  const relevantData = (data || [])
     .filter(item => {
+      if (!item?.date) return false;
       const year = parseInt(item.date.split('-')[0]);
       return year >= currentYear - 2 && year <= currentYear + 2;
     })
@@ -26,6 +27,8 @@ export const EstimatesTable = ({ data, selectedMetric, formatValue }: EstimatesT
   console.log('Filtered data for table:', relevantData);
 
   const getMetricValue = (item: any) => {
+    if (!item) return { actual: null, consensus: null, high: null, low: null };
+    
     switch (selectedMetric) {
       case 'revenue':
         return {
@@ -59,6 +62,14 @@ export const EstimatesTable = ({ data, selectedMetric, formatValue }: EstimatesT
         return { actual: null, consensus: null, high: null, low: null };
     }
   };
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-white p-6 rounded-xl shadow-sm">
+        <p className="text-center text-gray-500">No data available</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm">
