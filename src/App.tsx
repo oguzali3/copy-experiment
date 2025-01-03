@@ -18,6 +18,7 @@ import Screening from "./pages/Screening";
 import Watchlists from "./pages/Watchlists";
 import Portfolio from "./pages/Portfolio";
 import Settings from "./pages/Settings";
+import { useState, useEffect } from 'react';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,13 +30,19 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  console.log('App component rendering'); // Debug log
+  const [initialSession, setInitialSession] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setInitialSession(session);
+    });
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <SessionContextProvider 
         supabaseClient={supabase}
-        initialSession={null}
+        initialSession={initialSession}
       >
         <TooltipProvider>
           <SidebarProvider>
