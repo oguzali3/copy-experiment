@@ -8,20 +8,12 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  ReferenceDot,
   ReferenceArea,
 } from "recharts";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { EstimatesMetricSelector } from "./EstimatesMetricSelector";
+import { EstimatesTable } from "./EstimatesTable";
 
 interface EstimatesChartProps {
   ticker?: string;
@@ -50,13 +42,6 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
     },
     enabled: !!ticker,
   });
-
-  const metrics = [
-    { id: "revenue", label: "Revenue" },
-    { id: "eps", label: "EPS" },
-    { id: "ebitda", label: "EBITDA" },
-    { id: "netIncome", label: "Net Income" },
-  ];
 
   const formatValue = (value: number) => {
     if (selectedMetric === 'eps') {
@@ -110,27 +95,13 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
     );
   }
 
-  console.log('Rendering chart with data:', {
-    selectedMetric,
-    dataPoints: estimatesData.length,
-    firstPoint: estimatesData[0],
-    lastPoint: estimatesData[estimatesData.length - 1]
-  });
-
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-xl shadow-sm">
-        <div className="flex gap-2 mb-6">
-          {metrics.map((metric) => (
-            <Button
-              key={metric.id}
-              variant={selectedMetric === metric.id ? "default" : "outline"}
-              onClick={() => setSelectedMetric(metric.id)}
-            >
-              {metric.label}
-            </Button>
-          ))}
-        </div>
+        <EstimatesMetricSelector
+          selectedMetric={selectedMetric}
+          onMetricChange={setSelectedMetric}
+        />
 
         <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -150,7 +121,6 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                 labelFormatter={(label) => `Period: ${label}`}
               />
               
-              {/* Actual values line */}
               <Line
                 type="monotone"
                 dataKey={`${selectedMetric}.actual`}
@@ -160,7 +130,6 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                 name="Actual"
               />
               
-              {/* Mean estimate line */}
               <Line
                 type="monotone"
                 dataKey={`${selectedMetric}.mean`}
@@ -171,7 +140,6 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
                 name="Consensus"
               />
 
-              {/* Range area between high and low estimates */}
               <ReferenceArea
                 y1={`${selectedMetric}.high`}
                 y2={`${selectedMetric}.low`}
@@ -184,38 +152,11 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-xl shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Period</TableHead>
-              <TableHead className="text-right">Actual</TableHead>
-              <TableHead className="text-right">Consensus</TableHead>
-              <TableHead className="text-right">High</TableHead>
-              <TableHead className="text-right">Low</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {estimatesData?.map((estimate: any) => (
-              <TableRow key={estimate.period}>
-                <TableCell>{estimate.period}</TableCell>
-                <TableCell className="text-right">
-                  {formatValue(estimate[selectedMetric].actual || 0)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatValue(estimate[selectedMetric].mean || 0)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatValue(estimate[selectedMetric].high || 0)}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatValue(estimate[selectedMetric].low || 0)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <EstimatesTable
+        data={estimatesData}
+        selectedMetric={selectedMetric}
+        formatValue={formatValue}
+      />
     </div>
   );
 };
