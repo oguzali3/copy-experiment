@@ -1,5 +1,4 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -15,40 +14,39 @@ interface ScreeningTableProps {
   data: any[];
 }
 
+const formatValue = (value: any, metricId: string): string => {
+  if (value === null || value === undefined) return 'N/A';
+
+  // Format based on metric type
+  if (metricId.includes('margin') || metricId.includes('growth') || 
+      metricId.includes('ratio') || metricId.includes('yield') || 
+      metricId.includes('roe') || metricId.includes('roa')) {
+    return `${Number(value).toFixed(2)}%`;
+  }
+
+  if (metricId === 'market_cap') {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      notation: 'compact',
+      maximumFractionDigits: 1
+    }).format(value);
+  }
+
+  if (typeof value === 'number') {
+    return value.toFixed(2);
+  }
+
+  return value.toString();
+};
+
 export const ScreeningTable = ({ metrics, data }: ScreeningTableProps) => {
-  const navigate = useNavigate();
-
-  const handleTickerClick = (ticker: string) => {
-    navigate(`/analysis?ticker=${ticker}`);
-  };
-
-  const formatValue = (value: any, metricId: string) => {
-    if (value === undefined || value === null) return 'N/A';
-    
-    if (metricId.toLowerCase().includes('margin') || 
-        metricId.toLowerCase().includes('growth') ||
-        metricId.toLowerCase().includes('ratio')) {
-      return `${Number(value).toFixed(2)}%`;
-    }
-    
-    if (typeof value === 'number') {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        notation: 'compact',
-        maximumFractionDigits: 1
-      }).format(value);
-    }
-    
-    return value;
-  };
-
   return (
     <div className="border rounded-lg">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Ticker</TableHead>
+            <TableHead>Symbol</TableHead>
             <TableHead>Company</TableHead>
             <TableHead>Country</TableHead>
             <TableHead>Industry</TableHead>
@@ -60,17 +58,10 @@ export const ScreeningTable = ({ metrics, data }: ScreeningTableProps) => {
         <TableBody>
           {data.map((company) => (
             <TableRow key={company.symbol}>
-              <TableCell>
-                <button
-                  onClick={() => handleTickerClick(company.symbol)}
-                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  {company.symbol}
-                </button>
-              </TableCell>
-              <TableCell>{company.companyName}</TableCell>
+              <TableCell className="font-medium">{company.symbol}</TableCell>
+              <TableCell>{company.name}</TableCell>
               <TableCell>{company.country}</TableCell>
-              <TableCell>{company.sector}</TableCell>
+              <TableCell>{company.industry}</TableCell>
               {metrics.map((metric) => (
                 <TableCell key={metric.id}>
                   {formatValue(company[metric.id], metric.id)}

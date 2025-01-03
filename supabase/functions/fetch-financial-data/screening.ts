@@ -29,32 +29,40 @@ export async function handleScreening(criteria: ScreeningCriteria) {
       .from('stocks')
       .select('*');
 
-    // Apply metric filters
+    // Apply metric filters with enhanced error handling
     criteria.metrics.forEach(metric => {
-      if (metric.min) {
-        query = query.gte(metric.id, parseFloat(metric.min));
+      if (metric.min !== undefined && metric.min !== '') {
+        const minValue = parseFloat(metric.min);
+        if (!isNaN(minValue)) {
+          query = query.gte(metric.id, minValue);
+          console.log(`Applied min filter: ${metric.id} >= ${minValue}`);
+        }
       }
-      if (metric.max) {
-        query = query.lte(metric.id, parseFloat(metric.max));
+      if (metric.max !== undefined && metric.max !== '') {
+        const maxValue = parseFloat(metric.max);
+        if (!isNaN(maxValue)) {
+          query = query.lte(metric.id, maxValue);
+          console.log(`Applied max filter: ${metric.id} <= ${maxValue}`);
+        }
       }
     });
 
     // Apply country filters
-    if (criteria.countries && criteria.countries.length > 0) {
-      const countryFilters = criteria.countries.map(country => `country.ilike.%${country}%`);
-      query = query.or(countryFilters.join(','));
+    if (criteria.countries?.length > 0) {
+      query = query.in('country', criteria.countries);
+      console.log('Applied country filters:', criteria.countries);
     }
 
     // Apply industry filters
-    if (criteria.industries && criteria.industries.length > 0) {
-      const industryFilters = criteria.industries.map(industry => `industry.ilike.%${industry}%`);
-      query = query.or(industryFilters.join(','));
+    if (criteria.industries?.length > 0) {
+      query = query.in('industry', criteria.industries);
+      console.log('Applied industry filters:', criteria.industries);
     }
 
     // Apply exchange filters
-    if (criteria.exchanges && criteria.exchanges.length > 0) {
-      const exchangeFilters = criteria.exchanges.map(exchange => `exchange.ilike.%${exchange}%`);
-      query = query.or(exchangeFilters.join(','));
+    if (criteria.exchanges?.length > 0) {
+      query = query.in('exchange', criteria.exchanges);
+      console.log('Applied exchange filters:', criteria.exchanges);
     }
 
     // Add pagination
@@ -71,8 +79,6 @@ export async function handleScreening(criteria: ScreeningCriteria) {
     }
 
     console.log(`Found ${count} results, returning page ${criteria.page}`);
-    console.log('Sample results:', results?.slice(0, 2));
-
     return {
       data: results || [],
       page: criteria.page,
