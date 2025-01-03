@@ -20,25 +20,32 @@ export const useMetrics = (ticker: string) => {
   const getMetricData = (combinedData: any[], timePeriods: string[], sliderValue: number[]) => {
     if (!selectedMetrics.length || !combinedData?.length) return [];
 
-    const startYear = timePeriods[sliderValue[0]];
-    const endYear = timePeriods[sliderValue[1]];
+    // Get the date range from the slider values
+    const startPeriod = timePeriods[sliderValue[0]];
+    const endPeriod = timePeriods[sliderValue[1]];
     
+    // Filter data based on the selected date range
     const filteredData = combinedData.filter(item => {
       if (item.period === 'TTM') {
-        return endYear === 'TTM';
+        return endPeriod === 'TTM';
       }
-      const year = parseInt(item.period);
-      const startYearInt = parseInt(startYear);
-      const endYearInt = endYear === 'TTM' ? 
-        parseInt(timePeriods[timePeriods.length - 2]) : 
-        parseInt(endYear);
+      const itemYear = parseInt(item.period);
+      const startYear = startPeriod === 'TTM' ? 0 : parseInt(startPeriod);
+      const endYear = endPeriod === 'TTM' ? Infinity : parseInt(endPeriod);
       
-      return year >= startYearInt && year <= endYearInt;
+      return itemYear >= startYear && itemYear <= endYear;
     });
 
-    return filteredData.map((item, index) => {
+    // Sort data chronologically
+    const sortedData = [...filteredData].sort((a, b) => {
+      if (a.period === 'TTM') return 1;
+      if (b.period === 'TTM') return -1;
+      return parseInt(a.period) - parseInt(b.period);
+    });
+
+    return sortedData.map((item, index) => {
       const point: Record<string, any> = { period: item.period };
-      const previousItem = filteredData[index + 1];
+      const previousItem = sortedData[index - 1];
       
       selectedMetrics.forEach(metric => {
         const metricDef = INCOME_STATEMENT_METRICS.find(m => m.id === metric);

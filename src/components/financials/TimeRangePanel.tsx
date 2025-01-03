@@ -44,17 +44,17 @@ export const TimeRangePanel = ({
               />
             ))}
           </div>
-          <div className="absolute w-full -bottom-5 left-0 right-0">
+          <div className="absolute w-full -bottom-8 left-0 right-0">
             {timePeriods.map((period, index) => (
               <div 
                 key={index} 
-                className="absolute text-xs text-gray-500"
+                className="absolute text-xs text-gray-500 whitespace-nowrap"
                 style={{ 
                   left: `${(index / (timePeriods.length - 1)) * 100}%`,
                   transform: 'translateX(-50%)'
                 }}
               >
-                {period}
+                {period === 'TTM' ? 'TTM' : period}
               </div>
             ))}
           </div>
