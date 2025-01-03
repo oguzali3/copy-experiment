@@ -1,21 +1,20 @@
-import React from "react";
+import React, { useState } from "react";
 import { MetricsSearch } from "@/components/MetricsSearch";
 import { CompanySearch } from "@/components/CompanySearch";
 import { MetricChart } from "@/components/financials/MetricChart";
 import { MetricsDataTable } from "@/components/financials/MetricsDataTable";
-import { TimeRangePanel } from "@/components/financials/TimeRangePanel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useMetrics } from "@/hooks/useMetrics";
-import { useTimePeriods } from "@/hooks/useTimePeriods";
 
 const Charting = () => {
-  const [selectedCompany, setSelectedCompany] = React.useState<any>(null);
-  
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<any>(null);
+  const [metricTypes, setMetricTypes] = useState<Record<string, 'bar' | 'line'>>({});
+
   const { data: financialData, isLoading } = useQuery({
-    queryKey: ['financial-data', selectedCompany?.symbol],
+    queryKey: ['financial-data', selectedCompany?.symbol, selectedMetrics],
     queryFn: async () => {
-      if (!selectedCompany?.symbol) return null;
+      if (!selectedCompany?.symbol || !selectedMetrics.length) return null;
 
       // Fetch all required financial data including TTM
       const responses = await Promise.all([
@@ -24,60 +23,90 @@ const Charting = () => {
             endpoint: 'income-statement', 
             symbol: selectedCompany.symbol,
             period: 'annual',
-            limit: 10
+            limit: 10  // Fetch up to 10 years of data
           }
         }),
         supabase.functions.invoke('fetch-financial-data', {
           body: { 
             endpoint: 'income-statement', 
             symbol: selectedCompany.symbol,
+            period: 'quarter'  // This will give us TTM data
+          }
+        }),
+        supabase.functions.invoke('fetch-financial-data', {
+          body: { 
+            endpoint: 'balance-sheet-statement', 
+            symbol: selectedCompany.symbol,
+            period: 'annual',
+            limit: 10
+          }
+        }),
+        supabase.functions.invoke('fetch-financial-data', {
+          body: { 
+            endpoint: 'balance-sheet-statement', 
+            symbol: selectedCompany.symbol,
+            period: 'quarter'
+          }
+        }),
+        supabase.functions.invoke('fetch-financial-data', {
+          body: { 
+            endpoint: 'cash-flow-statement', 
+            symbol: selectedCompany.symbol,
+            period: 'annual',
+            limit: 10
+          }
+        }),
+        supabase.functions.invoke('fetch-financial-data', {
+          body: { 
+            endpoint: 'cash-flow-statement', 
+            symbol: selectedCompany.symbol,
             period: 'quarter'
           }
         })
       ]);
 
-      const [annualData, quarterlyData] = responses.map(r => r.data);
+      const [
+        annualIncome, 
+        quarterlyIncome, 
+        annualBalance, 
+        quarterlyBalance,
+        annualCashFlow,
+        quarterlyCashFlow
+      ] = responses.map(r => r.data);
 
       // Calculate TTM data from quarterly data
-      const ttmData = quarterlyData?.slice(0, 4).reduce((acc: any, quarter: any) => {
-        Object.keys(quarter).forEach(key => {
-          if (typeof quarter[key] === 'number') {
-            if (!acc[key]) acc[key] = 0;
-            acc[key] += quarter[key];
-          }
+      const ttmData = quarterlyIncome?.slice(0, 4).reduce((acc: any, quarter: any) => {
+        selectedMetrics.forEach(metric => {
+          if (!acc[metric]) acc[metric] = 0;
+          acc[metric] += parseFloat(quarter[metric] || 0);
         });
         return acc;
       }, { period: 'TTM' });
 
-      return {
-        [selectedCompany.symbol]: {
-          annual: ttmData ? [ttmData, ...annualData] : annualData
-        }
-      };
+      // Transform annual data
+      const transformedAnnual = annualIncome?.map((period: any, index: number) => {
+        const dataPoint: any = {
+          period: new Date(period.date).getFullYear().toString()
+        };
+
+        selectedMetrics.forEach(metric => {
+          // Add the metric value from the appropriate data source
+          if (annualIncome[index][metric]) dataPoint[metric] = annualIncome[index][metric];
+          if (annualBalance?.[index]?.[metric]) dataPoint[metric] = annualBalance[index][metric];
+          if (annualCashFlow?.[index]?.[metric]) dataPoint[metric] = annualCashFlow[index][metric];
+        });
+
+        return dataPoint;
+      });
+
+      // Combine TTM with annual data if TTM exists and is different from most recent annual
+      const result = ttmData ? [ttmData, ...transformedAnnual] : transformedAnnual;
+      
+      console.log('Processed financial data:', result?.length, 'periods');
+      return result;
     },
-    enabled: !!selectedCompany?.symbol
+    enabled: !!selectedCompany?.symbol && selectedMetrics.length > 0
   });
-
-  const {
-    selectedMetrics,
-    setSelectedMetrics,
-    metricTypes,
-    setMetricTypes,
-    handleMetricTypeChange,
-    getMetricData
-  } = useMetrics(selectedCompany?.symbol);
-
-  const {
-    startDate,
-    endDate,
-    sliderValue,
-    timePeriods,
-    handleSliderChange
-  } = useTimePeriods(financialData, selectedCompany?.symbol);
-
-  const handleCompanySelect = (company: any) => {
-    setSelectedCompany(company);
-  };
 
   const handleMetricSelect = (metricId: string) => {
     if (!selectedMetrics.includes(metricId)) {
@@ -89,14 +118,18 @@ const Charting = () => {
     }
   };
 
-  const chartData = React.useMemo(() => {
-    if (!financialData?.[selectedCompany?.symbol]) return [];
-    return getMetricData(
-      financialData[selectedCompany.symbol].annual,
-      timePeriods,
-      sliderValue
-    );
-  }, [financialData, selectedCompany, selectedMetrics, timePeriods, sliderValue]);
+  const handleCompanySelect = (company: any) => {
+    setSelectedCompany(company);
+    setSelectedMetrics([]);
+    setMetricTypes({});
+  };
+
+  const handleMetricTypeChange = (metric: string, type: 'bar' | 'line') => {
+    setMetricTypes(prev => ({
+      ...prev,
+      [metric]: type
+    }));
+  };
 
   return (
     <div className="space-y-6">
@@ -146,25 +179,15 @@ const Charting = () => {
               </div>
             )}
 
-            {timePeriods.length > 0 && (
-              <TimeRangePanel
-                startDate={startDate}
-                endDate={endDate}
-                sliderValue={sliderValue}
-                onSliderChange={handleSliderChange}
-                timePeriods={timePeriods}
-              />
-            )}
-
             {isLoading ? (
               <div className="h-[400px] flex items-center justify-center">
                 <p className="text-gray-500">Loading chart data...</p>
               </div>
-            ) : chartData.length > 0 && selectedMetrics.length > 0 ? (
+            ) : financialData && selectedMetrics.length > 0 ? (
               <div className="space-y-6">
                 <div className="h-[500px]">
                   <MetricChart 
-                    data={chartData}
+                    data={financialData}
                     metrics={selectedMetrics}
                     ticker={selectedCompany.symbol}
                     metricTypes={metricTypes}
@@ -172,7 +195,7 @@ const Charting = () => {
                   />
                 </div>
                 <MetricsDataTable 
-                  data={chartData}
+                  data={financialData}
                   metrics={selectedMetrics}
                   ticker={selectedCompany.symbol}
                 />

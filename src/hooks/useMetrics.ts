@@ -20,32 +20,25 @@ export const useMetrics = (ticker: string) => {
   const getMetricData = (combinedData: any[], timePeriods: string[], sliderValue: number[]) => {
     if (!selectedMetrics.length || !combinedData?.length) return [];
 
-    // Get the date range from the slider values
-    const startPeriod = timePeriods[sliderValue[0]];
-    const endPeriod = timePeriods[sliderValue[1]];
+    const startYear = timePeriods[sliderValue[0]];
+    const endYear = timePeriods[sliderValue[1]];
     
-    // Filter data based on the selected date range
     const filteredData = combinedData.filter(item => {
       if (item.period === 'TTM') {
-        return endPeriod === 'TTM';
+        return endYear === 'TTM';
       }
-      const itemYear = parseInt(item.period);
-      const startYear = startPeriod === 'TTM' ? 0 : parseInt(startPeriod);
-      const endYear = endPeriod === 'TTM' ? Infinity : parseInt(endPeriod);
+      const year = parseInt(item.period);
+      const startYearInt = parseInt(startYear);
+      const endYearInt = endYear === 'TTM' ? 
+        parseInt(timePeriods[timePeriods.length - 2]) : 
+        parseInt(endYear);
       
-      return itemYear >= startYear && itemYear <= endYear;
+      return year >= startYearInt && year <= endYearInt;
     });
 
-    // Sort data chronologically
-    const sortedData = [...filteredData].sort((a, b) => {
-      if (a.period === 'TTM') return 1;
-      if (b.period === 'TTM') return -1;
-      return parseInt(a.period) - parseInt(b.period);
-    });
-
-    return sortedData.map((item, index) => {
+    return filteredData.map((item, index) => {
       const point: Record<string, any> = { period: item.period };
-      const previousItem = sortedData[index - 1];
+      const previousItem = filteredData[index + 1];
       
       selectedMetrics.forEach(metric => {
         const metricDef = INCOME_STATEMENT_METRICS.find(m => m.id === metric);
@@ -62,7 +55,6 @@ export const useMetrics = (ticker: string) => {
     selectedMetrics,
     setSelectedMetrics,
     metricTypes,
-    setMetricTypes,
     handleMetricTypeChange,
     getMetricData
   };
