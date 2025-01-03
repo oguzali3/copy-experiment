@@ -5,6 +5,7 @@ import { ScreeningMetric } from "@/types/screening";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface ScreenerResultsProps {
   metrics: ScreeningMetric[];
@@ -25,38 +26,48 @@ export const ScreenerResults = ({
   excludeIndustries,
   excludeExchanges
 }: ScreenerResultsProps) => {
-  const [isScreening, setIsScreening] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const { toast } = useToast();
 
   const { data: screeningData, isLoading, refetch } = useQuery({
-    queryKey: ['screening-results', currentPage],
+    queryKey: ['screening-results', currentPage, metrics, selectedCountries, selectedIndustries, selectedExchanges],
     queryFn: async () => {
       const screeningCriteria = {
-        metrics,
+        metrics: metrics.map(m => ({
+          id: m.id,
+          min: m.min,
+          max: m.max
+        })),
         countries: excludeCountries ? [] : selectedCountries,
         industries: excludeIndustries ? [] : selectedIndustries,
         exchanges: excludeExchanges ? [] : selectedExchanges,
+        page: currentPage
       };
 
       const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
         body: { 
           endpoint: 'screening',
-          screeningCriteria,
-          page: currentPage
+          screeningCriteria
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch screening results. Please try again.",
+          variant: "destructive"
+        });
+        throw error;
+      }
+
       return data || { data: [], page: 0, hasMore: false };
     },
     enabled: false
   });
 
   const handleRunScreener = async () => {
-    setIsScreening(true);
     setCurrentPage(0);
     await refetch();
-    setIsScreening(false);
   };
 
   const handleLoadMore = async () => {
@@ -64,7 +75,7 @@ export const ScreenerResults = ({
     await refetch();
   };
 
-  const filteredResults = screeningData?.data || [];
+  const results = screeningData?.data || [];
   const hasMore = screeningData?.hasMore || false;
 
   return (
@@ -72,10 +83,10 @@ export const ScreenerResults = ({
       <div className="flex items-center justify-between">
         <Button 
           onClick={handleRunScreener}
-          disabled={isScreening || isLoading}
+          disabled={isLoading}
           className="bg-[#077dfa] hover:bg-[#077dfa]/90"
         >
-          {isScreening || isLoading ? (
+          {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Running Screener...
@@ -85,11 +96,13 @@ export const ScreenerResults = ({
           )}
         </Button>
         <div className="text-sm text-gray-500">
-          Results: {filteredResults.length}
+          Results: {results.length}
         </div>
       </div>
 
-      <ScreeningTable metrics={metrics} data={filteredResults} />
+      {results.length > 0 && (
+        <ScreeningTable metrics={metrics} data={results} />
+      )}
 
       {hasMore && (
         <div className="flex justify-center mt-4">
@@ -101,7 +114,7 @@ export const ScreenerResults = ({
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Loading...
+                Loading More...
               </>
             ) : (
               'Load More Results'

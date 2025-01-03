@@ -1,11 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-const STOCKS_PER_PAGE = 50;
+import { corsHeaders, handleError } from './utils.ts';
+import { handleScreening } from './screening.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -25,85 +20,10 @@ serve(async (req) => {
 
     console.log('Received request with params:', { endpoint, symbol, from, to, page, query, screeningCriteria });
 
-    let url;
     switch (endpoint) {
       case "screening":
-        // Get base screening data
-        url = `https://financialmodelingprep.com/api/v3/stock-screener?apikey=${apiKey}`;
-        
-        // Add filtering parameters if provided
-        if (screeningCriteria) {
-          const { metrics, exchanges, industries, countries } = screeningCriteria;
-          
-          // Add exchange filter
-          if (exchanges?.length > 0) {
-            const exchangeList = exchanges.join(',');
-            url += `&exchange=${exchangeList}`;
-          }
-          
-          // Add industry filter
-          if (industries?.length > 0) {
-            const industryList = industries.join(',');
-            url += `&sector=${industryList}`;
-          }
-          
-          // Add country filter
-          if (countries?.length > 0) {
-            const countryList = countries.join(',');
-            url += `&country=${countryList}`;
-          }
-          
-          // Add metric filters
-          if (metrics?.length > 0) {
-            metrics.forEach(metric => {
-              if (metric.min !== undefined && metric.min !== '') {
-                url += `&${metric.id}_more_than=${metric.min}`;
-              }
-              if (metric.max !== undefined && metric.max !== '') {
-                url += `&${metric.id}_less_than=${metric.max}`;
-              }
-            });
-          }
-        }
-        
-        // Add pagination
-        const offset = page * STOCKS_PER_PAGE;
-        url += `&limit=${STOCKS_PER_PAGE}&offset=${offset}`;
-        
-        console.log('Fetching screening data from URL:', url);
-        const screeningResponse = await fetch(url);
-        const screeningData = await screeningResponse.json();
-        
-        // Get additional company details for the screened stocks
-        const symbols = screeningData.map((stock: any) => stock.symbol).join(',');
-        if (symbols) {
-          const detailsUrl = `https://financialmodelingprep.com/api/v3/profile/${symbols}?apikey=${apiKey}`;
-          const detailsResponse = await fetch(detailsUrl);
-          const detailsData = await detailsResponse.json();
-
-          // Combine screening and company details data
-          const enrichedData = screeningData.map((stock: any) => {
-            const details = detailsData.find((d: any) => d.symbol === stock.symbol);
-            return {
-              ...stock,
-              ...details
-            };
-          });
-
-          return new Response(JSON.stringify({
-            data: enrichedData,
-            page,
-            hasMore: enrichedData.length === STOCKS_PER_PAGE
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        
-        return new Response(JSON.stringify({
-          data: [],
-          page,
-          hasMore: false
-        }), {
+        const screeningResult = await handleScreening(apiKey, screeningCriteria);
+        return new Response(JSON.stringify(screeningResult), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 

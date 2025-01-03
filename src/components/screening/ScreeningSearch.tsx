@@ -62,11 +62,40 @@ export const ScreeningSearch = ({
   const getItems = () => {
     switch (type) {
       case "countries":
-        return countries;
+        return [
+          "United States", "Turkey", "China", "Japan", "Germany", 
+          "United Kingdom", "France", "India", "Italy", "Canada", 
+          "South Korea", "Brazil", "Australia", "Spain", "Mexico",
+          "Indonesia", "Netherlands", "Saudi Arabia", "Switzerland",
+          "Argentina", "Sweden", "Poland", "Belgium", "Thailand",
+          "Austria", "Norway", "United Arab Emirates", "Israel",
+          "Denmark", "Singapore", "Hong Kong", "Malaysia", "Ireland",
+          "Philippines", "Pakistan", "Bangladesh", "Vietnam", "Greece",
+          "Portugal", "Czech Republic", "Romania", "New Zealand",
+          "Hungary", "Kuwait", "Morocco", "Qatar", "Slovakia",
+          "Iraq", "Oman", "Croatia", "Luxembourg", "Jordan"
+        ];
       case "industries":
-        return industries;
+        return [
+          "Technology", "Healthcare", "Financial Services", 
+          "Consumer Goods", "Energy", "Materials", "Industrials",
+          "Utilities", "Real Estate", "Communication Services",
+          "Consumer Discretionary", "Consumer Staples", "Basic Materials",
+          "Telecommunications", "Transportation", "Capital Goods",
+          "Aerospace & Defense", "Automotive", "Banking",
+          "Biotechnology", "Chemicals", "Construction",
+          "Electronics", "Entertainment", "Food & Beverage",
+          "Insurance", "Media", "Mining", "Oil & Gas",
+          "Pharmaceuticals", "Retail", "Semiconductors",
+          "Software", "Steel", "Travel & Leisure"
+        ];
       case "exchanges":
-        return exchanges;
+        return [
+          "NYSE", "NASDAQ", "LSE", "TSE", "SSE", "HKEX",
+          "Euronext", "Deutsche Börse", "BSE", "NSE",
+          "JSE", "BM&F Bovespa", "ASX", "SIX", "KRX",
+          "TSX", "IDX", "BME", "SGX", "TWSE"
+        ];
       case "metrics":
         return metrics;
       default:
