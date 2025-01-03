@@ -1,10 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-import { Database } from '../../../src/types/supabase';
-
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-const supabase = createClient<Database>(supabaseUrl, supabaseKey);
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { corsHeaders } from './utils.ts'
 
 interface ScreeningCriteria {
   metrics: Array<{
@@ -18,13 +13,12 @@ interface ScreeningCriteria {
   page: number;
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
 export async function handleScreening(criteria: ScreeningCriteria) {
   console.log('Screening criteria:', criteria);
+  
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
   
   const ITEMS_PER_PAGE = 50;
   const start = criteria.page * ITEMS_PER_PAGE;
