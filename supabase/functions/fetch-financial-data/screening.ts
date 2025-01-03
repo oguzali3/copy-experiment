@@ -41,29 +41,20 @@ export async function handleScreening(criteria: ScreeningCriteria) {
 
     // Apply country filters
     if (criteria.countries && criteria.countries.length > 0) {
-      query = query.or(
-        criteria.countries.map(country => 
-          `country.ilike.%${country}%`
-        ).join(',')
-      );
+      const countryFilters = criteria.countries.map(country => `country.ilike.%${country}%`);
+      query = query.or(countryFilters.join(','));
     }
 
     // Apply industry filters
     if (criteria.industries && criteria.industries.length > 0) {
-      query = query.or(
-        criteria.industries.map(industry => 
-          `industry.ilike.%${industry}%`
-        ).join(',')
-      );
+      const industryFilters = criteria.industries.map(industry => `industry.ilike.%${industry}%`);
+      query = query.or(industryFilters.join(','));
     }
 
     // Apply exchange filters
     if (criteria.exchanges && criteria.exchanges.length > 0) {
-      query = query.or(
-        criteria.exchanges.map(exchange => 
-          `exchange.ilike.%${exchange}%`
-        ).join(',')
-      );
+      const exchangeFilters = criteria.exchanges.map(exchange => `exchange.ilike.%${exchange}%`);
+      query = query.or(exchangeFilters.join(','));
     }
 
     // Add pagination
