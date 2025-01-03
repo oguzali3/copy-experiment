@@ -1,6 +1,4 @@
-import React from 'react';
 import { Slider } from "@/components/ui/slider";
-import { Card } from "@/components/ui/card";
 
 interface TimeRangeSelectorProps {
   startYear: number;
@@ -21,40 +19,30 @@ export const TimeRangeSelector = ({
   );
 
   return (
-    <Card className="p-6 space-y-4">
+    <div className="w-full space-y-4 p-4 bg-white rounded-lg">
       <div className="flex justify-between items-center">
-        <h3 className="text-sm font-medium">Time Range</h3>
-        <div className="text-sm text-gray-500">
+        <h3 className="text-lg font-medium">Time Range</h3>
+        <span className="text-gray-500">
           {selectedRange[0]} - {selectedRange[1]}
-        </div>
+        </span>
       </div>
-      
       <div className="px-2 py-4">
-        <div className="relative">
-          <Slider
-            min={startYear}
-            max={endYear}
-            step={1}
-            value={selectedRange}
-            onValueChange={(value) => onRangeChange(value as [number, number])}
-            className="w-full"
-          />
-          <div className="absolute w-full -bottom-6 left-0 right-0">
-            {years.map((year) => (
-              <div
-                key={year}
-                className="absolute text-xs text-gray-500"
-                style={{
-                  left: `${((year - startYear) / (years.length - 1)) * 100}%`,
-                  transform: 'translateX(-50%)',
-                }}
-              >
-                {year}
-              </div>
-            ))}
-          </div>
+        <Slider
+          min={startYear}
+          max={endYear}
+          step={1}
+          value={[selectedRange[0], selectedRange[1]]}
+          onValueChange={(value) => onRangeChange(value as [number, number])}
+          className="w-full"
+        />
+        <div className="flex justify-between mt-2">
+          {years.map((year) => (
+            <span key={year} className="text-sm text-gray-500">
+              {year}
+            </span>
+          ))}
         </div>
       </div>
-    </Card>
+    </div>
   );
 };
