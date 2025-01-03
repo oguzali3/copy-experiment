@@ -20,6 +20,9 @@ export const DCFAnalysis = ({ ticker }: DCFAnalysisProps) => {
       console.log('DCF Data received:', data);
       return data[0]; // Get the first year's data
     },
+    staleTime: 300000, // Cache for 5 minutes
+    cacheTime: 3600000, // Keep in cache for 1 hour
+    retry: 2,
     enabled: !!ticker
   });
 

@@ -7,10 +7,7 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
-      headers: corsHeaders,
-      status: 204
-    });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -21,19 +18,18 @@ serve(async (req) => {
       throw new Error("FMP_API_KEY is not set");
     }
 
-    console.log('Received request with params:', { endpoint, symbol });
-
     let url;
     switch (endpoint) {
       case "dcf":
         url = `https://financialmodelingprep.com/api/v3/discounted-cash-flow/${symbol}?apikey=${apiKey}`;
         console.log('Fetching DCF data from URL:', url);
-        const dcfResponse = await fetch(url);
-        const dcfData = await dcfResponse.json();
-        console.log('Raw DCF API response:', dcfData);
+        const response = await fetch(url);
+        const data = await response.json();
+        console.log('DCF API response:', data);
 
-        // Return the data directly since it's already in the format we need
-        return new Response(JSON.stringify(dcfData), {
+        // Return only the most recent data point
+        const mostRecentData = Array.isArray(data) ? data[0] : data;
+        return new Response(JSON.stringify([mostRecentData]), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
