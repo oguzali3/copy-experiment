@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -18,9 +17,9 @@ interface TranscriptsContentProps {
 }
 
 interface TranscriptDate {
-  date: string;
   quarter: number;
   year: number;
+  date: string;
 }
 
 interface Transcript {
@@ -47,7 +46,13 @@ export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps)
         throw error;
       }
       console.log('Transcript dates received:', data);
-      return data as TranscriptDate[];
+      
+      // Transform the array data into the expected format
+      return data.map((item: any[]) => ({
+        quarter: item[0],
+        year: item[1],
+        date: item[2]
+      })) as TranscriptDate[];
     },
     enabled: !!ticker
   });
