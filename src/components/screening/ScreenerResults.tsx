@@ -35,7 +35,7 @@ export const ScreenerResults = ({
       });
 
       if (error) throw error;
-      return data;
+      return data || []; // Ensure we always return an array
     },
     enabled: false
   });
@@ -46,10 +46,10 @@ export const ScreenerResults = ({
     setIsScreening(false);
   };
 
-  const filterResults = (data: any[]) => {
-    if (!data) return [];
-
+  const filterResults = (data: any[] = []) => {
     return data.filter(company => {
+      if (!company) return false;
+
       // Filter by country
       const countryMatch = selectedCountries.length === 0 || 
         (excludeCountries 
@@ -71,12 +71,13 @@ export const ScreenerResults = ({
       // Filter by metrics
       const metricsMatch = metrics.every(metric => {
         const value = company[metric.id];
-        if (!value) return false;
+        if (value === undefined || value === null) return false;
         
         const min = metric.min ? parseFloat(metric.min) : -Infinity;
         const max = metric.max ? parseFloat(metric.max) : Infinity;
         
-        return value >= min && value <= max;
+        const numericValue = typeof value === 'string' ? parseFloat(value) : value;
+        return !isNaN(numericValue) && numericValue >= min && numericValue <= max;
       });
 
       return countryMatch && industryMatch && exchangeMatch && metricsMatch;
