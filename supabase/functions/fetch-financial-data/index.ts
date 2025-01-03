@@ -6,7 +6,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
       headers: corsHeaders,
@@ -26,6 +25,16 @@ serve(async (req) => {
 
     let url;
     switch (endpoint) {
+      case "dcf":
+        url = `https://financialmodelingprep.com/api/v3/discounted-cash-flow/${symbol}?apikey=${apiKey}`;
+        console.log('Fetching DCF from URL:', url);
+        const dcfResponse = await fetch(url);
+        const dcfData = await dcfResponse.json();
+        console.log('Raw DCF API response:', dcfData);
+        return new Response(JSON.stringify(dcfData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       case "search":
         url = `https://financialmodelingprep.com/api/v3/search?query=${query}&limit=10&apikey=${apiKey}`;
         const searchResponse = await fetch(url);
@@ -76,7 +85,6 @@ serve(async (req) => {
       case "income-statement":
       case "balance-sheet":
       case "cash-flow-statement":
-        // First get TTM data using quarterly statements
         const ttmUrl = endpoint === 'income-statement' 
           ? `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?period=quarter&limit=4&apikey=${apiKey}`
           : `https://financialmodelingprep.com/api/v3/balance-sheet-statement/${symbol}?period=quarter&limit=4&apikey=${apiKey}`;
@@ -84,8 +92,6 @@ serve(async (req) => {
         const ttmResponse = await fetch(ttmUrl);
         const ttmData = await ttmResponse.json();
         
-        // Calculate TTM by summing last 4 quarters for income statement
-        // For balance sheet, use the most recent quarter as TTM
         const ttm = endpoint === 'income-statement'
           ? ttmData.reduce((acc: any, quarter: any) => {
               Object.keys(quarter).forEach(key => {
@@ -97,7 +103,6 @@ serve(async (req) => {
             }, { period: 'TTM', symbol, date: new Date().toISOString() })
           : { ...ttmData[0], period: 'TTM' };
 
-        // Get annual data
         url = endpoint === 'income-statement'
           ? `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?limit=10&apikey=${apiKey}`
           : `https://financialmodelingprep.com/api/v3/balance-sheet-statement/${symbol}?limit=10&apikey=${apiKey}`;
@@ -105,7 +110,6 @@ serve(async (req) => {
         const annualResponse = await fetch(url);
         const annualData = await annualResponse.json();
 
-        // Combine TTM with annual data
         const combinedData = [ttm, ...annualData];
         
         return new Response(JSON.stringify(combinedData), {
@@ -113,14 +117,12 @@ serve(async (req) => {
         });
 
       case "cash-flow-statement":
-        // First get TTM data using quarterly statements
         const cashFlowTtmUrl = `https://financialmodelingprep.com/api/v3/cash-flow-statement/${symbol}?period=quarter&limit=4&apikey=${apiKey}`;
         const cashFlowTtmResponse = await fetch(cashFlowTtmUrl);
         const cashFlowTtmData = await cashFlowTtmResponse.json();
         
         console.log('TTM Cash Flow Data:', cashFlowTtmData);
 
-        // Calculate TTM by summing last 4 quarters
         const cashFlowTtm = cashFlowTtmData.reduce((acc: any, quarter: any) => {
           Object.keys(quarter).forEach(key => {
             if (typeof quarter[key] === 'number') {
@@ -130,14 +132,12 @@ serve(async (req) => {
           return acc;
         }, { period: 'TTM', symbol, date: new Date().toISOString() });
 
-        // Get annual data
         const cashFlowUrl = `https://financialmodelingprep.com/api/v3/cash-flow-statement/${symbol}?limit=10&apikey=${apiKey}`;
         const cashFlowAnnualResponse = await fetch(cashFlowUrl);
         const cashFlowAnnualData = await cashFlowAnnualResponse.json();
 
         console.log('Annual Cash Flow Data:', cashFlowAnnualData);
 
-        // Combine TTM with annual data
         const combinedCashFlowData = [cashFlowTtm, ...cashFlowAnnualData];
         
         return new Response(JSON.stringify(combinedCashFlowData), {

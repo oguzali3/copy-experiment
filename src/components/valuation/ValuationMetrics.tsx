@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { KeyMetricsTable } from "./KeyMetricsTable";
+import { DcfAnalysis } from "./DcfAnalysis";
 
 interface ValuationMetricsProps {
   ticker: string;
@@ -53,6 +54,7 @@ export const ValuationMetrics = ({ ticker }: ValuationMetricsProps) => {
 
   return (
     <div className="space-y-6">
+      <DcfAnalysis ticker={ticker} />
       <KeyMetricsTable ttmData={ttmData} historicalData={historicalData} />
     </div>
   );
