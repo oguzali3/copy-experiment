@@ -18,6 +18,11 @@ interface ScreeningCriteria {
   page: number;
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 export async function handleScreening(criteria: ScreeningCriteria) {
   console.log('Screening criteria:', criteria);
   

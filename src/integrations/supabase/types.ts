@@ -101,6 +101,69 @@ export type Database = {
           },
         ]
       }
+      stocks: {
+        Row: {
+          country: string | null
+          ebitda: number | null
+          exchange: string | null
+          free_cash_flow: number | null
+          gross_profit: number | null
+          industry: string | null
+          last_updated: string | null
+          market_cap: number | null
+          name: string | null
+          net_income: number | null
+          operating_cash_flow: number | null
+          operating_income: number | null
+          revenue: number | null
+          revenue_growth: number | null
+          symbol: string
+          total_assets: number | null
+          total_equity: number | null
+          total_liabilities: number | null
+        }
+        Insert: {
+          country?: string | null
+          ebitda?: number | null
+          exchange?: string | null
+          free_cash_flow?: number | null
+          gross_profit?: number | null
+          industry?: string | null
+          last_updated?: string | null
+          market_cap?: number | null
+          name?: string | null
+          net_income?: number | null
+          operating_cash_flow?: number | null
+          operating_income?: number | null
+          revenue?: number | null
+          revenue_growth?: number | null
+          symbol: string
+          total_assets?: number | null
+          total_equity?: number | null
+          total_liabilities?: number | null
+        }
+        Update: {
+          country?: string | null
+          ebitda?: number | null
+          exchange?: string | null
+          free_cash_flow?: number | null
+          gross_profit?: number | null
+          industry?: string | null
+          last_updated?: string | null
+          market_cap?: number | null
+          name?: string | null
+          net_income?: number | null
+          operating_cash_flow?: number | null
+          operating_income?: number | null
+          revenue?: number | null
+          revenue_growth?: number | null
+          symbol?: string
+          total_assets?: number | null
+          total_equity?: number | null
+          total_liabilities?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

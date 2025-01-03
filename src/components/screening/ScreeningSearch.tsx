@@ -1,180 +1,129 @@
-import React from "react";
-import {
-  Command,
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from "react";
+import { Command } from "cmdk";
 import { Search } from "lucide-react";
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { ScreeningMetric } from "@/types/screening";
-
-const countries = [
-  "United States", "Turkey", "China", "Japan", "Germany", 
-  "United Kingdom", "France", "India", "Italy", "Canada", 
-  "South Korea", "Brazil", "Australia", "Spain", "Mexico",
-  "Indonesia", "Netherlands", "Saudi Arabia", "Switzerland",
-  "Argentina", "Sweden", "Poland", "Belgium", "Thailand",
-  "Austria", "Norway", "United Arab Emirates", "Israel",
-  "Denmark", "Singapore", "Hong Kong", "Malaysia", "Ireland",
-  "Philippines", "Pakistan", "Bangladesh", "Vietnam", "Greece",
-  "Portugal", "Czech Republic", "Romania", "New Zealand",
-  "Hungary", "Kuwait", "Morocco", "Qatar", "Slovakia",
-  "Iraq", "Oman", "Croatia", "Luxembourg", "Jordan"
-];
-
-const industries = [
-  "Technology", "Healthcare", "Financial Services", 
-  "Consumer Goods", "Energy", "Materials", "Industrials",
-  "Utilities", "Real Estate", "Communication Services",
-  "Consumer Discretionary", "Consumer Staples", "Basic Materials",
-  "Telecommunications", "Transportation", "Capital Goods",
-  "Aerospace & Defense", "Automotive", "Banking",
-  "Biotechnology", "Chemicals", "Construction",
-  "Electronics", "Entertainment", "Food & Beverage",
-  "Insurance", "Media", "Mining", "Oil & Gas",
-  "Pharmaceuticals", "Retail", "Semiconductors",
-  "Software", "Steel", "Travel & Leisure"
-];
-
-const exchanges = [
-  "NYSE", "NASDAQ", "LSE", "TSE", "SSE", "HKEX",
-  "Euronext", "Deutsche Börse", "BSE", "NSE",
-  "JSE", "BM&F Bovespa", "ASX", "SIX", "KRX",
-  "TSX", "IDX", "BME", "SGX", "TWSE"
-];
-
-const metrics = [
-  { id: "revenue", name: "Revenue", category: "Income Statement" },
-  { id: "revenueGrowth", name: "Revenue Growth", category: "Growth" },
-  { id: "grossProfit", name: "Gross Profit", category: "Income Statement" },
-  { id: "operatingIncome", name: "Operating Income", category: "Income Statement" },
-  { id: "netIncome", name: "Net Income", category: "Income Statement" },
-  { id: "ebitda", name: "EBITDA", category: "Income Statement" },
-  { id: "totalAssets", name: "Total Assets", category: "Balance Sheet" },
-  { id: "totalLiabilities", name: "Total Liabilities", category: "Balance Sheet" },
-  { id: "totalEquity", name: "Total Equity", category: "Balance Sheet" },
-  { id: "operatingCashFlow", name: "Operating Cash Flow", category: "Cash Flow" },
-  { id: "freeCashFlow", name: "Free Cash Flow", category: "Cash Flow" },
-];
 
 interface ScreeningSearchProps {
   type: "countries" | "industries" | "exchanges" | "metrics";
   selected?: string[];
-  onSelect?: (selected: string[]) => void;
+  onSelect?: (items: string[]) => void;
   onMetricSelect?: (metric: ScreeningMetric) => void;
 }
 
-export const ScreeningSearch = ({
-  type,
-  selected = [],
-  onSelect,
-  onMetricSelect
-}: ScreeningSearchProps) => {
+export const ScreeningSearch = ({ type, selected = [], onSelect, onMetricSelect }: ScreeningSearchProps) => {
   const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchValue, setSearchValue] = useState("");
+  const [options, setOptions] = useState<string[]>([]);
 
-  const getItems = () => {
-    switch (type) {
-      case "countries":
-        return countries;
-      case "industries":
-        return industries;
-      case "exchanges":
-        return exchanges;
-      case "metrics":
-        return metrics;
-      default:
-        return [];
+  const { data: stocksData } = useQuery({
+    queryKey: ['stocks-metadata', type],
+    queryFn: async () => {
+      if (type === 'metrics') return [];
+
+      const { data, error } = await supabase
+        .from('stocks')
+        .select(type === 'countries' ? 'country' : type === 'industries' ? 'industry' : 'exchange');
+
+      if (error) throw error;
+
+      const uniqueValues = Array.from(new Set(
+        data
+          .map(item => item[type === 'countries' ? 'country' : type === 'industries' ? 'industry' : 'exchange'])
+          .filter(Boolean)
+      )).sort();
+
+      return uniqueValues;
     }
-  };
+  });
 
-  const items = getItems();
-  const filteredItems = type === "metrics"
-    ? (items as typeof metrics).filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : (items as string[]).filter(item =>
-        item.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+  useEffect(() => {
+    if (stocksData) {
+      setOptions(stocksData);
+    }
+  }, [stocksData]);
 
-  const handleSelect = (item: string | typeof metrics[0]) => {
-    if (type === "metrics" && onMetricSelect) {
-      const metric = item as typeof metrics[0];
-      onMetricSelect({
-        id: metric.id,
-        name: metric.name,
-        category: metric.category,
-        min: "",
-        max: ""
-      });
-    } else if (onSelect) {
-      const value = typeof item === "string" ? item : item.name;
-      if (selected.includes(value)) {
-        onSelect(selected.filter(i => i !== value));
-      } else {
-        onSelect([...selected, value]);
+  const filteredOptions = options.filter(option =>
+    option.toLowerCase().includes(searchValue.toLowerCase())
+  );
+
+  const handleSelect = (value: string) => {
+    if (type === 'metrics') {
+      // Handle metric selection
+      if (onMetricSelect) {
+        const metric = {
+          id: value.toLowerCase(),
+          name: value,
+          category: 'Financial',
+          min: '',
+          max: ''
+        };
+        onMetricSelect(metric);
+      }
+    } else {
+      // Handle other selections
+      if (onSelect) {
+        if (selected.includes(value)) {
+          onSelect(selected.filter(item => item !== value));
+        } else {
+          onSelect([...selected, value]);
+        }
       }
     }
     setOpen(false);
   };
 
   return (
-    <div className="relative w-full">
-      <Button
-        variant="outline"
-        className="w-full justify-start text-left font-normal"
+    <div className="relative">
+      <div
+        className="relative w-full cursor-pointer"
         onClick={() => setOpen(true)}
       >
-        <Search className="mr-2 h-4 w-4" />
-        <span>
-          {type === "metrics"
-            ? "Select & search metrics"
-            : `Search ${type}...`}
-        </span>
-      </Button>
-      <CommandDialog open={open} onOpenChange={setOpen}>
-        <Command className="rounded-lg border shadow-md">
-          <CommandInput
-            placeholder={`Search ${type}...`}
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-          />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup>
-              {filteredItems.map((item) => {
-                const itemValue = typeof item === "string" ? item : item.name;
-                return (
-                  <CommandItem
-                    key={typeof item === "string" ? item : item.id}
-                    onSelect={() => handleSelect(item)}
-                    className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
+        <input
+          className="w-full px-4 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder={`Search ${type}...`}
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          onClick={() => setOpen(true)}
+        />
+        <Search className="absolute right-3 top-2.5 h-4 w-4 text-gray-500" />
+      </div>
+
+      {open && (
+        <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg">
+          <Command>
+            <Command.Input
+              value={searchValue}
+              onValueChange={setSearchValue}
+              className="w-full px-4 py-2 text-sm border-b focus:outline-none"
+              placeholder={`Search ${type}...`}
+            />
+            <Command.List className="max-h-64 overflow-y-auto p-2">
+              {filteredOptions.length === 0 ? (
+                <Command.Empty className="py-2 px-4 text-sm text-gray-500">
+                  No results found.
+                </Command.Empty>
+              ) : (
+                filteredOptions.map((option) => (
+                  <Command.Item
+                    key={option}
+                    value={option}
+                    onSelect={() => handleSelect(option)}
+                    className={`px-4 py-2 text-sm rounded cursor-pointer ${
+                      selected.includes(option)
+                        ? "bg-blue-50 text-blue-600"
+                        : "hover:bg-gray-100"
+                    }`}
                   >
-                    {type === "metrics" ? (
-                      <div>
-                        <p className="text-sm font-medium">
-                          {(item as typeof metrics[0]).name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {(item as typeof metrics[0]).category}
-                        </p>
-                      </div>
-                    ) : (
-                      <span>{itemValue}</span>
-                    )}
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </CommandDialog>
+                    {option}
+                  </Command.Item>
+                ))
+              )}
+            </Command.List>
+          </Command>
+        </div>
+      )}
     </div>
   );
 };
