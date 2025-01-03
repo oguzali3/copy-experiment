@@ -172,6 +172,16 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
+      case "dcf":
+        url = `https://financialmodelingprep.com/api/v4/advanced_discounted_cash_flow?symbol=${symbol}&apikey=${apiKey}`;
+        console.log('Fetching DCF data from URL:', url);
+        const dcfResponse = await fetch(url);
+        const dcfData = await dcfResponse.json();
+        console.log('Raw DCF API response:', dcfData);
+        return new Response(JSON.stringify(dcfData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       default:
         throw new Error(`Invalid endpoint: ${endpoint}`);
     }
