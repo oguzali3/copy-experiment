@@ -27,42 +27,48 @@ interface EstimatesChartProps {
   ticker?: string;
 }
 
-const metrics = [
-  { id: "revenue", label: "Revenue", prefix: "$", suffix: "" },
-  { id: "eps", label: "EPS", prefix: "$", suffix: "" },
-  { id: "ebitda", label: "EBITDA", prefix: "$", suffix: "" },
-  { id: "netIncome", label: "Net Income", prefix: "$", suffix: "" },
-];
-
 export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
   const [selectedMetric, setSelectedMetric] = useState("revenue");
 
   const { data: estimatesData, isLoading, error } = useQuery({
     queryKey: ['analyst-estimates', ticker],
     queryFn: async () => {
-      if (!ticker) return [];
+      if (!ticker) return null;
       
+      console.log('Fetching analyst estimates for:', ticker);
       const { data, error } = await supabase.functions.invoke('fetch-analyst-estimates', {
         body: { symbol: ticker }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching analyst estimates:', error);
+        throw error;
+      }
+
+      console.log('Received analyst estimates data:', data);
       return data;
     },
     enabled: !!ticker,
   });
 
+  const metrics = [
+    { id: "revenue", label: "Revenue" },
+    { id: "eps", label: "EPS" },
+    { id: "ebitda", label: "EBITDA" },
+    { id: "netIncome", label: "Net Income" },
+  ];
+
   const formatValue = (value: number) => {
+    if (selectedMetric === 'eps') {
+      return `$${value.toFixed(2)}`;
+    }
     if (Math.abs(value) >= 1e9) {
-      return `${(value / 1e9).toFixed(2)}B`;
+      return `$${(value / 1e9).toFixed(2)}B`;
     }
     if (Math.abs(value) >= 1e6) {
-      return `${(value / 1e6).toFixed(2)}M`;
+      return `$${(value / 1e6).toFixed(2)}M`;
     }
-    if (Math.abs(value) >= 1e3) {
-      return `${(value / 1e3).toFixed(2)}K`;
-    }
-    return value.toFixed(2);
+    return `$${value.toFixed(2)}`;
   };
 
   if (!ticker) {
@@ -82,6 +88,7 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
   }
 
   if (error) {
+    console.error('Error in EstimatesChart:', error);
     return (
       <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm">
         <Alert variant="destructive">
@@ -93,6 +100,22 @@ export const EstimatesChart = ({ ticker }: EstimatesChartProps) => {
       </div>
     );
   }
+
+  if (!estimatesData?.length) {
+    console.log('No estimates data available');
+    return (
+      <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm flex items-center justify-center">
+        <p className="text-gray-500">No estimates data available for {ticker}</p>
+      </div>
+    );
+  }
+
+  console.log('Rendering chart with data:', {
+    selectedMetric,
+    dataPoints: estimatesData.length,
+    firstPoint: estimatesData[0],
+    lastPoint: estimatesData[estimatesData.length - 1]
+  });
 
   return (
     <div className="space-y-6">
