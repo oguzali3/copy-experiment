@@ -117,7 +117,7 @@ const Index = () => {
 
         {/* CTA Button */}
         <div className="flex justify-center mb-12 relative z-10">
-          <Button size="lg" className="text-lg px-8 bg-[#111827] hover:bg-[#111827]/90 text-white font-sans">
+          <Button size="lg" className="text-lg px-8 bg-[#1EAEDB] hover:bg-[#1EAEDB]/90 text-white font-sans">
             Get Started
           </Button>
         </div>
