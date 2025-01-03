@@ -5,6 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const STOCKS_PER_PAGE = 50;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
@@ -14,40 +16,94 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, year, quarter, from, to, page, query } = await req.json();
+    const { endpoint, symbol, year, quarter, from, to, page = 0, query, screeningCriteria } = await req.json();
     const apiKey = Deno.env.get("FMP_API_KEY");
 
     if (!apiKey) {
       throw new Error("FMP_API_KEY is not set");
     }
 
-    console.log('Received request with params:', { endpoint, symbol, from, to, page, query, year, quarter });
+    console.log('Received request with params:', { endpoint, symbol, from, to, page, query, screeningCriteria });
 
     let url;
     switch (endpoint) {
       case "screening":
-        // Get all available stocks for screening
+        // Get base screening data
         url = `https://financialmodelingprep.com/api/v3/stock-screener?apikey=${apiKey}`;
+        
+        // Add filtering parameters if provided
+        if (screeningCriteria) {
+          const { metrics, exchanges, industries, countries } = screeningCriteria;
+          
+          // Add exchange filter
+          if (exchanges?.length > 0) {
+            const exchangeList = exchanges.join(',');
+            url += `&exchange=${exchangeList}`;
+          }
+          
+          // Add industry filter
+          if (industries?.length > 0) {
+            const industryList = industries.join(',');
+            url += `&sector=${industryList}`;
+          }
+          
+          // Add country filter
+          if (countries?.length > 0) {
+            const countryList = countries.join(',');
+            url += `&country=${countryList}`;
+          }
+          
+          // Add metric filters
+          if (metrics?.length > 0) {
+            metrics.forEach(metric => {
+              if (metric.min !== undefined && metric.min !== '') {
+                url += `&${metric.id}_more_than=${metric.min}`;
+              }
+              if (metric.max !== undefined && metric.max !== '') {
+                url += `&${metric.id}_less_than=${metric.max}`;
+              }
+            });
+          }
+        }
+        
+        // Add pagination
+        const offset = page * STOCKS_PER_PAGE;
+        url += `&limit=${STOCKS_PER_PAGE}&offset=${offset}`;
+        
         console.log('Fetching screening data from URL:', url);
         const screeningResponse = await fetch(url);
         const screeningData = await screeningResponse.json();
         
         // Get additional company details for the screened stocks
         const symbols = screeningData.map((stock: any) => stock.symbol).join(',');
-        const detailsUrl = `https://financialmodelingprep.com/api/v3/profile/${symbols}?apikey=${apiKey}`;
-        const detailsResponse = await fetch(detailsUrl);
-        const detailsData = await detailsResponse.json();
+        if (symbols) {
+          const detailsUrl = `https://financialmodelingprep.com/api/v3/profile/${symbols}?apikey=${apiKey}`;
+          const detailsResponse = await fetch(detailsUrl);
+          const detailsData = await detailsResponse.json();
 
-        // Combine screening and company details data
-        const enrichedData = screeningData.map((stock: any) => {
-          const details = detailsData.find((d: any) => d.symbol === stock.symbol);
-          return {
-            ...stock,
-            ...details
-          };
-        });
+          // Combine screening and company details data
+          const enrichedData = screeningData.map((stock: any) => {
+            const details = detailsData.find((d: any) => d.symbol === stock.symbol);
+            return {
+              ...stock,
+              ...details
+            };
+          });
 
-        return new Response(JSON.stringify(enrichedData), {
+          return new Response(JSON.stringify({
+            data: enrichedData,
+            page,
+            hasMore: enrichedData.length === STOCKS_PER_PAGE
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        return new Response(JSON.stringify({
+          data: [],
+          page,
+          hasMore: false
+        }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 

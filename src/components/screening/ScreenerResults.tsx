@@ -26,65 +26,46 @@ export const ScreenerResults = ({
   excludeExchanges
 }: ScreenerResultsProps) => {
   const [isScreening, setIsScreening] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
 
   const { data: screeningData, isLoading, refetch } = useQuery({
-    queryKey: ['screening-results'],
+    queryKey: ['screening-results', currentPage],
     queryFn: async () => {
+      const screeningCriteria = {
+        metrics,
+        countries: excludeCountries ? [] : selectedCountries,
+        industries: excludeIndustries ? [] : selectedIndustries,
+        exchanges: excludeExchanges ? [] : selectedExchanges,
+      };
+
       const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-        body: { endpoint: 'screening' }
+        body: { 
+          endpoint: 'screening',
+          screeningCriteria,
+          page: currentPage
+        }
       });
 
       if (error) throw error;
-      return data || []; // Ensure we always return an array
+      return data || { data: [], page: 0, hasMore: false };
     },
     enabled: false
   });
 
   const handleRunScreener = async () => {
     setIsScreening(true);
+    setCurrentPage(0);
     await refetch();
     setIsScreening(false);
   };
 
-  const filterResults = (data: any[] = []) => {
-    return data.filter(company => {
-      if (!company) return false;
-
-      // Filter by country
-      const countryMatch = selectedCountries.length === 0 || 
-        (excludeCountries 
-          ? !selectedCountries.includes(company.country)
-          : selectedCountries.includes(company.country));
-
-      // Filter by industry
-      const industryMatch = selectedIndustries.length === 0 ||
-        (excludeIndustries
-          ? !selectedIndustries.includes(company.sector)
-          : selectedIndustries.includes(company.sector));
-
-      // Filter by exchange
-      const exchangeMatch = selectedExchanges.length === 0 ||
-        (excludeExchanges
-          ? !selectedExchanges.includes(company.exchange)
-          : selectedExchanges.includes(company.exchange));
-
-      // Filter by metrics
-      const metricsMatch = metrics.every(metric => {
-        const value = company[metric.id];
-        if (value === undefined || value === null) return false;
-        
-        const min = metric.min ? parseFloat(metric.min) : -Infinity;
-        const max = metric.max ? parseFloat(metric.max) : Infinity;
-        
-        const numericValue = typeof value === 'string' ? parseFloat(value) : value;
-        return !isNaN(numericValue) && numericValue >= min && numericValue <= max;
-      });
-
-      return countryMatch && industryMatch && exchangeMatch && metricsMatch;
-    });
+  const handleLoadMore = async () => {
+    setCurrentPage(prev => prev + 1);
+    await refetch();
   };
 
-  const filteredResults = screeningData ? filterResults(screeningData) : [];
+  const filteredResults = screeningData?.data || [];
+  const hasMore = screeningData?.hasMore || false;
 
   return (
     <div className="space-y-4">
@@ -104,10 +85,30 @@ export const ScreenerResults = ({
           )}
         </Button>
         <div className="text-sm text-gray-500">
-          Screener Results: {filteredResults.length}
+          Results: {filteredResults.length}
         </div>
       </div>
+
       <ScreeningTable metrics={metrics} data={filteredResults} />
+
+      {hasMore && (
+        <div className="flex justify-center mt-4">
+          <Button
+            onClick={handleLoadMore}
+            disabled={isLoading}
+            variant="outline"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              'Load More Results'
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
