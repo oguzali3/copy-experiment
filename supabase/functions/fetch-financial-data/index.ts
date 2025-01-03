@@ -14,36 +14,54 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, period = 'annual', limit = 10 } = await req.json()
-    
-    // Construct the API URL based on the endpoint
+    const { endpoint, symbol, period = 'annual', limit = 10, query } = await req.json()
     const baseUrl = 'https://financialmodelingprep.com/api/v3'
     let url = ''
 
-    switch (endpoint) {
-      case 'income-statement':
-        url = `${baseUrl}/income-statement/${symbol}?period=${period}&limit=${limit}&apikey=${FMP_API_KEY}`
-        break
-      case 'balance-sheet-statement':
-        url = `${baseUrl}/balance-sheet-statement/${symbol}?period=${period}&limit=${limit}&apikey=${FMP_API_KEY}`
-        break
-      case 'cash-flow-statement':
-        url = `${baseUrl}/cash-flow-statement/${symbol}?period=${period}&limit=${limit}&apikey=${FMP_API_KEY}`
-        break
-      default:
-        throw new Error('Invalid endpoint')
+    // Search companies
+    if (endpoint === 'search') {
+      url = `${baseUrl}/search?query=${query}&limit=10&apikey=${FMP_API_KEY}`
+      console.log('Searching companies:', url)
+    } else {
+      // Construct the API URL based on the endpoint
+      switch (endpoint) {
+        case 'income-statement':
+          url = `${baseUrl}/income-statement/${symbol}?period=${period}&limit=${limit}&apikey=${FMP_API_KEY}`
+          break
+        case 'balance-sheet-statement':
+          url = `${baseUrl}/balance-sheet-statement/${symbol}?period=${period}&limit=${limit}&apikey=${FMP_API_KEY}`
+          break
+        case 'cash-flow-statement':
+          url = `${baseUrl}/cash-flow-statement/${symbol}?period=${period}&limit=${limit}&apikey=${FMP_API_KEY}`
+          break
+        case 'key-metrics':
+          url = `${baseUrl}/key-metrics/${symbol}?limit=${limit}&apikey=${FMP_API_KEY}`
+          break
+        case 'financial-growth':
+          url = `${baseUrl}/financial-growth/${symbol}?apikey=${FMP_API_KEY}`
+          break
+        default:
+          throw new Error('Invalid endpoint')
+      }
+      console.log(`Fetching ${endpoint} data for ${symbol} (${period}):`, url)
     }
 
-    console.log(`Fetching ${endpoint} data for ${symbol} (${period}):`, url)
-    
     const response = await fetch(url)
-    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
     
-    console.log(`Received ${data.length} records for ${symbol}`)
+    const data = await response.json()
+    console.log(`Received ${data.length} records`)
 
     return new Response(
       JSON.stringify(data),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
     )
 
   } catch (error) {
@@ -51,7 +69,10 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        },
         status: 500
       }
     )
