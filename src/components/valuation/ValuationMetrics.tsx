@@ -1,50 +1,59 @@
-import { useState } from "react";
-import { ValuationMetricsChart } from "./ValuationMetricsChart";
-import { ValuationMetricsTable } from "./ValuationMetricsTable";
-import { mockValuationMetrics, mockChartData } from "./types";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { KeyMetricsTable } from "./KeyMetricsTable";
 
-export const ValuationMetrics = () => {
-  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
-  const [timeframe, setTimeframe] = useState("quarterly");
-  const [metricTypes, setMetricTypes] = useState<Record<string, 'bar' | 'line'>>({});
+interface ValuationMetricsProps {
+  ticker: string;
+}
 
-  const handleMetricSelect = (metricName: string) => {
-    if (selectedMetrics.includes(metricName)) {
-      setSelectedMetrics(selectedMetrics.filter(m => m !== metricName));
-      const newMetricTypes = { ...metricTypes };
-      delete newMetricTypes[metricName];
-      setMetricTypes(newMetricTypes);
-    } else {
-      setSelectedMetrics([...selectedMetrics, metricName]);
-      setMetricTypes(prev => ({
-        ...prev,
-        [metricName]: metricName.toLowerCase().includes('margin') ? 'line' : 'bar'
-      }));
-    }
-  };
+export const ValuationMetrics = ({ ticker }: ValuationMetricsProps) => {
+  const { data: ttmData, isLoading: ttmLoading } = useQuery({
+    queryKey: ['key-metrics-ttm', ticker],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+        body: { endpoint: 'key-metrics-ttm', symbol: ticker }
+      });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!ticker
+  });
 
-  const handleMetricTypeChange = (metric: string, type: 'bar' | 'line') => {
-    setMetricTypes(prev => ({
-      ...prev,
-      [metric]: type
-    }));
-  };
+  const { data: historicalData, isLoading: historicalLoading } = useQuery({
+    queryKey: ['key-metrics-historical', ticker],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+        body: { endpoint: 'key-metrics-historical', symbol: ticker }
+      });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!ticker
+  });
+
+  if (ttmLoading || historicalLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white p-6 rounded-xl shadow-sm">
+          <p className="text-center text-gray-500">Loading key metrics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!ttmData || !historicalData) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white p-6 rounded-xl shadow-sm">
+          <p className="text-center text-gray-500">No key metrics data available</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <ValuationMetricsChart
-        selectedMetrics={selectedMetrics}
-        timeframe={timeframe}
-        setTimeframe={setTimeframe}
-        mockChartData={mockChartData}
-        metricTypes={metricTypes}
-        handleMetricTypeChange={handleMetricTypeChange}
-      />
-      <ValuationMetricsTable
-        metrics={mockValuationMetrics}
-        selectedMetrics={selectedMetrics}
-        handleMetricSelect={handleMetricSelect}
-      />
+      <KeyMetricsTable ttmData={ttmData} historicalData={historicalData} />
     </div>
   );
 };

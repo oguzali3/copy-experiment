@@ -151,11 +151,34 @@ serve(async (req) => {
         }
         url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&page=${page || 1}&from=${from}&to=${to}&apikey=${apiKey}`;
         break;
+      case "key-metrics-ttm":
+        url = `https://financialmodelingprep.com/api/v3/key-metrics-ttm/${symbol}?apikey=${apiKey}`;
+        console.log('Fetching TTM key metrics from URL:', url);
+        const ttmResponse = await fetch(url);
+        const ttmData = await ttmResponse.json();
+        console.log('Raw TTM API response:', ttmData);
+        return new Response(JSON.stringify(ttmData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
+      case "key-metrics-historical":
+        url = `https://financialmodelingprep.com/api/v3/key-metrics/${symbol}?period=annual&apikey=${apiKey}`;
+        console.log('Fetching historical key metrics from URL:', url);
+        const historicalResponse = await fetch(url);
+        const historicalData = await historicalResponse.json();
+        console.log('Raw historical API response:', historicalData);
+        return new Response(JSON.stringify(historicalData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       default:
         throw new Error(`Invalid endpoint: ${endpoint}`);
     }
 
-    if (endpoint !== "search" && endpoint !== "income-statement" && endpoint !== "balance-sheet" && endpoint !== "cash-flow-statement" && endpoint !== "estimates") {
+    if (endpoint !== "search" && endpoint !== "income-statement" && 
+        endpoint !== "balance-sheet" && endpoint !== "cash-flow-statement" && 
+        endpoint !== "estimates" && endpoint !== "key-metrics-ttm" && 
+        endpoint !== "key-metrics-historical") {
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
