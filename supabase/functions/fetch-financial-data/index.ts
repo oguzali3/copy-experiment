@@ -151,23 +151,24 @@ serve(async (req) => {
         }
         url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&page=${page || 1}&from=${from}&to=${to}&apikey=${apiKey}`;
         break;
+
       case "key-metrics-ttm":
         url = `https://financialmodelingprep.com/api/v3/key-metrics-ttm/${symbol}?apikey=${apiKey}`;
         console.log('Fetching TTM key metrics from URL:', url);
-        const ttmResponse = await fetch(url);
-        const ttmData = await ttmResponse.json();
-        console.log('Raw TTM API response:', ttmData);
-        return new Response(JSON.stringify(ttmData), {
+        const ttmMetricsResponse = await fetch(url);
+        const ttmMetricsData = await ttmMetricsResponse.json();
+        console.log('Raw TTM API response:', ttmMetricsData);
+        return new Response(JSON.stringify(ttmMetricsData), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
       case "key-metrics-historical":
         url = `https://financialmodelingprep.com/api/v3/key-metrics/${symbol}?period=annual&apikey=${apiKey}`;
         console.log('Fetching historical key metrics from URL:', url);
-        const historicalResponse = await fetch(url);
-        const historicalData = await historicalResponse.json();
-        console.log('Raw historical API response:', historicalData);
-        return new Response(JSON.stringify(historicalData), {
+        const historicalMetricsResponse = await fetch(url);
+        const historicalMetricsData = await historicalMetricsResponse.json();
+        console.log('Raw historical API response:', historicalMetricsData);
+        return new Response(JSON.stringify(historicalMetricsData), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
