@@ -34,7 +34,6 @@ serve(async (req) => {
     
     const response = await fetch(url);
     
-    // Log the response status
     console.log(`API Response status: ${response.status}`);
     
     if (!response.ok) {
@@ -58,32 +57,32 @@ serve(async (req) => {
       throw new Error(rawData['Error Message']);
     }
 
-    // Transform data for chart visualization
+    // Transform data for chart visualization with proper null handling
     const transformedData = rawData.map((estimate: any) => ({
       period: estimate.date,
       revenue: {
-        mean: estimate.estimatedRevenue,
-        high: estimate.revenueHighEstimate,
-        low: estimate.revenueLowEstimate,
-        actual: estimate.actualRevenue
+        mean: estimate.estimatedRevenue || null,
+        high: estimate.revenueHighEstimate || null,
+        low: estimate.revenueLowEstimate || null,
+        actual: estimate.actualRevenue || null
       },
       eps: {
-        mean: estimate.estimatedEps,
-        high: estimate.epsHighEstimate,
-        low: estimate.epsLowEstimate,
-        actual: estimate.actualEps
+        mean: estimate.estimatedEps || null,
+        high: estimate.epsHighEstimate || null,
+        low: estimate.epsLowEstimate || null,
+        actual: estimate.actualEps || null
       },
       ebitda: {
-        mean: estimate.estimatedEbitda,
-        high: estimate.ebitdaHighEstimate,
-        low: estimate.ebitdaLowEstimate,
-        actual: estimate.actualEbitda
+        mean: estimate.estimatedEbitda || null,
+        high: estimate.ebitdaHighEstimate || null,
+        low: estimate.ebitdaLowEstimate || null,
+        actual: estimate.actualEbitda || null
       },
       netIncome: {
-        mean: estimate.estimatedNetIncome,
-        high: estimate.netIncomeHighEstimate,
-        low: estimate.netIncomeLowEstimate,
-        actual: estimate.actualNetIncome
+        mean: estimate.estimatedNetIncome || null,
+        high: estimate.netIncomeHighEstimate || null,
+        low: estimate.netIncomeLowEstimate || null,
+        actual: estimate.actualNetIncome || null
       }
     }));
 

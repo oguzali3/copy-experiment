@@ -23,6 +23,8 @@ export const EstimatesTable = ({ data, selectedMetric, formatValue }: EstimatesT
     })
     .sort((a, b) => a.period.localeCompare(b.period));
 
+  console.log('Filtered data for table:', relevantData);
+
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm">
       <Table>
@@ -36,23 +38,28 @@ export const EstimatesTable = ({ data, selectedMetric, formatValue }: EstimatesT
           </TableRow>
         </TableHeader>
         <TableBody>
-          {relevantData.map((estimate) => (
-            <TableRow key={estimate.period}>
-              <TableCell>{estimate.period}</TableCell>
-              <TableCell className="text-right">
-                {formatValue(estimate[selectedMetric].actual || 0)}
-              </TableCell>
-              <TableCell className="text-right">
-                {formatValue(estimate[selectedMetric].mean || 0)}
-              </TableCell>
-              <TableCell className="text-right">
-                {formatValue(estimate[selectedMetric].high || 0)}
-              </TableCell>
-              <TableCell className="text-right">
-                {formatValue(estimate[selectedMetric].low || 0)}
-              </TableCell>
-            </TableRow>
-          ))}
+          {relevantData.map((estimate) => {
+            const metricData = estimate[selectedMetric];
+            console.log(`Data for period ${estimate.period}:`, metricData);
+            
+            return (
+              <TableRow key={estimate.period}>
+                <TableCell>{estimate.period}</TableCell>
+                <TableCell className="text-right">
+                  {metricData.actual !== null ? formatValue(metricData.actual) : 'N/A'}
+                </TableCell>
+                <TableCell className="text-right">
+                  {metricData.mean !== null ? formatValue(metricData.mean) : 'N/A'}
+                </TableCell>
+                <TableCell className="text-right">
+                  {metricData.high !== null ? formatValue(metricData.high) : 'N/A'}
+                </TableCell>
+                <TableCell className="text-right">
+                  {metricData.low !== null ? formatValue(metricData.low) : 'N/A'}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
