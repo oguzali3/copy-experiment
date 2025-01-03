@@ -62,6 +62,7 @@ const Charting = () => {
     selectedMetrics,
     setSelectedMetrics,
     metricTypes,
+    setMetricTypes,
     handleMetricTypeChange,
     getMetricData
   } = useMetrics(selectedCompany?.symbol);

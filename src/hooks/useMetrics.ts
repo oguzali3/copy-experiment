@@ -55,6 +55,7 @@ export const useMetrics = (ticker: string) => {
     selectedMetrics,
     setSelectedMetrics,
     metricTypes,
+    setMetricTypes,
     handleMetricTypeChange,
     getMetricData
   };
