@@ -17,7 +17,7 @@ export const DCFAnalysis = ({ ticker }: DCFAnalysisProps) => {
         body: { endpoint: 'dcf', symbol: ticker }
       });
       if (error) throw error;
-      console.log('DCF Data received:', data); // Debug log
+      console.log('DCF Data received:', data);
       return data[0];
     },
     enabled: !!ticker

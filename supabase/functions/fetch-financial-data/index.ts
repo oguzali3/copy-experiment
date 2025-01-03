@@ -15,17 +15,42 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, from, to, page, query } = await req.json();
+    const { endpoint, symbol } = await req.json();
     const apiKey = Deno.env.get("FMP_API_KEY");
 
     if (!apiKey) {
       throw new Error("FMP_API_KEY is not set");
     }
 
-    console.log('Received request with params:', { endpoint, symbol, from, to, page, query });
+    console.log('Received request with params:', { endpoint, symbol });
 
     let url;
     switch (endpoint) {
+      case "dcf":
+        url = `https://financialmodelingprep.com/api/v4/advanced_discounted_cash_flow?symbol=${symbol}&apikey=${apiKey}`;
+        console.log('Fetching DCF data from URL:', url);
+        const dcfResponse = await fetch(url);
+        const dcfData = await dcfResponse.json();
+        console.log('Raw DCF API response:', dcfData);
+
+        // Transform the data to match the expected structure
+        const transformedDcfData = dcfData.map((item: any) => ({
+          stockPrice: item.price,
+          dcfValue: item.equityValuePerShare,
+          growthRate: item.longTermGrowthRate / 100, // Convert to decimal
+          projections: [
+            {
+              year: item.year,
+              freeCashFlow: item.ufcf,
+              presentValue: item.sumPvUfcf
+            }
+          ]
+        }));
+
+        return new Response(JSON.stringify(transformedDcfData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       case "search":
         url = `https://financialmodelingprep.com/api/v3/search?query=${query}&limit=10&apikey=${apiKey}`;
         const searchResponse = await fetch(url);
@@ -169,16 +194,6 @@ serve(async (req) => {
         const historicalMetricsData = await historicalMetricsResponse.json();
         console.log('Raw historical API response:', historicalMetricsData);
         return new Response(JSON.stringify(historicalMetricsData), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-
-      case "dcf":
-        url = `https://financialmodelingprep.com/api/v4/advanced_discounted_cash_flow?symbol=${symbol}&apikey=${apiKey}`;
-        console.log('Fetching DCF data from URL:', url);
-        const dcfResponse = await fetch(url);
-        const dcfData = await dcfResponse.json();
-        console.log('Raw DCF API response:', dcfData);
-        return new Response(JSON.stringify(dcfData), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
