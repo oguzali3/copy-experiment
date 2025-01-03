@@ -24,6 +24,7 @@ export const EstimatesTable = ({ data, selectedMetric, formatValue }: EstimatesT
     .sort((a, b) => a.period.localeCompare(b.period));
 
   console.log('Filtered data for table:', relevantData);
+  console.log('Selected metric:', selectedMetric);
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm">

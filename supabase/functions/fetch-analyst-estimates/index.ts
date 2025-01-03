@@ -11,95 +11,89 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Received request for analyst estimates');
     const { symbol } = await req.json();
     
     if (!symbol) {
-      console.error('No symbol provided');
       throw new Error("Symbol is required");
     }
 
     const apiKey = Deno.env.get("FMP_API_KEY");
     if (!apiKey) {
-      console.error('FMP_API_KEY not found in environment variables');
       throw new Error("FMP_API_KEY is not set");
     }
 
     console.log(`Fetching analyst estimates for symbol: ${symbol}`);
     const url = `https://financialmodelingprep.com/api/v3/analyst-estimates/${symbol}?apikey=${apiKey}`;
     
-    console.log(`Fetching from: https://financialmodelingprep.com/api/v3/analyst-estimates/${symbol}`);
-    
     const response = await fetch(url);
-    
     console.log(`API Response status: ${response.status}`);
     
     if (!response.ok) {
-      console.error(`FMP API responded with status: ${response.status}`);
       throw new Error(`Failed to fetch data from FMP API: ${response.statusText}`);
     }
 
     const rawData = await response.json();
     console.log('Raw API response:', JSON.stringify(rawData).slice(0, 200) + '...');
 
-    if (Array.isArray(rawData) && rawData.length === 0) {
-      console.log('FMP API returned empty array');
+    if (!Array.isArray(rawData) || rawData.length === 0) {
+      console.log('No data returned from API');
       return new Response(JSON.stringify([]), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (typeof rawData === 'object' && 'Error Message' in rawData) {
-      console.error('FMP API returned error:', rawData);
+    if ('Error Message' in rawData) {
       throw new Error(rawData['Error Message']);
     }
 
-    // Transform data for chart visualization with proper type checking
     const transformedData = rawData.map((estimate: any) => {
-      // Parse numeric values and handle undefined/null cases
-      const parseNumeric = (value: any) => {
-        if (value === undefined || value === null || value === "") return null;
+      // Convert string numbers to actual numbers and handle null/undefined
+      const toNumber = (value: any): number | null => {
+        if (value === null || value === undefined || value === '') return null;
         const num = Number(value);
         return isNaN(num) ? null : num;
       };
 
+      const date = estimate.date;
+      console.log(`Processing estimate for date: ${date}`);
+      console.log('Raw estimate data:', estimate);
+
       return {
-        period: estimate.date,
+        period: date,
         revenue: {
-          mean: parseNumeric(estimate.estimatedRevenue),
-          high: parseNumeric(estimate.revenueHighEstimate),
-          low: parseNumeric(estimate.revenueLowEstimate),
-          actual: parseNumeric(estimate.actualRevenue)
+          actual: toNumber(estimate.revenueEstimatedActual),
+          mean: toNumber(estimate.revenueEstimated),
+          high: toNumber(estimate.revenueEstimatedHighEstimate),
+          low: toNumber(estimate.revenueEstimatedLowEstimate)
         },
         eps: {
-          mean: parseNumeric(estimate.estimatedEps),
-          high: parseNumeric(estimate.epsHighEstimate),
-          low: parseNumeric(estimate.epsLowEstimate),
-          actual: parseNumeric(estimate.actualEps)
+          actual: toNumber(estimate.epsActual),
+          mean: toNumber(estimate.epsEstimated),
+          high: toNumber(estimate.epsHighEstimate),
+          low: toNumber(estimate.epsLowEstimate)
         },
         ebitda: {
-          mean: parseNumeric(estimate.estimatedEbitda),
-          high: parseNumeric(estimate.ebitdaHighEstimate),
-          low: parseNumeric(estimate.ebitdaLowEstimate),
-          actual: parseNumeric(estimate.actualEbitda)
+          actual: toNumber(estimate.ebitdaActual),
+          mean: toNumber(estimate.ebitdaEstimated),
+          high: toNumber(estimate.ebitdaHighEstimate),
+          low: toNumber(estimate.ebitdaLowEstimate)
         },
         netIncome: {
-          mean: parseNumeric(estimate.estimatedNetIncome),
-          high: parseNumeric(estimate.netIncomeHighEstimate),
-          low: parseNumeric(estimate.netIncomeLowEstimate),
-          actual: parseNumeric(estimate.actualNetIncome)
+          actual: toNumber(estimate.netIncomeActual),
+          mean: toNumber(estimate.netIncomeEstimated),
+          high: toNumber(estimate.netIncomeHighEstimate),
+          low: toNumber(estimate.netIncomeLowEstimate)
         }
       };
     });
 
-    console.log(`Successfully transformed data. Number of periods: ${transformedData.length}`);
-    console.log('First transformed entry:', JSON.stringify(transformedData[0]));
+    console.log('Transformed data sample:', JSON.stringify(transformedData[0], null, 2));
 
     return new Response(JSON.stringify(transformedData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error in fetch-analyst-estimates:', error.message);
+    console.error('Error in fetch-analyst-estimates:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
