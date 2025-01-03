@@ -33,9 +33,6 @@ const Screening = () => {
     setSelectedIndustries([]);
     setSelectedExchanges([]);
     setSelectedMetrics([]);
-    setExcludeCountries(false);
-    setExcludeIndustries(false);
-    setExcludeExchanges(false);
   };
 
   return (
@@ -86,15 +83,7 @@ const Screening = () => {
           onMetricRangeChange={handleMetricRangeChange}
         />
 
-        <ScreenerResults 
-          metrics={selectedMetrics}
-          selectedCountries={selectedCountries}
-          selectedIndustries={selectedIndustries}
-          selectedExchanges={selectedExchanges}
-          excludeCountries={excludeCountries}
-          excludeIndustries={excludeIndustries}
-          excludeExchanges={excludeExchanges}
-        />
+        <ScreenerResults metrics={selectedMetrics} />
       </div>
     </div>
   );

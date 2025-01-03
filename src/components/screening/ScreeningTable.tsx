@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -8,63 +9,87 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScreeningMetric } from "@/types/screening";
+import { financialData } from "@/data/financialData";
 
 interface ScreeningTableProps {
   metrics: ScreeningMetric[];
-  data: any[];
 }
 
-const formatValue = (value: any, metricId: string): string => {
-  if (value === null || value === undefined) return 'N/A';
+export const ScreeningTable = ({ metrics }: ScreeningTableProps) => {
+  const navigate = useNavigate();
 
-  // Format based on metric type
-  if (metricId.includes('margin') || metricId.includes('growth') || 
-      metricId.includes('ratio') || metricId.includes('yield') || 
-      metricId.includes('roe') || metricId.includes('roa')) {
-    return `${Number(value).toFixed(2)}%`;
-  }
+  // Get companies that match the screening criteria
+  const getFilteredCompanies = () => {
+    const companies = Object.entries(financialData).map(([ticker, data]) => {
+      const latestAnnualData = data.annual[0]; // Get most recent year's data
+      return {
+        ticker,
+        name: getCompanyName(ticker),
+        metrics: metrics.reduce((acc: Record<string, string>, metric) => {
+          acc[metric.id] = latestAnnualData[metric.id as keyof typeof latestAnnualData] || '0';
+          return acc;
+        }, {})
+      };
+    });
 
-  if (metricId === 'market_cap') {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      notation: 'compact',
-      maximumFractionDigits: 1
-    }).format(value);
-  }
+    // Filter companies based on metric criteria
+    return companies.filter(company => {
+      return metrics.every(metric => {
+        const value = parseFloat(company.metrics[metric.id].replace(/,/g, ''));
+        const min = metric.min ? parseFloat(metric.min) : -Infinity;
+        const max = metric.max ? parseFloat(metric.max) : Infinity;
+        return value >= min && value <= max;
+      });
+    });
+  };
 
-  if (typeof value === 'number') {
-    return value.toFixed(2);
-  }
+  // Helper function to get company name
+  const getCompanyName = (ticker: string): string => {
+    const companyNames: Record<string, string> = {
+      'AAPL': 'Apple Inc.',
+      'MSFT': 'Microsoft Corporation',
+      'GOOGL': 'Alphabet Inc.',
+      'META': 'Meta Platforms, Inc.'
+    };
+    return companyNames[ticker] || ticker;
+  };
 
-  return value.toString();
-};
+  const handleTickerClick = (ticker: string) => {
+    navigate(`/analysis?ticker=${ticker}`);
+  };
 
-export const ScreeningTable = ({ metrics, data }: ScreeningTableProps) => {
+  const filteredCompanies = getFilteredCompanies();
+
   return (
     <div className="border rounded-lg">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Symbol</TableHead>
+            <TableHead>Ticker</TableHead>
             <TableHead>Company</TableHead>
-            <TableHead>Country</TableHead>
-            <TableHead>Industry</TableHead>
             {metrics.map((metric) => (
               <TableHead key={metric.id}>{metric.name}</TableHead>
             ))}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((company) => (
-            <TableRow key={company.symbol}>
-              <TableCell className="font-medium">{company.symbol}</TableCell>
+          {filteredCompanies.map((company) => (
+            <TableRow key={company.ticker}>
+              <TableCell>
+                <button
+                  onClick={() => handleTickerClick(company.ticker)}
+                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {company.ticker}
+                </button>
+              </TableCell>
               <TableCell>{company.name}</TableCell>
-              <TableCell>{company.country}</TableCell>
-              <TableCell>{company.industry}</TableCell>
               {metrics.map((metric) => (
                 <TableCell key={metric.id}>
-                  {formatValue(company[metric.id], metric.id)}
+                  {metric.id.toLowerCase().includes('margin') || metric.id.toLowerCase().includes('growth')
+                    ? `${company.metrics[metric.id]}%`
+                    : `$${company.metrics[metric.id]}`
+                  }
                 </TableCell>
               ))}
             </TableRow>

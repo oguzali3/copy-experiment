@@ -13,46 +13,31 @@ import { Button } from "./ui/button";
 
 const categories = [
   {
-    name: "Valuation Metrics",
+    name: "Income Statement",
     metrics: [
-      { id: "market_cap", name: "Market Cap", description: "Total market value of company" },
-      { id: "pe_ratio", name: "P/E Ratio", description: "Price to earnings ratio" },
-      { id: "price_to_book", name: "P/B Ratio", description: "Price to book ratio" },
-      { id: "ev_to_ebitda", name: "EV/EBITDA", description: "Enterprise value to EBITDA" }
+      { id: "revenue", name: "Revenue", description: "Company's total revenue" },
+      { id: "revenueGrowth", name: "Revenue Growth", description: "Year-over-year revenue growth (%)" },
+      { id: "grossProfit", name: "Gross Profit", description: "Revenue minus cost of goods sold" },
+      { id: "operatingIncome", name: "Operating Income", description: "Profit from operations" },
+      { id: "netIncome", name: "Net Income", description: "Total earnings or profit" },
+      { id: "ebitda", name: "EBITDA", description: "Earnings before interest, taxes, depreciation, and amortization" }
     ]
   },
   {
-    name: "Growth Metrics",
+    name: "Balance Sheet",
     metrics: [
-      { id: "revenue_growth_ttm", name: "Revenue Growth (TTM)", description: "Trailing twelve months revenue growth" },
-      { id: "revenue_growth_3y", name: "Revenue Growth (3Y)", description: "3-year revenue growth rate" },
-      { id: "eps_growth_ttm", name: "EPS Growth (TTM)", description: "Trailing twelve months EPS growth" },
-      { id: "eps_growth_3y", name: "EPS Growth (3Y)", description: "3-year EPS growth rate" }
+      { id: "totalAssets", name: "Total Assets", description: "Sum of all assets" },
+      { id: "totalLiabilities", name: "Total Liabilities", description: "Sum of all liabilities" },
+      { id: "totalEquity", name: "Total Equity", description: "Net worth of the company" }
     ]
   },
   {
-    name: "Profitability",
+    name: "Cash Flow",
     metrics: [
-      { id: "gross_margin", name: "Gross Margin", description: "Gross profit margin" },
-      { id: "operating_margin", name: "Operating Margin", description: "Operating profit margin" },
-      { id: "net_margin", name: "Net Margin", description: "Net profit margin" },
-      { id: "roe", name: "ROE", description: "Return on equity" },
-      { id: "roa", name: "ROA", description: "Return on assets" }
-    ]
-  },
-  {
-    name: "Financial Health",
-    metrics: [
-      { id: "current_ratio", name: "Current Ratio", description: "Current assets / Current liabilities" },
-      { id: "debt_to_equity", name: "Debt to Equity", description: "Total debt / Total equity" },
-      { id: "interest_coverage", name: "Interest Coverage", description: "EBIT / Interest expenses" }
-    ]
-  },
-  {
-    name: "Dividend Metrics",
-    metrics: [
-      { id: "dividend_yield", name: "Dividend Yield", description: "Annual dividend yield" },
-      { id: "payout_ratio", name: "Payout Ratio", description: "Dividend payout ratio" }
+      { id: "operatingCashFlow", name: "Operating Cash Flow", description: "Cash from operating activities" },
+      { id: "investingCashFlow", name: "Investing Cash Flow", description: "Cash used in investing activities" },
+      { id: "financingCashFlow", name: "Financing Cash Flow", description: "Cash from financing activities" },
+      { id: "freeCashFlow", name: "Free Cash Flow", description: "Operating cash flow minus capital expenditures" }
     ]
   }
 ];
