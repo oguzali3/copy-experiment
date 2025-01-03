@@ -118,7 +118,12 @@ export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps)
               <SelectTrigger>
                 <SelectValue placeholder="Select year" />
               </SelectTrigger>
-              <SelectContent position="popper" side="bottom" align="start" className="max-h-[300px] overflow-y-auto">
+              <SelectContent 
+                sideOffset={4}
+                align="start" 
+                position="item-aligned"
+                className="max-h-[300px] overflow-y-auto"
+              >
                 {years.map((year) => (
                   <SelectItem key={year} value={year.toString()}>
                     {year}
@@ -139,7 +144,11 @@ export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps)
               <SelectTrigger>
                 <SelectValue placeholder="Select quarter" />
               </SelectTrigger>
-              <SelectContent position="popper" side="bottom" align="start">
+              <SelectContent 
+                sideOffset={4}
+                align="start"
+                position="item-aligned"
+              >
                 {quarters.map((quarter) => (
                   <SelectItem key={quarter} value={quarter.toString()}>
                     Q{quarter}
