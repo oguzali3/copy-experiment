@@ -17,6 +17,7 @@ export const DCFAnalysis = ({ ticker }: DCFAnalysisProps) => {
         body: { endpoint: 'dcf', symbol: ticker }
       });
       if (error) throw error;
+      console.log('DCF Data received:', data); // Debug log
       return data[0];
     },
     enabled: !!ticker
@@ -57,7 +58,9 @@ export const DCFAnalysis = ({ ticker }: DCFAnalysisProps) => {
     );
   }
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | undefined | null) => {
+    if (value === undefined || value === null) return 'N/A';
+    
     if (Math.abs(value) >= 1e9) {
       return `$${(value / 1e9).toFixed(2)}B`;
     }
@@ -66,6 +69,12 @@ export const DCFAnalysis = ({ ticker }: DCFAnalysisProps) => {
     }
     return `$${value.toFixed(2)}`;
   };
+
+  // Ensure we have valid numeric values
+  const stockPrice = typeof dcfData?.stockPrice === 'number' ? dcfData.stockPrice : 0;
+  const dcfValue = typeof dcfData?.dcfValue === 'number' ? dcfData.dcfValue : 0;
+  const marginOfSafety = ((dcfValue - stockPrice) / stockPrice) * 100;
+  const growthRate = typeof dcfData?.growthRate === 'number' ? dcfData.growthRate : 0;
 
   return (
     <Card className="bg-white mb-6">
@@ -76,54 +85,56 @@ export const DCFAnalysis = ({ ticker }: DCFAnalysisProps) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="p-4 rounded-lg bg-gray-50">
             <p className="text-sm text-gray-600">Current Stock Price</p>
-            <p className="text-2xl font-semibold">{formatCurrency(dcfData.stockPrice)}</p>
+            <p className="text-2xl font-semibold">{formatCurrency(stockPrice)}</p>
           </div>
           <div className="p-4 rounded-lg bg-gray-50">
             <p className="text-sm text-gray-600">DCF Value</p>
-            <p className="text-2xl font-semibold">{formatCurrency(dcfData.dcfValue)}</p>
+            <p className="text-2xl font-semibold">{formatCurrency(dcfValue)}</p>
           </div>
           <div className="p-4 rounded-lg bg-gray-50">
             <p className="text-sm text-gray-600">Margin of Safety</p>
-            <p className={`text-2xl font-semibold ${dcfData.marginOfSafety >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {dcfData.marginOfSafety.toFixed(2)}%
+            <p className={`text-2xl font-semibold ${marginOfSafety >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {marginOfSafety.toFixed(2)}%
             </p>
           </div>
           <div className="p-4 rounded-lg bg-gray-50">
             <p className="text-sm text-gray-600">Growth Rate</p>
-            <p className="text-2xl font-semibold">{(dcfData.growthRate * 100).toFixed(2)}%</p>
+            <p className="text-2xl font-semibold">{(growthRate * 100).toFixed(2)}%</p>
           </div>
         </div>
 
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={dcfData.projections}
-              margin={{ top: 20, right: 30, left: 40, bottom: 20 }}
-            >
-              <XAxis dataKey="year" />
-              <YAxis tickFormatter={formatCurrency} />
-              <Tooltip
-                formatter={(value: any) => formatCurrency(value)}
-                labelFormatter={(label) => `Year: ${label}`}
-              />
-              <Line
-                type="monotone"
-                dataKey="freeCashFlow"
-                stroke="#2563eb"
-                strokeWidth={2}
-                name="Free Cash Flow"
-              />
-              <Line
-                type="monotone"
-                dataKey="presentValue"
-                stroke="#4f46e5"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                name="Present Value"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        {dcfData?.projections && (
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={dcfData.projections}
+                margin={{ top: 20, right: 30, left: 40, bottom: 20 }}
+              >
+                <XAxis dataKey="year" />
+                <YAxis tickFormatter={formatCurrency} />
+                <Tooltip
+                  formatter={(value: any) => formatCurrency(value)}
+                  labelFormatter={(label) => `Year: ${label}`}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="freeCashFlow"
+                  stroke="#2563eb"
+                  strokeWidth={2}
+                  name="Free Cash Flow"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="presentValue"
+                  stroke="#4f46e5"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  name="Present Value"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
