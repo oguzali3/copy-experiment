@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders, handleError } from './utils.ts';
+import { corsHeaders } from './utils.ts'
 import { handleScreening } from './screening.ts';
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
       headers: corsHeaders,
@@ -11,14 +12,14 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, screeningCriteria } = await req.json();
+    const { endpoint, screeningCriteria } = await req.json();
     const apiKey = Deno.env.get("FMP_API_KEY");
 
     if (!apiKey) {
       throw new Error("FMP_API_KEY is not set");
     }
 
-    console.log('Received request with params:', { endpoint, symbol, screeningCriteria });
+    console.log('Received request with params:', { endpoint, screeningCriteria });
 
     switch (endpoint) {
       case "screening":

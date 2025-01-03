@@ -24,52 +24,57 @@ export async function handleScreening(criteria: ScreeningCriteria) {
   const start = criteria.page * ITEMS_PER_PAGE;
   const end = start + ITEMS_PER_PAGE - 1;
 
-  let query = supabase
-    .from('stocks')
-    .select();
+  try {
+    let query = supabase
+      .from('stocks')
+      .select();
 
-  // Apply metric filters
-  criteria.metrics.forEach(metric => {
-    if (metric.min) {
-      query = query.gte(metric.id, parseFloat(metric.min));
+    // Apply metric filters
+    criteria.metrics.forEach(metric => {
+      if (metric.min) {
+        query = query.gte(metric.id, parseFloat(metric.min));
+      }
+      if (metric.max) {
+        query = query.lte(metric.id, parseFloat(metric.max));
+      }
+    });
+
+    // Apply country filters
+    if (criteria.countries.length > 0) {
+      query = query.in('country', criteria.countries);
     }
-    if (metric.max) {
-      query = query.lte(metric.id, parseFloat(metric.max));
+
+    // Apply industry filters
+    if (criteria.industries.length > 0) {
+      query = query.in('industry', criteria.industries);
     }
-  });
 
-  // Apply country filters
-  if (criteria.countries.length > 0) {
-    query = query.in('country', criteria.countries);
-  }
+    // Apply exchange filters
+    if (criteria.exchanges.length > 0) {
+      query = query.in('exchange', criteria.exchanges);
+    }
 
-  // Apply industry filters
-  if (criteria.industries.length > 0) {
-    query = query.in('industry', criteria.industries);
-  }
+    // Add pagination
+    query = query
+      .order('market_cap', { ascending: false })
+      .range(start, end);
 
-  // Apply exchange filters
-  if (criteria.exchanges.length > 0) {
-    query = query.in('exchange', criteria.exchanges);
-  }
+    const { data: results, error, count } = await query;
 
-  // Add pagination
-  query = query
-    .order('market_cap', { ascending: false })
-    .range(start, end);
+    if (error) {
+      console.error('Screening error:', error);
+      throw error;
+    }
 
-  const { data: results, error, count } = await query;
+    console.log(`Found ${count} results, returning page ${criteria.page}`);
 
-  if (error) {
-    console.error('Screening error:', error);
+    return {
+      data: results || [],
+      page: criteria.page,
+      hasMore: (count || 0) > end + 1
+    };
+  } catch (error) {
+    console.error('Error in handleScreening:', error);
     throw error;
   }
-
-  console.log(`Found ${count} results, returning page ${criteria.page}`);
-
-  return {
-    data: results || [],
-    page: criteria.page,
-    hasMore: (count || 0) > end + 1
-  };
 }
