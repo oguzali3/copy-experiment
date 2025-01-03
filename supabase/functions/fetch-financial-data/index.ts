@@ -55,6 +55,17 @@ serve(async (req) => {
         return new Response(JSON.stringify(searchResults), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
+        break;
+      
+      case "estimates":
+        url = `https://financialmodelingprep.com/api/v3/analyst-estimates/${symbol}?apikey=${apiKey}`;
+        console.log('Fetching estimates from URL:', url);
+        const estimatesResponse = await fetch(url);
+        const estimatesData = await estimatesResponse.json();
+        console.log('Raw API response:', estimatesData);
+        return new Response(JSON.stringify(estimatesData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
 
       case "profile":
         url = `https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${apiKey}`;
@@ -64,6 +75,7 @@ serve(async (req) => {
         break;
       case "income-statement":
       case "balance-sheet":
+      case "cash-flow-statement":
         // First get TTM data using quarterly statements
         const ttmUrl = endpoint === 'income-statement' 
           ? `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?period=quarter&limit=4&apikey=${apiKey}`
@@ -131,7 +143,8 @@ serve(async (req) => {
         return new Response(JSON.stringify(combinedCashFlowData), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
-
+        break;
+      
       case "company-news":
         if (!from || !to) {
           throw new Error("From and to dates are required for company news");
@@ -142,8 +155,11 @@ serve(async (req) => {
         throw new Error(`Invalid endpoint: ${endpoint}`);
     }
 
-    if (endpoint !== "search" && endpoint !== "income-statement" && endpoint !== "balance-sheet" && endpoint !== "cash-flow-statement") {
+    if (endpoint !== "search" && endpoint !== "income-statement" && endpoint !== "balance-sheet" && endpoint !== "cash-flow-statement" && endpoint !== "estimates") {
       const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

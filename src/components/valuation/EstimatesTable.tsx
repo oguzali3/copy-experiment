@@ -14,13 +14,30 @@ interface EstimatesTableProps {
 }
 
 export const EstimatesTable = ({ data, selectedMetric, formatValue }: EstimatesTableProps) => {
+  if (!Array.isArray(data)) {
+    console.log('Data is not an array:', data);
+    return (
+      <div className="bg-white p-6 rounded-xl shadow-sm">
+        <p className="text-center text-gray-500">No data available</p>
+      </div>
+    );
+  }
+
   // Filter and sort data to show only last 2 years actual and next 2 years estimates
   const currentYear = new Date().getFullYear();
-  const relevantData = (data || [])
+  const relevantData = data
     .filter(item => {
-      if (!item?.date) return false;
-      const year = parseInt(item.date.split('-')[0]);
-      return year >= currentYear - 2 && year <= currentYear + 2;
+      if (!item?.date) {
+        console.log('Item missing date:', item);
+        return false;
+      }
+      try {
+        const year = parseInt(item.date.split('-')[0]);
+        return year >= currentYear - 2 && year <= currentYear + 2;
+      } catch (error) {
+        console.error('Error parsing date:', error);
+        return false;
+      }
     })
     .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -63,10 +80,10 @@ export const EstimatesTable = ({ data, selectedMetric, formatValue }: EstimatesT
     }
   };
 
-  if (!data || data.length === 0) {
+  if (relevantData.length === 0) {
     return (
       <div className="bg-white p-6 rounded-xl shadow-sm">
-        <p className="text-center text-gray-500">No data available</p>
+        <p className="text-center text-gray-500">No data available for the selected time period</p>
       </div>
     );
   }
