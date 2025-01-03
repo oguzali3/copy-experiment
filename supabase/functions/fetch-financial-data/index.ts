@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol } = await req.json();
+    const { endpoint, symbol, from, to } = await req.json();
     const apiKey = Deno.env.get("FMP_API_KEY");
 
     if (!apiKey) {
@@ -32,6 +32,14 @@ serve(async (req) => {
         return new Response(JSON.stringify([mostRecentData]), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
+
+      case "company-news":
+        url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&limit=50&apikey=${apiKey}`;
+        if (from && to) {
+          url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&from=${from}&to=${to}&apikey=${apiKey}`;
+        }
+        console.log('Fetching news from URL:', url);
+        break;
 
       case "key-metrics-ttm":
         url = `https://financialmodelingprep.com/api/v3/key-metrics-ttm/${symbol}?apikey=${apiKey}`;
