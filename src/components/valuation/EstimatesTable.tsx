@@ -15,10 +15,10 @@ interface EstimatesTableProps {
 
 export const EstimatesTable = ({ data, selectedMetric, formatValue }: EstimatesTableProps) => {
   // Filter and sort data to show only last 2 years actual and next 2 years estimates
+  const currentYear = new Date().getFullYear();
   const relevantData = data
     .filter(item => {
       const year = parseInt(item.period.split('-')[0]);
-      const currentYear = new Date().getFullYear();
       return year >= currentYear - 2 && year <= currentYear + 2;
     })
     .sort((a, b) => a.period.localeCompare(b.period));

@@ -6,7 +6,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders, status: 204 });
   }
@@ -29,7 +28,6 @@ serve(async (req) => {
     console.log(`Fetching analyst estimates for symbol: ${symbol}`);
     const url = `https://financialmodelingprep.com/api/v3/analyst-estimates/${symbol}?apikey=${apiKey}`;
     
-    // Log the URL we're fetching (without the API key)
     console.log(`Fetching from: https://financialmodelingprep.com/api/v3/analyst-estimates/${symbol}`);
     
     const response = await fetch(url);
@@ -42,9 +40,8 @@ serve(async (req) => {
     }
 
     const rawData = await response.json();
-    console.log('Raw API response:', JSON.stringify(rawData).slice(0, 200) + '...'); // Log first 200 chars of response
+    console.log('Raw API response:', JSON.stringify(rawData).slice(0, 200) + '...');
 
-    // Check if we got an error message from FMP
     if (Array.isArray(rawData) && rawData.length === 0) {
       console.log('FMP API returned empty array');
       return new Response(JSON.stringify([]), {
@@ -57,34 +54,43 @@ serve(async (req) => {
       throw new Error(rawData['Error Message']);
     }
 
-    // Transform data for chart visualization with proper null handling
-    const transformedData = rawData.map((estimate: any) => ({
-      period: estimate.date,
-      revenue: {
-        mean: estimate.estimatedRevenue || null,
-        high: estimate.revenueHighEstimate || null,
-        low: estimate.revenueLowEstimate || null,
-        actual: estimate.actualRevenue || null
-      },
-      eps: {
-        mean: estimate.estimatedEps || null,
-        high: estimate.epsHighEstimate || null,
-        low: estimate.epsLowEstimate || null,
-        actual: estimate.actualEps || null
-      },
-      ebitda: {
-        mean: estimate.estimatedEbitda || null,
-        high: estimate.ebitdaHighEstimate || null,
-        low: estimate.ebitdaLowEstimate || null,
-        actual: estimate.actualEbitda || null
-      },
-      netIncome: {
-        mean: estimate.estimatedNetIncome || null,
-        high: estimate.netIncomeHighEstimate || null,
-        low: estimate.netIncomeLowEstimate || null,
-        actual: estimate.actualNetIncome || null
-      }
-    }));
+    // Transform data for chart visualization with proper type checking
+    const transformedData = rawData.map((estimate: any) => {
+      // Parse numeric values and handle undefined/null cases
+      const parseNumeric = (value: any) => {
+        if (value === undefined || value === null || value === "") return null;
+        const num = Number(value);
+        return isNaN(num) ? null : num;
+      };
+
+      return {
+        period: estimate.date,
+        revenue: {
+          mean: parseNumeric(estimate.estimatedRevenue),
+          high: parseNumeric(estimate.revenueHighEstimate),
+          low: parseNumeric(estimate.revenueLowEstimate),
+          actual: parseNumeric(estimate.actualRevenue)
+        },
+        eps: {
+          mean: parseNumeric(estimate.estimatedEps),
+          high: parseNumeric(estimate.epsHighEstimate),
+          low: parseNumeric(estimate.epsLowEstimate),
+          actual: parseNumeric(estimate.actualEps)
+        },
+        ebitda: {
+          mean: parseNumeric(estimate.estimatedEbitda),
+          high: parseNumeric(estimate.ebitdaHighEstimate),
+          low: parseNumeric(estimate.ebitdaLowEstimate),
+          actual: parseNumeric(estimate.actualEbitda)
+        },
+        netIncome: {
+          mean: parseNumeric(estimate.estimatedNetIncome),
+          high: parseNumeric(estimate.netIncomeHighEstimate),
+          low: parseNumeric(estimate.netIncomeLowEstimate),
+          actual: parseNumeric(estimate.actualNetIncome)
+        }
+      };
+    });
 
     console.log(`Successfully transformed data. Number of periods: ${transformedData.length}`);
     console.log('First transformed entry:', JSON.stringify(transformedData[0]));
