@@ -79,10 +79,13 @@ export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps)
     enabled: !!ticker && !!selectedYear && !!selectedQuarter
   });
 
+  // Safely get unique years from transcript dates
   const years = transcriptDates 
-    ? [...new Set(transcriptDates.map(date => date.year))].sort((a, b) => b - a)
+    ? [...new Set(transcriptDates.map(date => date.year))]
+        .sort((a, b) => b - a)
     : [];
 
+  // Safely get quarters for selected year
   const quarters = transcriptDates && selectedYear
     ? [...new Set(transcriptDates
         .filter(date => date.year === parseInt(selectedYear))
@@ -103,7 +106,7 @@ export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps)
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Year
             </label>
             <Select
@@ -126,7 +129,7 @@ export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps)
             </Select>
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Quarter
             </label>
             <Select
@@ -163,12 +166,15 @@ export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps)
               </span>
             </div>
             <ScrollArea className="h-[600px] rounded-md border p-4">
-              <div className="prose max-w-none">
-                {transcript[0].content.split('\n').map((paragraph, index) => (
-                  <p key={index} className="mb-4">
-                    {paragraph}
-                  </p>
-                ))}
+              <div className="prose max-w-none dark:prose-invert">
+                {transcript[0].content && typeof transcript[0].content === 'string' 
+                  ? transcript[0].content.split('\n').map((paragraph, index) => (
+                      <p key={index} className="mb-4">
+                        {paragraph}
+                      </p>
+                    ))
+                  : <p>No content available</p>
+                }
               </div>
             </ScrollArea>
           </div>
