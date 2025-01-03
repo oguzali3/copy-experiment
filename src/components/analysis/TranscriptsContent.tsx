@@ -38,10 +38,15 @@ export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps)
   const { data: transcriptDates, isLoading: isLoadingDates } = useQuery({
     queryKey: ['transcript-dates', ticker],
     queryFn: async () => {
+      console.log('Fetching transcript dates for:', ticker);
       const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
         body: { endpoint: 'transcript-dates', symbol: ticker }
       });
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching transcript dates:', error);
+        throw error;
+      }
+      console.log('Transcript dates received:', data);
       return data as TranscriptDate[];
     },
     enabled: !!ticker
@@ -50,6 +55,7 @@ export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps)
   const { data: transcript, isLoading: isLoadingTranscript } = useQuery({
     queryKey: ['transcript', ticker, selectedYear, selectedQuarter],
     queryFn: async () => {
+      console.log('Fetching transcript for:', { ticker, selectedYear, selectedQuarter });
       const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
         body: { 
           endpoint: 'transcript',
@@ -58,7 +64,11 @@ export const TranscriptsContent = ({ ticker = "AAPL" }: TranscriptsContentProps)
           quarter: selectedQuarter
         }
       });
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching transcript:', error);
+        throw error;
+      }
+      console.log('Transcript received:', data);
       return data as Transcript[];
     },
     enabled: !!ticker && !!selectedYear && !!selectedQuarter
