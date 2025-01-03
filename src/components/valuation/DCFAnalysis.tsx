@@ -21,7 +21,7 @@ export const DCFAnalysis = ({ ticker }: DCFAnalysisProps) => {
       return data[0]; // Get the first year's data
     },
     staleTime: 300000, // Cache for 5 minutes
-    cacheTime: 3600000, // Keep in cache for 1 hour
+    gcTime: 3600000, // Keep in cache for 1 hour (renamed from cacheTime)
     retry: 2,
     enabled: !!ticker
   });

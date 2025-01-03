@@ -33,48 +33,25 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
+      case "key-metrics-ttm":
+        url = `https://financialmodelingprep.com/api/v3/key-metrics-ttm/${symbol}?apikey=${apiKey}`;
+        break;
+        
+      case "key-metrics-historical":
+        url = `https://financialmodelingprep.com/api/v3/key-metrics/${symbol}?apikey=${apiKey}`;
+        break;
+
       case "search":
-        const searchResponse = await fetch(`https://financialmodelingprep.com/api/v3/search?query=${symbol}&limit=10&apikey=${apiKey}`);
-        const searchResults = await searchResponse.json();
-        return new Response(JSON.stringify(searchResults), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        url = `https://financialmodelingprep.com/api/v3/search?query=${symbol}&limit=10&apikey=${apiKey}`;
+        break;
 
       case "profile":
         url = `https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${apiKey}`;
         break;
+
       case "quote":
         url = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
         break;
-      case "income-statement":
-      case "balance-sheet":
-      case "cash-flow-statement":
-        const ttmUrl = endpoint === 'income-statement' 
-          ? `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?period=quarter&limit=4&apikey=${apiKey}`
-          : `https://financialmodelingprep.com/api/v3/balance-sheet-statement/${symbol}?period=quarter&limit=4&apikey=${apiKey}`;
-        
-        const ttmResponse = await fetch(ttmUrl);
-        const ttmData = await ttmResponse.json();
-        
-        const ttm = endpoint === 'income-statement'
-          ? ttmData.reduce((acc: any, quarter: any) => {
-              Object.keys(quarter).forEach(key => {
-                if (typeof quarter[key] === 'number') {
-                  acc[key] = (acc[key] || 0) + quarter[key];
-                }
-              });
-              return acc;
-            }, { period: 'TTM', symbol, date: new Date().toISOString() })
-          : { ...ttmData[0], period: 'TTM' };
-
-        const annualResponse = await fetch(`https://financialmodelingprep.com/api/v3/${endpoint}/${symbol}?limit=10&apikey=${apiKey}`);
-        const annualData = await annualResponse.json();
-
-        const combinedData = [ttm, ...annualData];
-        
-        return new Response(JSON.stringify(combinedData), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
 
       default:
         throw new Error(`Invalid endpoint: ${endpoint}`);
