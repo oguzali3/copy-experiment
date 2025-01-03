@@ -32,64 +32,10 @@ serve(async (req) => {
       throw new Error(`Failed to fetch data from FMP API: ${response.statusText}`);
     }
 
-    const rawData = await response.json();
-    console.log('Raw API response:', JSON.stringify(rawData).slice(0, 200) + '...');
+    const data = await response.json();
+    console.log('Raw API response:', JSON.stringify(data).slice(0, 200) + '...');
 
-    if (!Array.isArray(rawData) || rawData.length === 0) {
-      console.log('No data returned from API');
-      return new Response(JSON.stringify([]), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if ('Error Message' in rawData) {
-      throw new Error(rawData['Error Message']);
-    }
-
-    const transformedData = rawData.map((estimate: any) => {
-      // Convert string numbers to actual numbers and handle null/undefined
-      const toNumber = (value: any): number | null => {
-        if (value === null || value === undefined || value === '') return null;
-        const num = Number(value);
-        return isNaN(num) ? null : num;
-      };
-
-      const date = estimate.date;
-      console.log(`Processing estimate for date: ${date}`);
-      console.log('Raw estimate data:', estimate);
-
-      return {
-        period: date,
-        revenue: {
-          actual: toNumber(estimate.revenueEstimatedActual),
-          mean: toNumber(estimate.revenueEstimated),
-          high: toNumber(estimate.revenueEstimatedHighEstimate),
-          low: toNumber(estimate.revenueEstimatedLowEstimate)
-        },
-        eps: {
-          actual: toNumber(estimate.epsActual),
-          mean: toNumber(estimate.epsEstimated),
-          high: toNumber(estimate.epsHighEstimate),
-          low: toNumber(estimate.epsLowEstimate)
-        },
-        ebitda: {
-          actual: toNumber(estimate.ebitdaActual),
-          mean: toNumber(estimate.ebitdaEstimated),
-          high: toNumber(estimate.ebitdaHighEstimate),
-          low: toNumber(estimate.ebitdaLowEstimate)
-        },
-        netIncome: {
-          actual: toNumber(estimate.netIncomeActual),
-          mean: toNumber(estimate.netIncomeEstimated),
-          high: toNumber(estimate.netIncomeHighEstimate),
-          low: toNumber(estimate.netIncomeLowEstimate)
-        }
-      };
-    });
-
-    console.log('Transformed data sample:', JSON.stringify(transformedData[0], null, 2));
-
-    return new Response(JSON.stringify(transformedData), {
+    return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

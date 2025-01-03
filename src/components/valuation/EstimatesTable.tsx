@@ -18,13 +18,47 @@ export const EstimatesTable = ({ data, selectedMetric, formatValue }: EstimatesT
   const currentYear = new Date().getFullYear();
   const relevantData = data
     .filter(item => {
-      const year = parseInt(item.period.split('-')[0]);
+      const year = parseInt(item.date.split('-')[0]);
       return year >= currentYear - 2 && year <= currentYear + 2;
     })
-    .sort((a, b) => a.period.localeCompare(b.period));
+    .sort((a, b) => a.date.localeCompare(b.date));
 
   console.log('Filtered data for table:', relevantData);
-  console.log('Selected metric:', selectedMetric);
+
+  const getMetricValue = (item: any) => {
+    switch (selectedMetric) {
+      case 'revenue':
+        return {
+          actual: item.revenueEstimatedActual,
+          consensus: item.revenueEstimated,
+          high: item.revenueEstimatedHighEstimate,
+          low: item.revenueEstimatedLowEstimate
+        };
+      case 'eps':
+        return {
+          actual: item.epsActual,
+          consensus: item.epsEstimated,
+          high: item.epsHighEstimate,
+          low: item.epsLowEstimate
+        };
+      case 'ebitda':
+        return {
+          actual: item.ebitdaActual,
+          consensus: item.ebitdaEstimated,
+          high: item.ebitdaHighEstimate,
+          low: item.ebitdaLowEstimate
+        };
+      case 'netIncome':
+        return {
+          actual: item.netIncomeActual,
+          consensus: item.netIncomeEstimated,
+          high: item.netIncomeHighEstimate,
+          low: item.netIncomeLowEstimate
+        };
+      default:
+        return { actual: null, consensus: null, high: null, low: null };
+    }
+  };
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm">
@@ -40,23 +74,21 @@ export const EstimatesTable = ({ data, selectedMetric, formatValue }: EstimatesT
         </TableHeader>
         <TableBody>
           {relevantData.map((estimate) => {
-            const metricData = estimate[selectedMetric];
-            console.log(`Data for period ${estimate.period}:`, metricData);
-            
+            const values = getMetricValue(estimate);
             return (
-              <TableRow key={estimate.period}>
-                <TableCell>{estimate.period}</TableCell>
+              <TableRow key={estimate.date}>
+                <TableCell>{estimate.date}</TableCell>
                 <TableCell className="text-right">
-                  {metricData.actual !== null ? formatValue(metricData.actual) : 'N/A'}
+                  {values.actual ? formatValue(values.actual) : 'N/A'}
                 </TableCell>
                 <TableCell className="text-right">
-                  {metricData.mean !== null ? formatValue(metricData.mean) : 'N/A'}
+                  {values.consensus ? formatValue(values.consensus) : 'N/A'}
                 </TableCell>
                 <TableCell className="text-right">
-                  {metricData.high !== null ? formatValue(metricData.high) : 'N/A'}
+                  {values.high ? formatValue(values.high) : 'N/A'}
                 </TableCell>
                 <TableCell className="text-right">
-                  {metricData.low !== null ? formatValue(metricData.low) : 'N/A'}
+                  {values.low ? formatValue(values.low) : 'N/A'}
                 </TableCell>
               </TableRow>
             );
