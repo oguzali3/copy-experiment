@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import { corsHeaders } from './utils.ts'
 
 interface ScreeningCriteria {
   metrics: Array<{
@@ -25,9 +24,10 @@ export async function handleScreening(criteria: ScreeningCriteria) {
   const end = start + ITEMS_PER_PAGE - 1;
 
   try {
+    console.log('Building query with criteria:', criteria);
     let query = supabase
       .from('stocks')
-      .select();
+      .select('*');
 
     // Apply metric filters
     criteria.metrics.forEach(metric => {
@@ -41,7 +41,7 @@ export async function handleScreening(criteria: ScreeningCriteria) {
 
     // Apply country filters
     if (criteria.countries.length > 0) {
-      query = query.in('country', criteria.countries);
+      query = query.ilike('country', `%${criteria.countries[0]}%`);
     }
 
     // Apply industry filters
@@ -59,6 +59,7 @@ export async function handleScreening(criteria: ScreeningCriteria) {
       .order('market_cap', { ascending: false })
       .range(start, end);
 
+    console.log('Executing query...');
     const { data: results, error, count } = await query;
 
     if (error) {
@@ -67,6 +68,7 @@ export async function handleScreening(criteria: ScreeningCriteria) {
     }
 
     console.log(`Found ${count} results, returning page ${criteria.page}`);
+    console.log('Sample results:', results?.slice(0, 2));
 
     return {
       data: results || [],
