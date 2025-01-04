@@ -55,7 +55,13 @@ export const PortfolioSearch = ({ onStockSelect }: PortfolioSearchProps) => {
             onValueChange={setSearchQuery}
           />
           <CommandList>
-            <CommandEmpty>No stocks found.</CommandEmpty>
+            <CommandEmpty>
+              {searchQuery.length < 2 
+                ? "Type at least 2 characters to search..."
+                : isLoading 
+                  ? "Searching..."
+                  : "No stocks found."}
+            </CommandEmpty>
             <CommandGroup heading="Stocks">
               {results.map((stock) => (
                 <CommandItem
@@ -80,7 +86,9 @@ export const PortfolioSearch = ({ onStockSelect }: PortfolioSearchProps) => {
                   <div className="flex items-center gap-2">
                     <div>
                       <p className="text-sm font-medium">{stock.name}</p>
-                      <p className="text-xs text-muted-foreground">{stock.symbol}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {stock.symbol} • {(stock.market_cap / 1e9).toFixed(2)}B
+                      </p>
                     </div>
                   </div>
                 </CommandItem>
