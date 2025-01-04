@@ -4,7 +4,6 @@ import { Loader2 } from "lucide-react";
 import { useFilings } from "@/hooks/useFilings";
 import { FilingsSelector } from "./FilingsSelector";
 import { FilingsTable } from "./FilingsTable";
-import { Filing } from "@/types/filing";
 
 interface FilingsContentProps {
   ticker?: string;
@@ -12,9 +11,10 @@ interface FilingsContentProps {
 
 export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
   const [selectedType, setSelectedType] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const [currentPage, setCurrentPage] = useState(0);
 
-  const { data: filings, isLoading, error } = useFilings(ticker, selectedType, currentPage);
+  const { data: filings, isLoading, error } = useFilings(ticker, selectedType, currentPage, selectedYear);
 
   if (error) {
     return (
@@ -29,7 +29,9 @@ export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
       <Card className="p-6">
         <FilingsSelector
           selectedType={selectedType}
+          selectedYear={selectedYear}
           onTypeChange={setSelectedType}
+          onYearChange={setSelectedYear}
         />
 
         {isLoading ? (
