@@ -3,11 +3,8 @@ import { corsHeaders } from '../utils/cors.ts';
 export async function handleInstitutionalHolders(apiKey: string, symbol: string) {
   console.log('Fetching institutional holders for:', symbol);
   
-  // Get current date in YYYY-MM-DD format
-  const today = new Date();
-  const date = today.toISOString().split('T')[0];
-  
-  const url = `https://financialmodelingprep.com/api/v4/institutional-ownership/institutional-holders/symbol-ownership-percent?symbol=${symbol}&date=${date}&apikey=${apiKey}`;
+  // Use the standard institutional holders endpoint instead of the percentage-based one
+  const url = `https://financialmodelingprep.com/api/v3/institutional-holder/${symbol}?apikey=${apiKey}`;
   
   try {
     console.log('Making request to FMP API...');
