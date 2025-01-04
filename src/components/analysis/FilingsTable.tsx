@@ -8,15 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-
-interface Filing {
-  symbol: string;
-  type: string;
-  link: string;
-  finalLink: string;
-  acceptedDate: string;
-  fillingDate: string;
-}
+import { Filing } from "@/types/filing";
 
 interface FilingsTableProps {
   filings: Filing[];

@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Filing } from "@/types/filing";
 
 export const useFilings = (symbol: string, type: string, page: number) => {
-  return useQuery({
+  return useQuery<Filing[]>({
     queryKey: ['sec-filings', symbol, type, page],
     queryFn: async () => {
       console.log('Fetching SEC filings for:', { symbol, type, page });

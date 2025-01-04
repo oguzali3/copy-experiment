@@ -1,11 +1,10 @@
 export interface Filing {
-  id: string;
+  symbol: string;
   type: string;
-  title: string;
-  date: string;
-  form: string;
-  description: string;
-  url: string;
+  link: string;
+  finalLink: string;
+  acceptedDate: string;
+  fillingDate: string;
 }
 
 export interface FilingData {

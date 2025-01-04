@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useFilings } from "@/hooks/useFilings";
 import { FilingsSelector } from "./FilingsSelector";
 import { FilingsTable } from "./FilingsTable";
+import { Filing } from "@/types/filing";
 
 interface FilingsContentProps {
   ticker?: string;
@@ -13,7 +14,7 @@ export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
   const [selectedType, setSelectedType] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(0);
 
-  const { filings, isLoading, error } = useFilings(ticker, selectedType, currentPage);
+  const { data: filings, isLoading, error } = useFilings(ticker, selectedType, currentPage);
 
   if (error) {
     return (
