@@ -1,3 +1,5 @@
+import { corsHeaders } from '../utils/cors.ts';
+
 export async function handleInstitutionalHolders(apiKey: string, symbol: string) {
   console.log('Fetching institutional holders for:', symbol);
   
@@ -9,10 +11,15 @@ export async function handleInstitutionalHolders(apiKey: string, symbol: string)
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    console.log('Institutional holders data fetched successfully');
-    return data;
+    
+    return new Response(JSON.stringify(data), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('Error fetching institutional holders:', error);
-    throw error;
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 }
