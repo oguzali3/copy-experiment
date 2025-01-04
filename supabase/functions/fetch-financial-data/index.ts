@@ -25,6 +25,22 @@ serve(async (req) => {
 
     let url;
     switch (endpoint) {
+      case "rss-feed":
+        if (!from || !to) {
+          throw new Error("From and to dates are required for RSS feed");
+        }
+        url = `https://financialmodelingprep.com/api/v4/rss_feed?limit=100&from=${from}&to=${to}&apikey=${apiKey}`;
+        if (symbol) {
+          url += `&ticker=${symbol}`;
+        }
+        console.log('Fetching RSS feed from URL:', url);
+        const rssResponse = await fetch(url);
+        const rssData = await rssResponse.json();
+        console.log('Raw RSS feed response:', rssData);
+        return new Response(JSON.stringify(rssData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       case "transcript-dates":
         url = `https://financialmodelingprep.com/api/v4/earning_call_transcript?symbol=${symbol}&apikey=${apiKey}`;
         console.log('Fetching transcript dates from URL:', url);
@@ -201,7 +217,7 @@ serve(async (req) => {
         endpoint !== "balance-sheet" && endpoint !== "cash-flow-statement" && 
         endpoint !== "estimates" && endpoint !== "key-metrics-ttm" && 
         endpoint !== "key-metrics-historical" && endpoint !== "transcript" &&
-        endpoint !== "transcript-dates") {
+        endpoint !== "transcript-dates" && endpoint !== "rss-feed") {
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
