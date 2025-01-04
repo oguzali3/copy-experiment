@@ -6,18 +6,28 @@ export async function handleInstitutionalHolders(apiKey: string, symbol: string)
   const url = `https://financialmodelingprep.com/api/v4/institutional-ownership/institutional-holders/symbol-ownership-percent?symbol=${symbol}&apikey=${apiKey}`;
   
   try {
+    console.log('Making request to FMP API...');
     const response = await fetch(url);
+    
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      console.error(`FMP API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
+      throw new Error(`FMP API error: ${response.status} - ${errorText}`);
     }
+    
     const data = await response.json();
+    console.log('Successfully fetched institutional holders data');
     
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Error fetching institutional holders:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: 'Failed to fetch institutional holders data. Please check API key and try again.'
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
