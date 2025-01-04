@@ -7,9 +7,10 @@ const corsHeaders = {
 }
 
 interface RequestBody {
-  action: 'getPortfolio' | 'createPortfolio' | 'updatePortfolio' | 'deletePortfolio';
+  action: 'getPortfolio' | 'createPortfolio' | 'updatePortfolio' | 'deletePortfolio' | 'searchStocks';
   portfolioData?: any;
   portfolioId?: string;
+  query?: string;
 }
 
 serve(async (req) => {
@@ -29,6 +30,51 @@ serve(async (req) => {
     console.log('Received request with data:', requestData)
 
     switch (requestData.action) {
+      case 'searchStocks':
+        if (!requestData.query) {
+          return new Response(
+            JSON.stringify({ error: 'Query parameter is required' }),
+            { 
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
+
+        try {
+          const { data: stocks, error } = await supabaseClient
+            .from('stocks')
+            .select('symbol, name, market_cap, sector, industry')
+            .ilike('symbol', `${requestData.query}%`)
+            .or(`name.ilike.%${requestData.query}%`)
+            .order('market_cap', { ascending: false })
+            .limit(10)
+
+          if (error) throw error
+
+          return new Response(
+            JSON.stringify({ 
+              results: stocks.map(stock => ({
+                symbol: stock.symbol,
+                name: stock.name,
+                sector: stock.sector,
+                industry: stock.industry,
+                marketCap: stock.market_cap
+              }))
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        } catch (error) {
+          console.error('Error searching stocks:', error)
+          return new Response(
+            JSON.stringify({ error: 'Failed to search stocks' }),
+            { 
+              status: 500,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
+
       case 'getPortfolio':
         // TODO: Implement get portfolio logic
         return new Response(

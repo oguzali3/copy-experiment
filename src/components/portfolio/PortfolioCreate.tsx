@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Plus } from "lucide-react";
-import { CompanySearch } from "@/components/CompanySearch";
 import { Portfolio, Stock } from "./PortfolioContent";
 import {
   Dialog,
@@ -12,6 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { PortfolioSearch } from "./search/PortfolioSearch";
 
 interface PortfolioCreateProps {
   onSubmit: (portfolio: Portfolio) => void;
@@ -120,7 +120,7 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
                     <DialogTitle>Add Stock to Portfolio</DialogTitle>
                   </DialogHeader>
                   <div className="py-4">
-                    <CompanySearch onCompanySelect={handleAddStock} />
+                    <PortfolioSearch onStockSelect={handleAddStock} />
                   </div>
                 </DialogContent>
               </Dialog>
