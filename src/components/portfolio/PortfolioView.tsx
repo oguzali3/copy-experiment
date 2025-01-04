@@ -1,21 +1,13 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { CompanySearch } from "../CompanySearch";
 import { PortfolioAllocationChart } from "./PortfolioAllocationChart";
 import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
 import { PortfolioTable } from "./PortfolioTable";
 import { Stock, Portfolio } from "./PortfolioContent";
 import { useMarketData } from "./hooks/useMarketData";
 import { PortfolioHeader } from "./components/PortfolioHeader";
+import { PortfolioDialogs } from "./components/PortfolioDialogs";
+import { usePortfolioData } from "./hooks/usePortfolioData";
 
 interface PortfolioViewProps {
   portfolio: Portfolio;
@@ -37,22 +29,22 @@ export const PortfolioView = ({
   const [shares, setShares] = useState("");
   const [avgPrice, setAvgPrice] = useState("");
 
-  const { isLoadingMarketData, lastUpdated, updateAttempts } = useMarketData(portfolio, onUpdatePortfolio);
+  const { portfolio: dbPortfolio, isLoading, updatePortfolio, refreshPortfolio } = usePortfolioData(portfolio.id);
+  const { isLoadingMarketData, lastUpdated, refreshMarketData } = useMarketData(portfolio, onUpdatePortfolio);
 
-  const handleUpdatePortfolioName = () => {
-    onUpdatePortfolio({
+  const handleUpdatePortfolioName = async () => {
+    await updatePortfolio({
       ...portfolio,
       name: newPortfolioName
     });
     setIsSettingsOpen(false);
-    toast.success("Portfolio name updated");
   };
 
   const handleAddTicker = (company: any) => {
     setSelectedCompany(company);
   };
 
-  const handleAddPosition = () => {
+  const handleAddPosition = async () => {
     if (!selectedCompany || !shares || !avgPrice) {
       toast.error("Please fill in all fields");
       return;
@@ -71,7 +63,7 @@ export const PortfolioView = ({
     };
 
     const updatedStocks = [...portfolio.stocks, newStock];
-    onUpdatePortfolio({
+    await updatePortfolio({
       ...portfolio,
       stocks: updatedStocks
     });
@@ -80,10 +72,10 @@ export const PortfolioView = ({
     setSelectedCompany(null);
     setShares("");
     setAvgPrice("");
-    toast.success(`Added ${newStock.name} to portfolio`);
+    refreshMarketData();
   };
 
-  const handleDeletePosition = (ticker: string) => {
+  const handleDeletePosition = async (ticker: string) => {
     const updatedStocks = portfolio.stocks.filter(stock => stock.ticker !== ticker);
     const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
     
@@ -92,13 +84,21 @@ export const PortfolioView = ({
       percentOfPortfolio: (stock.marketValue / totalValue) * 100
     }));
 
-    onUpdatePortfolio({
+    await updatePortfolio({
       ...portfolio,
       stocks: stocksWithUpdatedPercentages,
       totalValue
     });
-    toast.success(`Removed ${ticker} from portfolio`);
   };
+
+  const handleRefreshData = () => {
+    refreshMarketData();
+    refreshPortfolio();
+  };
+
+  if (isLoading) {
+    return <div>Loading portfolio...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -107,6 +107,8 @@ export const PortfolioView = ({
         lastUpdated={lastUpdated}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenAddPosition={() => setIsAddingTicker(true)}
+        onRefreshData={handleRefreshData}
+        isRefreshing={isLoadingMarketData}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -123,75 +125,26 @@ export const PortfolioView = ({
 
       <PortfolioTable 
         stocks={portfolio.stocks}
-        isLoading={isLoadingMarketData && updateAttempts === 0}
+        isLoading={isLoadingMarketData}
         onDeletePosition={handleDeletePosition}
       />
 
-      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Portfolio Settings</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">
-                Portfolio Name
-              </label>
-              <Input
-                id="name"
-                value={newPortfolioName}
-                onChange={(e) => setNewPortfolioName(e.target.value)}
-              />
-            </div>
-            <Button onClick={handleUpdatePortfolioName}>
-              Save Changes
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isAddingTicker} onOpenChange={setIsAddingTicker}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Position to Portfolio</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {!selectedCompany ? (
-              <CompanySearch onCompanySelect={handleAddTicker} />
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Selected Stock</label>
-                  <div className="p-2 bg-gray-50 rounded">
-                    {selectedCompany.name} ({selectedCompany.ticker})
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Number of Shares</label>
-                  <Input
-                    type="number"
-                    value={shares}
-                    onChange={(e) => setShares(e.target.value)}
-                    placeholder="Enter number of shares"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Average Price</label>
-                  <Input
-                    type="number"
-                    value={avgPrice}
-                    onChange={(e) => setAvgPrice(e.target.value)}
-                    placeholder="Enter average price"
-                  />
-                </div>
-                <Button onClick={handleAddPosition}>
-                  Add Position
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PortfolioDialogs
+        isSettingsOpen={isSettingsOpen}
+        isAddingTicker={isAddingTicker}
+        newPortfolioName={newPortfolioName}
+        selectedCompany={selectedCompany}
+        shares={shares}
+        avgPrice={avgPrice}
+        onSettingsClose={() => setIsSettingsOpen(false)}
+        onAddTickerClose={() => setIsAddingTicker(false)}
+        onPortfolioNameChange={setNewPortfolioName}
+        onUpdatePortfolioName={handleUpdatePortfolioName}
+        onAddTicker={handleAddTicker}
+        onAddPosition={handleAddPosition}
+        onSharesChange={setShares}
+        onAvgPriceChange={setAvgPrice}
+      />
 
       <div className="flex justify-end">
         <Button 

@@ -9,6 +9,89 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      portfolio_stocks: {
+        Row: {
+          avg_price: number
+          created_at: string
+          current_price: number | null
+          gain_loss: number | null
+          gain_loss_percent: number | null
+          id: string
+          market_value: number | null
+          name: string
+          percent_of_portfolio: number | null
+          portfolio_id: string | null
+          shares: number
+          ticker: string
+          updated_at: string
+        }
+        Insert: {
+          avg_price: number
+          created_at?: string
+          current_price?: number | null
+          gain_loss?: number | null
+          gain_loss_percent?: number | null
+          id?: string
+          market_value?: number | null
+          name: string
+          percent_of_portfolio?: number | null
+          portfolio_id?: string | null
+          shares: number
+          ticker: string
+          updated_at?: string
+        }
+        Update: {
+          avg_price?: number
+          created_at?: string
+          current_price?: number | null
+          gain_loss?: number | null
+          gain_loss_percent?: number | null
+          id?: string
+          market_value?: number | null
+          name?: string
+          percent_of_portfolio?: number | null
+          portfolio_id?: string | null
+          shares?: number
+          ticker?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_stocks_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portfolios: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          total_value: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          total_value?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          total_value?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
