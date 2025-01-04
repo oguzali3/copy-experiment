@@ -1,5 +1,29 @@
 import { corsHeaders } from '../utils/cors.ts';
 
+const RETRY_AFTER_MS = 1000; // Wait 1 second between retries
+const MAX_RETRIES = 3;
+
+async function fetchWithRetry(url: string, retries = 0): Promise<Response> {
+  try {
+    const response = await fetch(url);
+    
+    if (response.status === 429 && retries < MAX_RETRIES) {
+      console.log(`Rate limited, attempt ${retries + 1}/${MAX_RETRIES}. Waiting ${RETRY_AFTER_MS}ms...`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_AFTER_MS));
+      return fetchWithRetry(url, retries + 1);
+    }
+    
+    return response;
+  } catch (error) {
+    if (retries < MAX_RETRIES) {
+      console.log(`Request failed, attempt ${retries + 1}/${MAX_RETRIES}. Retrying...`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_AFTER_MS));
+      return fetchWithRetry(url, retries + 1);
+    }
+    throw error;
+  }
+}
+
 export async function handlePortfolioOperations(apiKey: string, tickers: string[]) {
   try {
     if (!Array.isArray(tickers) || tickers.length === 0) {
@@ -13,7 +37,7 @@ export async function handlePortfolioOperations(apiKey: string, tickers: string[
     const quoteUrl = `https://financialmodelingprep.com/api/v3/quote/${tickersString}?apikey=${apiKey}`;
     console.log('Fetching quotes from URL:', quoteUrl);
     
-    const response = await fetch(quoteUrl);
+    const response = await fetchWithRetry(quoteUrl);
     if (!response.ok) {
       throw new Error(`API request failed with status ${response.status}`);
     }
