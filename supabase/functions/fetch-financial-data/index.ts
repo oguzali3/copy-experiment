@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { handleFinancialStatements } from './handlers/financialStatements.ts'
 import { handlePortfolioOperations } from './handlers/portfolioOperations.ts'
+import { handleSearch } from './handlers/search.ts'
 import { corsHeaders } from './utils/cors.ts'
 
 serve(async (req) => {
@@ -15,11 +16,12 @@ serve(async (req) => {
       throw new Error('API key not found')
     }
 
-    const { endpoint, symbol, tickers } = await req.json()
+    const { endpoint, symbol, tickers, query } = await req.json()
 
     console.log('Request received for endpoint:', endpoint)
     console.log('Symbol:', symbol)
     console.log('Tickers:', tickers)
+    console.log('Query:', query)
 
     switch (endpoint) {
       case 'portfolio-operations':
@@ -28,6 +30,8 @@ serve(async (req) => {
       case 'balance-sheet':
       case 'cash-flow-statement':
         return await handleFinancialStatements(apiKey, endpoint, symbol)
+      case 'search':
+        return await handleSearch(apiKey, query)
       default:
         throw new Error(`Unsupported endpoint: ${endpoint}`)
     }
