@@ -47,7 +47,8 @@ export async function handlePortfolioOperations(apiKey: string, tickers: string[
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: error.stack
+        details: error.stack,
+        context: 'Portfolio operations handler failed'
       }), 
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
