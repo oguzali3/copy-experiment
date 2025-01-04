@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, query } = await req.json()
+    const { endpoint, symbol, period = 'annual', limit = 5, query } = await req.json()
 
     // Search companies
     if (endpoint === 'search') {
@@ -35,11 +35,12 @@ serve(async (req) => {
 
     // Fetch financial statements
     if (endpoint === 'income-statement' || endpoint === 'balance-sheet-statement' || endpoint === 'cash-flow-statement') {
-      const url = `https://financialmodelingprep.com/api/v3/${endpoint}/${symbol}?period=annual&limit=5&apikey=${FMP_API_KEY}`
+      const periodParam = period === 'quarter' ? 'quarter' : 'annual'
+      const url = `https://financialmodelingprep.com/api/v3/${endpoint}/${symbol}?period=${periodParam}&limit=${limit}&apikey=${FMP_API_KEY}`
       const response = await fetch(url)
       const data = await response.json()
       
-      console.log(`Fetched ${endpoint} for ${symbol}:`, data.length, 'periods')
+      console.log(`Fetched ${endpoint} for ${symbol} (${periodParam}):`, data.length, 'periods')
       
       return new Response(
         JSON.stringify(data),
@@ -49,7 +50,7 @@ serve(async (req) => {
 
     // Fetch key metrics
     if (endpoint === 'key-metrics') {
-      const url = `https://financialmodelingprep.com/api/v3/key-metrics/${symbol}?limit=5&apikey=${FMP_API_KEY}`
+      const url = `https://financialmodelingprep.com/api/v3/key-metrics/${symbol}?limit=${limit}&apikey=${FMP_API_KEY}`
       const response = await fetch(url)
       const data = await response.json()
       
