@@ -18,12 +18,11 @@ async function handleRSSFeed(apiKey: string, symbol?: string, from?: string, to?
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    const text = await response.text(); // First get the response as text
-    console.log('Raw response:', text.substring(0, 200)); // Log first 200 chars for debugging
+    const text = await response.text();
+    console.log('Raw response:', text.substring(0, 200));
     
-    const data = JSON.parse(text); // Then parse it as JSON
+    const data = JSON.parse(text);
     
-    // Filter by date range
     const filteredData = data.filter((filing: any) => {
       const filingDate = new Date(filing.date);
       return filingDate >= new Date(from) && filingDate <= new Date(to);
@@ -33,6 +32,35 @@ async function handleRSSFeed(apiKey: string, symbol?: string, from?: string, to?
     return filteredData;
   } catch (error) {
     console.error('Error in handleRSSFeed:', error);
+    throw error;
+  }
+}
+
+async function handleCompanyNews(apiKey: string, symbol: string, from: string, to: string) {
+  if (!symbol || !from || !to) {
+    throw new Error("Symbol, from, and to dates are required for company news");
+  }
+
+  const url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&limit=50&apikey=${apiKey}`;
+  console.log('Fetching company news from URL:', url);
+  
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    
+    // Filter by date range
+    const filteredData = data.filter((news: any) => {
+      const newsDate = new Date(news.publishedDate);
+      return newsDate >= new Date(from) && newsDate <= new Date(to);
+    });
+    
+    console.log('Filtered company news response:', filteredData);
+    return filteredData;
+  } catch (error) {
+    console.error('Error in handleCompanyNews:', error);
     throw error;
   }
 }
@@ -81,7 +109,6 @@ async function handleFinancials(endpoint: string, apiKey: string, symbol: string
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
       headers: corsHeaders,
@@ -103,6 +130,9 @@ serve(async (req) => {
     switch (endpoint) {
       case "rss-feed":
         data = await handleRSSFeed(apiKey, symbol, from, to);
+        break;
+      case "company-news":
+        data = await handleCompanyNews(apiKey, symbol, from, to);
         break;
       case "transcript-dates":
         data = await handleTranscriptDates(apiKey, symbol);
@@ -126,7 +156,7 @@ serve(async (req) => {
     console.error('Error:', error);
     return new Response(JSON.stringify({ 
       error: error.message,
-      stack: error.stack // Include stack trace for debugging
+      stack: error.stack
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
