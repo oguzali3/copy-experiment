@@ -25,6 +25,6 @@ export const useFilings = (symbol: string, type: string, page: number, year: str
       console.log('SEC filings received:', data);
       return data;
     },
-    enabled: !!symbol && !!year // Only fetch when both symbol and year are provided
+    enabled: !!symbol && !!type && !!year // Only fetch when all required parameters are provided
   });
 };

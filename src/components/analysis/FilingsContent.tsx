@@ -11,7 +11,7 @@ interface FilingsContentProps {
 
 export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
   const [selectedType, setSelectedType] = useState<string>("");
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
+  const [selectedYear, setSelectedYear] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(0);
 
   const { data: filings, isLoading, error } = useFilings(ticker, selectedType, currentPage, selectedYear);
@@ -45,16 +45,24 @@ export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
           onYearChange={handleYearChange}
         />
 
-        {isLoading ? (
+        {!selectedType || !selectedYear ? (
+          <div className="flex items-center justify-center h-48 text-gray-500">
+            Please select both a filing type and year to view filings
+          </div>
+        ) : isLoading ? (
           <div className="flex items-center justify-center h-48">
             <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
           </div>
-        ) : (
+        ) : filings && filings.length > 0 ? (
           <FilingsTable
-            filings={filings || []}
+            filings={filings}
             currentPage={currentPage}
             onPageChange={setCurrentPage}
           />
+        ) : (
+          <div className="flex items-center justify-center h-48 text-gray-500">
+            No filings found for the selected criteria
+          </div>
         )}
       </Card>
     </div>
