@@ -8,6 +8,7 @@ import { handleInstitutionalHolders } from './handlers/institutionalHolders.ts';
 import { handlePortfolioOperations } from './handlers/portfolioOperations.ts';
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
       headers: corsHeaders,
@@ -25,26 +26,33 @@ serve(async (req) => {
 
     console.log('Received request with params:', { endpoint, symbol, type, from, to, query, tickers });
 
+    let response;
     switch (endpoint) {
       case "portfolio-operations":
-        return await handlePortfolioOperations(apiKey, tickers);
+        response = await handlePortfolioOperations(apiKey, tickers);
+        break;
         
       case "insider-trades":
-        return await handleInsiderTrades(apiKey, symbol);
+        response = await handleInsiderTrades(apiKey, symbol);
+        break;
         
       case "sec-filings":
-        return await handleSecFilings(apiKey, symbol, type);
+        response = await handleSecFilings(apiKey, symbol, type);
+        break;
       
       case "company-news":
-        return await handleCompanyNews(apiKey, symbol, from, to);
+        response = await handleCompanyNews(apiKey, symbol, from, to);
+        break;
         
       case "income-statement":
       case "balance-sheet":
       case "cash-flow-statement":
-        return await handleFinancialStatements(apiKey, symbol, endpoint);
+        response = await handleFinancialStatements(apiKey, symbol, endpoint);
+        break;
 
       case "institutional-holders":
-        return await handleInstitutionalHolders(apiKey, symbol);
+        response = await handleInstitutionalHolders(apiKey, symbol);
+        break;
 
       case "transcript-dates":
       case "transcript":
@@ -58,15 +66,21 @@ serve(async (req) => {
         // Handle other endpoints with direct API calls
         const url = getEndpointUrl(endpoint, { symbol, apiKey, year, quarter, query });
         console.log(`Fetching data from URL: ${url}`);
-        const response = await fetch(url);
-        const data = await response.json();
-        return new Response(JSON.stringify(data), {
+        const apiResponse = await fetch(url);
+        if (!apiResponse.ok) {
+          throw new Error(`API request failed with status ${apiResponse.status}`);
+        }
+        const data = await apiResponse.json();
+        response = new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
+        break;
 
       default:
         throw new Error(`Unsupported endpoint: ${endpoint}`);
     }
+
+    return response;
   } catch (error) {
     console.error('Error:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {

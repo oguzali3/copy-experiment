@@ -2,6 +2,10 @@ import { corsHeaders } from '../utils/cors.ts';
 
 export async function handlePortfolioOperations(apiKey: string, tickers: string[]) {
   try {
+    if (!Array.isArray(tickers) || tickers.length === 0) {
+      throw new Error('No tickers provided');
+    }
+
     // Join tickers with commas for the API request
     const tickersString = tickers.join(',');
     
@@ -10,8 +14,11 @@ export async function handlePortfolioOperations(apiKey: string, tickers: string[
     console.log('Fetching quotes from URL:', quoteUrl);
     
     const response = await fetch(quoteUrl);
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
     
+    const data = await response.json();
     console.log('Received quote data:', data);
     
     if (!Array.isArray(data)) {

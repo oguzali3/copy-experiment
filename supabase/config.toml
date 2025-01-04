@@ -1,9 +1,4 @@
 project_id = "eiilyloldbgnxtrysaky"
-[functions.fetch-stock-chart]
-verify_jwt = false
+
 [functions.fetch-financial-data]
-verify_jwt = false
-[functions.fetch-analyst-estimates]
-verify_jwt = false
-[functions.portfolio-operations]
 verify_jwt = false
