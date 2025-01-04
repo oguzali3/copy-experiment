@@ -12,14 +12,14 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, type, page = 0, from, to } = await req.json();
+    const { endpoint, symbol, type, page = 0, from, to, query, year, quarter } = await req.json();
     const apiKey = Deno.env.get("FMP_API_KEY");
 
     if (!apiKey) {
       throw new Error("FMP_API_KEY is not set");
     }
 
-    console.log('Received request with params:', { endpoint, symbol, type, page, from, to });
+    console.log('Received request with params:', { endpoint, symbol, type, page, from, to, query });
 
     switch (endpoint) {
       case "sec-filings":
@@ -62,6 +62,9 @@ serve(async (req) => {
         });
 
       case "search":
+        if (!query) {
+          throw new Error("Search query is required");
+        }
         const searchUrl = `https://financialmodelingprep.com/api/v3/search?query=${query}&limit=10&apikey=${apiKey}`;
         const searchResponse = await fetch(searchUrl);
         const searchResults = await searchResponse.json();
