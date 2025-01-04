@@ -2,3 +2,6 @@ project_id = "eiilyloldbgnxtrysaky"
 
 [functions.fetch-financial-data]
 verify_jwt = false
+
+[functions.portfolio-operations]
+verify_jwt = false

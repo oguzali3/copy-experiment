@@ -44,9 +44,15 @@ export async function handlePortfolioOperations(apiKey: string, tickers: string[
     });
   } catch (error) {
     console.error('Error in handlePortfolioOperations:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack
+      }), 
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
   }
 }

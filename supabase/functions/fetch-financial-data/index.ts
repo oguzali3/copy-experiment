@@ -7,6 +7,8 @@ import { handleInsiderTrades } from './handlers/insiderTrades.ts';
 import { handleInstitutionalHolders } from './handlers/institutionalHolders.ts';
 import { handlePortfolioOperations } from './handlers/portfolioOperations.ts';
 
+console.log("Financial data function started");
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -29,6 +31,9 @@ serve(async (req) => {
     let response;
     switch (endpoint) {
       case "portfolio-operations":
+        if (!Array.isArray(tickers) || tickers.length === 0) {
+          throw new Error("Invalid tickers array");
+        }
         response = await handlePortfolioOperations(apiKey, tickers);
         break;
         
@@ -63,13 +68,14 @@ serve(async (req) => {
       case "quote":
       case "key-metrics-ttm":
       case "key-metrics-historical":
-        // Handle other endpoints with direct API calls
         const url = getEndpointUrl(endpoint, { symbol, apiKey, year, quarter, query });
         console.log(`Fetching data from URL: ${url}`);
         const apiResponse = await fetch(url);
+        
         if (!apiResponse.ok) {
           throw new Error(`API request failed with status ${apiResponse.status}`);
         }
+        
         const data = await apiResponse.json();
         response = new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -81,12 +87,19 @@ serve(async (req) => {
     }
 
     return response;
+
   } catch (error) {
     console.error('Error:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack
+      }), 
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });
 
