@@ -13,23 +13,37 @@ async function handleRSSFeed(apiKey: string, symbol?: string, from?: string, to?
   const url = `https://financialmodelingprep.com/api/v3/rss_feed?page=0&apikey=${apiKey}${symbol ? `&ticker=${symbol}` : ''}`;
   console.log('Fetching RSS feed from URL:', url);
   
-  const response = await fetch(url);
-  const data = await response.json();
-  
-  // Filter by date range
-  const filteredData = data.filter((filing: any) => {
-    const filingDate = new Date(filing.date);
-    return filingDate >= new Date(from) && filingDate <= new Date(to);
-  });
-  
-  console.log('Filtered RSS feed response:', filteredData);
-  return filteredData;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const text = await response.text(); // First get the response as text
+    console.log('Raw response:', text.substring(0, 200)); // Log first 200 chars for debugging
+    
+    const data = JSON.parse(text); // Then parse it as JSON
+    
+    // Filter by date range
+    const filteredData = data.filter((filing: any) => {
+      const filingDate = new Date(filing.date);
+      return filingDate >= new Date(from) && filingDate <= new Date(to);
+    });
+    
+    console.log('Filtered RSS feed response:', filteredData);
+    return filteredData;
+  } catch (error) {
+    console.error('Error in handleRSSFeed:', error);
+    throw error;
+  }
 }
 
 async function handleTranscriptDates(apiKey: string, symbol: string) {
   const url = `https://financialmodelingprep.com/api/v4/earning_call_transcript?symbol=${symbol}&apikey=${apiKey}`;
   console.log('Fetching transcript dates from URL:', url);
   const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
   return await response.json();
 }
 
@@ -40,6 +54,9 @@ async function handleTranscript(apiKey: string, symbol: string, year: string, qu
   const url = `https://financialmodelingprep.com/api/v3/earning_call_transcript/${symbol}?year=${year}&quarter=${quarter}&apikey=${apiKey}`;
   console.log('Fetching transcript from URL:', url);
   const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
   return await response.json();
 }
 
@@ -57,6 +74,9 @@ async function handleFinancials(endpoint: string, apiKey: string, symbol: string
   }
   
   const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
   return await response.json();
 }
 
@@ -103,8 +123,11 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    console.error('Error:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Error:', error);
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      stack: error.stack // Include stack trace for debugging
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });
