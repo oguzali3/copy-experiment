@@ -39,6 +39,7 @@ export const PortfolioView = ({
   const [marketData, setMarketData] = useState<Record<string, any>>({});
   const [isLoadingMarketData, setIsLoadingMarketData] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [updateAttempts, setUpdateAttempts] = useState(0);
 
   // Fetch real-time market data for all stocks in the portfolio
   useEffect(() => {
@@ -55,7 +56,16 @@ export const PortfolioView = ({
           }
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching market data:', error);
+          setUpdateAttempts(prev => prev + 1);
+          if (updateAttempts >= 3) {
+            toast.error('Unable to fetch market data. Please try again later.');
+            setIsLoadingMarketData(false);
+            return;
+          }
+          throw error;
+        }
 
         // Transform array to object for easier lookup
         const marketDataMap = data.reduce((acc: Record<string, any>, item: any) => {
@@ -65,6 +75,7 @@ export const PortfolioView = ({
 
         setMarketData(marketDataMap);
         setLastUpdated(new Date());
+        setUpdateAttempts(0);
         
         // Update portfolio with real market data
         const updatedStocks = portfolio.stocks.map(stock => {
@@ -98,18 +109,21 @@ export const PortfolioView = ({
 
       } catch (error) {
         console.error('Error fetching market data:', error);
-        toast.error('Failed to fetch market data');
+        setUpdateAttempts(prev => prev + 1);
+        if (updateAttempts >= 3) {
+          toast.error('Unable to fetch market data. Please try again later.');
+        }
       } finally {
         setIsLoadingMarketData(false);
       }
     };
 
-    // Fetch initially and then every 3 minutes
+    // Fetch initially and then every 5 minutes
     fetchMarketData();
-    const interval = setInterval(fetchMarketData, 180000); // 3 minutes in milliseconds
+    const interval = setInterval(fetchMarketData, 300000); // 5 minutes in milliseconds
 
     return () => clearInterval(interval);
-  }, [portfolio.stocks]);
+  }, [portfolio.stocks, updateAttempts]);
 
   const handleUpdatePortfolioName = () => {
     onUpdatePortfolio({
@@ -279,7 +293,7 @@ export const PortfolioView = ({
 
       <PortfolioTable 
         stocks={portfolio.stocks}
-        isLoading={isLoadingMarketData}
+        isLoading={isLoadingMarketData && updateAttempts === 0}
         onDeletePosition={handleDeletePosition}
       />
 
