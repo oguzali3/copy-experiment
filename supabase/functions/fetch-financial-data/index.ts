@@ -18,6 +18,7 @@ serve(async (req) => {
 
   try {
     const { endpoint, symbol, period = 'annual', limit = 5, query } = await req.json()
+    console.log(`Processing request for endpoint: ${endpoint}, symbol: ${symbol}`)
 
     // Search companies
     if (endpoint === 'search') {
@@ -26,6 +27,34 @@ serve(async (req) => {
       const data = await response.json()
       
       console.log(`Search results for "${query}":`, data.length, 'companies found')
+      
+      return new Response(
+        JSON.stringify(data),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Fetch company profile
+    if (endpoint === 'profile') {
+      const url = `https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${FMP_API_KEY}`
+      const response = await fetch(url)
+      const data = await response.json()
+      
+      console.log(`Fetched profile for ${symbol}:`, data)
+      
+      return new Response(
+        JSON.stringify(data),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Fetch company quote
+    if (endpoint === 'quote') {
+      const url = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${FMP_API_KEY}`
+      const response = await fetch(url)
+      const data = await response.json()
+      
+      console.log(`Fetched quote for ${symbol}:`, data)
       
       return new Response(
         JSON.stringify(data),
@@ -76,6 +105,7 @@ serve(async (req) => {
       )
     }
 
+    console.error('Invalid endpoint requested:', endpoint)
     return new Response(
       JSON.stringify({ error: 'Invalid endpoint' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
