@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "./utils/cors.ts";
 import { handleQuote, handleProfile, handleIncomeStatement, handleBalanceSheet, handleCashFlow } from "./handlers/financialData.ts";
 import { handleInsiderRoster, handleInsiderTrades, handleInstitutionalHolders } from "./handlers/ownershipData.ts";
+import { handleCompanyNews } from "./handlers/companyNews.ts";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -9,7 +10,7 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol } = await req.json();
+    const { endpoint, symbol, from, to } = await req.json();
     const apiKey = Deno.env.get('FMP_API_KEY');
 
     if (!apiKey) {
@@ -50,6 +51,10 @@ serve(async (req) => {
       
       case 'institutional-holders':
         data = await handleInstitutionalHolders(symbol, apiKey);
+        break;
+
+      case 'company-news':
+        data = await handleCompanyNews(symbol, from, to, apiKey);
         break;
 
       default:
