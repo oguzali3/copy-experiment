@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { X, Plus } from "lucide-react";
+import { CompanySearch } from "@/components/CompanySearch";
 import { Portfolio, Stock } from "./PortfolioContent";
 import {
   Dialog,
@@ -10,9 +12,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { PortfolioSearch } from "./search/PortfolioSearch";
-import { PortfolioStocksTable } from "./create/PortfolioStocksTable";
-import { PortfolioHeader } from "./create/PortfolioHeader";
 
 interface PortfolioCreateProps {
   onSubmit: (portfolio: Portfolio) => void;
@@ -31,7 +30,7 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
       name: company.name,
       shares: 0,
       avgPrice: 0,
-      currentPrice: 0,
+      currentPrice: Math.random() * 1000, // Mock price
       marketValue: 0,
       percentOfPortfolio: 0,
       gainLoss: 0,
@@ -58,12 +57,8 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
     setStocks(updatedStocks);
   };
 
-  const generateUUID = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
+  const handleRemoveStock = (index: number) => {
+    setStocks(stocks.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -80,7 +75,7 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
     }));
 
     const portfolio: Portfolio = {
-      id: generateUUID(),
+      id: Date.now().toString(),
       name: name.trim(),
       stocks: stocksWithPercentage,
       totalValue
@@ -100,7 +95,15 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <PortfolioHeader name={name} onNameChange={setName} />
+          <div className="space-y-2">
+            <label className="text-orange-500 font-medium">Portfolio Name</label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter Portfolio Name"
+              className="border-b-orange-500 border-b-2"
+            />
+          </div>
 
           <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -117,17 +120,67 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
                     <DialogTitle>Add Stock to Portfolio</DialogTitle>
                   </DialogHeader>
                   <div className="py-4">
-                    <PortfolioSearch onStockSelect={handleAddStock} />
+                    <CompanySearch onCompanySelect={handleAddStock} />
                   </div>
                 </DialogContent>
               </Dialog>
             </div>
 
-            <PortfolioStocksTable
-              stocks={stocks}
-              onUpdateStock={handleUpdateStock}
-              onRemoveStock={(index) => setStocks(stocks.filter((_, i) => i !== index))}
-            />
+            {stocks.length > 0 && (
+              <div className="border rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ticker</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Shares</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Price</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {stocks.map((stock, index) => (
+                      <tr key={stock.ticker}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                          {stock.ticker}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {stock.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <Input
+                            type="number"
+                            min="0"
+                            value={stock.shares}
+                            onChange={(e) => handleUpdateStock(index, Number(e.target.value), stock.avgPrice)}
+                            className="w-32"
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <Input
+                            type="number"
+                            min="0"
+                            value={stock.avgPrice}
+                            onChange={(e) => handleUpdateStock(index, stock.shares, Number(e.target.value))}
+                            className="w-32"
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveStock(index)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-between pt-4">
