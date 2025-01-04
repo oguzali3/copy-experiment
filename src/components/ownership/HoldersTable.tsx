@@ -15,14 +15,12 @@ interface HoldersTableProps {
 }
 
 interface InstitutionalHolder {
-  investorName: string;
-  date: string;
-  ownership: number;
-  sharesNumber: number;
-  marketValue: number;
-  changeInSharesNumber: number;
-  changeInSharesNumberPercentage: number;
-  holdingPeriod: number;
+  holder: string;
+  dateReported: string;
+  shares: number;
+  value: number;
+  change: number;
+  weightPercent?: number;
 }
 
 export const HoldersTable = ({ ticker = "AAPL" }: HoldersTableProps) => {
@@ -70,33 +68,35 @@ export const HoldersTable = ({ ticker = "AAPL" }: HoldersTableProps) => {
             <TableHead className="w-[10%] text-right">% Owned</TableHead>
             <TableHead className="w-[13%] text-right">Market Value</TableHead>
             <TableHead className="w-[10%] text-right">Shares</TableHead>
-            <TableHead className="w-[10%] text-right">Chg. Shares</TableHead>
-            <TableHead className="w-[10%] text-right">Chg. Shares %</TableHead>
-            <TableHead className="w-[10%] text-right">Holding Period</TableHead>
+            <TableHead className="w-[10%] text-right">Change</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {holders?.map((holder: InstitutionalHolder, index: number) => (
-            <TableRow key={index}>
-              <TableCell className="font-medium">{holder.investorName}</TableCell>
-              <TableCell>{new Date(holder.date).toLocaleDateString()}</TableCell>
-              <TableCell className="text-right">{holder.ownership.toFixed(2)}%</TableCell>
-              <TableCell className="text-right">${(holder.marketValue / 1e9).toFixed(2)}B</TableCell>
-              <TableCell className="text-right">{(holder.sharesNumber / 1e6).toFixed(2)}M</TableCell>
-              <TableCell className="text-right">{(holder.changeInSharesNumber / 1e6).toFixed(2)}M</TableCell>
-              <TableCell className="text-right">
-                <div className={`flex items-center justify-end ${holder.changeInSharesNumberPercentage > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {holder.changeInSharesNumberPercentage > 0 ? (
-                    <ArrowUpIcon className="h-4 w-4 mr-1" />
-                  ) : (
-                    <ArrowDownIcon className="h-4 w-4 mr-1" />
-                  )}
-                  {Math.abs(holder.changeInSharesNumberPercentage).toFixed(2)}%
-                </div>
-              </TableCell>
-              <TableCell className="text-right">{holder.holdingPeriod} quarters</TableCell>
-            </TableRow>
-          ))}
+          {holders?.map((holder: InstitutionalHolder, index: number) => {
+            const changePercent = holder.change ? (holder.change / (holder.shares - holder.change)) * 100 : 0;
+            
+            return (
+              <TableRow key={index}>
+                <TableCell className="font-medium">{holder.holder}</TableCell>
+                <TableCell>{new Date(holder.dateReported).toLocaleDateString()}</TableCell>
+                <TableCell className="text-right">{(holder.weightPercent || 0).toFixed(2)}%</TableCell>
+                <TableCell className="text-right">${(holder.value / 1e9).toFixed(2)}B</TableCell>
+                <TableCell className="text-right">{(holder.shares / 1e6).toFixed(2)}M</TableCell>
+                <TableCell className="text-right">
+                  <div className={`flex items-center justify-end ${changePercent > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {changePercent !== 0 && (
+                      changePercent > 0 ? (
+                        <ArrowUpIcon className="h-4 w-4 mr-1" />
+                      ) : (
+                        <ArrowDownIcon className="h-4 w-4 mr-1" />
+                      )
+                    )}
+                    {Math.abs(changePercent).toFixed(2)}%
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
