@@ -13,9 +13,13 @@ export const usePortfolioData = (portfolioId: string) => {
         .from('portfolios')
         .select('*')
         .eq('id', portfolioId)
-        .single();
+        .maybeSingle();
 
       if (portfolioError) throw portfolioError;
+      if (!portfolioData) {
+        toast.error('Portfolio not found');
+        return;
+      }
 
       const { data: stocksData, error: stocksError } = await supabase
         .from('portfolio_stocks')
