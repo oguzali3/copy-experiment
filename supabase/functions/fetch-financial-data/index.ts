@@ -3,6 +3,7 @@ import { corsHeaders } from './utils/cors.ts';
 import { handleSecFilings } from './handlers/secFilings.ts';
 import { handleCompanyNews } from './handlers/companyNews.ts';
 import { handleFinancialStatements } from './handlers/financialStatements.ts';
+import { handleInsiderRoster } from './handlers/insiderRoster.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -23,6 +24,9 @@ serve(async (req) => {
     console.log('Received request with params:', { endpoint, symbol, type, from, to, query });
 
     switch (endpoint) {
+      case "insider-roster":
+        return await handleInsiderRoster(apiKey, symbol);
+        
       case "sec-filings":
         return await handleSecFilings(apiKey, symbol, type);
       
