@@ -1,5 +1,5 @@
-import { usePortfolioSearch } from "@/hooks/usePortfolioSearch";
 import { useEffect } from "react";
+import { usePortfolioSearch } from "@/hooks/usePortfolioSearch";
 import {
   Command,
   CommandDialog,
@@ -69,10 +69,10 @@ export const PortfolioSearch = ({ onStockSelect }: PortfolioSearchProps) => {
                   onSelect={() => {
                     onStockSelect({
                       ticker: stock.symbol,
-                      name: stock.name,
+                      name: stock.companyName || stock.name,
                       shares: 0,
-                      avgPrice: 0,
-                      currentPrice: 0,
+                      avgPrice: stock.price || 0,
+                      currentPrice: stock.price || 0,
                       marketValue: 0,
                       percentOfPortfolio: 0,
                       gainLoss: 0,
@@ -85,12 +85,22 @@ export const PortfolioSearch = ({ onStockSelect }: PortfolioSearchProps) => {
                 >
                   <div className="flex items-center gap-2">
                     <div>
-                      <p className="text-sm font-medium">{stock.name}</p>
+                      <p className="text-sm font-medium">{stock.companyName || stock.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {stock.symbol} • {(stock.market_cap / 1e9).toFixed(2)}B
+                        {stock.symbol} • {stock.exchangeShortName}
                       </p>
                     </div>
                   </div>
+                  {stock.price && (
+                    <div className="ml-auto text-right">
+                      <p className="text-sm font-medium">${stock.price}</p>
+                      {stock.changes && (
+                        <p className={`text-xs ${parseFloat(stock.changes) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {stock.changes > 0 ? '+' : ''}{stock.changes}%
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>

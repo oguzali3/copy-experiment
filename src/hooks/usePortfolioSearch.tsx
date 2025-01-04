@@ -15,17 +15,15 @@ export const usePortfolioSearch = () => {
 
     setIsLoading(true);
     try {
-      const { data: stocks, error } = await supabase
-        .from('stocks')
-        .select('symbol, name, sector, industry, market_cap')
-        .ilike('symbol', `${query}%`)
-        .or(`name.ilike.%${query}%`)
-        .order('market_cap', { ascending: false })
-        .limit(10);
+      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+        body: { 
+          endpoint: 'search',
+          query: query.trim()
+        }
+      });
 
       if (error) throw error;
-      
-      setResults(stocks || []);
+      setResults(data || []);
     } catch (error) {
       console.error('Search failed:', error);
       setResults([]);
