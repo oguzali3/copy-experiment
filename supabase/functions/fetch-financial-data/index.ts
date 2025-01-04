@@ -1,9 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { corsHeaders } from './utils/cors.ts';
+import { handleSecFilings } from './handlers/secFilings.ts';
+import { handleCompanyNews } from './handlers/companyNews.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -14,32 +12,26 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, type, page = 0 } = await req.json();
+    const { endpoint, symbol, type, page = 0, from, to } = await req.json();
     const apiKey = Deno.env.get("FMP_API_KEY");
 
     if (!apiKey) {
       throw new Error("FMP_API_KEY is not set");
     }
 
-    console.log('Received request with params:', { endpoint, symbol, type, page });
+    console.log('Received request with params:', { endpoint, symbol, type, page, from, to });
 
-    let url;
     switch (endpoint) {
       case "sec-filings":
-        const typeParam = type ? `&type=${type}` : '';
-        url = `https://financialmodelingprep.com/api/v3/sec_filings/${symbol}?page=${page}${typeParam}&apikey=${apiKey}`;
-        console.log('Fetching SEC filings from URL:', url);
-        const filingsResponse = await fetch(url);
-        const filingsData = await filingsResponse.json();
-        console.log('Raw SEC filings API response:', filingsData);
-        return new Response(JSON.stringify(filingsData), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-
+        return await handleSecFilings(apiKey, symbol, type, page);
+      
+      case "company-news":
+        return await handleCompanyNews(apiKey, symbol, from, to, page);
+        
       case "transcript-dates":
-        url = `https://financialmodelingprep.com/api/v4/earning_call_transcript?symbol=${symbol}&apikey=${apiKey}`;
-        console.log('Fetching transcript dates from URL:', url);
-        const datesResponse = await fetch(url);
+        const transcriptDatesUrl = `https://financialmodelingprep.com/api/v4/earning_call_transcript?symbol=${symbol}&apikey=${apiKey}`;
+        console.log('Fetching transcript dates from URL:', transcriptDatesUrl);
+        const datesResponse = await fetch(transcriptDatesUrl);
         const datesData = await datesResponse.json();
         console.log('Raw transcript dates API response:', datesData);
         return new Response(JSON.stringify(datesData), {
@@ -50,9 +42,9 @@ serve(async (req) => {
         if (!year || !quarter) {
           throw new Error("Year and quarter are required for transcript endpoint");
         }
-        url = `https://financialmodelingprep.com/api/v3/earning_call_transcript/${symbol}?year=${year}&quarter=${quarter}&apikey=${apiKey}`;
-        console.log('Fetching transcript from URL:', url);
-        const transcriptResponse = await fetch(url);
+        const transcriptUrl = `https://financialmodelingprep.com/api/v3/earning_call_transcript/${symbol}?year=${year}&quarter=${quarter}&apikey=${apiKey}`;
+        console.log('Fetching transcript from URL:', transcriptUrl);
+        const transcriptResponse = await fetch(transcriptUrl);
         const transcriptData = await transcriptResponse.json();
         console.log('Raw transcript API response:', transcriptData);
         return new Response(JSON.stringify(transcriptData), {
@@ -60,9 +52,9 @@ serve(async (req) => {
         });
 
       case "dcf":
-        url = `https://financialmodelingprep.com/api/v3/discounted-cash-flow/${symbol}?apikey=${apiKey}`;
-        console.log('Fetching DCF from URL:', url);
-        const dcfResponse = await fetch(url);
+        const dcfUrl = `https://financialmodelingprep.com/api/v3/discounted-cash-flow/${symbol}?apikey=${apiKey}`;
+        console.log('Fetching DCF from URL:', dcfUrl);
+        const dcfResponse = await fetch(dcfUrl);
         const dcfData = await dcfResponse.json();
         console.log('Raw DCF API response:', dcfData);
         return new Response(JSON.stringify(dcfData), {
@@ -70,8 +62,8 @@ serve(async (req) => {
         });
 
       case "search":
-        url = `https://financialmodelingprep.com/api/v3/search?query=${query}&limit=10&apikey=${apiKey}`;
-        const searchResponse = await fetch(url);
+        const searchUrl = `https://financialmodelingprep.com/api/v3/search?query=${query}&limit=10&apikey=${apiKey}`;
+        const searchResponse = await fetch(searchUrl);
         const searchResults = await searchResponse.json();
         
         if (searchResults && searchResults.length > 0) {
@@ -98,12 +90,11 @@ serve(async (req) => {
         return new Response(JSON.stringify(searchResults), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
-        break;
-      
+
       case "estimates":
-        url = `https://financialmodelingprep.com/api/v3/analyst-estimates/${symbol}?apikey=${apiKey}`;
-        console.log('Fetching estimates from URL:', url);
-        const estimatesResponse = await fetch(url);
+        const estimatesUrl = `https://financialmodelingprep.com/api/v3/analyst-estimates/${symbol}?apikey=${apiKey}`;
+        console.log('Fetching estimates from URL:', estimatesUrl);
+        const estimatesResponse = await fetch(estimatesUrl);
         const estimatesData = await estimatesResponse.json();
         console.log('Raw API response:', estimatesData);
         return new Response(JSON.stringify(estimatesData), {
@@ -111,11 +102,21 @@ serve(async (req) => {
         });
 
       case "profile":
-        url = `https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${apiKey}`;
-        break;
+        const profileUrl = `https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${apiKey}`;
+        const profileResponse = await fetch(profileUrl);
+        const profileData = await profileResponse.json();
+        return new Response(JSON.stringify(profileData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       case "quote":
-        url = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
-        break;
+        const quoteUrl = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
+        const quoteResponse = await fetch(quoteUrl);
+        const quoteData = await quoteResponse.json();
+        return new Response(JSON.stringify(quoteData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       case "income-statement":
       case "balance-sheet":
       case "cash-flow-statement":
@@ -137,11 +138,11 @@ serve(async (req) => {
             }, { period: 'TTM', symbol, date: new Date().toISOString() })
           : { ...ttmData[0], period: 'TTM' };
 
-        url = endpoint === 'income-statement'
+        const annualUrl = endpoint === 'income-statement'
           ? `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?limit=10&apikey=${apiKey}`
           : `https://financialmodelingprep.com/api/v3/balance-sheet-statement/${symbol}?limit=10&apikey=${apiKey}`;
         
-        const annualResponse = await fetch(url);
+        const annualResponse = await fetch(annualUrl);
         const annualData = await annualResponse.json();
 
         const combinedData = [ttm, ...annualData];
@@ -177,19 +178,11 @@ serve(async (req) => {
         return new Response(JSON.stringify(combinedCashFlowData), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
-        break;
-      
-      case "company-news":
-        if (!from || !to) {
-          throw new Error("From and to dates are required for company news");
-        }
-        url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&page=${page || 1}&from=${from}&to=${to}&apikey=${apiKey}`;
-        break;
 
       case "key-metrics-ttm":
-        url = `https://financialmodelingprep.com/api/v3/key-metrics-ttm/${symbol}?apikey=${apiKey}`;
-        console.log('Fetching TTM key metrics from URL:', url);
-        const ttmMetricsResponse = await fetch(url);
+        const keyMetricsTtmUrl = `https://financialmodelingprep.com/api/v3/key-metrics-ttm/${symbol}?apikey=${apiKey}`;
+        console.log('Fetching TTM key metrics from URL:', keyMetricsTtmUrl);
+        const ttmMetricsResponse = await fetch(keyMetricsTtmUrl);
         const ttmMetricsData = await ttmMetricsResponse.json();
         console.log('Raw TTM API response:', ttmMetricsData);
         return new Response(JSON.stringify(ttmMetricsData), {
@@ -197,9 +190,9 @@ serve(async (req) => {
         });
 
       case "key-metrics-historical":
-        url = `https://financialmodelingprep.com/api/v3/key-metrics/${symbol}?period=annual&apikey=${apiKey}`;
-        console.log('Fetching historical key metrics from URL:', url);
-        const historicalMetricsResponse = await fetch(url);
+        const keyMetricsHistoricalUrl = `https://financialmodelingprep.com/api/v3/key-metrics/${symbol}?period=annual&apikey=${apiKey}`;
+        console.log('Fetching historical key metrics from URL:', keyMetricsHistoricalUrl);
+        const historicalMetricsResponse = await fetch(keyMetricsHistoricalUrl);
         const historicalMetricsData = await historicalMetricsResponse.json();
         console.log('Raw historical API response:', historicalMetricsData);
         return new Response(JSON.stringify(historicalMetricsData), {
@@ -208,20 +201,7 @@ serve(async (req) => {
 
     }
 
-    if (endpoint !== "search" && endpoint !== "income-statement" && 
-        endpoint !== "balance-sheet" && endpoint !== "cash-flow-statement" && 
-        endpoint !== "estimates" && endpoint !== "key-metrics-ttm" && 
-        endpoint !== "key-metrics-historical" && endpoint !== "transcript" &&
-        endpoint !== "transcript-dates") {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    throw new Error(`Unsupported endpoint: ${endpoint}`);
   } catch (error) {
     console.error('Error:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
