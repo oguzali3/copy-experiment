@@ -12,9 +12,8 @@ interface FilingsContentProps {
 export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
   const [selectedType, setSelectedType] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
-  const [currentPage, setCurrentPage] = useState(0);
 
-  const { data: allFilings, isLoading, error } = useFilings(ticker, selectedType, currentPage);
+  const { data: allFilings, isLoading, error } = useFilings(ticker, selectedType);
 
   // Filter filings by year
   const filings = allFilings?.filter(filing => {
@@ -22,17 +21,6 @@ export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
     const filingYear = new Date(filing.fillingDate).getFullYear().toString();
     return filingYear === selectedYear;
   });
-
-  // Reset page when year or type changes
-  const handleYearChange = (year: string) => {
-    setSelectedYear(year);
-    setCurrentPage(0);
-  };
-
-  const handleTypeChange = (type: string) => {
-    setSelectedType(type);
-    setCurrentPage(0);
-  };
 
   if (error) {
     return (
@@ -48,8 +36,8 @@ export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
         <FilingsSelector
           selectedType={selectedType}
           selectedYear={selectedYear}
-          onTypeChange={handleTypeChange}
-          onYearChange={handleYearChange}
+          onTypeChange={setSelectedType}
+          onYearChange={setSelectedYear}
         />
 
         {!selectedType || !selectedYear ? (
@@ -61,11 +49,7 @@ export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
             <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
           </div>
         ) : filings && filings.length > 0 ? (
-          <FilingsTable
-            filings={filings}
-            currentPage={currentPage}
-            onPageChange={setCurrentPage}
-          />
+          <FilingsTable filings={filings} />
         ) : (
           <div className="flex items-center justify-center h-48 text-gray-500">
             No filings found for the selected criteria

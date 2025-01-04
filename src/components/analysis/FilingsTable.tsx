@@ -10,8 +10,6 @@ import { Filing } from "@/types/filing";
 
 interface FilingsTableProps {
   filings: Filing[];
-  currentPage: number;
-  onPageChange: (page: number) => void;
 }
 
 export const FilingsTable = ({ filings }: FilingsTableProps) => {

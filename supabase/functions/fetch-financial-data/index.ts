@@ -12,21 +12,21 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, type, page = 0, from, to, query, year, quarter } = await req.json();
+    const { endpoint, symbol, type, from, to, query, year, quarter } = await req.json();
     const apiKey = Deno.env.get("FMP_API_KEY");
 
     if (!apiKey) {
       throw new Error("FMP_API_KEY is not set");
     }
 
-    console.log('Received request with params:', { endpoint, symbol, type, page, from, to, query });
+    console.log('Received request with params:', { endpoint, symbol, type, from, to, query });
 
     switch (endpoint) {
       case "sec-filings":
-        return await handleSecFilings(apiKey, symbol, type, page);
+        return await handleSecFilings(apiKey, symbol, type);
       
       case "company-news":
-        return await handleCompanyNews(apiKey, symbol, from, to, page);
+        return await handleCompanyNews(apiKey, symbol, from, to);
         
       case "transcript-dates":
         const transcriptDatesUrl = `https://financialmodelingprep.com/api/v4/earning_call_transcript?symbol=${symbol}&apikey=${apiKey}`;
