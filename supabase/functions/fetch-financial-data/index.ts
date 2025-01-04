@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol } = await req.json()
+    const { endpoint, symbol, from, to, page } = await req.json()
     console.log(`Processing request for endpoint: ${endpoint}, symbol: ${symbol}`)
 
     // Validate required parameters
@@ -36,7 +36,8 @@ serve(async (req) => {
       'key-metrics': 'key-metrics',
       'key-metrics-ttm': 'key-metrics-ttm',
       'key-metrics-historical': 'key-metrics',
-      'dcf': 'dcf'
+      'dcf': 'dcf',
+      'company-news': 'stock_news'
     }
 
     const fmpEndpoint = endpointMap[endpoint]
@@ -48,7 +49,25 @@ serve(async (req) => {
       )
     }
 
-    const url = `https://financialmodelingprep.com/api/v3/${fmpEndpoint}/${symbol}?apikey=${FMP_API_KEY}`
+    // Construct the base URL
+    let url = `https://financialmodelingprep.com/api/v3/${fmpEndpoint}`
+
+    // Add specific parameters based on endpoint
+    if (endpoint === 'company-news') {
+      url += `?tickers=${symbol}&limit=50`
+      if (from && to) {
+        url += `&from=${from}&to=${to}`
+      }
+      if (page) {
+        url += `&page=${page}`
+      }
+    } else {
+      url += `/${symbol}`
+    }
+
+    // Add API key
+    url += `${url.includes('?') ? '&' : '?'}apikey=${FMP_API_KEY}`
+
     console.log(`Fetching data from FMP API: ${url}`)
 
     const response = await fetch(url)
