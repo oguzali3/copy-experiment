@@ -5,3 +5,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.fetch-analyst-estimates]
 verify_jwt = false
+[functions.portfolio-operations]
+verify_jwt = false
