@@ -1,4 +1,32 @@
-export async function handleInsiderRoster(symbol: string, apiKey: string): Promise<any[]> {
+interface InsiderRoster {
+  typeOfOwner: string;
+  transactionDate: string;
+  owner: string;
+}
+
+interface InsiderTrade {
+  symbol: string;
+  filingDate: string;
+  transactionDate: string;
+  reportingName: string;
+  typeOfOwner: string;
+  transactionType: string;
+  securitiesOwned: number;
+  securitiesTransacted: number;
+  price: number;
+}
+
+interface InstitutionalHolder {
+  investorName: string;
+  filingDate: string;
+  sharesNumber: number;
+  ownership: number;
+  marketValue: number;
+  changeInSharesNumber: number;
+  changeInSharesNumberPercentage: number;
+}
+
+export async function handleInsiderRoster(symbol: string, apiKey: string): Promise<InsiderRoster[]> {
   const response = await fetch(
     `https://financialmodelingprep.com/api/v4/insider-roaster?symbol=${symbol}&apikey=${apiKey}`
   );
@@ -10,7 +38,7 @@ export async function handleInsiderRoster(symbol: string, apiKey: string): Promi
   return await response.json();
 }
 
-export async function handleInsiderTrades(symbol: string, apiKey: string): Promise<any[]> {
+export async function handleInsiderTrades(symbol: string, apiKey: string): Promise<InsiderTrade[]> {
   const response = await fetch(
     `https://financialmodelingprep.com/api/v4/insider-trading?symbol=${symbol}&page=0&apikey=${apiKey}`
   );
@@ -22,7 +50,7 @@ export async function handleInsiderTrades(symbol: string, apiKey: string): Promi
   return await response.json();
 }
 
-export async function handleInstitutionalHolders(symbol: string, apiKey: string): Promise<any[]> {
+export async function handleInstitutionalHolders(symbol: string, apiKey: string): Promise<InstitutionalHolder[]> {
   const date = new Date();
   const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   

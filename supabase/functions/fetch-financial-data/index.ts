@@ -17,6 +17,8 @@ serve(async (req) => {
     }
 
     let data;
+    console.log('Processing request for endpoint:', endpoint); // Debug log
+
     switch (endpoint) {
       case 'quote':
         data = await handleQuote(symbol, apiKey);
@@ -58,6 +60,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    console.error('Error processing request:', error); // Debug log
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
