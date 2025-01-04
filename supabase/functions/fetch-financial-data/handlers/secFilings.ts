@@ -12,10 +12,14 @@ export async function handleSecFilings(apiKey: string, symbol: string, type?: st
   
   // Filter filings by year if specified
   const filteredData = year 
-    ? data.filter((filing: any) => new Date(filing.fillingDate).getFullYear().toString() === year)
+    ? data.filter((filing: any) => {
+        const filingYear = new Date(filing.fillingDate).getFullYear().toString();
+        console.log(`Filing year: ${filingYear}, Selected year: ${year}, Match: ${filingYear === year}`);
+        return filingYear === year;
+      })
     : data;
   
-  console.log('Filtered SEC filings:', filteredData);
+  console.log(`Filtered SEC filings: Found ${filteredData.length} filings for year ${year}`);
   
   return new Response(JSON.stringify(filteredData), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },

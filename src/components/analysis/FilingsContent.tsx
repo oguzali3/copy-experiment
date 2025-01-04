@@ -16,6 +16,17 @@ export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
 
   const { data: filings, isLoading, error } = useFilings(ticker, selectedType, currentPage, selectedYear);
 
+  // Reset page when year or type changes
+  const handleYearChange = (year: string) => {
+    setSelectedYear(year);
+    setCurrentPage(0);
+  };
+
+  const handleTypeChange = (type: string) => {
+    setSelectedType(type);
+    setCurrentPage(0);
+  };
+
   if (error) {
     return (
       <div className="flex items-center justify-center h-48 text-red-500">
@@ -30,8 +41,8 @@ export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
         <FilingsSelector
           selectedType={selectedType}
           selectedYear={selectedYear}
-          onTypeChange={setSelectedType}
-          onYearChange={setSelectedYear}
+          onTypeChange={handleTypeChange}
+          onYearChange={handleYearChange}
         />
 
         {isLoading ? (
