@@ -1,5 +1,4 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,8 +6,6 @@ const corsHeaders = {
 }
 
 const FMP_API_KEY = Deno.env.get('FMP_API_KEY')
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -63,9 +60,12 @@ serve(async (req) => {
     }
 
     // Fetch financial statements
-    if (endpoint === 'income-statement' || endpoint === 'balance-sheet-statement' || endpoint === 'cash-flow-statement') {
+    const validEndpoints = ['income-statement', 'balance-sheet-statement', 'cash-flow-statement'];
+    if (validEndpoints.includes(endpoint)) {
       const periodParam = period === 'quarter' ? 'quarter' : 'annual'
       const url = `https://financialmodelingprep.com/api/v3/${endpoint}/${symbol}?period=${periodParam}&limit=${limit}&apikey=${FMP_API_KEY}`
+      
+      console.log(`Fetching ${endpoint} data for ${symbol} with period ${periodParam}`)
       const response = await fetch(url)
       const data = await response.json()
       
@@ -107,7 +107,7 @@ serve(async (req) => {
 
     console.error('Invalid endpoint requested:', endpoint)
     return new Response(
-      JSON.stringify({ error: 'Invalid endpoint' }),
+      JSON.stringify({ error: 'Invalid endpoint', requested: endpoint, validEndpoints: [...validEndpoints, 'search', 'profile', 'quote', 'key-metrics', 'financial-growth'] }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
     )
 
