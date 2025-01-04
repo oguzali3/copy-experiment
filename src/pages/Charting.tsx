@@ -16,94 +16,44 @@ const Charting = () => {
     queryFn: async () => {
       if (!selectedCompany?.symbol || !selectedMetrics.length) return null;
 
-      // Fetch all required financial data including TTM
+      // Fetch all required financial data
       const responses = await Promise.all([
         supabase.functions.invoke('fetch-financial-data', {
-          body: { 
-            endpoint: 'income-statement', 
-            symbol: selectedCompany.symbol,
-            period: 'annual',
-            limit: 10  // Fetch up to 10 years of data
-          }
+          body: { endpoint: 'income-statement', symbol: selectedCompany.symbol }
         }),
         supabase.functions.invoke('fetch-financial-data', {
-          body: { 
-            endpoint: 'income-statement', 
-            symbol: selectedCompany.symbol,
-            period: 'quarter'  // This will give us TTM data
-          }
+          body: { endpoint: 'balance-sheet-statement', symbol: selectedCompany.symbol }
         }),
         supabase.functions.invoke('fetch-financial-data', {
-          body: { 
-            endpoint: 'balance-sheet-statement', 
-            symbol: selectedCompany.symbol,
-            period: 'annual',
-            limit: 10
-          }
+          body: { endpoint: 'cash-flow-statement', symbol: selectedCompany.symbol }
         }),
         supabase.functions.invoke('fetch-financial-data', {
-          body: { 
-            endpoint: 'balance-sheet-statement', 
-            symbol: selectedCompany.symbol,
-            period: 'quarter'
-          }
+          body: { endpoint: 'key-metrics', symbol: selectedCompany.symbol }
         }),
         supabase.functions.invoke('fetch-financial-data', {
-          body: { 
-            endpoint: 'cash-flow-statement', 
-            symbol: selectedCompany.symbol,
-            period: 'annual',
-            limit: 10
-          }
-        }),
-        supabase.functions.invoke('fetch-financial-data', {
-          body: { 
-            endpoint: 'cash-flow-statement', 
-            symbol: selectedCompany.symbol,
-            period: 'quarter'
-          }
+          body: { endpoint: 'financial-growth', symbol: selectedCompany.symbol }
         })
       ]);
 
-      const [
-        annualIncome, 
-        quarterlyIncome, 
-        annualBalance, 
-        quarterlyBalance,
-        annualCashFlow,
-        quarterlyCashFlow
-      ] = responses.map(r => r.data);
-
-      // Calculate TTM data from quarterly data
-      const ttmData = quarterlyIncome?.slice(0, 4).reduce((acc: any, quarter: any) => {
-        selectedMetrics.forEach(metric => {
-          if (!acc[metric]) acc[metric] = 0;
-          acc[metric] += parseFloat(quarter[metric] || 0);
-        });
-        return acc;
-      }, { period: 'TTM' });
-
-      // Transform annual data
-      const transformedAnnual = annualIncome?.map((period: any, index: number) => {
+      // Transform data for the chart
+      const [income, balance, cashFlow, metrics, growth] = responses.map(r => r.data);
+      
+      return income?.map((period: any, index: number) => {
         const dataPoint: any = {
           period: new Date(period.date).getFullYear().toString()
         };
 
         selectedMetrics.forEach(metric => {
           // Add the metric value from the appropriate data source
-          if (annualIncome[index][metric]) dataPoint[metric] = annualIncome[index][metric];
-          if (annualBalance?.[index]?.[metric]) dataPoint[metric] = annualBalance[index][metric];
-          if (annualCashFlow?.[index]?.[metric]) dataPoint[metric] = annualCashFlow[index][metric];
+          if (income[index][metric]) dataPoint[metric] = income[index][metric];
+          if (balance?.[index]?.[metric]) dataPoint[metric] = balance[index][metric];
+          if (cashFlow?.[index]?.[metric]) dataPoint[metric] = cashFlow[index][metric];
+          if (metrics?.[index]?.[metric]) dataPoint[metric] = metrics[index][metric];
+          if (growth?.[index]?.[metric]) dataPoint[metric] = growth[index][metric];
         });
 
         return dataPoint;
       });
-
-      // Combine TTM with annual data if TTM exists and is different from most recent annual
-      const result = ttmData ? [ttmData, ...transformedAnnual] : transformedAnnual;
-      
-      console.log('Processed financial data:', result?.length, 'periods');
-      return result;
     },
     enabled: !!selectedCompany?.symbol && selectedMetrics.length > 0
   });
