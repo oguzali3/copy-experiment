@@ -29,15 +29,22 @@ serve(async (req) => {
         if (!from || !to) {
           throw new Error("From and to dates are required for RSS feed");
         }
-        url = `https://financialmodelingprep.com/api/v4/rss_feed?limit=100&from=${from}&to=${to}&apikey=${apiKey}`;
+        url = `https://financialmodelingprep.com/api/v3/rss_feed?page=0&datatype=csv&apikey=${apiKey}`;
         if (symbol) {
           url += `&ticker=${symbol}`;
         }
         console.log('Fetching RSS feed from URL:', url);
         const rssResponse = await fetch(url);
         const rssData = await rssResponse.json();
-        console.log('Raw RSS feed response:', rssData);
-        return new Response(JSON.stringify(rssData), {
+        
+        // Filter by date range
+        const filteredData = rssData.filter((filing: any) => {
+          const filingDate = new Date(filing.date);
+          return filingDate >= new Date(from) && filingDate <= new Date(to);
+        });
+        
+        console.log('Filtered RSS feed response:', filteredData);
+        return new Response(JSON.stringify(filteredData), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
