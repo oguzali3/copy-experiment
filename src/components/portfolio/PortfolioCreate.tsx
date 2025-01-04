@@ -58,6 +58,14 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
     setStocks(updatedStocks);
   };
 
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || stocks.length === 0) {
@@ -72,7 +80,7 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
     }));
 
     const portfolio: Portfolio = {
-      id: Date.now().toString(),
+      id: generateUUID(),
       name: name.trim(),
       stocks: stocksWithPercentage,
       totalValue
