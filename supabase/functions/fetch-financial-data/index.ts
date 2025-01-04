@@ -14,17 +14,28 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, year, quarter, from, to, page, query } = await req.json();
+    const { endpoint, symbol, type, page = 0 } = await req.json();
     const apiKey = Deno.env.get("FMP_API_KEY");
 
     if (!apiKey) {
       throw new Error("FMP_API_KEY is not set");
     }
 
-    console.log('Received request with params:', { endpoint, symbol, from, to, page, query, year, quarter });
+    console.log('Received request with params:', { endpoint, symbol, type, page });
 
     let url;
     switch (endpoint) {
+      case "sec-filings":
+        const typeParam = type ? `&type=${type}` : '';
+        url = `https://financialmodelingprep.com/api/v3/sec_filings/${symbol}?page=${page}${typeParam}&apikey=${apiKey}`;
+        console.log('Fetching SEC filings from URL:', url);
+        const filingsResponse = await fetch(url);
+        const filingsData = await filingsResponse.json();
+        console.log('Raw SEC filings API response:', filingsData);
+        return new Response(JSON.stringify(filingsData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       case "transcript-dates":
         url = `https://financialmodelingprep.com/api/v4/earning_call_transcript?symbol=${symbol}&apikey=${apiKey}`;
         console.log('Fetching transcript dates from URL:', url);
