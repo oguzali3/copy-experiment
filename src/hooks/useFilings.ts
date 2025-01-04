@@ -2,18 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Filing } from "@/types/filing";
 
-export const useFilings = (symbol: string, type: string, page: number, year: string) => {
+export const useFilings = (symbol: string, type: string, page: number) => {
   return useQuery<Filing[]>({
-    queryKey: ['sec-filings', symbol, type, page, year],
+    queryKey: ['sec-filings', symbol, type, page],
     queryFn: async () => {
-      console.log('Fetching SEC filings for:', { symbol, type, page, year });
+      console.log('Fetching SEC filings for:', { symbol, type, page });
       const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
         body: { 
           endpoint: 'sec-filings',
           symbol,
           type,
-          page,
-          year
+          page
         }
       });
 
@@ -25,6 +24,6 @@ export const useFilings = (symbol: string, type: string, page: number, year: str
       console.log('SEC filings received:', data);
       return data;
     },
-    enabled: !!symbol && !!type && !!year // Only fetch when all required parameters are provided
+    enabled: !!symbol && !!type // Only fetch when symbol and type are provided
   });
 };

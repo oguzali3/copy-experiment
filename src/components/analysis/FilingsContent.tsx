@@ -14,7 +14,14 @@ export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(0);
 
-  const { data: filings, isLoading, error } = useFilings(ticker, selectedType, currentPage, selectedYear);
+  const { data: allFilings, isLoading, error } = useFilings(ticker, selectedType, currentPage);
+
+  // Filter filings by year
+  const filings = allFilings?.filter(filing => {
+    if (!selectedYear) return true;
+    const filingYear = new Date(filing.fillingDate).getFullYear().toString();
+    return filingYear === selectedYear;
+  });
 
   // Reset page when year or type changes
   const handleYearChange = (year: string) => {
