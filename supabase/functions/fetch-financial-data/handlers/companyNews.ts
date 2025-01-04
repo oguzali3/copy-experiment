@@ -1,11 +1,14 @@
 import { corsHeaders } from '../utils/cors.ts';
 
-export async function handleCompanyNews(apiKey: string, symbol: string, from: string, to: string, page: number = 1) {
-  if (!from || !to) {
-    throw new Error("From and to dates are required for company news");
+export async function handleCompanyNews(apiKey: string, symbol: string, from?: string, to?: string) {
+  console.log('Handling company news request:', { symbol, from, to });
+  
+  let url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&apikey=${apiKey}`;
+  if (from && to) {
+    url += `&from=${from}&to=${to}`;
   }
   
-  const url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&page=${page}&from=${from}&to=${to}&apikey=${apiKey}`;
+  console.log('Fetching company news from URL:', url);
   const response = await fetch(url);
   const data = await response.json();
   
