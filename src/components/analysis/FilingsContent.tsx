@@ -15,11 +15,23 @@ export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
 
   const { data: allFilings, isLoading, error } = useFilings(ticker, selectedType);
 
-  // Filter filings by year
+  // Filter filings by year, including Q4 filings from the previous year
   const filings = allFilings?.filter(filing => {
     if (!selectedYear) return true;
-    const filingYear = new Date(filing.fillingDate).getFullYear().toString();
-    return filingYear === selectedYear;
+    
+    const filingDate = new Date(filing.fillingDate);
+    const filingYear = filingDate.getFullYear().toString();
+    
+    // For Q4 filings, they're typically filed in the following year
+    // So if we're looking at 2021, we should include Q4 filings from early 2022
+    if (filingYear === selectedYear) {
+      return true; // Include all filings from the selected year
+    } else if (filingYear === (parseInt(selectedYear) + 1).toString()) {
+      // Include Q4 filings that were filed in early next year (typically within first 2-3 months)
+      const filingMonth = filingDate.getMonth(); // 0-based, so 0-2 means Jan-Mar
+      return filingMonth <= 2; // Include filings from Jan-Mar of the following year
+    }
+    return false;
   });
 
   if (error) {
