@@ -4,6 +4,7 @@ import { handleSecFilings } from './handlers/secFilings.ts';
 import { handleCompanyNews } from './handlers/companyNews.ts';
 import { handleFinancialStatements } from './handlers/financialStatements.ts';
 import { handleInsiderTrades } from './handlers/insiderTrades.ts';
+import { handleInstitutionalHolders } from './handlers/institutionalHolders.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -37,6 +38,9 @@ serve(async (req) => {
       case "balance-sheet":
       case "cash-flow-statement":
         return await handleFinancialStatements(apiKey, symbol, endpoint);
+
+      case "institutional-holders":
+        return await handleInstitutionalHolders(apiKey, symbol);
 
       case "transcript-dates":
       case "transcript":
