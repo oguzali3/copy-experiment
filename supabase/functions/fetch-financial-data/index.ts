@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -6,6 +7,8 @@ const corsHeaders = {
 }
 
 const FMP_API_KEY = Deno.env.get('FMP_API_KEY')
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -14,81 +17,71 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, from, to, page } = await req.json()
-    console.log(`Processing request for endpoint: ${endpoint}, symbol: ${symbol}`)
+    const { endpoint, symbol, query } = await req.json()
 
-    // Validate required parameters
-    if (!endpoint || !symbol) {
-      console.error('Missing required parameters')
+    // Search companies
+    if (endpoint === 'search') {
+      const searchUrl = `https://financialmodelingprep.com/api/v3/search?query=${query}&limit=10&apikey=${FMP_API_KEY}`
+      const response = await fetch(searchUrl)
+      const data = await response.json()
+      
+      console.log(`Search results for "${query}":`, data.length, 'companies found')
+      
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        JSON.stringify(data),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Map frontend endpoints to FMP API endpoints
-    const endpointMap: Record<string, string> = {
-      'profile': 'profile',
-      'quote': 'quote',
-      'income-statement': 'income-statement',
-      'balance-sheet': 'balance-sheet',
-      'cash-flow-statement': 'cash-flow-statement',
-      'key-metrics': 'key-metrics',
-      'key-metrics-ttm': 'key-metrics-ttm',
-      'key-metrics-historical': 'key-metrics',
-      'dcf': 'dcf',
-      'company-news': 'stock_news'
-    }
-
-    const fmpEndpoint = endpointMap[endpoint]
-    if (!fmpEndpoint) {
-      console.error(`Invalid endpoint requested: ${endpoint}`)
+    // Fetch financial statements
+    if (endpoint === 'income-statement' || endpoint === 'balance-sheet-statement' || endpoint === 'cash-flow-statement') {
+      const url = `https://financialmodelingprep.com/api/v3/${endpoint}/${symbol}?period=annual&limit=5&apikey=${FMP_API_KEY}`
+      const response = await fetch(url)
+      const data = await response.json()
+      
+      console.log(`Fetched ${endpoint} for ${symbol}:`, data.length, 'periods')
+      
       return new Response(
-        JSON.stringify({ error: 'Invalid endpoint', validEndpoints: Object.keys(endpointMap) }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        JSON.stringify(data),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Construct the base URL
-    let url = `https://financialmodelingprep.com/api/v3/${fmpEndpoint}`
-
-    // Add specific parameters based on endpoint
-    if (endpoint === 'company-news') {
-      url += `?tickers=${symbol}&limit=50`
-      if (from && to) {
-        url += `&from=${from}&to=${to}`
-      }
-      if (page) {
-        url += `&page=${page}`
-      }
-    } else {
-      url += `/${symbol}`
-    }
-
-    // Add API key
-    url += `${url.includes('?') ? '&' : '?'}apikey=${FMP_API_KEY}`
-
-    console.log(`Fetching data from FMP API: ${url}`)
-
-    const response = await fetch(url)
-    const data = await response.json()
-
-    if (!response.ok) {
-      console.error(`FMP API error: ${response.status} ${response.statusText}`)
+    // Fetch key metrics
+    if (endpoint === 'key-metrics') {
+      const url = `https://financialmodelingprep.com/api/v3/key-metrics/${symbol}?limit=5&apikey=${FMP_API_KEY}`
+      const response = await fetch(url)
+      const data = await response.json()
+      
+      console.log(`Fetched key metrics for ${symbol}:`, data.length, 'periods')
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch data from FMP API', details: data }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
+        JSON.stringify(data),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log(`Successfully fetched data for ${endpoint}`)
+    // Fetch financial growth
+    if (endpoint === 'financial-growth') {
+      const url = `https://financialmodelingprep.com/api/v3/financial-growth/${symbol}?apikey=${FMP_API_KEY}`
+      const response = await fetch(url)
+      const data = await response.json()
+      
+      console.log(`Fetched financial growth for ${symbol}:`, data.length, 'periods')
+      
+      return new Response(
+        JSON.stringify(data),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     return new Response(
-      JSON.stringify(data),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Invalid endpoint' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
     )
 
   } catch (error) {
-    console.error('Error processing request:', error)
+    console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
