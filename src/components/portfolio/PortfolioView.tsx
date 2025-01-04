@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings, PlusCircle, Trash2 } from "lucide-react";
+import { Settings, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 import { CompanySearch } from "../CompanySearch";
 import { PortfolioAllocationChart } from "./PortfolioAllocationChart";
 import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
@@ -36,6 +37,80 @@ export const PortfolioView = ({
   const [shares, setShares] = useState("");
   const [avgPrice, setAvgPrice] = useState("");
 
+  // Add state for real-time market data
+  const [marketData, setMarketData] = useState<Record<string, any>>({});
+  const [isLoadingMarketData, setIsLoadingMarketData] = useState(false);
+
+  // Fetch real-time market data for all stocks in the portfolio
+  useEffect(() => {
+    const fetchMarketData = async () => {
+      if (portfolio.stocks.length === 0) return;
+      
+      setIsLoadingMarketData(true);
+      try {
+        const tickers = portfolio.stocks.map(stock => stock.ticker);
+        const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+          body: { 
+            endpoint: 'portfolio-operations',
+            tickers 
+          }
+        });
+
+        if (error) throw error;
+
+        // Transform array to object for easier lookup
+        const marketDataMap = data.reduce((acc: Record<string, any>, item: any) => {
+          acc[item.ticker] = item;
+          return acc;
+        }, {});
+
+        setMarketData(marketDataMap);
+        
+        // Update portfolio with real market data
+        const updatedStocks = portfolio.stocks.map(stock => {
+          const currentPrice = marketDataMap[stock.ticker]?.currentPrice || stock.currentPrice;
+          const marketValue = currentPrice * stock.shares;
+          const gainLoss = marketValue - (stock.avgPrice * stock.shares);
+          const gainLossPercent = ((currentPrice - stock.avgPrice) / stock.avgPrice) * 100;
+
+          return {
+            ...stock,
+            currentPrice,
+            marketValue,
+            gainLoss,
+            gainLossPercent
+          };
+        });
+
+        const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
+        
+        // Update percentages based on new market values
+        const stocksWithUpdatedPercentages = updatedStocks.map(stock => ({
+          ...stock,
+          percentOfPortfolio: (stock.marketValue / totalValue) * 100
+        }));
+
+        onUpdatePortfolio({
+          ...portfolio,
+          stocks: stocksWithUpdatedPercentages,
+          totalValue
+        });
+
+      } catch (error) {
+        console.error('Error fetching market data:', error);
+        toast.error('Failed to fetch market data');
+      } finally {
+        setIsLoadingMarketData(false);
+      }
+    };
+
+    // Fetch initially and then every minute
+    fetchMarketData();
+    const interval = setInterval(fetchMarketData, 60000);
+
+    return () => clearInterval(interval);
+  }, [portfolio.stocks]);
+
   const handleUpdatePortfolioName = () => {
     onUpdatePortfolio({
       ...portfolio,
@@ -60,26 +135,17 @@ export const PortfolioView = ({
       name: selectedCompany.name,
       shares: Number(shares),
       avgPrice: Number(avgPrice),
-      currentPrice: Math.random() * 1000, // Mock price
-      marketValue: Number(shares) * Number(avgPrice),
+      currentPrice: marketData[selectedCompany.ticker]?.currentPrice || 0,
+      marketValue: 0, // Will be calculated when market data is fetched
       percentOfPortfolio: 0,
       gainLoss: 0,
       gainLossPercent: 0
     };
 
     const updatedStocks = [...portfolio.stocks, newStock];
-    const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
-    
-    // Recalculate percentages for all stocks
-    const stocksWithUpdatedPercentages = updatedStocks.map(stock => ({
-      ...stock,
-      percentOfPortfolio: (stock.marketValue / totalValue) * 100
-    }));
-
     onUpdatePortfolio({
       ...portfolio,
-      stocks: stocksWithUpdatedPercentages,
-      totalValue
+      stocks: updatedStocks
     });
 
     setIsAddingTicker(false);
@@ -205,8 +271,16 @@ export const PortfolioView = ({
       </div>
 
       <PortfolioTable 
-        stocks={portfolio.stocks} 
-        onDeletePosition={handleDeletePosition}
+        stocks={portfolio.stocks}
+        isLoading={isLoadingMarketData}
+        onDeletePosition={(ticker) => {
+          const updatedStocks = portfolio.stocks.filter(stock => stock.ticker !== ticker);
+          onUpdatePortfolio({
+            ...portfolio,
+            stocks: updatedStocks
+          });
+          toast.success(`Removed ${ticker} from portfolio`);
+        }}
       />
 
       <div className="flex justify-end">

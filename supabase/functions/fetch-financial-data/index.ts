@@ -5,6 +5,7 @@ import { handleCompanyNews } from './handlers/companyNews.ts';
 import { handleFinancialStatements } from './handlers/financialStatements.ts';
 import { handleInsiderTrades } from './handlers/insiderTrades.ts';
 import { handleInstitutionalHolders } from './handlers/institutionalHolders.ts';
+import { handlePortfolioOperations } from './handlers/portfolioOperations.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -15,16 +16,19 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, type, from, to, query, year, quarter } = await req.json();
+    const { endpoint, symbol, type, from, to, query, year, quarter, tickers } = await req.json();
     const apiKey = Deno.env.get("FMP_API_KEY");
 
     if (!apiKey) {
       throw new Error("FMP_API_KEY is not set");
     }
 
-    console.log('Received request with params:', { endpoint, symbol, type, from, to, query });
+    console.log('Received request with params:', { endpoint, symbol, type, from, to, query, tickers });
 
     switch (endpoint) {
+      case "portfolio-operations":
+        return await handlePortfolioOperations(apiKey, tickers);
+        
       case "insider-trades":
         return await handleInsiderTrades(apiKey, symbol);
         

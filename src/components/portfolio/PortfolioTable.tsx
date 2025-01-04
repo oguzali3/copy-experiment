@@ -12,12 +12,18 @@ import { Stock } from "./PortfolioContent";
 
 interface PortfolioTableProps {
   stocks: Stock[];
+  isLoading?: boolean;
   onDeletePosition: (ticker: string) => void;
 }
 
-export const PortfolioTable = ({ stocks, onDeletePosition }: PortfolioTableProps) => {
+export const PortfolioTable = ({ stocks, isLoading, onDeletePosition }: PortfolioTableProps) => {
   return (
-    <div className="bg-white rounded-lg shadow-sm">
+    <div className="bg-white rounded-lg shadow-sm relative">
+      {isLoading && (
+        <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
+          <div className="animate-pulse text-gray-500">Updating market data...</div>
+        </div>
+      )}
       <Table>
         <TableHeader>
           <TableRow>
