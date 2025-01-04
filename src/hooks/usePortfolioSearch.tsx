@@ -5,7 +5,6 @@ export const usePortfolioSearch = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
 
   const searchStocks = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -37,8 +36,6 @@ export const usePortfolioSearch = () => {
     setSearchQuery,
     results,
     isLoading,
-    isOpen,
-    setIsOpen,
     searchStocks
   };
 };
