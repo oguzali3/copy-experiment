@@ -18,9 +18,9 @@ interface InstitutionalHolder {
   holder: string;
   dateReported: string;
   shares: number;
-  value: number;
+  value: number | null;
   change: number;
-  weightPercent?: number;
+  weightPercent?: number | null;
 }
 
 export const HoldersTable = ({ ticker = "AAPL" }: HoldersTableProps) => {
@@ -79,8 +79,8 @@ export const HoldersTable = ({ ticker = "AAPL" }: HoldersTableProps) => {
               <TableRow key={index}>
                 <TableCell className="font-medium">{holder.holder}</TableCell>
                 <TableCell>{new Date(holder.dateReported).toLocaleDateString()}</TableCell>
-                <TableCell className="text-right">{(holder.weightPercent || 0).toFixed(2)}%</TableCell>
-                <TableCell className="text-right">${(holder.value / 1e9).toFixed(2)}B</TableCell>
+                <TableCell className="text-right text-gray-500">N/A</TableCell>
+                <TableCell className="text-right text-gray-500">N/A</TableCell>
                 <TableCell className="text-right">{(holder.shares / 1e6).toFixed(2)}M</TableCell>
                 <TableCell className="text-right">
                   <div className={`flex items-center justify-end ${changePercent > 0 ? 'text-green-500' : 'text-red-500'}`}>
