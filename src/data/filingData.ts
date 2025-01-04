@@ -3,276 +3,246 @@ import { FilingData } from "@/types/filing";
 export const filingData: FilingData = {
   AAPL: [
     {
-      id: "1",
+      symbol: "AAPL",
       type: "10-Q",
-      title: "Quarterly Report",
-      date: "2024-01-15",
-      form: "Form 10-Q",
-      description: "Quarterly report for the period ending December 31, 2023",
-      url: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019324000006/aapl-20231230.htm"
+      link: "https://www.sec.gov/Archives/edgar/data/320193/000032019324000006/0000320193-24-000006-index.htm",
+      finalLink: "https://www.sec.gov/Archives/edgar/data/320193/000032019324000006/aapl-20231230.htm",
+      acceptedDate: "2024-01-15 18:03:34",
+      fillingDate: "2024-01-15"
     },
     {
-      id: "2",
+      symbol: "AAPL",
       type: "10-K",
-      title: "Annual Report",
-      date: "2023-11-03",
-      form: "Form 10-K",
-      description: "Annual report for the fiscal year ending September 30, 2023",
-      url: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm"
+      link: "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/0000320193-23-000106-index.htm",
+      finalLink: "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/aapl-20230930.htm",
+      acceptedDate: "2023-11-03 18:01:14",
+      fillingDate: "2023-11-03"
     },
     {
-      id: "3",
+      symbol: "AAPL",
       type: "8-K",
-      title: "Current Report",
-      date: "2023-10-15",
-      form: "Form 8-K",
-      description: "Results of Operations and Financial Condition",
-      url: "#"
+      link: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019324000006/aapl-20231015.htm",
+      finalLink: "#",
+      acceptedDate: "2023-10-15 18:00:00",
+      fillingDate: "2023-10-15"
     },
     {
-      id: "4",
+      symbol: "AAPL",
       type: "10-Q",
-      title: "Quarterly Report",
-      date: "2023-07-20",
-      form: "Form 10-Q",
-      description: "Quarterly report for Q3 2023",
-      url: "#"
+      link: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019323000106/aapl-20230720.htm",
+      finalLink: "#",
+      acceptedDate: "2023-07-20 18:00:00",
+      fillingDate: "2023-07-20"
     },
     {
-      id: "5",
+      symbol: "AAPL",
       type: "8-K",
-      title: "Current Report",
-      date: "2023-07-15",
-      form: "Form 8-K",
-      description: "Disclosure of Financial Results",
-      url: "#"
+      link: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019324000006/aapl-20230715.htm",
+      finalLink: "#",
+      acceptedDate: "2023-07-15 18:00:00",
+      fillingDate: "2023-07-15"
     },
     {
-      id: "6",
+      symbol: "AAPL",
       type: "10-Q",
-      title: "Quarterly Report",
-      date: "2023-04-15",
-      form: "Form 10-Q",
-      description: "Quarterly report for Q2 2023",
-      url: "#"
+      link: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019323000106/aapl-20230415.htm",
+      finalLink: "#",
+      acceptedDate: "2023-04-15 18:00:00",
+      fillingDate: "2023-04-15"
     },
     {
-      id: "7",
+      symbol: "AAPL",
       type: "8-K",
-      title: "Current Report",
-      date: "2023-04-10",
-      form: "Form 8-K",
-      description: "Changes in Directors or Principal Officers",
-      url: "#"
+      link: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019324000006/aapl-20230410.htm",
+      finalLink: "#",
+      acceptedDate: "2023-04-10 18:00:00",
+      fillingDate: "2023-04-10"
     },
     {
-      id: "8",
+      symbol: "AAPL",
       type: "10-Q",
-      title: "Quarterly Report",
-      date: "2023-01-15",
-      form: "Form 10-Q",
-      description: "Quarterly report for Q1 2023",
-      url: "#"
+      link: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019323000106/aapl-20230115.htm",
+      finalLink: "#",
+      acceptedDate: "2023-01-15 18:00:00",
+      fillingDate: "2023-01-15"
     },
     {
-      id: "9",
+      symbol: "AAPL",
       type: "8-K",
-      title: "Current Report",
-      date: "2023-01-10",
-      form: "Form 8-K",
-      description: "Entry into Material Agreement",
-      url: "#"
+      link: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019324000006/aapl-20230110.htm",
+      finalLink: "#",
+      acceptedDate: "2023-01-10 18:00:00",
+      fillingDate: "2023-01-10"
     },
     {
-      id: "10",
+      symbol: "AAPL",
       type: "10-K",
-      title: "Annual Report",
-      date: "2022-11-05",
-      form: "Form 10-K",
-      description: "Annual report for fiscal year 2022",
-      url: "#"
+      link: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019323000106/aapl-20221105.htm",
+      finalLink: "#",
+      acceptedDate: "2022-11-05 18:00:00",
+      fillingDate: "2022-11-05"
     },
     {
-      id: "11",
+      symbol: "AAPL",
       type: "8-K",
-      title: "Current Report",
-      date: "2022-10-20",
-      form: "Form 8-K",
-      description: "Amendments to Articles of Inc. or Bylaws",
-      url: "#"
+      link: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019324000006/aapl-20221020.htm",
+      finalLink: "#",
+      acceptedDate: "2022-10-20 18:00:00",
+      fillingDate: "2022-10-20"
     },
     {
-      id: "12",
+      symbol: "AAPL",
       type: "10-Q",
-      title: "Quarterly Report",
-      date: "2022-07-15",
-      form: "Form 10-Q",
-      description: "Quarterly report for Q3 2022",
-      url: "#"
+      link: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019323000106/aapl-20220715.htm",
+      finalLink: "#",
+      acceptedDate: "2022-07-15 18:00:00",
+      fillingDate: "2022-07-15"
     },
     {
-      id: "13",
+      symbol: "AAPL",
       type: "8-K",
-      title: "Current Report",
-      date: "2022-07-10",
-      form: "Form 8-K",
-      description: "Other Events",
-      url: "#"
+      link: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019324000006/aapl-20220710.htm",
+      finalLink: "#",
+      acceptedDate: "2022-07-10 18:00:00",
+      fillingDate: "2022-07-10"
     },
     {
-      id: "14",
+      symbol: "AAPL",
       type: "10-Q",
-      title: "Quarterly Report",
-      date: "2022-04-15",
-      form: "Form 10-Q",
-      description: "Quarterly report for Q2 2022",
-      url: "#"
+      link: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019323000106/aapl-20220415.htm",
+      finalLink: "#",
+      acceptedDate: "2022-04-15 18:00:00",
+      fillingDate: "2022-04-15"
     },
     {
-      id: "15",
+      symbol: "AAPL",
       type: "8-K",
-      title: "Current Report",
-      date: "2022-04-10",
-      form: "Form 8-K",
-      description: "Regulation FD Disclosure",
-      url: "#"
+      link: "https://www.sec.gov/ix?doc=/Archives/edgar/data/320193/000032019324000006/aapl-20220410.htm",
+      finalLink: "#",
+      acceptedDate: "2022-04-10 18:00:00",
+      fillingDate: "2022-04-10"
     }
   ],
   MSFT: [
     {
-      id: "1",
+      symbol: "MSFT",
       type: "10-Q",
-      title: "Quarterly Report",
-      date: "2024-01-20",
-      form: "Form 10-Q",
-      description: "Quarterly report for Q4 2023",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000001/msft-20240120.htm",
+      finalLink: "#",
+      acceptedDate: "2024-01-20 18:00:00",
+      fillingDate: "2024-01-20"
     },
     {
-      id: "2",
+      symbol: "MSFT",
       type: "10-K",
-      title: "Annual Report",
-      date: "2023-11-10",
-      form: "Form 10-K",
-      description: "Annual report for fiscal year 2023",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000002/msft-20231110.htm",
+      finalLink: "#",
+      acceptedDate: "2023-11-10 18:00:00",
+      fillingDate: "2023-11-10"
     },
     {
-      id: "3",
+      symbol: "MSFT",
       type: "8-K",
-      title: "Current Report",
-      date: "2023-10-20",
-      form: "Form 8-K",
-      description: "Results of Operations and Financial Condition",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000003/msft-20231020.htm",
+      finalLink: "#",
+      acceptedDate: "2023-10-20 18:00:00",
+      fillingDate: "2023-10-20"
     },
     {
-      id: "4",
+      symbol: "MSFT",
       type: "10-Q",
-      title: "Quarterly Report",
-      date: "2023-07-25",
-      form: "Form 10-Q",
-      description: "Quarterly report for Q3 2023",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000004/msft-20230725.htm",
+      finalLink: "#",
+      acceptedDate: "2023-07-25 18:00:00",
+      fillingDate: "2023-07-25"
     },
     {
-      id: "5",
+      symbol: "MSFT",
       type: "8-K",
-      title: "Current Report",
-      date: "2023-07-20",
-      form: "Form 8-K",
-      description: "Disclosure of Financial Results",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000005/msft-20230720.htm",
+      finalLink: "#",
+      acceptedDate: "2023-07-20 18:00:00",
+      fillingDate: "2023-07-20"
     },
     {
-      id: "6",
+      symbol: "MSFT",
       type: "10-Q",
-      title: "Quarterly Report",
-      date: "2023-04-20",
-      form: "Form 10-Q",
-      description: "Quarterly report for Q2 2023",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000006/msft-20230420.htm",
+      finalLink: "#",
+      acceptedDate: "2023-04-20 18:00:00",
+      fillingDate: "2023-04-20"
     },
     {
-      id: "7",
+      symbol: "MSFT",
       type: "8-K",
-      title: "Current Report",
-      date: "2023-04-15",
-      form: "Form 8-K",
-      description: "Changes in Directors or Principal Officers",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000007/msft-20230415.htm",
+      finalLink: "#",
+      acceptedDate: "2023-04-15 18:00:00",
+      fillingDate: "2023-04-15"
     },
     {
-      id: "8",
+      symbol: "MSFT",
       type: "10-Q",
-      title: "Quarterly Report",
-      date: "2023-01-20",
-      form: "Form 10-Q",
-      description: "Quarterly report for Q1 2023",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000008/msft-20230120.htm",
+      finalLink: "#",
+      acceptedDate: "2023-01-20 18:00:00",
+      fillingDate: "2023-01-20"
     },
     {
-      id: "9",
+      symbol: "MSFT",
       type: "8-K",
-      title: "Current Report",
-      date: "2023-01-15",
-      form: "Form 8-K",
-      description: "Entry into Material Agreement",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000009/msft-20230115.htm",
+      finalLink: "#",
+      acceptedDate: "2023-01-15 18:00:00",
+      fillingDate: "2023-01-15"
     },
     {
-      id: "10",
+      symbol: "MSFT",
       type: "10-K",
-      title: "Annual Report",
-      date: "2022-11-10",
-      form: "Form 10-K",
-      description: "Annual report for fiscal year 2022",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000010/msft-20221110.htm",
+      finalLink: "#",
+      acceptedDate: "2022-11-10 18:00:00",
+      fillingDate: "2022-11-10"
     },
     {
-      id: "11",
+      symbol: "MSFT",
       type: "8-K",
-      title: "Current Report",
-      date: "2022-10-25",
-      form: "Form 8-K",
-      description: "Amendments to Articles of Inc. or Bylaws",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000011/msft-20221025.htm",
+      finalLink: "#",
+      acceptedDate: "2022-10-25 18:00:00",
+      fillingDate: "2022-10-25"
     },
     {
-      id: "12",
+      symbol: "MSFT",
       type: "10-Q",
-      title: "Quarterly Report",
-      date: "2022-07-20",
-      form: "Form 10-Q",
-      description: "Quarterly report for Q3 2022",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000012/msft-20220720.htm",
+      finalLink: "#",
+      acceptedDate: "2022-07-20 18:00:00",
+      fillingDate: "2022-07-20"
     },
     {
-      id: "13",
+      symbol: "MSFT",
       type: "8-K",
-      title: "Current Report",
-      date: "2022-07-15",
-      form: "Form 8-K",
-      description: "Other Events",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000013/msft-20220715.htm",
+      finalLink: "#",
+      acceptedDate: "2022-07-15 18:00:00",
+      fillingDate: "2022-07-15"
     },
     {
-      id: "14",
+      symbol: "MSFT",
       type: "10-Q",
-      title: "Quarterly Report",
-      date: "2022-04-20",
-      form: "Form 10-Q",
-      description: "Quarterly report for Q2 2022",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000014/msft-20220420.htm",
+      finalLink: "#",
+      acceptedDate: "2022-04-20 18:00:00",
+      fillingDate: "2022-04-20"
     },
     {
-      id: "15",
+      symbol: "MSFT",
       type: "8-K",
-      title: "Current Report",
-      date: "2022-04-15",
-      form: "Form 8-K",
-      description: "Regulation FD Disclosure",
-      url: "#"
+      link: "https://www.sec.gov/Archives/edgar/data/789019/000156459024000015/msft-20220415.htm",
+      finalLink: "#",
+      acceptedDate: "2022-04-15 18:00:00",
+      fillingDate: "2022-04-15"
     }
   ]
 };
