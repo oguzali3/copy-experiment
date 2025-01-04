@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button"; // Add Button import
 import { PortfolioAllocationChart } from "./PortfolioAllocationChart";
 import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
 import { PortfolioTable } from "./PortfolioTable";
