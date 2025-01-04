@@ -6,8 +6,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Filing } from "@/types/filing";
 
 interface FilingsTableProps {
@@ -16,7 +14,7 @@ interface FilingsTableProps {
   onPageChange: (page: number) => void;
 }
 
-export const FilingsTable = ({ filings, currentPage, onPageChange }: FilingsTableProps) => {
+export const FilingsTable = ({ filings }: FilingsTableProps) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -53,25 +51,6 @@ export const FilingsTable = ({ filings, currentPage, onPageChange }: FilingsTabl
           ))}
         </TableBody>
       </Table>
-
-      <div className="flex justify-center gap-2 mt-4">
-        <Button
-          variant="outline"
-          onClick={() => onPageChange(Math.max(0, currentPage - 1))}
-          disabled={currentPage === 0}
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={filings.length === 0}
-        >
-          Next
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
     </div>
   );
 };
