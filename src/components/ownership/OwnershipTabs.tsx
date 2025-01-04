@@ -1,6 +1,5 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { InsidersTable } from "./InsidersTable";
-import { TradesTable } from "./TradesTable";
 import { HoldersTable } from "./HoldersTable";
 
 interface OwnershipTabsProps {
@@ -15,13 +14,7 @@ export const OwnershipTabs = ({ ticker = "AAPL" }: OwnershipTabsProps) => {
           value="insiders"
           className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#077dfa] data-[state=active]:bg-blue-50/50 data-[state=active]:text-[#077dfa] px-8 py-3"
         >
-          Insiders
-        </TabsTrigger>
-        <TabsTrigger
-          value="trades"
-          className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#077dfa] data-[state=active]:bg-blue-50/50 data-[state=active]:text-[#077dfa] px-8 py-3"
-        >
-          Trades
+          Insider Transactions
         </TabsTrigger>
         <TabsTrigger
           value="holders"
@@ -32,9 +25,6 @@ export const OwnershipTabs = ({ ticker = "AAPL" }: OwnershipTabsProps) => {
       </TabsList>
       <TabsContent value="insiders" className="mt-6">
         <InsidersTable ticker={ticker} />
-      </TabsContent>
-      <TabsContent value="trades" className="mt-6">
-        <TradesTable ticker={ticker} />
       </TabsContent>
       <TabsContent value="holders" className="mt-6">
         <HoldersTable ticker={ticker} />
