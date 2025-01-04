@@ -16,12 +16,18 @@ export const FilingsContent = ({ ticker = "AAPL" }: FilingsContentProps) => {
 
   const { data: allFilings, isLoading, error } = useFilings(ticker, selectedType, currentPage);
 
-  // Filter filings by year
-  const filings = allFilings?.filter(filing => {
+  // Filter filings by year before pagination
+  const yearFilteredFilings = allFilings?.filter(filing => {
     if (!selectedYear) return true;
     const filingYear = new Date(filing.fillingDate).getFullYear().toString();
     return filingYear === selectedYear;
   });
+
+  // Paginate the filtered results (10 items per page)
+  const ITEMS_PER_PAGE = 10;
+  const startIndex = 0;
+  const endIndex = yearFilteredFilings?.length || 0;
+  const filings = yearFilteredFilings?.slice(startIndex, endIndex);
 
   // Reset page when year or type changes
   const handleYearChange = (year: string) => {
