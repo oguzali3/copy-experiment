@@ -7,9 +7,7 @@ const corsHeaders = {
 }
 
 interface RequestBody {
-  action: 'getPortfolio' | 'createPortfolio' | 'updatePortfolio' | 'deletePortfolio' | 'searchStocks';
-  portfolioData?: any;
-  portfolioId?: string;
+  action: 'searchStocks';
   query?: string;
 }
 
@@ -74,34 +72,6 @@ serve(async (req) => {
             }
           )
         }
-
-      case 'getPortfolio':
-        // TODO: Implement get portfolio logic
-        return new Response(
-          JSON.stringify({ message: 'Get portfolio endpoint ready' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-
-      case 'createPortfolio':
-        // TODO: Implement create portfolio logic
-        return new Response(
-          JSON.stringify({ message: 'Create portfolio endpoint ready' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-
-      case 'updatePortfolio':
-        // TODO: Implement update portfolio logic
-        return new Response(
-          JSON.stringify({ message: 'Update portfolio endpoint ready' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-
-      case 'deletePortfolio':
-        // TODO: Implement delete portfolio logic
-        return new Response(
-          JSON.stringify({ message: 'Delete portfolio endpoint ready' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
 
       default:
         return new Response(

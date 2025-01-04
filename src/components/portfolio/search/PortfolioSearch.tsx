@@ -1,5 +1,5 @@
 import { usePortfolioSearch } from "@/hooks/usePortfolioSearch";
-import { useRef, useEffect } from "react";
+import { useEffect } from "react";
 import {
   Command,
   CommandDialog,
