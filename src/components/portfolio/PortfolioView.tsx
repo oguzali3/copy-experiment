@@ -36,10 +36,9 @@ export const PortfolioView = ({
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [shares, setShares] = useState("");
   const [avgPrice, setAvgPrice] = useState("");
-
-  // Add state for real-time market data
   const [marketData, setMarketData] = useState<Record<string, any>>({});
   const [isLoadingMarketData, setIsLoadingMarketData] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Fetch real-time market data for all stocks in the portfolio
   useEffect(() => {
@@ -65,6 +64,7 @@ export const PortfolioView = ({
         }, {});
 
         setMarketData(marketDataMap);
+        setLastUpdated(new Date());
         
         // Update portfolio with real market data
         const updatedStocks = portfolio.stocks.map(stock => {
@@ -104,9 +104,9 @@ export const PortfolioView = ({
       }
     };
 
-    // Fetch initially and then every minute
+    // Fetch initially and then every 3 minutes
     fetchMarketData();
-    const interval = setInterval(fetchMarketData, 60000);
+    const interval = setInterval(fetchMarketData, 180000); // 3 minutes in milliseconds
 
     return () => clearInterval(interval);
   }, [portfolio.stocks]);
@@ -176,7 +176,14 @@ export const PortfolioView = ({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{portfolio.name}</h1>
+        <div>
+          <h1 className="text-2xl font-semibold">{portfolio.name}</h1>
+          {lastUpdated && (
+            <p className="text-sm text-gray-500">
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </p>
+          )}
+        </div>
         <div className="flex items-center gap-4">
           <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DialogTrigger asChild>
@@ -273,14 +280,7 @@ export const PortfolioView = ({
       <PortfolioTable 
         stocks={portfolio.stocks}
         isLoading={isLoadingMarketData}
-        onDeletePosition={(ticker) => {
-          const updatedStocks = portfolio.stocks.filter(stock => stock.ticker !== ticker);
-          onUpdatePortfolio({
-            ...portfolio,
-            stocks: updatedStocks
-          });
-          toast.success(`Removed ${ticker} from portfolio`);
-        }}
+        onDeletePosition={handleDeletePosition}
       />
 
       <div className="flex justify-end">
