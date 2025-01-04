@@ -43,7 +43,7 @@ serve(async (req) => {
     if (!fmpEndpoint) {
       console.error(`Invalid endpoint requested: ${endpoint}`)
       return new Response(
-        JSON.stringify({ error: 'Invalid endpoint' }),
+        JSON.stringify({ error: 'Invalid endpoint', validEndpoints: Object.keys(endpointMap) }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
     }
@@ -57,7 +57,7 @@ serve(async (req) => {
     if (!response.ok) {
       console.error(`FMP API error: ${response.status} ${response.statusText}`)
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch data from FMP API' }),
+        JSON.stringify({ error: 'Failed to fetch data from FMP API', details: data }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
       )
     }
