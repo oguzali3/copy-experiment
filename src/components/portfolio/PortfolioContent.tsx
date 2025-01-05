@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PortfolioEmpty } from "./PortfolioEmpty";
 import { PortfolioCreate } from "./PortfolioCreate";
 import { PortfolioView } from "./PortfolioView";
@@ -30,15 +30,72 @@ export const PortfolioContent = () => {
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
+  useEffect(() => {
+    fetchPortfolios();
+  }, []);
+
+  const fetchPortfolios = async () => {
+    try {
+      const { data: portfoliosData, error: portfoliosError } = await supabase
+        .from('portfolios')
+        .select(`
+          id,
+          name,
+          total_value,
+          portfolio_stocks (
+            id,
+            ticker,
+            name,
+            shares,
+            avg_price,
+            current_price,
+            market_value,
+            percent_of_portfolio,
+            gain_loss,
+            gain_loss_percent
+          )
+        `);
+
+      if (portfoliosError) throw portfoliosError;
+
+      if (portfoliosData) {
+        const formattedPortfolios: Portfolio[] = portfoliosData.map(p => ({
+          id: p.id,
+          name: p.name,
+          totalValue: p.total_value || 0,
+          stocks: (p.portfolio_stocks || []).map(s => ({
+            ticker: s.ticker,
+            name: s.name,
+            shares: s.shares,
+            avgPrice: s.avg_price,
+            currentPrice: s.current_price || 0,
+            marketValue: s.market_value || 0,
+            percentOfPortfolio: s.percent_of_portfolio || 0,
+            gainLoss: s.gain_loss || 0,
+            gainLossPercent: s.gain_loss_percent || 0
+          }))
+        }));
+        setPortfolios(formattedPortfolios);
+        if (formattedPortfolios.length > 0 && !selectedPortfolio) {
+          setSelectedPortfolio(formattedPortfolios[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching portfolios:', error);
+      toast.error("Failed to fetch portfolios");
+    }
+  };
+
   const handleCreatePortfolio = async (portfolio: Portfolio) => {
     try {
-      // Insert the portfolio
+      // Insert the portfolio with user_id
       const { data: portfolioData, error: portfolioError } = await supabase
         .from('portfolios')
         .insert([
           {
             name: portfolio.name,
             total_value: portfolio.totalValue,
+            user_id: (await supabase.auth.getUser()).data.user?.id
           }
         ])
         .select()
@@ -47,24 +104,26 @@ export const PortfolioContent = () => {
       if (portfolioError) throw portfolioError;
 
       // Insert the stocks
-      const stocksToInsert = portfolio.stocks.map(stock => ({
-        portfolio_id: portfolioData.id,
-        ticker: stock.ticker,
-        name: stock.name,
-        shares: stock.shares,
-        avg_price: stock.avgPrice,
-        current_price: stock.currentPrice,
-        market_value: stock.marketValue,
-        percent_of_portfolio: stock.percentOfPortfolio,
-        gain_loss: stock.gainLoss,
-        gain_loss_percent: stock.gainLossPercent,
-      }));
+      if (portfolio.stocks.length > 0) {
+        const stocksToInsert = portfolio.stocks.map(stock => ({
+          portfolio_id: portfolioData.id,
+          ticker: stock.ticker,
+          name: stock.name,
+          shares: stock.shares,
+          avg_price: stock.avgPrice,
+          current_price: stock.currentPrice,
+          market_value: stock.marketValue,
+          percent_of_portfolio: stock.percentOfPortfolio,
+          gain_loss: stock.gainLoss,
+          gain_loss_percent: stock.gainLossPercent,
+        }));
 
-      const { error: stocksError } = await supabase
-        .from('portfolio_stocks')
-        .insert(stocksToInsert);
+        const { error: stocksError } = await supabase
+          .from('portfolio_stocks')
+          .insert(stocksToInsert);
 
-      if (stocksError) throw stocksError;
+        if (stocksError) throw stocksError;
+      }
 
       // Update the local state with the new portfolio
       const newPortfolio = {
