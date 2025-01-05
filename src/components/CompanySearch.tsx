@@ -1,15 +1,5 @@
 import { Search } from "lucide-react";
-import {
-  Command,
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { useState, useEffect } from "react";
-import { Button } from "./ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 interface CompanySearchProps {
@@ -20,6 +10,7 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const searchStocks = async () => {
@@ -70,51 +61,63 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
 
   return (
     <div className="relative w-full">
-      <Command className="rounded-lg border shadow-md">
-        <CommandInput 
-          placeholder="Search companies..." 
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+        <input
+          type="text"
           value={searchQuery}
-          onValueChange={setSearchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setIsOpen(true);
+          }}
+          className="w-full pl-10 pr-4 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Search companies..."
         />
-        <CommandList>
+      </div>
+
+      {isOpen && (searchQuery.length > 0 || isLoading) && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border max-h-[400px] overflow-y-auto z-50">
           {isLoading && (
-            <CommandEmpty>Searching...</CommandEmpty>
+            <div className="p-4 text-sm text-gray-500 text-center">
+              Searching...
+            </div>
           )}
           {!isLoading && searchQuery.length < 2 && (
-            <CommandEmpty>Type at least 2 characters to search...</CommandEmpty>
+            <div className="p-4 text-sm text-gray-500 text-center">
+              Type at least 2 characters to search...
+            </div>
           )}
           {!isLoading && searchQuery.length >= 2 && results.length === 0 && (
-            <CommandEmpty>No companies found.</CommandEmpty>
+            <div className="p-4 text-sm text-gray-500 text-center">
+              No companies found.
+            </div>
           )}
-          {results.length > 0 && (
-            <CommandGroup heading="Companies">
-              {results.map((company) => (
-                <CommandItem
-                  key={company.symbol}
-                  onSelect={() => {
-                    onCompanySelect({
-                      ticker: company.symbol,
-                      name: company.name,
-                    });
-                    setSearchQuery("");
-                    setResults([]);
-                  }}
-                  className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
-                >
-                  <div className="flex items-center gap-2">
-                    <div>
-                      <p className="text-sm font-medium">{company.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {company.symbol} {company.exchangeShortName ? `• ${company.exchangeShortName}` : ''}
-                      </p>
-                    </div>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
-        </CommandList>
-      </Command>
+          {results.map((company) => (
+            <div
+              key={company.symbol}
+              onClick={() => {
+                onCompanySelect({
+                  ticker: company.symbol,
+                  name: company.name,
+                });
+                setSearchQuery("");
+                setResults([]);
+                setIsOpen(false);
+              }}
+              className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+            >
+              <div className="flex items-center gap-2">
+                <div>
+                  <p className="text-sm font-medium">{company.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {company.symbol} {company.exchangeShortName ? `• ${company.exchangeShortName}` : ''}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
