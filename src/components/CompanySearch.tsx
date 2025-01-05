@@ -35,6 +35,7 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
       });
 
       if (error) throw error;
+      console.log('Search results:', data);
       setResults(data || []);
     } catch (error) {
       console.error('Search failed:', error);
