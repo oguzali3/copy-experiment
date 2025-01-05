@@ -5,6 +5,7 @@ import { PortfolioView } from "./PortfolioView";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { fetchFinancialData } from "@/utils/financialApi";
 
 export type Stock = {
   ticker: string;
@@ -34,6 +35,38 @@ export const PortfolioContent = () => {
     fetchPortfolios();
   }, []);
 
+  const updateStockPrices = async (stocks: Stock[]): Promise<Stock[]> => {
+    const updatedStocks = await Promise.all(
+      stocks.map(async (stock) => {
+        try {
+          const quoteData = await fetchFinancialData('quote', stock.ticker);
+          const currentPrice = quoteData[0]?.price || stock.currentPrice;
+          const marketValue = currentPrice * stock.shares;
+          const gainLoss = marketValue - (stock.shares * stock.avgPrice);
+          const gainLossPercent = ((currentPrice - stock.avgPrice) / stock.avgPrice) * 100;
+
+          return {
+            ...stock,
+            currentPrice,
+            marketValue,
+            gainLoss,
+            gainLossPercent,
+          };
+        } catch (error) {
+          console.error(`Error fetching price for ${stock.ticker}:`, error);
+          return stock;
+        }
+      })
+    );
+
+    // Recalculate percentOfPortfolio based on new market values
+    const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
+    return updatedStocks.map(stock => ({
+      ...stock,
+      percentOfPortfolio: (stock.marketValue / totalValue) * 100
+    }));
+  };
+
   const fetchPortfolios = async () => {
     try {
       const { data: portfoliosData, error: portfoliosError } = await supabase
@@ -59,22 +92,56 @@ export const PortfolioContent = () => {
       if (portfoliosError) throw portfoliosError;
 
       if (portfoliosData) {
-        const formattedPortfolios: Portfolio[] = portfoliosData.map(p => ({
-          id: p.id,
-          name: p.name,
-          totalValue: p.total_value || 0,
-          stocks: (p.portfolio_stocks || []).map(s => ({
-            ticker: s.ticker,
-            name: s.name,
-            shares: s.shares,
-            avgPrice: s.avg_price,
-            currentPrice: s.current_price || 0,
-            marketValue: s.market_value || 0,
-            percentOfPortfolio: s.percent_of_portfolio || 0,
-            gainLoss: s.gain_loss || 0,
-            gainLossPercent: s.gain_loss_percent || 0
-          }))
-        }));
+        const formattedPortfolios: Portfolio[] = await Promise.all(
+          portfoliosData.map(async p => {
+            const stocks = (p.portfolio_stocks || []).map(s => ({
+              ticker: s.ticker,
+              name: s.name,
+              shares: s.shares,
+              avgPrice: s.avg_price,
+              currentPrice: s.current_price || 0,
+              marketValue: s.market_value || 0,
+              percentOfPortfolio: s.percent_of_portfolio || 0,
+              gainLoss: s.gain_loss || 0,
+              gainLossPercent: s.gain_loss_percent || 0
+            }));
+
+            // Update current prices and calculations
+            const updatedStocks = await updateStockPrices(stocks);
+            const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
+
+            // Update the portfolio in the database with new values
+            await supabase
+              .from('portfolios')
+              .update({ total_value: totalValue })
+              .eq('id', p.id);
+
+            // Update stock values in the database
+            await Promise.all(
+              updatedStocks.map(stock => 
+                supabase
+                  .from('portfolio_stocks')
+                  .update({
+                    current_price: stock.currentPrice,
+                    market_value: stock.marketValue,
+                    percent_of_portfolio: stock.percentOfPortfolio,
+                    gain_loss: stock.gainLoss,
+                    gain_loss_percent: stock.gainLossPercent
+                  })
+                  .eq('portfolio_id', p.id)
+                  .eq('ticker', stock.ticker)
+              )
+            );
+
+            return {
+              id: p.id,
+              name: p.name,
+              totalValue: totalValue,
+              stocks: updatedStocks
+            };
+          })
+        );
+
         setPortfolios(formattedPortfolios);
         if (formattedPortfolios.length > 0 && !selectedPortfolio) {
           setSelectedPortfolio(formattedPortfolios[0]);
