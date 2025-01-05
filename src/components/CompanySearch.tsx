@@ -1,5 +1,4 @@
 import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import {
   Command,
   CommandDialog,
@@ -11,19 +10,7 @@ import {
 } from "@/components/ui/command";
 import { useState } from "react";
 import { Button } from "./ui/button";
-
-const companies = [
-  { name: "Apple Inc.", ticker: "AAPL", logo: "🍎" },
-  { name: "Microsoft Corporation", ticker: "MSFT", logo: "🪟" },
-  { name: "NVIDIA Corporation", ticker: "NVDA", logo: "🎮" },
-  { name: "Alphabet Inc.", ticker: "GOOGL", logo: "🔍" },
-  { name: "Amazon.com, Inc.", ticker: "AMZN", logo: "📦" },
-  { name: "Meta Platforms, Inc.", ticker: "META", logo: "👥" },
-  { name: "Tesla, Inc.", ticker: "TSLA", logo: "🚗" },
-  { name: "Berkshire Hathaway Inc.", ticker: "BRK.A", logo: "💰" },
-  { name: "JPMorgan Chase & Co.", ticker: "JPM", logo: "🏦" },
-  { name: "Johnson & Johnson", ticker: "JNJ", logo: "💊" },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 interface CompanySearchProps {
   onCompanySelect: (company: any) => void;
@@ -32,11 +19,35 @@ interface CompanySearchProps {
 export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [results, setResults] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const filteredCompanies = companies.filter(company => 
-    company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    company.ticker.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const searchStocks = async (query: string) => {
+    if (query.length < 2) {
+      setResults([]);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+        body: { endpoint: 'search', query }
+      });
+
+      if (error) throw error;
+      setResults(data || []);
+    } catch (error) {
+      console.error('Search failed:', error);
+      setResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+    searchStocks(value);
+  };
 
   return (
     <div className="relative w-full">
@@ -53,26 +64,34 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
           <CommandInput 
             placeholder="Search companies..." 
             value={searchQuery}
-            onValueChange={setSearchQuery}
+            onValueChange={handleSearch}
           />
           <CommandList>
-            <CommandEmpty>No companies found.</CommandEmpty>
+            <CommandEmpty>
+              {searchQuery.length < 2 
+                ? "Type at least 2 characters to search..."
+                : isLoading 
+                  ? "Searching..."
+                  : "No companies found."}
+            </CommandEmpty>
             <CommandGroup heading="Companies">
-              {filteredCompanies.map((company) => (
+              {results.map((company) => (
                 <CommandItem
-                  key={company.ticker}
+                  key={company.symbol}
                   onSelect={() => {
-                    onCompanySelect(company);
+                    onCompanySelect({
+                      ticker: company.symbol,
+                      name: company.name,
+                    });
                     setSearchQuery("");
                     setOpen(false);
                   }}
                   className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{company.logo}</span>
                     <div>
                       <p className="text-sm font-medium">{company.name}</p>
-                      <p className="text-xs text-muted-foreground">{company.ticker}</p>
+                      <p className="text-xs text-muted-foreground">{company.symbol}</p>
                     </div>
                   </div>
                 </CommandItem>
