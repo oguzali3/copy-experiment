@@ -43,10 +43,11 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
       const transformedData = Array.isArray(data) ? data.map(item => ({
         symbol: item.symbol,
         name: item.name || item.symbol,
-        exchange: item.exchangeShortName || item.stockExchange
+        exchange: item.exchangeShortName || item.stockExchange,
+        type: item.type
       })) : [];
       
-      console.log('Transformed search results:', transformedData);
+      console.log('Search results:', transformedData);
       setResults(transformedData);
     } catch (error) {
       console.error('Search failed:', error);
