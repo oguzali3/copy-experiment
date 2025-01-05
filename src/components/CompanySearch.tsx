@@ -39,16 +39,12 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
 
         if (error) throw error;
         
-        // Transform the data to match the expected format
-        const transformedData = Array.isArray(data) ? data.map(item => ({
-          symbol: item.symbol,
-          name: item.name || item.symbol,
-          exchange: item.exchangeShortName || item.stockExchange,
-          type: item.type
-        })) : [];
-        
-        console.log('Search results:', transformedData);
-        setResults(transformedData);
+        if (Array.isArray(data)) {
+          setResults(data);
+          console.log('Search results:', data);
+        } else {
+          setResults([]);
+        }
       } catch (error) {
         console.error('Search failed:', error);
         setResults([]);
@@ -57,11 +53,8 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
       }
     };
 
-    // Debounce the search to avoid too many API calls
     const timeoutId = setTimeout(() => {
-      if (searchQuery) {
-        searchStocks();
-      }
+      searchStocks();
     }, 300);
 
     return () => clearTimeout(timeoutId);
