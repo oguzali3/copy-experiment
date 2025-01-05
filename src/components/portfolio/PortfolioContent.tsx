@@ -3,6 +3,8 @@ import { PortfolioEmpty } from "./PortfolioEmpty";
 import { PortfolioCreate } from "./PortfolioCreate";
 import { PortfolioView } from "./PortfolioView";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export type Stock = {
   ticker: string;
@@ -28,24 +30,128 @@ export const PortfolioContent = () => {
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  const handleCreatePortfolio = (portfolio: Portfolio) => {
-    setPortfolios([...portfolios, portfolio]);
-    setSelectedPortfolio(portfolio);
-    setIsCreating(false);
-  };
+  const handleCreatePortfolio = async (portfolio: Portfolio) => {
+    try {
+      // Insert the portfolio
+      const { data: portfolioData, error: portfolioError } = await supabase
+        .from('portfolios')
+        .insert([
+          {
+            name: portfolio.name,
+            total_value: portfolio.totalValue,
+          }
+        ])
+        .select()
+        .single();
 
-  const handleDeletePortfolio = (id: string) => {
-    setPortfolios(portfolios.filter(p => p.id !== id));
-    if (selectedPortfolio?.id === id) {
-      setSelectedPortfolio(null);
+      if (portfolioError) throw portfolioError;
+
+      // Insert the stocks
+      const stocksToInsert = portfolio.stocks.map(stock => ({
+        portfolio_id: portfolioData.id,
+        ticker: stock.ticker,
+        name: stock.name,
+        shares: stock.shares,
+        avg_price: stock.avgPrice,
+        current_price: stock.currentPrice,
+        market_value: stock.marketValue,
+        percent_of_portfolio: stock.percentOfPortfolio,
+        gain_loss: stock.gainLoss,
+        gain_loss_percent: stock.gainLossPercent,
+      }));
+
+      const { error: stocksError } = await supabase
+        .from('portfolio_stocks')
+        .insert(stocksToInsert);
+
+      if (stocksError) throw stocksError;
+
+      // Update the local state with the new portfolio
+      const newPortfolio = {
+        ...portfolio,
+        id: portfolioData.id,
+      };
+      
+      setPortfolios([...portfolios, newPortfolio]);
+      setSelectedPortfolio(newPortfolio);
+      setIsCreating(false);
+      toast.success("Portfolio created successfully");
+    } catch (error) {
+      console.error('Error creating portfolio:', error);
+      toast.error("Failed to create portfolio");
     }
   };
 
-  const handleUpdatePortfolio = (updatedPortfolio: Portfolio) => {
-    setPortfolios(portfolios.map(p => 
-      p.id === updatedPortfolio.id ? updatedPortfolio : p
-    ));
-    setSelectedPortfolio(updatedPortfolio);
+  const handleDeletePortfolio = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('portfolios')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setPortfolios(portfolios.filter(p => p.id !== id));
+      if (selectedPortfolio?.id === id) {
+        setSelectedPortfolio(null);
+      }
+      toast.success("Portfolio deleted successfully");
+    } catch (error) {
+      console.error('Error deleting portfolio:', error);
+      toast.error("Failed to delete portfolio");
+    }
+  };
+
+  const handleUpdatePortfolio = async (updatedPortfolio: Portfolio) => {
+    try {
+      // Update the portfolio
+      const { error: portfolioError } = await supabase
+        .from('portfolios')
+        .update({
+          name: updatedPortfolio.name,
+          total_value: updatedPortfolio.totalValue,
+        })
+        .eq('id', updatedPortfolio.id);
+
+      if (portfolioError) throw portfolioError;
+
+      // Delete existing stocks
+      const { error: deleteError } = await supabase
+        .from('portfolio_stocks')
+        .delete()
+        .eq('portfolio_id', updatedPortfolio.id);
+
+      if (deleteError) throw deleteError;
+
+      // Insert updated stocks
+      const stocksToInsert = updatedPortfolio.stocks.map(stock => ({
+        portfolio_id: updatedPortfolio.id,
+        ticker: stock.ticker,
+        name: stock.name,
+        shares: stock.shares,
+        avg_price: stock.avgPrice,
+        current_price: stock.currentPrice,
+        market_value: stock.marketValue,
+        percent_of_portfolio: stock.percentOfPortfolio,
+        gain_loss: stock.gainLoss,
+        gain_loss_percent: stock.gainLossPercent,
+      }));
+
+      const { error: stocksError } = await supabase
+        .from('portfolio_stocks')
+        .insert(stocksToInsert);
+
+      if (stocksError) throw stocksError;
+
+      setPortfolios(portfolios.map(p => 
+        p.id === updatedPortfolio.id ? updatedPortfolio : p
+      ));
+      setSelectedPortfolio(updatedPortfolio);
+      toast.success("Portfolio updated successfully");
+    } catch (error) {
+      console.error('Error updating portfolio:', error);
+      toast.error("Failed to update portfolio");
+    }
   };
 
   if (portfolios.length === 0 && !isCreating) {
