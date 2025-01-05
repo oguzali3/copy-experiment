@@ -1,6 +1,7 @@
-import { Button } from "@/components/ui/button";
-import { Settings, Copy, PlusCircle } from "lucide-react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Settings, Copy, PlusCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 interface WatchlistHeaderProps {

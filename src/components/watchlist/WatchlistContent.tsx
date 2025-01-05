@@ -5,24 +5,7 @@ import { WatchlistCreate } from "./WatchlistCreate";
 import { WatchlistView } from "./WatchlistView";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
-export type Stock = {
-  ticker: string;
-  name: string;
-  price: number;
-  change: number;
-  marketCap: number;
-  metrics: {
-    [key: string]: string | number;
-  };
-};
-
-export type Watchlist = {
-  id: string;
-  name: string;
-  stocks: Stock[];
-  selectedMetrics: string[];
-};
+import { Watchlist, WatchlistStock } from "@/types/watchlist";
 
 export const WatchlistContent = () => {
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
@@ -53,8 +36,13 @@ export const WatchlistContent = () => {
 
           return {
             ...watchlist,
-            stocks: stocksData || [],
-            selectedMetrics: [], // You might want to store this in the database as well
+            stocks: (stocksData || []).map((stock: WatchlistStock) => ({
+              ...stock,
+              price: 0, // These will be updated later with real data
+              change: 0,
+              marketCap: 0,
+            })),
+            selectedMetrics: [],
           };
         })
       );
@@ -164,9 +152,7 @@ export const WatchlistContent = () => {
   };
 
   if (watchlists.length === 0 && !isCreating) {
-    return (
-      <WatchlistEmpty onCreateClick={() => setIsCreating(true)} />
-    );
+    return <WatchlistEmpty onCreateClick={() => setIsCreating(true)} />;
   }
 
   if (isCreating) {

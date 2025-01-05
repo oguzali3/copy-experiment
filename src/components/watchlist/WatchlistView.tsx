@@ -1,23 +1,19 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Stock } from "./WatchlistContent";
 import { CompanySearch } from "../CompanySearch";
 import { WatchlistHeader } from "./WatchlistHeader";
 import { WatchlistMetrics } from "./WatchlistMetrics";
 import { WatchlistTable } from "./WatchlistTable";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { Watchlist } from "@/types/watchlist";
 
 interface WatchlistViewProps {
-  watchlist: {
-    id: string;
-    name: string;
-    stocks: Stock[];
-    selectedMetrics: string[];
-  };
+  watchlist: Watchlist;
   onAddWatchlist: () => void;
   onDeleteWatchlist: (id: string) => void;
-  onUpdateWatchlist: (watchlist: any) => void;
+  onUpdateWatchlist: (watchlist: Watchlist) => void;
 }
 
 const availableMetrics = [
@@ -29,7 +25,12 @@ const availableMetrics = [
   { id: "ntmPAffo", name: "NTM P/AFFO", description: "Next Twelve Months Price to Adjusted Funds From Operations" },
 ];
 
-export const WatchlistView = ({ watchlist, onAddWatchlist, onDeleteWatchlist, onUpdateWatchlist }: WatchlistViewProps) => {
+export const WatchlistView = ({ 
+  watchlist, 
+  onAddWatchlist, 
+  onDeleteWatchlist, 
+  onUpdateWatchlist 
+}: WatchlistViewProps) => {
   const [isAddingTicker, setIsAddingTicker] = useState(false);
 
   const handleMetricSelect = (metricId: string) => {
@@ -63,7 +64,7 @@ export const WatchlistView = ({ watchlist, onAddWatchlist, onDeleteWatchlist, on
 
       if (error) throw error;
 
-      const newStock: Stock = {
+      const newStock = {
         ticker: company.ticker,
         name: company.name,
         price: 0,
