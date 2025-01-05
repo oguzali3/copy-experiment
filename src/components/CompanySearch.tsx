@@ -77,13 +77,16 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
           onValueChange={setSearchQuery}
         />
         <CommandList>
-          {isLoading ? (
+          {isLoading && (
             <CommandEmpty>Searching...</CommandEmpty>
-          ) : searchQuery.length < 2 ? (
+          )}
+          {!isLoading && searchQuery.length < 2 && (
             <CommandEmpty>Type at least 2 characters to search...</CommandEmpty>
-          ) : results.length === 0 ? (
+          )}
+          {!isLoading && searchQuery.length >= 2 && results.length === 0 && (
             <CommandEmpty>No companies found.</CommandEmpty>
-          ) : (
+          )}
+          {!isLoading && results.length > 0 && (
             <CommandGroup heading="Companies">
               {results.map((company) => (
                 <CommandItem
