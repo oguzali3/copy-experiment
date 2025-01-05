@@ -17,7 +17,6 @@ interface CompanySearchProps {
 }
 
 export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
-  const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -56,49 +55,61 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      searchStocks(searchQuery);
+    }
+  };
+
   return (
     <div className="relative w-full">
       <Command className="rounded-lg border shadow-md">
         <CommandInput 
           placeholder="Search companies..." 
           value={searchQuery}
+          onKeyDown={handleKeyPress}
           onValueChange={(value) => {
             setSearchQuery(value);
-            searchStocks(value);
           }}
         />
         <CommandList>
           <CommandEmpty>
-            {searchQuery.length < 2 
-              ? "Type at least 2 characters to search..."
-              : isLoading 
-                ? "Searching..."
-                : "No companies found."}
+            {isLoading ? (
+              "Searching..."
+            ) : searchQuery.length < 2 ? (
+              "Type at least 2 characters and press Enter to search..."
+            ) : results.length === 0 ? (
+              "No companies found."
+            ) : null}
           </CommandEmpty>
-          <CommandGroup heading="Companies">
-            {results.map((company) => (
-              <CommandItem
-                key={company.symbol}
-                onSelect={() => {
-                  onCompanySelect({
-                    ticker: company.symbol,
-                    name: company.name,
-                  });
-                  setSearchQuery("");
-                }}
-                className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
-              >
-                <div className="flex items-center gap-2">
-                  <div>
-                    <p className="text-sm font-medium">{company.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {company.symbol} {company.exchange ? `• ${company.exchange}` : ''}
-                    </p>
+          {results.length > 0 && (
+            <CommandGroup heading="Companies">
+              {results.map((company) => (
+                <CommandItem
+                  key={company.symbol}
+                  onSelect={() => {
+                    onCompanySelect({
+                      ticker: company.symbol,
+                      name: company.name,
+                    });
+                    setSearchQuery("");
+                    setResults([]);
+                  }}
+                  className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <div>
+                      <p className="text-sm font-medium">{company.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {company.symbol} {company.exchange ? `• ${company.exchange}` : ''}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
         </CommandList>
       </Command>
     </div>
