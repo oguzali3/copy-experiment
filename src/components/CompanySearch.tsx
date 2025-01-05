@@ -31,12 +31,23 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-        body: { endpoint: 'search', query }
+        body: { 
+          endpoint: 'search', 
+          query: query.toUpperCase()
+        }
       });
 
       if (error) throw error;
-      console.log('Search results:', data);
-      setResults(data || []);
+      
+      // Transform the data to match the expected format
+      const transformedData = Array.isArray(data) ? data.map(item => ({
+        symbol: item.symbol,
+        name: item.name || item.symbol,
+        exchange: item.exchangeShortName || item.stockExchange
+      })) : [];
+      
+      console.log('Transformed search results:', transformedData);
+      setResults(transformedData);
     } catch (error) {
       console.error('Search failed:', error);
       setResults([]);
@@ -92,7 +103,9 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
                   <div className="flex items-center gap-2">
                     <div>
                       <p className="text-sm font-medium">{company.name}</p>
-                      <p className="text-xs text-muted-foreground">{company.symbol}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {company.symbol} {company.exchange ? `• ${company.exchange}` : ''}
+                      </p>
                     </div>
                   </div>
                 </CommandItem>
