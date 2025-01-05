@@ -50,11 +50,7 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
         if (error) throw error;
         
         console.log('Search results:', data);
-        if (Array.isArray(data)) {
-          setResults(data);
-        } else {
-          setResults([]);
-        }
+        setResults(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Search failed:', error);
         setResults([]);
@@ -86,9 +82,9 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
               "Searching..."
             ) : searchQuery.length < 2 ? (
               "Type at least 2 characters to search..."
-            ) : (
+            ) : results.length === 0 ? (
               "No companies found."
-            )}
+            ) : null}
           </CommandEmpty>
           {results.length > 0 && (
             <CommandGroup heading="Companies">
@@ -101,6 +97,7 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
                       name: company.name,
                     });
                     setSearchQuery("");
+                    setResults([]);
                   }}
                   className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
                 >
@@ -108,7 +105,7 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
                     <div>
                       <p className="text-sm font-medium">{company.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {company.symbol} {company.exchange ? `• ${company.exchange}` : ''}
+                        {company.symbol} {company.exchangeShortName ? `• ${company.exchangeShortName}` : ''}
                       </p>
                     </div>
                   </div>
