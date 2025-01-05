@@ -54,7 +54,9 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
     };
 
     const timeoutId = setTimeout(() => {
-      searchStocks();
+      if (searchQuery.length >= 2) {
+        searchStocks();
+      }
     }, 300);
 
     return () => clearTimeout(timeoutId);
