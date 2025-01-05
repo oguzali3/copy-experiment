@@ -25,6 +25,16 @@ serve(async (req) => {
     console.log('Received request with params:', { endpoint, symbol, type, from, to, query });
 
     switch (endpoint) {
+      case "search":
+        const searchUrl = `https://financialmodelingprep.com/api/v3/search?query=${query}&limit=10&apikey=${apiKey}`;
+        console.log('Fetching search results from:', searchUrl);
+        const searchResponse = await fetch(searchUrl);
+        const searchData = await searchResponse.json();
+        console.log('Search results:', searchData);
+        return new Response(JSON.stringify(searchData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+
       case "insider-trades":
         return await handleInsiderTrades(apiKey, symbol);
         
@@ -45,7 +55,6 @@ serve(async (req) => {
       case "transcript-dates":
       case "transcript":
       case "dcf":
-      case "search":
       case "estimates":
       case "profile":
       case "quote":
