@@ -23,19 +23,34 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
 
   useEffect(() => {
     const searchStocks = async () => {
+      const trimmedQuery = searchQuery.trim().toLowerCase();
+      
+      if (!trimmedQuery) {
+        setResults([]);
+        setIsLoading(false);
+        return;
+      }
+
+      if (trimmedQuery.length < 2) {
+        setResults([]);
+        return;
+      }
+
       setIsLoading(true);
+      console.log('Starting search with query:', trimmedQuery);
+
       try {
         const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
           body: { 
             endpoint: 'search', 
-            query: searchQuery
+            query: trimmedQuery
           }
         });
 
         if (error) throw error;
         
+        console.log('Search results:', data);
         if (Array.isArray(data)) {
-          console.log('Search results:', data);
           setResults(data);
         } else {
           setResults([]);
@@ -48,13 +63,13 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
       }
     };
 
-    if (searchQuery.length < 2) {
-      setResults([]);
-      return;
-    }
+    const timeoutId = setTimeout(() => {
+      searchStocks();
+    }, 300);
 
-    const timeoutId = setTimeout(searchStocks, 300);
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, [searchQuery]);
 
   return (
