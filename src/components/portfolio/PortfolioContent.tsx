@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PortfolioEmpty } from "./PortfolioEmpty";
 import { PortfolioCreate } from "./PortfolioCreate";
 import { PortfolioView } from "./PortfolioView";
@@ -29,6 +29,47 @@ export const PortfolioContent = () => {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+
+  // Fetch portfolios on component mount
+  useEffect(() => {
+    fetchPortfolios();
+  }, []);
+
+  const fetchPortfolios = async () => {
+    try {
+      const { data: portfoliosData, error: portfoliosError } = await supabase
+        .from('portfolios')
+        .select('*');
+
+      if (portfoliosError) throw portfoliosError;
+
+      if (portfoliosData) {
+        // For each portfolio, fetch its stocks
+        const portfoliosWithStocks = await Promise.all(
+          portfoliosData.map(async (portfolio) => {
+            const { data: stocksData, error: stocksError } = await supabase
+              .from('portfolio_stocks')
+              .select('*')
+              .eq('portfolio_id', portfolio.id);
+
+            if (stocksError) throw stocksError;
+
+            return {
+              id: portfolio.id,
+              name: portfolio.name,
+              totalValue: portfolio.total_value,
+              stocks: stocksData || []
+            };
+          })
+        );
+
+        setPortfolios(portfoliosWithStocks);
+      }
+    } catch (error) {
+      console.error('Error fetching portfolios:', error);
+      toast.error("Failed to fetch portfolios");
+    }
+  };
 
   const handleCreatePortfolio = async (portfolio: Portfolio) => {
     try {
@@ -180,6 +221,13 @@ export const PortfolioContent = () => {
             {portfolio.name}
           </Button>
         ))}
+        <Button
+          variant="outline"
+          onClick={() => setIsCreating(true)}
+          className="ml-auto"
+        >
+          Create Portfolio
+        </Button>
       </div>
 
       {selectedPortfolio && (
