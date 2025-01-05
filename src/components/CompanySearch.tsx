@@ -8,7 +8,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,44 +17,51 @@ interface CompanySearchProps {
 }
 
 export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
-  const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const searchStocks = async (query: string) => {
-    if (query.length < 2) {
-      setResults([]);
-      return;
-    }
+  useEffect(() => {
+    const searchStocks = async () => {
+      if (searchQuery.length < 2) {
+        setResults([]);
+        return;
+      }
 
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-        body: { 
-          endpoint: 'search', 
-          query: query.toUpperCase()
-        }
-      });
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+          body: { 
+            endpoint: 'search', 
+            query: searchQuery.toUpperCase()
+          }
+        });
 
-      if (error) throw error;
-      
-      const transformedData = Array.isArray(data) ? data.map(item => ({
-        symbol: item.symbol,
-        name: item.name || item.symbol,
-        exchange: item.exchangeShortName || item.stockExchange,
-        type: item.type
-      })) : [];
-      
-      console.log('Search results:', transformedData);
-      setResults(transformedData);
-    } catch (error) {
-      console.error('Search failed:', error);
-      setResults([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        if (error) throw error;
+        
+        const transformedData = Array.isArray(data) ? data.map(item => ({
+          symbol: item.symbol,
+          name: item.name || item.symbol,
+          exchange: item.exchangeShortName || item.stockExchange,
+          type: item.type
+        })) : [];
+        
+        console.log('Search results:', transformedData);
+        setResults(transformedData);
+      } catch (error) {
+        console.error('Search failed:', error);
+        setResults([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      searchStocks();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   return (
     <div className="relative w-full">
@@ -62,10 +69,7 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
         <CommandInput 
           placeholder="Search companies..." 
           value={searchQuery}
-          onValueChange={(value) => {
-            setSearchQuery(value);
-            searchStocks(value);
-          }}
+          onValueChange={setSearchQuery}
         />
         <CommandList>
           <CommandEmpty>
