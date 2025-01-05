@@ -8,92 +8,98 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { useRef, useEffect } from "react";
-import { useSearch } from "@/hooks/useSearch";
+import { useState } from "react";
+import { Button } from "./ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CompanySearchProps {
   onCompanySelect: (company: any) => void;
 }
 
 export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
-  const {
-    searchQuery,
-    setSearchQuery,
-    results,
-    isLoading,
-    isOpen,
-    setIsOpen
-  } = useSearch();
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [results, setResults] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchStocks = async (query: string) => {
+    if (query.length < 2) {
+      setResults([]);
+      return;
+    }
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+        body: { endpoint: 'search', query }
+      });
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [setIsOpen]);
+      if (error) throw error;
+      setResults(data || []);
+    } catch (error) {
+      console.error('Search failed:', error);
+      setResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const handleSelect = (company: any) => {
-    onCompanySelect({
-      ticker: company.symbol,
-      name: company.name,
-    });
-    setSearchQuery("");
-    setIsOpen(false);
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+    searchStocks(value);
   };
 
   return (
-    <div className="relative w-full" ref={searchContainerRef}>
-      <Command className="rounded-lg border shadow-md">
-        <CommandInput 
-          placeholder="Search companies..." 
-          value={searchQuery}
-          onValueChange={(value) => {
-            setSearchQuery(value);
-            setIsOpen(true);
-          }}
-        />
-        {isOpen && (searchQuery.length > 0 || isLoading) && (
+    <div className="relative w-full">
+      <Button 
+        variant="outline" 
+        className="w-full justify-start text-left font-normal"
+        onClick={() => setOpen(true)}
+      >
+        <Search className="mr-2 h-4 w-4" />
+        <span>Search companies...</span>
+      </Button>
+      <CommandDialog open={open} onOpenChange={setOpen}>
+        <Command className="rounded-lg border shadow-md">
+          <CommandInput 
+            placeholder="Search companies..." 
+            value={searchQuery}
+            onValueChange={handleSearch}
+          />
           <CommandList>
-            {isLoading && (
-              <CommandEmpty>Searching...</CommandEmpty>
-            )}
-            {!isLoading && searchQuery.length < 2 && (
-              <CommandEmpty>Type at least 2 characters to search...</CommandEmpty>
-            )}
-            {!isLoading && searchQuery.length >= 2 && results.length === 0 && (
-              <CommandEmpty>No companies found.</CommandEmpty>
-            )}
-            {results.length > 0 && (
-              <CommandGroup heading="Companies">
-                {results.map((company) => (
-                  <CommandItem
-                    key={company.symbol}
-                    onSelect={() => handleSelect(company)}
-                    className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div>
-                        <p className="text-sm font-medium">{company.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {company.symbol} {company.exchangeShortName ? `• ${company.exchangeShortName}` : ''}
-                        </p>
-                      </div>
+            <CommandEmpty>
+              {searchQuery.length < 2 
+                ? "Type at least 2 characters to search..."
+                : isLoading 
+                  ? "Searching..."
+                  : "No companies found."}
+            </CommandEmpty>
+            <CommandGroup heading="Companies">
+              {results.map((company) => (
+                <CommandItem
+                  key={company.symbol}
+                  onSelect={() => {
+                    onCompanySelect({
+                      ticker: company.symbol,
+                      name: company.name,
+                    });
+                    setSearchQuery("");
+                    setOpen(false);
+                  }}
+                  className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <div>
+                      <p className="text-sm font-medium">{company.name}</p>
+                      <p className="text-xs text-muted-foreground">{company.symbol}</p>
                     </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
           </CommandList>
-        )}
-      </Command>
+        </Command>
+      </CommandDialog>
     </div>
   );
 };
