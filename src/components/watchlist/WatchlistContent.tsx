@@ -76,8 +76,11 @@ export const WatchlistContent = () => {
       const newWatchlist: Watchlist = {
         id: data.id,
         name: data.name,
+        user_id: data.user_id,
         stocks: [],
-        selectedMetrics: []
+        selectedMetrics: [],
+        created_at: data.created_at,
+        updated_at: data.updated_at
       };
 
       setWatchlists([...watchlists, newWatchlist]);

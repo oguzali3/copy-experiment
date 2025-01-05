@@ -7,7 +7,7 @@ import { WatchlistMetrics } from "./WatchlistMetrics";
 import { WatchlistTable } from "./WatchlistTable";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Watchlist } from "@/types/watchlist";
+import { Watchlist, WatchlistStock } from "@/types/watchlist";
 
 interface WatchlistViewProps {
   watchlist: Watchlist;
@@ -64,13 +64,17 @@ export const WatchlistView = ({
 
       if (error) throw error;
 
-      const newStock = {
+      const newStock: WatchlistStock = {
+        id: crypto.randomUUID(), // This will be replaced by the database-generated ID
+        watchlist_id: watchlist.id,
         ticker: company.ticker,
         name: company.name,
+        metrics: {},
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         price: 0,
         change: 0,
-        marketCap: 0,
-        metrics: {}
+        marketCap: 0
       };
 
       onUpdateWatchlist({

@@ -1,10 +1,10 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
-import { Stock } from "./WatchlistContent";
+import { WatchlistStock } from "@/types/watchlist";
 
 interface WatchlistTableProps {
-  stocks: Stock[];
+  stocks: WatchlistStock[];
   selectedMetrics: string[];
   availableMetrics: Array<{
     id: string;
