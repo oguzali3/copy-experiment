@@ -21,11 +21,11 @@ const countries = [
 const industries = [
   "Technology", "Healthcare", "Financial Services", "Consumer Goods",
   "Energy", "Materials", "Industrials", "Utilities", "Real Estate",
-  "Communication Services"
+  "Communication Services", "Chemicals"
 ];
 
 const exchanges = [
-  "NYSE", "NASDAQ", "LSE", "TSE", "SSE",
+  "NYSE", "NASDAQ", "LSE", "TSE", "SSE", "IBSE",
   "HKEX", "Euronext", "Deutsche Börse", "BSE", "NSE"
 ];
 
