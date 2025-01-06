@@ -94,17 +94,25 @@ export const ScreeningSearch = ({
     const itemCategory = (item.category || '').toLowerCase();
     const itemFullName = (item.fullName || '').toLowerCase();
 
-    // Improved search matching logic
-    const matchName = itemName.includes(searchTerm);
+    // Enhanced search matching logic for both codes and full names
+    const matchCode = itemName.includes(searchTerm);
     const matchFullName = itemFullName.includes(searchTerm);
     const matchDescription = itemDescription.includes(searchTerm);
     const matchCategory = type === "metrics" && itemCategory.includes(searchTerm);
 
-    // Special handling for country codes (e.g., "TR" for Turkey)
-    const isCountryCode = type === "countries" && itemName.length === 2;
-    const matchCountryCode = isCountryCode && itemName.toLowerCase() === searchTerm;
+    // For countries and exchanges, also search in the full name
+    if (type === "countries" || type === "exchanges") {
+      // Check if searching by country/exchange code
+      const isExactCodeMatch = itemName.toLowerCase() === searchTerm;
+      // Check if searching by full name
+      const isFullNameMatch = itemFullName.toLowerCase().includes(searchTerm);
+      // Check if searching by partial code
+      const isPartialCodeMatch = itemName.toLowerCase().includes(searchTerm);
+      
+      return isExactCodeMatch || isFullNameMatch || isPartialCodeMatch || matchDescription;
+    }
 
-    return matchName || matchFullName || matchDescription || matchCategory || matchCountryCode;
+    return matchCode || matchFullName || matchDescription || matchCategory;
   });
 
   const handleSelect = (item: SearchItem) => {
