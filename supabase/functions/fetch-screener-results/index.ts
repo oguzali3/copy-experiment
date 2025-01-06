@@ -5,6 +5,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Map of our country names to FMP API country codes
+const countryCodeMap: { [key: string]: string } = {
+  'United States': 'US',
+  'United Kingdom': 'UK',
+  'Turkey': 'TR',
+  'Japan': 'JP',
+  'China': 'CN',
+  'Germany': 'DE',
+  'India': 'IN',
+  'Brazil': 'BR',
+  'Australia': 'AU',
+  'Canada': 'CA'
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -23,10 +37,14 @@ serve(async (req) => {
     const queryParams = new URLSearchParams()
     queryParams.append('apikey', apiKey)
 
-    // Add filters if they exist
+    // Convert country names to codes and add to query
     if (countries?.length > 0) {
-      queryParams.append('country', countries.join(','))
+      const countryCodes = countries.map(country => countryCodeMap[country] || country);
+      queryParams.append('country', countryCodes.join(','));
+      console.log('Using country codes:', countryCodes);
     }
+
+    // Add other filters if they exist
     if (industries?.length > 0) {
       queryParams.append('sector', industries.join(','))
     }

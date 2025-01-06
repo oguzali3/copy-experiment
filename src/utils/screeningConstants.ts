@@ -21,8 +21,8 @@ export interface Exchange {
 export const SCREENING_CONSTANTS = {
   COUNTRIES: [
     { code: 'US', name: 'United States', region: 'North America', currency: 'USD' },
+    { code: 'UK', name: 'United Kingdom', region: 'Europe', currency: 'GBP' },
     { code: 'TR', name: 'Turkey', region: 'Europe/Asia', currency: 'TRY' },
-    { code: 'GB', name: 'United Kingdom', region: 'Europe', currency: 'GBP' },
     { code: 'JP', name: 'Japan', region: 'Asia', currency: 'JPY' },
     { code: 'CN', name: 'China', region: 'Asia', currency: 'CNY' },
     { code: 'DE', name: 'Germany', region: 'Europe', currency: 'EUR' },
