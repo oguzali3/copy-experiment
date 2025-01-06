@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Command,
   CommandDialog,
@@ -10,38 +10,8 @@ import {
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
-import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { ScreeningMetric } from "@/types/screening";
-
-const countries = [
-  "United States", "China", "Japan", "Germany", "United Kingdom",
-  "France", "India", "Italy", "Canada", "South Korea"
-];
-
-const industries = [
-  "Technology", "Healthcare", "Financial Services", "Consumer Goods",
-  "Energy", "Materials", "Industrials", "Utilities", "Real Estate",
-  "Communication Services"
-];
-
-const exchanges = [
-  "NYSE", "NASDAQ", "LSE", "TSE", "SSE",
-  "HKEX", "Euronext", "Deutsche Börse", "BSE", "NSE"
-];
-
-const metrics = [
-  { id: "revenue", name: "Revenue", category: "Income Statement" },
-  { id: "revenueGrowth", name: "Revenue Growth", category: "Growth" },
-  { id: "grossProfit", name: "Gross Profit", category: "Income Statement" },
-  { id: "operatingIncome", name: "Operating Income", category: "Income Statement" },
-  { id: "netIncome", name: "Net Income", category: "Income Statement" },
-  { id: "ebitda", name: "EBITDA", category: "Income Statement" },
-  { id: "totalAssets", name: "Total Assets", category: "Balance Sheet" },
-  { id: "totalLiabilities", name: "Total Liabilities", category: "Balance Sheet" },
-  { id: "totalEquity", name: "Total Equity", category: "Balance Sheet" },
-  { id: "operatingCashFlow", name: "Operating Cash Flow", category: "Cash Flow" },
-  { id: "freeCashFlow", name: "Free Cash Flow", category: "Cash Flow" },
-];
 
 interface ScreeningSearchProps {
   type: "countries" | "industries" | "exchanges" | "metrics";
@@ -58,25 +28,44 @@ export const ScreeningSearch = ({
 }: ScreeningSearchProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const getItems = () => {
-    switch (type) {
-      case "countries":
-        return countries;
-      case "industries":
-        return industries;
-      case "exchanges":
-        return exchanges;
-      case "metrics":
-        return metrics;
-      default:
-        return [];
-    }
-  };
+  useEffect(() => {
+    const fetchFilterData = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('fetch-screening-filters');
+        
+        if (error) throw error;
+        
+        if (data) {
+          switch (type) {
+            case "countries":
+              setItems(data.countries);
+              break;
+            case "industries":
+              setItems(data.industries);
+              break;
+            case "exchanges":
+              setItems(data.exchanges);
+              break;
+            case "metrics":
+              setItems(data.metrics);
+              break;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching filter data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const items = getItems();
+    fetchFilterData();
+  }, [type]);
+
   const filteredItems = type === "metrics"
-    ? (items as typeof metrics).filter(item =>
+    ? (items as ScreeningMetric[]).filter(item =>
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.category.toLowerCase().includes(searchQuery.toLowerCase())
       )
@@ -84,9 +73,9 @@ export const ScreeningSearch = ({
         item.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
-  const handleSelect = (item: string | typeof metrics[0]) => {
+  const handleSelect = (item: string | ScreeningMetric) => {
     if (type === "metrics" && onMetricSelect) {
-      const metric = item as typeof metrics[0];
+      const metric = item as ScreeningMetric;
       onMetricSelect({
         id: metric.id,
         name: metric.name,
@@ -114,7 +103,7 @@ export const ScreeningSearch = ({
       >
         <Search className="mr-2 h-4 w-4" />
         <span>
-          {type === "metrics"
+          {loading ? "Loading..." : type === "metrics"
             ? "Select & search metrics"
             : `Search ${type}...`}
         </span>
@@ -140,10 +129,10 @@ export const ScreeningSearch = ({
                     {type === "metrics" ? (
                       <div>
                         <p className="text-sm font-medium">
-                          {(item as typeof metrics[0]).name}
+                          {(item as ScreeningMetric).name}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {(item as typeof metrics[0]).category}
+                          {(item as ScreeningMetric).category}
                         </p>
                       </div>
                     ) : (
