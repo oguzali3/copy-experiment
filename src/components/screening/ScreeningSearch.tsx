@@ -18,12 +18,11 @@ interface ScreeningSearchProps {
   selected?: string[];
   onSelect?: (selected: string[]) => void;
   onMetricSelect?: (metric: ScreeningMetric) => void;
-  availableMetrics?: ScreeningMetric[];
 }
 
 interface SearchItem {
   name: string;
-  description?: string;  // Made optional with '?'
+  description: string;
   category?: string;
   id?: string;
   fullName?: string;
@@ -33,8 +32,7 @@ export const ScreeningSearch = ({
   type,
   selected = [],
   onSelect,
-  onMetricSelect,
-  availableMetrics = []
+  onMetricSelect
 }: ScreeningSearchProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -44,17 +42,7 @@ export const ScreeningSearch = ({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (type === 'metrics' && availableMetrics.length > 0) {
-          setItems(availableMetrics.map(metric => ({
-            id: metric.id,
-            name: metric.name,
-            description: metric.description || '',
-            category: metric.category
-          })));
-          setLoading(false);
-          return;
-        }
-
+        console.log('Fetching data for type:', type);
         const { data, error } = await supabase.functions.invoke('fetch-screening-filters');
         
         if (error) {
@@ -68,6 +56,8 @@ export const ScreeningSearch = ({
           return;
         }
 
+        console.log('Received data:', data);
+        
         switch (type) {
           case "countries":
             setItems(data.countries || []);
@@ -93,7 +83,7 @@ export const ScreeningSearch = ({
     };
 
     fetchData();
-  }, [type, availableMetrics]);
+  }, [type]);
 
   const filteredItems = items.filter(item => {
     if (!item) return false;
@@ -104,10 +94,15 @@ export const ScreeningSearch = ({
     const itemCategory = (item.category || '').toLowerCase();
     const itemFullName = (item.fullName || '').toLowerCase();
 
-    return itemName.includes(searchTerm) ||
-           itemDescription.includes(searchTerm) ||
-           itemCategory.includes(searchTerm) ||
-           itemFullName?.includes(searchTerm);
+    if (type === "metrics") {
+      return itemName.includes(searchTerm) ||
+             itemCategory.includes(searchTerm) ||
+             itemDescription.includes(searchTerm);
+    } else {
+      return itemName.includes(searchTerm) ||
+             itemDescription.includes(searchTerm) ||
+             itemFullName?.includes(searchTerm);
+    }
   });
 
   const handleSelect = (item: SearchItem) => {
@@ -118,7 +113,6 @@ export const ScreeningSearch = ({
         id: item.id || '',
         name: item.name,
         category: item.category || '',
-        description: item.description,
         min: "",
         max: ""
       });
@@ -149,6 +143,13 @@ export const ScreeningSearch = ({
     }
   };
 
+  const getDisplayName = (item: SearchItem) => {
+    if (type === "countries" || type === "exchanges") {
+      return `${item.name} - ${item.fullName || item.name}`;
+    }
+    return item.name;
+  };
+
   return (
     <div className="relative w-full">
       <Button
@@ -168,29 +169,20 @@ export const ScreeningSearch = ({
           />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
-            {filteredItems.length > 0 && (
-              <CommandGroup>
-                {filteredItems.map((item, index) => (
-                  <CommandItem
-                    key={type === "metrics" ? item.id : `${item.name}-${index}`}
-                    onSelect={() => handleSelect(item)}
-                    className="flex flex-col items-start px-4 py-2 hover:bg-accent cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <p className="text-sm font-medium">{item.name}</p>
-                      {item.category && (
-                        <span className="text-xs text-muted-foreground px-2 py-1 bg-secondary rounded-full">
-                          {item.category}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {item.description}
-                    </p>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
+            <CommandGroup>
+              {filteredItems.map((item, index) => (
+                <CommandItem
+                  key={type === "metrics" ? item.id : `${item.name}-${index}`}
+                  onSelect={() => handleSelect(item)}
+                  className="flex flex-col items-start px-4 py-2 hover:bg-accent cursor-pointer"
+                >
+                  <p className="text-sm font-medium">{getDisplayName(item)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {type === "metrics" ? item.category : item.description}
+                  </p>
+                </CommandItem>
+              ))}
+            </CommandGroup>
           </CommandList>
         </Command>
       </CommandDialog>
