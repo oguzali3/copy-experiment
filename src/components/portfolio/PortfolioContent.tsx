@@ -157,11 +157,11 @@ const PortfolioContent = () => {
               .eq('ticker', stock.ticker);
           } else {
             // Add operation - Accumulate shares and calculate new weighted average
-            const totalShares = existingStock.shares + (stock.shares - existingStock.shares);
+            const totalShares = existingStock.shares + stock.shares;
             
             // Calculate weighted average price
             const existingCost = existingStock.shares * existingStock.avg_price;
-            const additionalCost = (stock.shares - existingStock.shares) * stock.avgPrice;
+            const additionalCost = stock.shares * stock.avgPrice;
             const totalCost = existingCost + additionalCost;
             const newAvgPrice = totalCost / totalShares;
 
