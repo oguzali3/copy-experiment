@@ -220,34 +220,23 @@ const PortfolioContent = () => {
         const existingStock = currentStocksMap.get(stock.ticker);
         
         if (existingStock) {
-          // For existing positions, only update if this stock was modified
-          const isModified = stock.shares !== existingStock.shares || 
-                           stock.avgPrice !== existingStock.avg_price;
-          
-          if (isModified) {
-            // Calculate new average price and total shares for existing position
-            const totalShares = Number(existingStock.shares) + stock.shares;
-            const totalCost = (Number(existingStock.shares) * Number(existingStock.avg_price)) + 
-                           (stock.shares * stock.avgPrice);
-            const newAvgPrice = totalCost / totalShares;
-            
-            // Update existing stock with new values
-            const { error: updateError } = await supabase
-              .from('portfolio_stocks')
-              .update({
-                shares: totalShares,
-                avg_price: newAvgPrice,
-                current_price: stock.currentPrice,
-                market_value: totalShares * stock.currentPrice,
-                percent_of_portfolio: stock.percentOfPortfolio,
-                gain_loss: (totalShares * stock.currentPrice) - (totalShares * newAvgPrice),
-                gain_loss_percent: ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100
-              })
-              .eq('portfolio_id', updatedPortfolio.id)
-              .eq('ticker', stock.ticker);
+          // For existing positions, update with the new share count directly
+          // This fixes the trimming issue by not adding to existing shares
+          const { error: updateError } = await supabase
+            .from('portfolio_stocks')
+            .update({
+              shares: stock.shares,
+              avg_price: stock.avgPrice,
+              current_price: stock.currentPrice,
+              market_value: stock.shares * stock.currentPrice,
+              percent_of_portfolio: stock.percentOfPortfolio,
+              gain_loss: (stock.shares * stock.currentPrice) - (stock.shares * stock.avgPrice),
+              gain_loss_percent: ((stock.currentPrice - stock.avgPrice) / stock.avgPrice) * 100
+            })
+            .eq('portfolio_id', updatedPortfolio.id)
+            .eq('ticker', stock.ticker);
 
-            if (updateError) throw updateError;
-          }
+          if (updateError) throw updateError;
         } else {
           // Insert new stock
           const { error: insertError } = await supabase
