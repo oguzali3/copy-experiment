@@ -54,6 +54,7 @@ export const ScreeningSearch = ({
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+        setItems([]);
       } finally {
         setLoading(false);
       }
@@ -63,22 +64,26 @@ export const ScreeningSearch = ({
   }, [type]);
 
   const filteredItems = items.filter(item => {
+    if (!item) return false;
+    
     const searchTerm = searchQuery.toLowerCase();
     if (type === "metrics") {
       return (
-        item.name.toLowerCase().includes(searchTerm) ||
-        item.category.toLowerCase().includes(searchTerm) ||
-        item.description.toLowerCase().includes(searchTerm)
+        (item.name?.toLowerCase() || '').includes(searchTerm) ||
+        (item.category?.toLowerCase() || '').includes(searchTerm) ||
+        (item.description?.toLowerCase() || '').includes(searchTerm)
       );
     } else {
       return (
-        item.name.toLowerCase().includes(searchTerm) ||
-        item.description.toLowerCase().includes(searchTerm)
+        (item.name?.toLowerCase() || '').includes(searchTerm) ||
+        (item.description?.toLowerCase() || '').includes(searchTerm)
       );
     }
   });
 
   const handleSelect = (item: any) => {
+    if (!item) return;
+
     if (type === "metrics" && onMetricSelect) {
       onMetricSelect({
         id: item.id,
