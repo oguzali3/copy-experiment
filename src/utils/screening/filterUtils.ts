@@ -33,7 +33,7 @@ export const categorizeFilters = (filters: ScreeningMetric[]) => {
       const filterObj = {
         metric: filter.id,
         operator: max && min ? 'between' as FilterOperator : min ? '>' as FilterOperator : '<' as FilterOperator,
-        value: max && min ? [min, max] : (min || max) as number
+        value: max && min ? [min, max] as [number, number] : (min || max) as number
       };
 
       if (BASIC_METRICS.includes(filter.id)) {

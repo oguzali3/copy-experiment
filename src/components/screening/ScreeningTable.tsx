@@ -9,8 +9,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScreeningMetric } from "@/types/screening";
-import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ScreeningTableProps {
   metrics: ScreeningMetric[];
@@ -64,6 +70,12 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
       : <ArrowDown className="h-4 w-4 ml-1" />;
   };
 
+  const getFilterRange = (metric: ScreeningMetric) => {
+    const min = metric.min ? `Min: ${metric.min}` : '';
+    const max = metric.max ? `Max: ${metric.max}` : '';
+    return [min, max].filter(Boolean).join(', ');
+  };
+
   const sortedResults = getSortedResults();
 
   return (
@@ -96,7 +108,17 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
                 onClick={() => handleSort(metric.id)}
               >
                 <div className="flex items-center">
-                  {metric.name}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger className="flex items-center">
+                        {metric.name}
+                        <Info className="h-4 w-4 ml-1 text-gray-400" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Filter Range: {getFilterRange(metric)}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   {getSortIcon(metric.id)}
                 </div>
               </TableHead>
