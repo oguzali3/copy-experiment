@@ -4,6 +4,7 @@ import { ScreeningTable } from "./ScreeningTable";
 import { ScreeningMetric } from "@/types/screening";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
 
 interface ScreenerResultsProps {
   metrics: ScreeningMetric[];
@@ -29,6 +30,15 @@ export const ScreenerResults = ({
   const { toast } = useToast();
 
   const handleScreenerRun = async () => {
+    if (metrics.length === 0) {
+      toast({
+        title: "No metrics selected",
+        description: "Please select at least one metric for screening",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('fetch-screener-results', {
@@ -45,19 +55,25 @@ export const ScreenerResults = ({
       });
 
       if (error) throw error;
-      setResults(data || []);
+      
+      if (!data || !Array.isArray(data)) {
+        throw new Error('Invalid response from screener');
+      }
+
+      setResults(data);
       
       toast({
         title: "Screener Results",
-        description: `Found ${data?.length || 0} matching stocks`,
+        description: `Found ${data.length} matching stocks`,
       });
     } catch (error) {
       console.error('Error running screener:', error);
       toast({
         title: "Error",
-        description: "Failed to run screener. Please try again.",
+        description: error.message || "Failed to run screener. Please try again.",
         variant: "destructive",
       });
+      setResults([]);
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +87,14 @@ export const ScreenerResults = ({
           onClick={handleScreenerRun}
           disabled={isLoading}
         >
-          {isLoading ? "Running..." : "Run Screener"}
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Running...
+            </>
+          ) : (
+            "Run Screener"
+          )}
         </Button>
         <div className="text-sm text-gray-500">
           Screener Results: {results.length}
