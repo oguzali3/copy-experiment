@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { CompanyHeader } from "@/components/analysis/CompanyHeader";
 import { NavigationTabs } from "@/components/analysis/NavigationTabs";
 import { AnalysisContent } from "@/components/analysis/AnalysisContent";
+import { CompanySearch } from "@/components/CompanySearch";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -90,6 +91,9 @@ const Analysis = () => {
 
   return (
     <div className="w-full">
+      <div className="mb-4">
+        <CompanySearch onCompanySelect={() => {}} />
+      </div>
       <CompanyHeader {...selectedStock} />
       <NavigationTabs activeTab={activeTab} onTabChange={setActiveTab} />
       <AnalysisContent 
