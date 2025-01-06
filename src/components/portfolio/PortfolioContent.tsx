@@ -66,7 +66,7 @@ const PortfolioContent = () => {
   };
 
   if (loading) return <div>Loading...</div>;
-  if (!portfolio) return <PortfolioEmpty onCreateClick={handleAddPortfolio} />;
+  if (!portfolio) return <PortfolioEmpty onCreate={handleAddPortfolio} />;
 
   return (
     <PortfolioView
