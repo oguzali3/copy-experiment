@@ -25,35 +25,75 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
 
   const handleAddStock = (company: any) => {
     setIsAddingStock(false);
-    const newStock: Stock = {
-      ticker: company.ticker,
-      name: company.name,
-      shares: 0,
-      avgPrice: 0,
-      currentPrice: Math.random() * 1000, // Mock price
-      marketValue: 0,
-      percentOfPortfolio: 0,
-      gainLoss: 0,
-      gainLossPercent: 0
-    };
-    setStocks([...stocks, newStock]);
+    
+    // Check if stock already exists in portfolio
+    const existingStockIndex = stocks.findIndex(s => s.ticker === company.ticker);
+    
+    if (existingStockIndex === -1) {
+      // If stock doesn't exist, add as new position
+      const newStock: Stock = {
+        ticker: company.ticker,
+        name: company.name,
+        shares: 0,
+        avgPrice: 0,
+        currentPrice: Math.random() * 1000, // Mock price
+        marketValue: 0,
+        percentOfPortfolio: 0,
+        gainLoss: 0,
+        gainLossPercent: 0
+      };
+      setStocks([...stocks, newStock]);
+    } else {
+      // If stock exists, notify user
+      toast.info(`${company.ticker} already exists in portfolio. Update shares and price in the table below.`);
+    }
   };
 
   const handleUpdateStock = (index: number, shares: number, avgPrice: number) => {
     const updatedStocks = stocks.map((stock, i) => {
       if (i === index) {
         const marketValue = shares * avgPrice;
+        const gainLoss = marketValue - (shares * avgPrice);
+        const gainLossPercent = ((stock.currentPrice - avgPrice) / avgPrice) * 100;
+        
+        // Find any other positions of the same stock
+        const sameStockPositions = stocks.filter((s, idx) => 
+          s.ticker === stock.ticker && idx !== index
+        );
+        
+        if (sameStockPositions.length > 0) {
+          // Calculate combined position
+          const totalShares = sameStockPositions.reduce((sum, pos) => sum + pos.shares, shares);
+          const totalCost = sameStockPositions.reduce((sum, pos) => sum + (pos.shares * pos.avgPrice), shares * avgPrice);
+          const newAvgPrice = totalCost / totalShares;
+          
+          // Remove other positions of the same stock
+          setStocks(prevStocks => prevStocks.filter((s, idx) => 
+            s.ticker !== stock.ticker || idx === index
+          ));
+          
+          return {
+            ...stock,
+            shares: totalShares,
+            avgPrice: newAvgPrice,
+            marketValue: totalShares * stock.currentPrice,
+            gainLoss: (totalShares * stock.currentPrice) - totalCost,
+            gainLossPercent: ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100
+          };
+        }
+        
         return {
           ...stock,
           shares,
           avgPrice,
           marketValue,
-          gainLoss: marketValue - (shares * avgPrice),
-          gainLossPercent: ((stock.currentPrice - avgPrice) / avgPrice) * 100
+          gainLoss,
+          gainLossPercent
         };
       }
       return stock;
     });
+    
     setStocks(updatedStocks);
   };
 
