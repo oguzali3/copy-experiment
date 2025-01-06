@@ -39,7 +39,7 @@ export const updatePortfolioStock = async (
       const gainLoss = marketValue - (totalShares * newAvgPrice);
       const gainLossPercent = ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100;
 
-      console.log('Updating position:', {
+      console.log('Adding to existing position:', {
         existingShares,
         newShares,
         totalShares,
@@ -50,6 +50,7 @@ export const updatePortfolioStock = async (
         marketValue
       });
 
+      // Update with accumulated shares
       return await supabase
         .from('portfolio_stocks')
         .update({
