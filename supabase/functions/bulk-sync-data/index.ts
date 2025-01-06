@@ -27,115 +27,118 @@ serve(async (req) => {
       errors: []
     };
 
-    // First, fetch all available company symbols
-    console.log('Fetching all available company symbols');
-    const symbolsUrl = `https://financialmodelingprep.com/api/v3/stock/list?apikey=${apiKey}`;
-    const symbolsResponse = await fetch(symbolsUrl);
-    const symbolsData = await symbolsResponse.json();
+    console.log('Starting bulk data sync...');
 
-    // Filter for companies with valid symbols (excluding crypto, forex, etc.)
-    const validSymbols = symbolsData
-      .filter((item: any) => item.type === 'stock' && item.exchangeShortName)
-      .map((item: any) => item.symbol);
+    // Fetch all company profiles in bulk
+    console.log('Fetching all company profiles...');
+    const profilesUrl = `https://financialmodelingprep.com/api/v4/company-profile/bulk?apikey=${apiKey}`;
+    const profilesResponse = await fetch(profilesUrl);
+    const profilesData = await profilesResponse.json();
 
-    console.log(`Found ${validSymbols.length} valid company symbols`);
-
-    // Process companies in batches to avoid rate limiting
-    const batchSize = 10;
-    for (let i = 0; i < validSymbols.length; i += batchSize) {
-      const batch = validSymbols.slice(i, i + batchSize);
+    if (Array.isArray(profilesData)) {
+      console.log(`Found ${profilesData.length} company profiles`);
       
-      for (const symbol of batch) {
-        try {
-          console.log(`Processing company ${symbol} (${i + batch.indexOf(symbol) + 1}/${validSymbols.length})`);
-          
-          // Fetch and store company profile
-          const profileUrl = `https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${apiKey}`;
-          const profileResponse = await fetch(profileUrl);
-          const profileData = await profileResponse.json();
+      const profilesToUpsert = profilesData.map(profile => ({
+        symbol: profile.symbol,
+        name: profile.companyName,
+        exchange: profile.exchangeShortName,
+        currency: profile.currency,
+        country: profile.country,
+        sector: profile.sector,
+        industry: profile.industry,
+        fulltimeemployees: profile.fullTimeEmployees,
+        description: profile.description,
+        ceo: profile.ceo,
+        website: profile.website,
+        image: profile.image,
+        ipodate: profile.ipoDate
+      }));
 
-          if (profileData && Array.isArray(profileData) && profileData.length > 0) {
-            const { error } = await supabase
-              .from('company_profiles')
-              .upsert([{
-                symbol,
-                name: profileData[0].companyName,
-                exchange: profileData[0].exchangeShortName,
-                currency: profileData[0].currency,
-                country: profileData[0].country,
-                sector: profileData[0].sector,
-                industry: profileData[0].industry,
-                fulltimeemployees: profileData[0].fullTimeEmployees,
-                description: profileData[0].description,
-                ceo: profileData[0].ceo,
-                website: profileData[0].website,
-                image: profileData[0].image,
-                ipodate: profileData[0].ipoDate
-              }]);
+      const { error: profilesError } = await supabase
+        .from('company_profiles')
+        .upsert(profilesToUpsert);
 
-            if (error) {
-              console.error(`Error storing profile for ${symbol}:`, error);
-              results.errors.push({ symbol, type: 'profile', error: error.message });
-            } else {
-              results.profiles.push(symbol);
-            }
-          }
-
-          // Fetch and store financial statements
-          const statementsUrl = `https://financialmodelingprep.com/api/v3/financial-statements/${symbol}?apikey=${apiKey}`;
-          const statementsResponse = await fetch(statementsUrl);
-          const statementsData = await statementsResponse.json();
-
-          if (statementsData && Array.isArray(statementsData)) {
-            const transformedData = statementsData.map((statement: any) => ({
-              symbol,
-              period: statement.period || 'annual',
-              date: statement.date,
-              calendar_year: new Date(statement.date).getFullYear(),
-              revenue: statement.revenue,
-              cost_of_revenue: statement.costOfRevenue,
-              gross_profit: statement.grossProfit,
-              operating_expenses: statement.operatingExpenses,
-              operating_income: statement.operatingIncome,
-              net_income: statement.netIncome,
-              total_assets: statement.totalAssets,
-              total_liabilities: statement.totalLiabilities,
-              total_equity: statement.totalEquity,
-              cash_and_equivalents: statement.cashAndEquivalents,
-              short_term_investments: statement.shortTermInvestments,
-              net_receivables: statement.netReceivables,
-              inventory: statement.inventory,
-              operating_cash_flow: statement.operatingCashFlow,
-              capital_expenditure: statement.capitalExpenditure,
-              free_cash_flow: statement.freeCashFlow,
-              dividend_payments: statement.dividendsPaid,
-              stock_repurchase: statement.stockRepurchase
-            }));
-
-            const { error } = await supabase
-              .from('financial_statements')
-              .upsert(transformedData);
-
-            if (error) {
-              console.error(`Error storing financials for ${symbol}:`, error);
-              results.errors.push({ symbol, type: 'financials', error: error.message });
-            } else {
-              results.financials.push(symbol);
-            }
-          }
-
-          // Add a delay between companies to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (error) {
-          console.error(`Error processing ${symbol}:`, error);
-          results.errors.push({ symbol, type: 'general', error: error.message });
-        }
+      if (profilesError) {
+        console.error('Error storing company profiles:', profilesError);
+        results.errors.push({ type: 'profiles', error: profilesError.message });
+      } else {
+        results.profiles = profilesToUpsert.map(p => p.symbol);
       }
-
-      // Add a longer delay between batches
-      await new Promise(resolve => setTimeout(resolve, 5000));
     }
 
+    // Fetch all income statements in bulk
+    console.log('Fetching all income statements...');
+    const incomeStatementsUrl = `https://financialmodelingprep.com/api/v4/income-statement-bulk?period=annual&apikey=${apiKey}`;
+    const incomeStatementsResponse = await fetch(incomeStatementsUrl);
+    const incomeStatementsData = await incomeStatementsResponse.json();
+
+    // Fetch all balance sheets in bulk
+    console.log('Fetching all balance sheets...');
+    const balanceSheetsUrl = `https://financialmodelingprep.com/api/v4/balance-sheet-statement-bulk?period=annual&apikey=${apiKey}`;
+    const balanceSheetsResponse = await fetch(balanceSheetsUrl);
+    const balanceSheetsData = await balanceSheetsResponse.json();
+
+    // Fetch all cash flow statements in bulk
+    console.log('Fetching all cash flow statements...');
+    const cashFlowsUrl = `https://financialmodelingprep.com/api/v4/cash-flow-statement-bulk?period=annual&apikey=${apiKey}`;
+    const cashFlowsResponse = await fetch(cashFlowsUrl);
+    const cashFlowsData = await cashFlowsResponse.json();
+
+    if (Array.isArray(incomeStatementsData) && Array.isArray(balanceSheetsData) && Array.isArray(cashFlowsData)) {
+      console.log(`Processing financial statements...`);
+      
+      // Create a map for quick lookups
+      const balanceSheetsMap = new Map(
+        balanceSheetsData.map(bs => [`${bs.symbol}-${bs.date}`, bs])
+      );
+      const cashFlowsMap = new Map(
+        cashFlowsData.map(cf => [`${cf.symbol}-${cf.date}`, cf])
+      );
+
+      const financialsToUpsert = incomeStatementsData.map(income => {
+        const key = `${income.symbol}-${income.date}`;
+        const balanceSheet = balanceSheetsMap.get(key);
+        const cashFlow = cashFlowsMap.get(key);
+
+        return {
+          symbol: income.symbol,
+          period: 'annual',
+          date: income.date,
+          calendar_year: new Date(income.date).getFullYear(),
+          revenue: income.revenue,
+          cost_of_revenue: income.costOfRevenue,
+          gross_profit: income.grossProfit,
+          operating_expenses: income.operatingExpenses,
+          operating_income: income.operatingIncome,
+          net_income: income.netIncome,
+          total_assets: balanceSheet?.totalAssets,
+          total_liabilities: balanceSheet?.totalLiabilities,
+          total_equity: balanceSheet?.totalStockholdersEquity,
+          cash_and_equivalents: balanceSheet?.cashAndCashEquivalents,
+          short_term_investments: balanceSheet?.shortTermInvestments,
+          net_receivables: balanceSheet?.netReceivables,
+          inventory: balanceSheet?.inventory,
+          operating_cash_flow: cashFlow?.operatingCashFlow,
+          capital_expenditure: cashFlow?.capitalExpenditure,
+          free_cash_flow: cashFlow?.freeCashFlow,
+          dividend_payments: cashFlow?.dividendsPaid,
+          stock_repurchase: cashFlow?.commonStockRepurchased
+        };
+      });
+
+      const { error: financialsError } = await supabase
+        .from('financial_statements')
+        .upsert(financialsToUpsert);
+
+      if (financialsError) {
+        console.error('Error storing financial statements:', financialsError);
+        results.errors.push({ type: 'financials', error: financialsError.message });
+      } else {
+        results.financials = [...new Set(financialsToUpsert.map(f => f.symbol))];
+      }
+    }
+
+    console.log('Bulk sync completed');
     return new Response(JSON.stringify(results), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
