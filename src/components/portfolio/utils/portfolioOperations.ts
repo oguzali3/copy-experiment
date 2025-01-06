@@ -1,5 +1,5 @@
-import { Portfolio, Stock } from "../types";
 import { supabase } from "@/integrations/supabase/client";
+import { Stock } from "../types";
 
 export const updatePortfolioStock = async (
   portfolioId: string,
