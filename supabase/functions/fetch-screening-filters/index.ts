@@ -5,61 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Mapping of country codes to names
-const countryNames: { [key: string]: string } = {
-  US: "United States", UK: "United Kingdom", JP: "Japan", CN: "China", DE: "Germany",
-  FR: "France", CA: "Canada", AU: "Australia", BR: "Brazil", IN: "India",
-  RU: "Russia", KR: "South Korea", ES: "Spain", IT: "Italy", NL: "Netherlands",
-  CH: "Switzerland", SE: "Sweden", MX: "Mexico", SG: "Singapore", HK: "Hong Kong",
-  // Add more as needed
-};
-
-// Mapping of exchange codes to full names
-const exchangeNames: { [key: string]: string } = {
-  NYSE: "New York Stock Exchange",
-  NASDAQ: "NASDAQ Stock Market",
-  AMEX: "American Stock Exchange",
-  LSE: "London Stock Exchange",
-  TSX: "Toronto Stock Exchange",
-  HKSE: "Hong Kong Stock Exchange",
-  SSE: "Shanghai Stock Exchange",
-  JPX: "Japan Exchange Group",
-  EURONEXT: "Euronext",
-  ASX: "Australian Securities Exchange",
-  // Add more as needed
-};
-
-async function fetchAllStocks(apiKey: string) {
-  let allStocks = [];
-  let page = 0;
-  const limit = 1000;
-  
-  while (true) {
-    console.log(`Fetching stocks page ${page + 1}`);
-    const response = await fetch(
-      `https://financialmodelingprep.com/api/v3/stock-screener?apikey=${apiKey}&limit=${limit}&page=${page}`
-    );
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch stocks page ${page + 1}`);
-    }
-    
-    const stocks = await response.json();
-    if (!stocks || stocks.length === 0) {
-      break;
-    }
-    
-    allStocks = allStocks.concat(stocks);
-    page++;
-    
-    // Add a small delay to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  
-  console.log(`Total stocks fetched: ${allStocks.length}`);
-  return allStocks;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -72,22 +17,79 @@ serve(async (req) => {
       throw new Error('FMP API key not configured');
     }
 
-    // Fetch all data in parallel
-    const [countriesResponse, sectorsResponse, exchangesResponse, industriesResponse] = await Promise.all([
+    // Fetch data in parallel
+    const [countriesResponse, sectorsResponse, exchangesResponse, industriesResponse, restCountriesResponse] = await Promise.all([
       fetch(`https://financialmodelingprep.com/api/v3/get-all-countries?apikey=${apiKey}`),
       fetch(`https://financialmodelingprep.com/api/v3/sectors-list?apikey=${apiKey}`),
       fetch(`https://financialmodelingprep.com/api/v3/exchanges-list?apikey=${apiKey}`),
-      fetch(`https://financialmodelingprep.com/api/v3/industries-list?apikey=${apiKey}`)
+      fetch(`https://financialmodelingprep.com/api/v3/industries-list?apikey=${apiKey}`),
+      fetch('https://restcountries.com/v3.1/all?fields=cca2,name,flag')
     ]);
 
-    const [countriesData, sectorsData, exchangesData, industriesData] = await Promise.all([
+    const [countriesData, sectorsData, exchangesData, industriesData, restCountriesData] = await Promise.all([
       countriesResponse.json(),
       sectorsResponse.json(),
       exchangesResponse.json(),
-      industriesResponse.json()
+      industriesResponse.json(),
+      restCountriesResponse.json()
     ]);
 
     console.log('Data fetched successfully');
+
+    // Create country code to name mapping
+    const countryMap = new Map(
+      restCountriesData.map((country: any) => [
+        country.cca2,
+        {
+          name: country.cca2,
+          description: `${country.name.common} ${country.flag}`,
+          fullName: country.name.common
+        }
+      ])
+    );
+
+    // Exchange mappings (commonly used exchanges)
+    const exchangeMap = new Map([
+      ['NYSE', { name: 'NYSE', description: 'New York Stock Exchange', fullName: 'New York Stock Exchange' }],
+      ['NASDAQ', { name: 'NASDAQ', description: 'NASDAQ Stock Market', fullName: 'NASDAQ Stock Market' }],
+      ['AMEX', { name: 'AMEX', description: 'American Stock Exchange', fullName: 'NYSE American' }],
+      ['TSX', { name: 'TSX', description: 'Toronto Stock Exchange', fullName: 'Toronto Stock Exchange' }],
+      ['LSE', { name: 'LSE', description: 'London Stock Exchange', fullName: 'London Stock Exchange' }],
+      ['EURONEXT', { name: 'EURONEXT', description: 'Euronext', fullName: 'Euronext' }],
+      ['HKSE', { name: 'HKSE', description: 'Hong Kong Stock Exchange', fullName: 'Hong Kong Stock Exchange' }],
+      ['SSE', { name: 'SSE', description: 'Shanghai Stock Exchange', fullName: 'Shanghai Stock Exchange' }],
+      ['SZSE', { name: 'SZSE', description: 'Shenzhen Stock Exchange', fullName: 'Shenzhen Stock Exchange' }],
+      ['JPX', { name: 'JPX', description: 'Japan Exchange Group', fullName: 'Japan Exchange Group' }],
+      ['ASX', { name: 'ASX', description: 'Australian Securities Exchange', fullName: 'Australian Securities Exchange' }],
+      ['BSE', { name: 'BSE', description: 'Bombay Stock Exchange', fullName: 'Bombay Stock Exchange' }],
+      ['NSE', { name: 'NSE', description: 'National Stock Exchange of India', fullName: 'National Stock Exchange of India' }],
+      ['SIX', { name: 'SIX', description: 'Swiss Exchange', fullName: 'SIX Swiss Exchange' }],
+      ['KRX', { name: 'KRX', description: 'Korea Exchange', fullName: 'Korea Exchange' }],
+      ['SGX', { name: 'SGX', description: 'Singapore Exchange', fullName: 'Singapore Exchange' }],
+      ['BVB', { name: 'BVB', description: 'Bucharest Stock Exchange', fullName: 'Bucharest Stock Exchange' }],
+      ['BME', { name: 'BME', description: 'Bolsas y Mercados Españoles', fullName: 'Spanish Stock Exchange' }],
+      ['FSX', { name: 'FSX', description: 'Frankfurt Stock Exchange', fullName: 'Frankfurt Stock Exchange' }],
+      ['OSE', { name: 'OSE', description: 'Oslo Stock Exchange', fullName: 'Oslo Stock Exchange' }]
+    ]);
+
+    // Format the response data
+    const formattedCountries = Array.from(countriesData).map((code: string) => {
+      const countryInfo = countryMap.get(code) || {
+        name: code,
+        description: `Country code: ${code}`,
+        fullName: code
+      };
+      return countryInfo;
+    });
+
+    const formattedExchanges = Array.from(exchangesData).map((code: string) => {
+      const exchangeInfo = exchangeMap.get(code) || {
+        name: code,
+        description: `Exchange code: ${code}`,
+        fullName: code
+      };
+      return exchangeInfo;
+    });
 
     const metrics = [
       {
@@ -130,23 +132,15 @@ serve(async (req) => {
           category: category.category
         }))
       ),
-      countries: Array.isArray(countriesData) ? countriesData.map((code: string) => ({
-        name: code,
-        description: `Companies based in ${countryNames[code] || code}`,
-        fullName: countryNames[code] || code
-      })) : [],
+      countries: formattedCountries,
       industries: Array.isArray(industriesData) ? industriesData.map((industry: string) => ({
         name: industry,
         description: `Companies in the ${industry} industry`
       })) : [],
-      exchanges: Array.isArray(exchangesData) ? exchangesData.map((exchange: string) => ({
-        name: exchange,
-        description: `Stocks listed on ${exchangeNames[exchange] || exchange}`,
-        fullName: exchangeNames[exchange] || exchange
-      })) : []
+      exchanges: formattedExchanges
     };
 
-    console.log('Sending formatted response:', {
+    console.log('Sending formatted response with counts:', {
       metricsCount: formattedResponse.metrics.length,
       countriesCount: formattedResponse.countries.length,
       industriesCount: formattedResponse.industries.length,
