@@ -21,12 +21,12 @@ serve(async (req) => {
 
     console.log('Starting bulk population of company profiles...')
 
-    // Process one exchange at a time
-    const exchange = 'NASDAQ'; // Start with NASDAQ only
+    // Process one exchange at a time with a smaller dataset
+    const exchange = 'NASDAQ';
     console.log(`Fetching profiles for ${exchange}...`);
     
     const response = await fetch(
-      `https://financialmodelingprep.com/api/v4/profile/all?exchange=${exchange}&apikey=${apiKey}`
+      `https://financialmodelingprep.com/api/v4/profile/all?exchange=${exchange}&apikey=${apiKey}&limit=100`
     );
     
     if (!response.ok) {
@@ -47,12 +47,13 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Clear only existing NASDAQ records to reduce operation size
+    // Clear only existing NASDAQ records for the limited dataset
     console.log(`Clearing existing ${exchange} company profiles...`);
     const { error: deleteError } = await supabase
       .from('company_profiles')
       .delete()
-      .eq('exchange', exchange);
+      .eq('exchange', exchange)
+      .limit(100);
     
     if (deleteError) {
       console.error('Error clearing existing data:', deleteError);
@@ -60,10 +61,10 @@ serve(async (req) => {
     }
     
     console.log(`Cleared existing ${exchange} company profiles`);
-    await delay(1000); // Wait after delete operation
+    await delay(2000); // Increased delay after delete operation
 
-    // Transform and insert profiles in smaller batches
-    const batchSize = 25; // Further reduced batch size
+    // Transform and insert profiles in very small batches
+    const batchSize = 10; // Further reduced batch size
     const transformedProfiles = profiles.map((profile: any) => ({
       symbol: profile.symbol,
       name: profile.companyName,
@@ -89,20 +90,28 @@ serve(async (req) => {
       console.log(`Processing batch ${batchNumber} of ${totalBatches}`);
       
       const batch = transformedProfiles.slice(i, i + batchSize);
-      const { error: insertError } = await supabase
-        .from('company_profiles')
-        .insert(batch);
       
-      if (insertError) {
-        console.error(`Error inserting batch ${batchNumber}:`, insertError);
-        throw insertError;
+      try {
+        const { error: insertError } = await supabase
+          .from('company_profiles')
+          .insert(batch);
+        
+        if (insertError) {
+          console.error(`Error inserting batch ${batchNumber}:`, insertError);
+          throw insertError;
+        }
+        
+        successCount += batch.length;
+        console.log(`Successfully inserted batch ${batchNumber} (${successCount} total records)`);
+        
+        // Longer delay between batches
+        await delay(2000);
+      } catch (error) {
+        console.error(`Failed to process batch ${batchNumber}:`, error);
+        // Continue with next batch instead of failing completely
+        await delay(3000); // Extra delay after error
+        continue;
       }
-      
-      successCount += batch.length;
-      console.log(`Successfully inserted batch ${batchNumber} (${successCount} total records)`);
-      
-      // Longer delay between batches
-      await delay(1000);
     }
 
     console.log(`Completed! Inserted ${successCount} ${exchange} company profiles`);
