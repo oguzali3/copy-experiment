@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { countries, industries, exchanges, metrics } = await req.json()
+    const { countries, industries, exchanges, ...metrics } = await req.json()
     console.log('Received filters:', { countries, industries, exchanges, metrics });
 
     const apiKey = Deno.env.get('FMP_API_KEY')
@@ -23,29 +23,21 @@ serve(async (req) => {
     const queryParams = new URLSearchParams()
     queryParams.append('apikey', apiKey)
 
-    // Add countries if they exist
+    // Add basic filters
     if (countries?.length > 0) {
-      queryParams.append('country', countries.join(','));
-      console.log('Using countries:', countries);
+      queryParams.append('country', countries.join(','))
     }
-
-    // Add industries if they exist
     if (industries?.length > 0) {
       queryParams.append('industry', industries.join(','))
     }
-
-    // Add exchanges if they exist
     if (exchanges?.length > 0) {
       queryParams.append('exchange', exchanges.join(','))
     }
 
-    // Add metric filters with min/max values
-    metrics?.forEach((metric: any) => {
-      if (metric.min !== undefined && metric.min !== '') {
-        queryParams.append(`${metric.id}MoreThan`, metric.min)
-      }
-      if (metric.max !== undefined && metric.max !== '') {
-        queryParams.append(`${metric.id}LowerThan`, metric.max)
+    // Add metric filters
+    Object.entries(metrics).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') {
+        queryParams.append(key, value.toString())
       }
     })
 

@@ -22,7 +22,7 @@ interface ScreeningSearchProps {
 
 interface SearchItem {
   name: string;
-  description: string;
+  description?: string;
   category?: string;
   id?: string;
   fullName?: string;
@@ -113,6 +113,7 @@ export const ScreeningSearch = ({
         id: item.id || '',
         name: item.name,
         category: item.category || '',
+        description: item.description,
         min: "",
         max: ""
       });
@@ -178,7 +179,7 @@ export const ScreeningSearch = ({
                 >
                   <p className="text-sm font-medium">{getDisplayName(item)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {type === "metrics" ? item.category : item.description}
+                    {type === "metrics" ? `${item.category} - ${item.description}` : item.description}
                   </p>
                 </CommandItem>
               ))}
