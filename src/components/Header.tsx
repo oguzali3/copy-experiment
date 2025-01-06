@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Header = () => {
   const navigate = useNavigate();
-  const { session } = useSessionContext();
+  const location = useLocation();
+  const { session, isLoading } = useSessionContext();
   const [isScrolled, setIsScrolled] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [show, setShow] = useState(true);
@@ -17,14 +18,12 @@ export const Header = () => {
     const controlNavbar = () => {
       const currentScrollY = window.scrollY;
       
-      // Show/hide based on scroll direction
       if (currentScrollY > lastScrollY) {
-        setShow(false); // Scrolling down
+        setShow(false);
       } else {
-        setShow(true); // Scrolling up
+        setShow(true);
       }
       
-      // Add background when scrolled
       if (currentScrollY > 20) {
         setIsScrolled(true);
       } else {
@@ -37,6 +36,14 @@ export const Header = () => {
     window.addEventListener("scroll", controlNavbar);
     return () => window.removeEventListener("scroll", controlNavbar);
   }, [lastScrollY]);
+
+  useEffect(() => {
+    // Check authentication state on protected routes
+    const protectedRoutes = ['/portfolio', '/dashboard', '/watchlists'];
+    if (!isLoading && !session && protectedRoutes.includes(location.pathname)) {
+      navigate('/signin');
+    }
+  }, [session, isLoading, location.pathname, navigate]);
 
   const handleSignOut = async () => {
     try {
