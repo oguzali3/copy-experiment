@@ -71,6 +71,7 @@ serve(async (req) => {
       updated_at: new Date().toISOString()
     }))
 
+    let successCount = 0
     for (let i = 0; i < transformedProfiles.length; i += batchSize) {
       const batch = transformedProfiles.slice(i, i + batchSize)
       const { error: insertError } = await supabase
@@ -82,14 +83,15 @@ serve(async (req) => {
         throw insertError
       }
       
+      successCount += batch.length
       console.log(`Inserted batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(transformedProfiles.length/batchSize)}`)
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Successfully populated ${profiles.length} company profiles`,
-        count: profiles.length
+        message: `Successfully populated ${successCount} company profiles`,
+        count: successCount
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
