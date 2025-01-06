@@ -50,47 +50,23 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
 
   const handleUpdateStock = (index: number, newShares: number, newAvgPrice: number) => {
     const updatedStock = stocks[index];
-    const otherPositions = stocks.filter((s, i) => s.ticker === updatedStock.ticker && i !== index);
     
-    if (otherPositions.length > 0) {
-      // Combine all positions of the same stock
-      const totalShares = otherPositions.reduce((sum, pos) => sum + pos.shares, 0) + newShares;
-      const totalCost = otherPositions.reduce((sum, pos) => sum + (pos.shares * pos.avgPrice), 0) + (newShares * newAvgPrice);
-      const combinedAvgPrice = totalCost / totalShares;
-      
-      const combinedPosition: Stock = {
-        ...updatedStock,
-        shares: totalShares,
-        avgPrice: combinedAvgPrice,
-        marketValue: totalShares * updatedStock.currentPrice,
-        gainLoss: (totalShares * updatedStock.currentPrice) - totalCost,
-        gainLossPercent: ((updatedStock.currentPrice - combinedAvgPrice) / combinedAvgPrice) * 100
-      };
+    // Calculate new values for the position
+    const marketValue = newShares * updatedStock.currentPrice;
+    const gainLoss = marketValue - (newShares * newAvgPrice);
+    const gainLossPercent = ((updatedStock.currentPrice - newAvgPrice) / newAvgPrice) * 100;
 
-      // Remove all positions of this stock and add the combined one
-      setStocks(prevStocks => [
-        ...prevStocks.filter(s => s.ticker !== updatedStock.ticker),
-        combinedPosition
-      ]);
-
-      toast.success(`Combined positions for ${updatedStock.ticker}`);
-    } else {
-      // Update single position
-      const marketValue = newShares * updatedStock.currentPrice;
-      const gainLoss = marketValue - (newShares * newAvgPrice);
-      const gainLossPercent = ((updatedStock.currentPrice - newAvgPrice) / newAvgPrice) * 100;
-
-      setStocks(prevStocks => prevStocks.map((stock, i) => 
-        i === index ? {
-          ...stock,
-          shares: newShares,
-          avgPrice: newAvgPrice,
-          marketValue,
-          gainLoss,
-          gainLossPercent
-        } : stock
-      ));
-    }
+    // Update only the selected stock
+    setStocks(prevStocks => prevStocks.map((stock, i) => 
+      i === index ? {
+        ...stock,
+        shares: newShares,
+        avgPrice: newAvgPrice,
+        marketValue,
+        gainLoss,
+        gainLossPercent
+      } : stock
+    ));
   };
 
   const handleRemoveStock = (index: number) => {
@@ -239,4 +215,3 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
     </div>
   );
 };
-
