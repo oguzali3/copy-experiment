@@ -38,10 +38,11 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      console.log('Raw intraday data received, count:', data.length);
+      console.log('Raw intraday data received, count:', data?.length);
 
       if (!Array.isArray(data)) {
-        throw new Error('Invalid intraday data format');
+        console.error('Invalid data format received:', typeof data);
+        throw new Error('Invalid intraday data format received from API');
       }
 
       // Get the most recent trading day's data
@@ -51,12 +52,13 @@ serve(async (req) => {
       // Filter and format intraday data for the most recent trading day
       const chartData = data
         .filter(item => {
+          if (!item?.date) return false;
           const itemDate = new Date(item.date);
           return itemDate.toISOString().split('T')[0] === mostRecentDate;
         })
         .map(item => ({
           time: item.date,
-          price: parseFloat(item.close)
+          price: parseFloat(item.close) || 0
         }))
         .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
@@ -66,17 +68,24 @@ serve(async (req) => {
         console.log('No intraday data points available, fetching latest quote');
         const quoteEndpoint = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`;
         const quoteResponse = await fetch(quoteEndpoint);
+        
+        if (!quoteResponse.ok) {
+          throw new Error(`Quote API request failed with status ${quoteResponse.status}`);
+        }
+        
         const quoteData = await quoteResponse.json();
         
-        if (Array.isArray(quoteData) && quoteData.length > 0) {
-          return new Response(
-            JSON.stringify([{
-              time: new Date().toISOString(),
-              price: quoteData[0].price
-            }]),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+        if (!Array.isArray(quoteData) || quoteData.length === 0) {
+          throw new Error('Invalid quote data format received from API');
         }
+
+        return new Response(
+          JSON.stringify([{
+            time: new Date().toISOString(),
+            price: quoteData[0].price || 0
+          }]),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       return new Response(
@@ -91,22 +100,31 @@ serve(async (req) => {
       
       const response = await fetch(endpoint);
       if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        throw new Error(`Historical API request failed with status ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('Historical data received:', data.historical?.length, 'data points');
+      console.log('Historical data received:', data?.historical?.length, 'data points');
       
-      if (!data.historical || !Array.isArray(data.historical)) {
-        throw new Error('Historical data is not in the expected format');
+      if (!data?.historical || !Array.isArray(data.historical)) {
+        console.error('Invalid historical data format received:', data);
+        throw new Error('Invalid historical data format received from API');
       }
 
       const chartData = data.historical
-        .map((item: any) => ({
-          time: item.date,
-          price: parseFloat(item.close)
-        }))
+        .map((item: any) => {
+          if (!item?.date || !item?.close) return null;
+          return {
+            time: item.date,
+            price: parseFloat(item.close) || 0
+          };
+        })
+        .filter(item => item !== null)
         .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+
+      if (chartData.length === 0) {
+        throw new Error('No valid historical data points found');
+      }
 
       return new Response(
         JSON.stringify(chartData),
@@ -114,7 +132,7 @@ serve(async (req) => {
       );
     }
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('Error in fetch-stock-chart:', error.message);
     
     return new Response(
       JSON.stringify({ 
