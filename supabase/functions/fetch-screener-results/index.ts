@@ -44,20 +44,22 @@ serve(async (req) => {
       console.log('Using country codes:', countryCodes);
     }
 
-    // Add other filters if they exist
+    // Add industries if they exist
     if (industries?.length > 0) {
-      queryParams.append('sector', industries.join(','))
+      queryParams.append('industry', industries.join(','))
     }
+
+    // Add exchanges if they exist
     if (exchanges?.length > 0) {
       queryParams.append('exchange', exchanges.join(','))
     }
 
-    // Add metric filters
+    // Add metric filters with min/max values
     metrics?.forEach((metric: any) => {
-      if (metric.min !== undefined) {
+      if (metric.min !== undefined && metric.min !== '') {
         queryParams.append(`${metric.id}MoreThan`, metric.min)
       }
-      if (metric.max !== undefined) {
+      if (metric.max !== undefined && metric.max !== '') {
         queryParams.append(`${metric.id}LowerThan`, metric.max)
       }
     })
