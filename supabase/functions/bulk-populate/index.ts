@@ -23,7 +23,7 @@ serve(async (req) => {
     
     // Using the correct bulk profile endpoint
     const response = await fetch(
-      `https://financialmodelingprep.com/api/v3/stock/list?apikey=${apiKey}`
+      `https://financialmodelingprep.com/stable/profile-bulk?part=0&apikey=${apiKey}`
     );
     
     if (!response.ok) {
@@ -64,18 +64,18 @@ serve(async (req) => {
     const limitedProfiles = profiles.slice(0, 100); // Limit to first 100 records
     const transformedProfiles = limitedProfiles.map((profile: any) => ({
       symbol: profile.symbol,
-      name: profile.name,
+      name: profile.companyName,
       exchange: profile.exchange,
-      currency: 'USD', // Default since it's not in the basic endpoint
-      country: 'US', // Default since it's not in the basic endpoint
-      sector: null,
-      industry: null,
-      fulltimeemployees: null,
-      description: null,
-      ceo: null,
-      website: null,
-      image: null,
-      ipodate: null,
+      currency: profile.currency,
+      country: profile.country,
+      sector: profile.sector,
+      industry: profile.industry,
+      fulltimeemployees: profile.fullTimeEmployees,
+      description: profile.description,
+      ceo: profile.ceo,
+      website: profile.website,
+      image: profile.image,
+      ipodate: profile.ipoDate,
       updated_at: new Date().toISOString()
     }));
 
