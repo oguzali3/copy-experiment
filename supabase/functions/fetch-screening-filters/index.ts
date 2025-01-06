@@ -5,40 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const metrics = [
-  {
-    category: "Valuation",
-    metrics: [
-      { id: "marketCap", name: "Market Cap", description: "Total market value of company's shares" },
-      { id: "peRatio", name: "P/E Ratio", description: "Price to earnings ratio" },
-      { id: "priceToBook", name: "Price to Book", description: "Market price to book value ratio" },
-      { id: "evToEbitda", name: "EV/EBITDA", description: "Enterprise value to EBITDA ratio" },
-      { id: "priceToSales", name: "P/S Ratio", description: "Price to sales ratio" },
-      { id: "evToSales", name: "EV/Sales", description: "Enterprise value to sales ratio" }
-    ]
-  },
-  {
-    category: "Growth",
-    metrics: [
-      { id: "revenueGrowth", name: "Revenue Growth", description: "Year-over-year revenue growth" },
-      { id: "epsGrowth", name: "EPS Growth", description: "Year-over-year EPS growth" },
-      { id: "profitGrowth", name: "Profit Growth", description: "Year-over-year profit growth" },
-      { id: "revenueGrowthTTM", name: "Revenue Growth TTM", description: "Trailing twelve months revenue growth" },
-      { id: "epsGrowthTTM", name: "EPS Growth TTM", description: "Trailing twelve months EPS growth" }
-    ]
-  },
-  {
-    category: "Profitability",
-    metrics: [
-      { id: "grossMargin", name: "Gross Margin", description: "Gross profit as percentage of revenue" },
-      { id: "operatingMargin", name: "Operating Margin", description: "Operating income as percentage of revenue" },
-      { id: "netMargin", name: "Net Margin", description: "Net income as percentage of revenue" },
-      { id: "roe", name: "ROE", description: "Return on equity" },
-      { id: "roa", name: "ROA", description: "Return on assets" }
-    ]
-  }
-];
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -58,12 +24,12 @@ serve(async (req) => {
     const countriesData = await countriesResponse.json();
     console.log('Fetched countries:', countriesData?.length);
 
-    // Fetch industries
-    const industriesResponse = await fetch(
-      `https://financialmodelingprep.com/api/v3/industries-list?apikey=${apiKey}`
+    // Fetch sectors
+    const sectorsResponse = await fetch(
+      `https://financialmodelingprep.com/api/v3/sectors-list?apikey=${apiKey}`
     );
-    const industriesData = await industriesResponse.json();
-    console.log('Fetched industries:', industriesData?.length);
+    const sectorsData = await sectorsResponse.json();
+    console.log('Fetched sectors:', sectorsData?.length);
 
     // Fetch exchanges
     const exchangesResponse = await fetch(
@@ -71,7 +37,48 @@ serve(async (req) => {
     );
     const exchangesData = await exchangesResponse.json();
     console.log('Fetched exchanges:', exchangesData?.length);
-    
+
+    // Fetch industries
+    const industriesResponse = await fetch(
+      `https://financialmodelingprep.com/api/v3/industries-list?apikey=${apiKey}`
+    );
+    const industriesData = await industriesResponse.json();
+    console.log('Fetched industries:', industriesData?.length);
+
+    const metrics = [
+      {
+        category: "Valuation",
+        metrics: [
+          { id: "marketCap", name: "Market Cap", description: "Total market value of company's shares" },
+          { id: "peRatio", name: "P/E Ratio", description: "Price to earnings ratio" },
+          { id: "priceToBook", name: "Price to Book", description: "Market price to book value ratio" },
+          { id: "evToEbitda", name: "EV/EBITDA", description: "Enterprise value to EBITDA ratio" },
+          { id: "priceToSales", name: "P/S Ratio", description: "Price to sales ratio" },
+          { id: "evToSales", name: "EV/Sales", description: "Enterprise value to sales ratio" }
+        ]
+      },
+      {
+        category: "Growth",
+        metrics: [
+          { id: "revenueGrowth", name: "Revenue Growth", description: "Year-over-year revenue growth" },
+          { id: "epsGrowth", name: "EPS Growth", description: "Year-over-year EPS growth" },
+          { id: "profitGrowth", name: "Profit Growth", description: "Year-over-year profit growth" },
+          { id: "revenueGrowthTTM", name: "Revenue Growth TTM", description: "Trailing twelve months revenue growth" },
+          { id: "epsGrowthTTM", name: "EPS Growth TTM", description: "Trailing twelve months EPS growth" }
+        ]
+      },
+      {
+        category: "Profitability",
+        metrics: [
+          { id: "grossMargin", name: "Gross Margin", description: "Gross profit as percentage of revenue" },
+          { id: "operatingMargin", name: "Operating Margin", description: "Operating income as percentage of revenue" },
+          { id: "netMargin", name: "Net Margin", description: "Net income as percentage of revenue" },
+          { id: "roe", name: "ROE", description: "Return on equity" },
+          { id: "roa", name: "ROA", description: "Return on assets" }
+        ]
+      }
+    ];
+
     const formattedResponse = {
       metrics: metrics.flatMap(category => 
         category.metrics.map(metric => ({
