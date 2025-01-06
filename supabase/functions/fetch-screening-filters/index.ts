@@ -11,6 +11,37 @@ serve(async (req) => {
   }
 
   try {
+    const apiKey = Deno.env.get('FMP_API_KEY')
+    if (!apiKey) {
+      throw new Error('FMP API key not configured')
+    }
+
+    // Fetch countries, industries, and exchanges from FMP API
+    const [countriesRes, industriesRes, exchangesRes] = await Promise.all([
+      fetch(`https://financialmodelingprep.com/api/v3/stock-screener?apikey=${apiKey}`),
+      fetch(`https://financialmodelingprep.com/api/v3/stock-screener?apikey=${apiKey}`),
+      fetch(`https://financialmodelingprep.com/api/v3/stock-screener?apikey=${apiKey}`)
+    ]);
+
+    const [countriesData, industriesData, exchangesData] = await Promise.all([
+      countriesRes.json(),
+      industriesRes.json(),
+      exchangesRes.json()
+    ]);
+
+    // Extract unique values and format them
+    const countries = [...new Set(countriesData.map((item: any) => item.country))]
+      .filter(Boolean)
+      .map(country => ({ name: country, fullName: country }));
+
+    const industries = [...new Set(industriesData.map((item: any) => item.industry))]
+      .filter(Boolean)
+      .map(industry => ({ name: industry }));
+
+    const exchanges = [...new Set(exchangesData.map((item: any) => item.exchange))]
+      .filter(Boolean)
+      .map(exchange => ({ name: exchange, fullName: exchange }));
+
     // Define available financial metrics
     const metrics = [
       {
@@ -45,21 +76,12 @@ serve(async (req) => {
       }
     ];
 
-    // Mock data for other filters
-    const countries = [
-      { name: "US", fullName: "United States" },
-      { name: "CA", fullName: "Canada" },
-    ];
-
-    const industries = [
-      { name: "Technology" },
-      { name: "Healthcare" },
-    ];
-
-    const exchanges = [
-      { name: "NYSE", fullName: "New York Stock Exchange" },
-      { name: "NASDAQ", fullName: "NASDAQ Stock Market" },
-    ];
+    console.log('Returning filters:', {
+      countriesCount: countries.length,
+      industriesCount: industries.length,
+      exchangesCount: exchanges.length,
+      metricsCount: metrics.length
+    });
 
     return new Response(
       JSON.stringify({
