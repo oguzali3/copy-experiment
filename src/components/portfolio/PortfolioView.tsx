@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings, PlusCircle, Trash2 } from "lucide-react";
+import { Settings, PlusCircle, MinusCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -31,10 +31,13 @@ export const PortfolioView = ({
 }: PortfolioViewProps) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddingTicker, setIsAddingTicker] = useState(false);
+  const [isTrimmingPosition, setIsTrimmingPosition] = useState(false);
   const [newPortfolioName, setNewPortfolioName] = useState(portfolio.name);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [shares, setShares] = useState("");
   const [avgPrice, setAvgPrice] = useState("");
+  const [selectedStockForTrim, setSelectedStockForTrim] = useState<Stock | null>(null);
+  const [sharesToTrim, setSharesToTrim] = useState("");
 
   const handleUpdatePortfolioName = () => {
     onUpdatePortfolio({
@@ -70,7 +73,6 @@ export const PortfolioView = ({
     const updatedStocks = [...portfolio.stocks, newStock];
     const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
     
-    // Recalculate percentages for all stocks
     const stocksWithUpdatedPercentages = updatedStocks.map(stock => ({
       ...stock,
       percentOfPortfolio: (stock.marketValue / totalValue) * 100
@@ -89,11 +91,54 @@ export const PortfolioView = ({
     toast.success(`Added ${newStock.name} to portfolio`);
   };
 
+  const handleTrimPosition = () => {
+    if (!selectedStockForTrim || !sharesToTrim || Number(sharesToTrim) <= 0) {
+      toast.error("Please select a stock and enter a valid number of shares to trim");
+      return;
+    }
+
+    const sharesToRemove = Number(sharesToTrim);
+    if (sharesToRemove >= selectedStockForTrim.shares) {
+      toast.error("Cannot trim more shares than you own");
+      return;
+    }
+
+    const updatedStocks = portfolio.stocks.map(stock => {
+      if (stock.ticker === selectedStockForTrim.ticker) {
+        const remainingShares = stock.shares - sharesToRemove;
+        const marketValue = remainingShares * stock.currentPrice;
+        return {
+          ...stock,
+          shares: remainingShares,
+          marketValue,
+        };
+      }
+      return stock;
+    });
+
+    const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
+    
+    const stocksWithUpdatedPercentages = updatedStocks.map(stock => ({
+      ...stock,
+      percentOfPortfolio: (stock.marketValue / totalValue) * 100
+    }));
+
+    onUpdatePortfolio({
+      ...portfolio,
+      stocks: stocksWithUpdatedPercentages,
+      totalValue
+    });
+
+    setIsTrimmingPosition(false);
+    setSelectedStockForTrim(null);
+    setSharesToTrim("");
+    toast.success(`Trimmed ${sharesToRemove} shares of ${selectedStockForTrim.name}`);
+  };
+
   const handleDeletePosition = (ticker: string) => {
     const updatedStocks = portfolio.stocks.filter(stock => stock.ticker !== ticker);
     const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
     
-    // Recalculate percentages for remaining stocks
     const stocksWithUpdatedPercentages = updatedStocks.map(stock => ({
       ...stock,
       percentOfPortfolio: (stock.marketValue / totalValue) * 100
@@ -136,6 +181,56 @@ export const PortfolioView = ({
                 </div>
                 <Button onClick={handleUpdatePortfolioName}>
                   Save Changes
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isTrimmingPosition} onOpenChange={setIsTrimmingPosition}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="text-orange-600 border-orange-600">
+                <MinusCircle className="mr-2 h-4 w-4" />
+                Trim Position
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Trim Position</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Select Stock</label>
+                  <select
+                    className="w-full p-2 border rounded"
+                    value={selectedStockForTrim?.ticker || ""}
+                    onChange={(e) => {
+                      const stock = portfolio.stocks.find(s => s.ticker === e.target.value);
+                      setSelectedStockForTrim(stock || null);
+                    }}
+                  >
+                    <option value="">Select a stock</option>
+                    {portfolio.stocks.map(stock => (
+                      <option key={stock.ticker} value={stock.ticker}>
+                        {stock.name} ({stock.ticker}) - Current shares: {stock.shares}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedStockForTrim && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Number of Shares to Trim</label>
+                    <Input
+                      type="number"
+                      value={sharesToTrim}
+                      onChange={(e) => setSharesToTrim(e.target.value)}
+                      placeholder="Enter number of shares to trim"
+                      max={selectedStockForTrim.shares - 1}
+                      min={1}
+                    />
+                  </div>
+                )}
+                <Button onClick={handleTrimPosition}>
+                  Trim Position
                 </Button>
               </div>
             </DialogContent>
