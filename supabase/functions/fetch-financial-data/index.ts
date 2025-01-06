@@ -7,6 +7,7 @@ import { handleFinancialStatements } from './handlers/financialStatements.ts'
 import { handleInsiderTrades } from './handlers/insiderTrades.ts'
 import { handleInstitutionalHolders } from './handlers/institutionalHolders.ts'
 import { handleCompanyProfile } from './handlers/companyProfile.ts'
+import { handleQuoteData } from './handlers/quoteData.ts'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -17,7 +18,7 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, type, from, to, query, year, quarter } = await req.json();
+    const { endpoint, symbol, type, from, to, query } = await req.json();
     const apiKey = Deno.env.get("FMP_API_KEY");
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -26,13 +27,14 @@ serve(async (req) => {
       throw new Error("Missing required environment variables");
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     console.log('Received request with params:', { endpoint, symbol, type, from, to, query });
 
     switch (endpoint) {
       case "profile":
         return await handleCompanyProfile(apiKey, symbol);
+
+      case "quote":
+        return await handleQuoteData(apiKey, symbol);
 
       case "income-statement":
       case "balance-sheet":
