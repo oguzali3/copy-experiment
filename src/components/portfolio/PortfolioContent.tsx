@@ -168,7 +168,6 @@ const PortfolioContent = () => {
 
       await Promise.all(stockPromises);
       
-      // Fetch the updated portfolio to ensure we have the latest data
       await fetchPortfolio();
       setIsCreating(false);
       toast.success("Portfolio created successfully");
@@ -211,53 +210,72 @@ const PortfolioContent = () => {
       // Fetch current stocks to compare with updated ones
       const { data: currentStocks } = await supabase
         .from('portfolio_stocks')
-        .select('ticker')
+        .select('*')
         .eq('portfolio_id', updatedPortfolio.id);
 
-      const currentTickers = new Set(currentStocks?.map(s => s.ticker) || []);
-      const updatedTickers = new Set(updatedPortfolio.stocks.map(s => s.ticker));
+      const currentStocksMap = new Map(currentStocks?.map(s => [s.ticker, s]));
+      
+      // Update or insert stocks
+      for (const stock of updatedPortfolio.stocks) {
+        const existingStock = currentStocksMap.get(stock.ticker);
+        
+        if (existingStock) {
+          // Calculate new average price and total shares for existing position
+          const totalShares = Number(existingStock.shares) + stock.shares;
+          const totalCost = (Number(existingStock.shares) * Number(existingStock.avg_price)) + 
+                           (stock.shares * stock.avgPrice);
+          const newAvgPrice = totalCost / totalShares;
+          
+          // Update existing stock with new values
+          const { error: updateError } = await supabase
+            .from('portfolio_stocks')
+            .update({
+              shares: totalShares,
+              avg_price: newAvgPrice,
+              current_price: stock.currentPrice,
+              market_value: totalShares * stock.currentPrice,
+              percent_of_portfolio: stock.percentOfPortfolio,
+              gain_loss: (totalShares * stock.currentPrice) - (totalShares * newAvgPrice),
+              gain_loss_percent: ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100
+            })
+            .eq('portfolio_id', updatedPortfolio.id)
+            .eq('ticker', stock.ticker);
+
+          if (updateError) throw updateError;
+        } else {
+          // Insert new stock
+          const { error: insertError } = await supabase
+            .from('portfolio_stocks')
+            .insert({
+              portfolio_id: updatedPortfolio.id,
+              ticker: stock.ticker,
+              name: stock.name,
+              shares: stock.shares,
+              avg_price: stock.avgPrice,
+              current_price: stock.currentPrice,
+              market_value: stock.marketValue,
+              percent_of_portfolio: stock.percentOfPortfolio,
+              gain_loss: stock.gainLoss,
+              gain_loss_percent: stock.gainLossPercent
+            });
+
+          if (insertError) throw insertError;
+        }
+      }
 
       // Delete removed stocks
-      const tickersToDelete = [...currentTickers].filter(ticker => !updatedTickers.has(ticker));
+      const updatedTickers = new Set(updatedPortfolio.stocks.map(s => s.ticker));
+      const tickersToDelete = [...currentStocksMap.keys()].filter(ticker => !updatedTickers.has(ticker));
+      
       if (tickersToDelete.length > 0) {
-        await supabase
+        const { error: deleteError } = await supabase
           .from('portfolio_stocks')
           .delete()
           .eq('portfolio_id', updatedPortfolio.id)
           .in('ticker', tickersToDelete);
+
+        if (deleteError) throw deleteError;
       }
-
-      // Update or insert stocks
-      const stockPromises = updatedPortfolio.stocks.map(stock => {
-        const stockData = {
-          portfolio_id: updatedPortfolio.id,
-          ticker: stock.ticker,
-          name: stock.name,
-          shares: stock.shares,
-          avg_price: stock.avgPrice,
-          current_price: stock.currentPrice,
-          market_value: stock.marketValue,
-          percent_of_portfolio: stock.percentOfPortfolio,
-          gain_loss: stock.gainLoss,
-          gain_loss_percent: stock.gainLossPercent
-        };
-
-        if (currentTickers.has(stock.ticker)) {
-          // Update existing stock
-          return supabase
-            .from('portfolio_stocks')
-            .update(stockData)
-            .eq('portfolio_id', updatedPortfolio.id)
-            .eq('ticker', stock.ticker);
-        } else {
-          // Insert new stock
-          return supabase
-            .from('portfolio_stocks')
-            .insert(stockData);
-        }
-      });
-
-      await Promise.all(stockPromises);
       
       // Fetch the updated portfolio
       await fetchPortfolio();
