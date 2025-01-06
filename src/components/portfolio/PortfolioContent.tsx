@@ -138,36 +138,55 @@ const PortfolioContent = () => {
         const existingStock = currentStocksMap.get(stock.ticker);
         
         if (existingStock) {
-          // If stock exists, we need to properly handle share accumulation
-          const totalShares = Number(existingStock.shares) + Number(stock.shares);
-          const existingCost = Number(existingStock.shares) * Number(existingStock.avg_price);
-          const newCost = Number(stock.shares) * Number(stock.avgPrice);
-          const totalCost = existingCost + newCost;
-          const newAvgPrice = totalCost / totalShares;
+          // Determine if this is a trim operation by comparing with existing shares
+          const isTrimOperation = stock.shares < existingStock.shares;
+          
+          if (isTrimOperation) {
+            // For trim operations, use the new share count directly
+            await supabase
+              .from('portfolio_stocks')
+              .update({
+                shares: stock.shares,
+                current_price: stock.currentPrice,
+                market_value: stock.shares * stock.currentPrice,
+                percent_of_portfolio: stock.percentOfPortfolio,
+                gain_loss: (stock.shares * stock.currentPrice) - (stock.shares * existingStock.avg_price),
+                gain_loss_percent: ((stock.currentPrice - existingStock.avg_price) / existingStock.avg_price) * 100
+              })
+              .eq('portfolio_id', updatedPortfolio.id)
+              .eq('ticker', stock.ticker);
+          } else {
+            // For additions, accumulate shares and calculate new average price
+            const totalShares = Number(existingStock.shares) + Number(stock.shares);
+            const existingCost = Number(existingStock.shares) * Number(existingStock.avg_price);
+            const newCost = Number(stock.shares) * Number(stock.avgPrice);
+            const totalCost = existingCost + newCost;
+            const newAvgPrice = totalCost / totalShares;
 
-          console.log('Updating existing position:', {
-            ticker: stock.ticker,
-            existingShares: existingStock.shares,
-            newShares: stock.shares,
-            totalShares,
-            existingAvgPrice: existingStock.avg_price,
-            newStockAvgPrice: stock.avgPrice,
-            calculatedNewAvgPrice: newAvgPrice
-          });
+            console.log('Adding to existing position:', {
+              ticker: stock.ticker,
+              existingShares: existingStock.shares,
+              newShares: stock.shares,
+              totalShares,
+              existingAvgPrice: existingStock.avg_price,
+              newStockAvgPrice: stock.avgPrice,
+              calculatedNewAvgPrice: newAvgPrice
+            });
 
-          await supabase
-            .from('portfolio_stocks')
-            .update({
-              shares: totalShares,
-              avg_price: newAvgPrice,
-              current_price: stock.currentPrice,
-              market_value: totalShares * stock.currentPrice,
-              percent_of_portfolio: stock.percentOfPortfolio,
-              gain_loss: (totalShares * stock.currentPrice) - (totalShares * newAvgPrice),
-              gain_loss_percent: ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100
-            })
-            .eq('portfolio_id', updatedPortfolio.id)
-            .eq('ticker', stock.ticker);
+            await supabase
+              .from('portfolio_stocks')
+              .update({
+                shares: totalShares,
+                avg_price: newAvgPrice,
+                current_price: stock.currentPrice,
+                market_value: totalShares * stock.currentPrice,
+                percent_of_portfolio: stock.percentOfPortfolio,
+                gain_loss: (totalShares * stock.currentPrice) - (totalShares * newAvgPrice),
+                gain_loss_percent: ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100
+              })
+              .eq('portfolio_id', updatedPortfolio.id)
+              .eq('ticker', stock.ticker);
+          }
         } else {
           // If it's a new stock, insert it as is
           await supabase
