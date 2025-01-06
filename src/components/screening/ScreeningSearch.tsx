@@ -94,15 +94,17 @@ export const ScreeningSearch = ({
     const itemCategory = (item.category || '').toLowerCase();
     const itemFullName = (item.fullName || '').toLowerCase();
 
-    if (type === "metrics") {
-      return itemName.includes(searchTerm) ||
-             itemCategory.includes(searchTerm) ||
-             itemDescription.includes(searchTerm);
-    } else {
-      return itemName.includes(searchTerm) ||
-             itemDescription.includes(searchTerm) ||
-             itemFullName?.includes(searchTerm);
-    }
+    // Improved search matching logic
+    const matchName = itemName.includes(searchTerm);
+    const matchFullName = itemFullName.includes(searchTerm);
+    const matchDescription = itemDescription.includes(searchTerm);
+    const matchCategory = type === "metrics" && itemCategory.includes(searchTerm);
+
+    // Special handling for country codes (e.g., "TR" for Turkey)
+    const isCountryCode = type === "countries" && itemName.length === 2;
+    const matchCountryCode = isCountryCode && itemName.toLowerCase() === searchTerm;
+
+    return matchName || matchFullName || matchDescription || matchCategory || matchCountryCode;
   });
 
   const handleSelect = (item: SearchItem) => {
