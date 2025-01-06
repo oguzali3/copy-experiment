@@ -73,7 +73,7 @@ export const PortfolioView = ({
   const handleTrimPosition = (selectedStock: Stock, sharesToTrim: number) => {
     const updatedStocks = portfolio.stocks.map(stock => {
       if (stock.ticker === selectedStock.ticker) {
-        const remainingShares = stock.shares - sharesToTrim; // Subtract shares for trimming
+        const remainingShares = stock.shares - sharesToTrim;
         if (remainingShares < 0) {
           toast.error("Cannot trim more shares than owned");
           return stock;
@@ -126,11 +126,6 @@ export const PortfolioView = ({
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{portfolio.name}</h1>
         <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => setIsSettingsOpen(true)}>
-            <Settings className="mr-2 h-4 w-4" />
-            Portfolio Settings
-          </Button>
-
           <Button 
             variant="outline" 
             className="text-orange-600 border-orange-600"
@@ -168,7 +163,15 @@ export const PortfolioView = ({
         onDeletePosition={handleDeletePosition}
       />
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-4">
+        <Button 
+          variant="outline"
+          onClick={() => setIsSettingsOpen(true)}
+        >
+          <Settings className="mr-2 h-4 w-4" />
+          Portfolio Settings
+        </Button>
+
         <Button 
           variant="destructive"
           onClick={() => onDeletePortfolio(portfolio.id)}
