@@ -45,7 +45,12 @@ export const ScreeningSearch = ({
     const fetchData = async () => {
       try {
         if (type === 'metrics' && availableMetrics.length > 0) {
-          setItems(availableMetrics);
+          setItems(availableMetrics.map(metric => ({
+            id: metric.id,
+            name: metric.name,
+            description: metric.description || '',
+            category: metric.category
+          })));
           setLoading(false);
           return;
         }
