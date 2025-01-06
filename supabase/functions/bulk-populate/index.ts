@@ -21,31 +21,22 @@ serve(async (req) => {
 
     console.log('Starting bulk population of company profiles...')
 
-    // Fetch company profiles in smaller chunks
-    const exchanges = ['NASDAQ', 'NYSE'];
-    let allProfiles = [];
+    // Process one exchange at a time
+    const exchange = 'NASDAQ'; // Start with NASDAQ only
+    console.log(`Fetching profiles for ${exchange}...`);
     
-    for (const exchange of exchanges) {
-      console.log(`Fetching profiles for ${exchange}...`);
-      const response = await fetch(
-        `https://financialmodelingprep.com/api/v4/profile/all?exchange=${exchange}&apikey=${apiKey}`
-      );
-      
-      if (!response.ok) {
-        console.error(`Error fetching ${exchange} profiles:`, response.status);
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const profiles = await response.json();
-      console.log(`Fetched ${profiles.length} profiles from ${exchange}`);
-      allProfiles = [...allProfiles, ...profiles];
-      
-      // Add delay between API calls to avoid rate limiting
-      await delay(1000);
+    const response = await fetch(
+      `https://financialmodelingprep.com/api/v4/profile/all?exchange=${exchange}&apikey=${apiKey}`
+    );
+    
+    if (!response.ok) {
+      console.error(`Error fetching ${exchange} profiles:`, response.status);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    console.log(`Total profiles fetched: ${allProfiles.length}`);
-
+    const profiles = await response.json();
+    console.log(`Fetched ${profiles.length} profiles from ${exchange}`);
+    
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -56,23 +47,24 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Clear existing data in smaller chunks
-    console.log('Clearing existing company profiles...');
+    // Clear only existing NASDAQ records to reduce operation size
+    console.log(`Clearing existing ${exchange} company profiles...`);
     const { error: deleteError } = await supabase
       .from('company_profiles')
       .delete()
-      .neq('symbol', '');
+      .eq('exchange', exchange);
     
     if (deleteError) {
       console.error('Error clearing existing data:', deleteError);
       throw deleteError;
     }
     
-    console.log('Cleared existing company profiles');
+    console.log(`Cleared existing ${exchange} company profiles`);
+    await delay(1000); // Wait after delete operation
 
     // Transform and insert profiles in smaller batches
-    const batchSize = 50; // Reduced batch size
-    const transformedProfiles = allProfiles.map((profile: any) => ({
+    const batchSize = 25; // Further reduced batch size
+    const transformedProfiles = profiles.map((profile: any) => ({
       symbol: profile.symbol,
       name: profile.companyName,
       exchange: profile.exchange,
@@ -90,8 +82,11 @@ serve(async (req) => {
     }));
 
     let successCount = 0;
+    const totalBatches = Math.ceil(transformedProfiles.length/batchSize);
+    
     for (let i = 0; i < transformedProfiles.length; i += batchSize) {
-      console.log(`Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(transformedProfiles.length/batchSize)}`);
+      const batchNumber = Math.floor(i/batchSize) + 1;
+      console.log(`Processing batch ${batchNumber} of ${totalBatches}`);
       
       const batch = transformedProfiles.slice(i, i + batchSize);
       const { error: insertError } = await supabase
@@ -99,23 +94,23 @@ serve(async (req) => {
         .insert(batch);
       
       if (insertError) {
-        console.error('Error inserting batch:', insertError);
+        console.error(`Error inserting batch ${batchNumber}:`, insertError);
         throw insertError;
       }
       
       successCount += batch.length;
-      console.log(`Successfully inserted batch ${Math.floor(i/batchSize) + 1}`);
+      console.log(`Successfully inserted batch ${batchNumber} (${successCount} total records)`);
       
-      // Add small delay between batches to prevent resource exhaustion
-      await delay(500);
+      // Longer delay between batches
+      await delay(1000);
     }
 
-    console.log(`Completed! Inserted ${successCount} company profiles`);
+    console.log(`Completed! Inserted ${successCount} ${exchange} company profiles`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Successfully populated ${successCount} company profiles`,
+        message: `Successfully populated ${successCount} ${exchange} company profiles`,
         count: successCount
       }),
       {
