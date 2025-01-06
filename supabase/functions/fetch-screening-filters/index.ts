@@ -1,71 +1,86 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
-const SCREENING_CONSTANTS = {
-  COUNTRIES: [
-    { code: 'US', name: 'United States', region: 'North America', currency: 'USD' },
-    { code: 'TR', name: 'Turkey', region: 'Europe/Asia', currency: 'TRY' },
-    { code: 'GB', name: 'United Kingdom', region: 'Europe', currency: 'GBP' },
-    { code: 'JP', name: 'Japan', region: 'Asia', currency: 'JPY' },
-    { code: 'CN', name: 'China', region: 'Asia', currency: 'CNY' },
-    { code: 'DE', name: 'Germany', region: 'Europe', currency: 'EUR' },
-    { code: 'IN', name: 'India', region: 'Asia', currency: 'INR' },
-    { code: 'BR', name: 'Brazil', region: 'South America', currency: 'BRL' },
-    { code: 'AU', name: 'Australia', region: 'Oceania', currency: 'AUD' },
-    { code: 'CA', name: 'Canada', region: 'North America', currency: 'CAD' }
-  ],
-  INDUSTRIES: [
-    { id: '10', name: 'Energy', description: 'Exploration & production of energy products.' },
-    { id: '15', name: 'Materials', description: 'Manufacturing chemicals, construction materials, etc.' },
-    { id: '20', name: 'Industrials', description: 'Capital goods, transportation services, etc.' },
-    { id: '25', name: 'Consumer Discretionary', description: 'Retail, autos, consumer durables, and leisure products.' },
-    { id: '30', name: 'Consumer Staples', description: 'Food, beverages, and household products.' },
-    { id: '35', name: 'Healthcare', description: 'Pharmaceuticals, biotechnology, and healthcare providers.' },
-    { id: '40', name: 'Financials', description: 'Banks, investment funds, and insurance companies.' },
-    { id: '45', name: 'Information Technology', description: 'Software, hardware, and technology solutions.' },
-    { id: '50', name: 'Telecommunication Services', description: 'Wireless, internet, and telecommunications.' },
-    { id: '55', name: 'Utilities', description: 'Electricity, water, and gas distribution.' },
-    { id: '60', name: 'Real Estate', description: 'Property development and real estate investments.' }
-  ],
-  EXCHANGES: [
-    { code: 'NYSE', name: 'New York Stock Exchange', country: 'US', timezone: 'America/New_York' },
-    { code: 'NASDAQ', name: 'NASDAQ Stock Market', country: 'US', timezone: 'America/New_York' },
-    { code: 'LSE', name: 'London Stock Exchange', country: 'GB', timezone: 'Europe/London' },
-    { code: 'TSE', name: 'Tokyo Stock Exchange', country: 'JP', timezone: 'Asia/Tokyo' },
-    { code: 'SSE', name: 'Shanghai Stock Exchange', country: 'CN', timezone: 'Asia/Shanghai' },
-    { code: 'BSE', name: 'Bombay Stock Exchange', country: 'IN', timezone: 'Asia/Kolkata' },
-    { code: 'TSX', name: 'Toronto Stock Exchange', country: 'CA', timezone: 'America/Toronto' },
-    { code: 'ASX', name: 'Australian Securities Exchange', country: 'AU', timezone: 'Australia/Sydney' },
-    { code: 'BMFBOVESPA', name: 'B3 (Brasil Bolsa Balcão)', country: 'BR', timezone: 'America/Sao_Paulo' },
-    { code: 'DAX', name: 'Deutsche Börse (Frankfurt)', country: 'DE', timezone: 'Europe/Berlin' }
-  ]
-};
+const metrics = [
+  {
+    category: "Valuation",
+    metrics: [
+      { id: "marketCap", name: "Market Cap", description: "Total market value of company's shares" },
+      { id: "peRatio", name: "P/E Ratio", description: "Price to earnings ratio" },
+      { id: "priceToBook", name: "Price to Book", description: "Market price to book value ratio" },
+      { id: "evToEbitda", name: "EV/EBITDA", description: "Enterprise value to EBITDA ratio" }
+    ]
+  },
+  {
+    category: "Growth",
+    metrics: [
+      { id: "revenueGrowth", name: "Revenue Growth", description: "Year-over-year revenue growth" },
+      { id: "epsGrowth", name: "EPS Growth", description: "Year-over-year EPS growth" },
+      { id: "profitGrowth", name: "Profit Growth", description: "Year-over-year profit growth" }
+    ]
+  },
+  {
+    category: "Profitability",
+    metrics: [
+      { id: "grossMargin", name: "Gross Margin", description: "Gross profit as percentage of revenue" },
+      { id: "operatingMargin", name: "Operating Margin", description: "Operating income as percentage of revenue" },
+      { id: "netMargin", name: "Net Margin", description: "Net income as percentage of revenue" },
+      { id: "roe", name: "ROE", description: "Return on equity" },
+      { id: "roa", name: "ROA", description: "Return on assets" }
+    ]
+  },
+  {
+    category: "Financial Health",
+    metrics: [
+      { id: "currentRatio", name: "Current Ratio", description: "Current assets to current liabilities" },
+      { id: "debtToEquity", name: "Debt to Equity", description: "Total debt to shareholders equity" },
+      { id: "interestCoverage", name: "Interest Coverage", description: "Operating income to interest expenses" }
+    ]
+  },
+  {
+    category: "Dividend",
+    metrics: [
+      { id: "dividendYield", name: "Dividend Yield", description: "Annual dividend yield percentage" },
+      { id: "payoutRatio", name: "Payout Ratio", description: "Percentage of earnings paid as dividends" }
+    ]
+  }
+];
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
+    console.log('Fetching screening filters...');
+    
     return new Response(
-      JSON.stringify(SCREENING_CONSTANTS),
-      { 
+      JSON.stringify({
+        metrics: metrics.flatMap(category => 
+          category.metrics.map(metric => ({
+            ...metric,
+            category: category.category
+          }))
+        )
+      }),
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
-    );
+        status: 200,
+      },
+    )
   } catch (error) {
+    console.error('Error in fetch-screening-filters:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400 
-      }
-    );
+        status: 500,
+      },
+    )
   }
-});
+})

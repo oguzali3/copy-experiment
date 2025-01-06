@@ -30,10 +30,16 @@ export const ScreenerResults = ({
   const { toast } = useToast();
 
   const handleScreenerRun = async () => {
-    if (metrics.length === 0) {
+    // Check if at least one filter criteria is selected
+    const hasMetrics = metrics.length > 0;
+    const hasCountries = selectedCountries.length > 0;
+    const hasIndustries = selectedIndustries.length > 0;
+    const hasExchanges = selectedExchanges.length > 0;
+
+    if (!hasMetrics && !hasCountries && !hasIndustries && !hasExchanges) {
       toast({
-        title: "No metrics selected",
-        description: "Please select at least one metric for screening",
+        title: "No criteria selected",
+        description: "Please select at least one filtering criteria (countries, industries, exchanges, or metrics)",
         variant: "destructive",
       });
       return;
