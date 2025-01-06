@@ -9,56 +9,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScreeningMetric } from "@/types/screening";
-import { financialData } from "@/data/financialData";
 
 interface ScreeningTableProps {
   metrics: ScreeningMetric[];
+  results: any[];
 }
 
-export const ScreeningTable = ({ metrics }: ScreeningTableProps) => {
+export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
   const navigate = useNavigate();
-
-  // Get companies that match the screening criteria
-  const getFilteredCompanies = () => {
-    const companies = Object.entries(financialData).map(([ticker, data]) => {
-      const latestAnnualData = data.annual[0]; // Get most recent year's data
-      return {
-        ticker,
-        name: getCompanyName(ticker),
-        metrics: metrics.reduce((acc: Record<string, string>, metric) => {
-          acc[metric.id] = latestAnnualData[metric.id as keyof typeof latestAnnualData] || '0';
-          return acc;
-        }, {})
-      };
-    });
-
-    // Filter companies based on metric criteria
-    return companies.filter(company => {
-      return metrics.every(metric => {
-        const value = parseFloat(company.metrics[metric.id].replace(/,/g, ''));
-        const min = metric.min ? parseFloat(metric.min) : -Infinity;
-        const max = metric.max ? parseFloat(metric.max) : Infinity;
-        return value >= min && value <= max;
-      });
-    });
-  };
-
-  // Helper function to get company name
-  const getCompanyName = (ticker: string): string => {
-    const companyNames: Record<string, string> = {
-      'AAPL': 'Apple Inc.',
-      'MSFT': 'Microsoft Corporation',
-      'GOOGL': 'Alphabet Inc.',
-      'META': 'Meta Platforms, Inc.'
-    };
-    return companyNames[ticker] || ticker;
-  };
 
   const handleTickerClick = (ticker: string) => {
     navigate(`/analysis?ticker=${ticker}`);
   };
-
-  const filteredCompanies = getFilteredCompanies();
 
   return (
     <div className="border rounded-lg">
@@ -73,22 +35,22 @@ export const ScreeningTable = ({ metrics }: ScreeningTableProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredCompanies.map((company) => (
-            <TableRow key={company.ticker}>
+          {results.map((company) => (
+            <TableRow key={company.symbol}>
               <TableCell>
                 <button
-                  onClick={() => handleTickerClick(company.ticker)}
+                  onClick={() => handleTickerClick(company.symbol)}
                   className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
                 >
-                  {company.ticker}
+                  {company.symbol}
                 </button>
               </TableCell>
-              <TableCell>{company.name}</TableCell>
+              <TableCell>{company.companyName}</TableCell>
               {metrics.map((metric) => (
                 <TableCell key={metric.id}>
                   {metric.id.toLowerCase().includes('margin') || metric.id.toLowerCase().includes('growth')
-                    ? `${company.metrics[metric.id]}%`
-                    : `$${company.metrics[metric.id]}`
+                    ? `${company[metric.id]}%`
+                    : `$${company[metric.id]}`
                   }
                 </TableCell>
               ))}
