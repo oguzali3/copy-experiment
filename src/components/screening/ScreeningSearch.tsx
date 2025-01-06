@@ -23,7 +23,7 @@ interface ScreeningSearchProps {
 
 interface SearchItem {
   name: string;
-  description: string;
+  description?: string;  // Made optional with '?'
   category?: string;
   id?: string;
   fullName?: string;
