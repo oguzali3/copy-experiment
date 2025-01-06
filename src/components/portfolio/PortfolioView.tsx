@@ -73,7 +73,11 @@ export const PortfolioView = ({
   const handleTrimPosition = (selectedStock: Stock, sharesToTrim: number) => {
     const updatedStocks = portfolio.stocks.map(stock => {
       if (stock.ticker === selectedStock.ticker) {
-        const remainingShares = stock.shares - sharesToTrim; // Fixed: Subtract shares instead of adding
+        const remainingShares = stock.shares - sharesToTrim; // Subtract shares for trimming
+        if (remainingShares < 0) {
+          toast.error("Cannot trim more shares than owned");
+          return stock;
+        }
         const marketValue = remainingShares * stock.currentPrice;
         return {
           ...stock,
