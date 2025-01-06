@@ -2,10 +2,8 @@ import { useState, useEffect } from "react";
 import { PortfolioEmpty } from "./PortfolioEmpty";
 import { PortfolioCreate } from "./PortfolioCreate";
 import { PortfolioView } from "./PortfolioView";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { fetchFinancialData } from "@/utils/financialApi";
 import { Portfolio, Stock } from "./types";
 
 const PortfolioContent = () => {
@@ -30,20 +28,20 @@ const PortfolioContent = () => {
         const stocks: Stock[] = (data[0].portfolio_stocks || []).map((stock: any) => ({
           ticker: stock.ticker,
           name: stock.name,
-          shares: stock.shares,
-          avgPrice: stock.avg_price,
-          currentPrice: stock.current_price,
-          marketValue: stock.market_value,
-          percentOfPortfolio: stock.percent_of_portfolio,
-          gainLoss: stock.gain_loss,
-          gainLossPercent: stock.gain_loss_percent
+          shares: Number(stock.shares),
+          avgPrice: Number(stock.avg_price),
+          currentPrice: Number(stock.current_price),
+          marketValue: Number(stock.market_value),
+          percentOfPortfolio: Number(stock.percent_of_portfolio),
+          gainLoss: Number(stock.gain_loss),
+          gainLossPercent: Number(stock.gain_loss_percent)
         }));
 
         const portfolioData: Portfolio = {
           id: data[0].id,
           name: data[0].name,
           stocks: stocks,
-          totalValue: data[0].total_value || 0
+          totalValue: Number(data[0].total_value) || 0
         };
         setPortfolio(portfolioData);
       }

@@ -16,6 +16,11 @@ interface PortfolioTableProps {
 }
 
 export const PortfolioTable = ({ stocks, onDeletePosition }: PortfolioTableProps) => {
+  const formatNumber = (value: number | undefined, isPercentage = false) => {
+    if (value === undefined || value === null) return '-';
+    return isPercentage ? `${value.toFixed(2)}%` : `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm">
       <Table>
@@ -39,13 +44,13 @@ export const PortfolioTable = ({ stocks, onDeletePosition }: PortfolioTableProps
               <TableCell className="font-medium">{stock.ticker}</TableCell>
               <TableCell>{stock.name}</TableCell>
               <TableCell className="text-right">{stock.shares.toLocaleString()}</TableCell>
-              <TableCell className="text-right">${stock.avgPrice.toFixed(2)}</TableCell>
-              <TableCell className="text-right">${stock.currentPrice.toFixed(2)}</TableCell>
-              <TableCell className="text-right">${stock.marketValue.toLocaleString()}</TableCell>
-              <TableCell className="text-right">{stock.percentOfPortfolio.toFixed(2)}%</TableCell>
+              <TableCell className="text-right">{formatNumber(stock.avgPrice)}</TableCell>
+              <TableCell className="text-right">{formatNumber(stock.currentPrice)}</TableCell>
+              <TableCell className="text-right">{formatNumber(stock.marketValue)}</TableCell>
+              <TableCell className="text-right">{formatNumber(stock.percentOfPortfolio, true)}</TableCell>
               <TableCell className="text-right">
                 <span className={stock.gainLoss >= 0 ? "text-green-600" : "text-red-600"}>
-                  ${Math.abs(stock.gainLoss).toLocaleString()}
+                  {formatNumber(Math.abs(stock.gainLoss))}
                 </span>
               </TableCell>
               <TableCell className="text-right">
@@ -55,7 +60,7 @@ export const PortfolioTable = ({ stocks, onDeletePosition }: PortfolioTableProps
                   ) : (
                     <ArrowDownIcon className="h-4 w-4 mr-1" />
                   )}
-                  {Math.abs(stock.gainLossPercent).toFixed(2)}%
+                  {formatNumber(Math.abs(stock.gainLossPercent), true)}
                 </div>
               </TableCell>
               <TableCell className="text-right">
