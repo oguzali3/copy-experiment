@@ -1,22 +1,50 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { SCREENING_CONSTANTS } from "../../../src/utils/screeningConstants.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface ScreeningCriteria {
-  countries?: string[];
-  industries?: string[];
-  exchanges?: string[];
-  metrics?: {
-    id: string;
-    min?: number;
-    max?: number;
-  }[];
-}
+const SCREENING_CONSTANTS = {
+  COUNTRIES: [
+    { code: 'US', name: 'United States', region: 'North America', currency: 'USD' },
+    { code: 'TR', name: 'Turkey', region: 'Europe/Asia', currency: 'TRY' },
+    { code: 'GB', name: 'United Kingdom', region: 'Europe', currency: 'GBP' },
+    { code: 'JP', name: 'Japan', region: 'Asia', currency: 'JPY' },
+    { code: 'CN', name: 'China', region: 'Asia', currency: 'CNY' },
+    { code: 'DE', name: 'Germany', region: 'Europe', currency: 'EUR' },
+    { code: 'IN', name: 'India', region: 'Asia', currency: 'INR' },
+    { code: 'BR', name: 'Brazil', region: 'South America', currency: 'BRL' },
+    { code: 'AU', name: 'Australia', region: 'Oceania', currency: 'AUD' },
+    { code: 'CA', name: 'Canada', region: 'North America', currency: 'CAD' }
+  ],
+  INDUSTRIES: [
+    { id: '10', name: 'Energy', description: 'Exploration & production of energy products.' },
+    { id: '15', name: 'Materials', description: 'Manufacturing chemicals, construction materials, etc.' },
+    { id: '20', name: 'Industrials', description: 'Capital goods, transportation services, etc.' },
+    { id: '25', name: 'Consumer Discretionary', description: 'Retail, autos, consumer durables, and leisure products.' },
+    { id: '30', name: 'Consumer Staples', description: 'Food, beverages, and household products.' },
+    { id: '35', name: 'Healthcare', description: 'Pharmaceuticals, biotechnology, and healthcare providers.' },
+    { id: '40', name: 'Financials', description: 'Banks, investment funds, and insurance companies.' },
+    { id: '45', name: 'Information Technology', description: 'Software, hardware, and technology solutions.' },
+    { id: '50', name: 'Telecommunication Services', description: 'Wireless, internet, and telecommunications.' },
+    { id: '55', name: 'Utilities', description: 'Electricity, water, and gas distribution.' },
+    { id: '60', name: 'Real Estate', description: 'Property development and real estate investments.' }
+  ],
+  EXCHANGES: [
+    { code: 'NYSE', name: 'New York Stock Exchange', country: 'US', timezone: 'America/New_York' },
+    { code: 'NASDAQ', name: 'NASDAQ Stock Market', country: 'US', timezone: 'America/New_York' },
+    { code: 'LSE', name: 'London Stock Exchange', country: 'GB', timezone: 'Europe/London' },
+    { code: 'TSE', name: 'Tokyo Stock Exchange', country: 'JP', timezone: 'Asia/Tokyo' },
+    { code: 'SSE', name: 'Shanghai Stock Exchange', country: 'CN', timezone: 'Asia/Shanghai' },
+    { code: 'BSE', name: 'Bombay Stock Exchange', country: 'IN', timezone: 'Asia/Kolkata' },
+    { code: 'TSX', name: 'Toronto Stock Exchange', country: 'CA', timezone: 'America/Toronto' },
+    { code: 'ASX', name: 'Australian Securities Exchange', country: 'AU', timezone: 'Australia/Sydney' },
+    { code: 'BMFBOVESPA', name: 'B3 (Brasil Bolsa Balcão)', country: 'BR', timezone: 'America/Sao_Paulo' },
+    { code: 'DAX', name: 'Deutsche Börse (Frankfurt)', country: 'DE', timezone: 'Europe/Berlin' }
+  ]
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -24,90 +52,19 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    // Parse the request body for filtering criteria
-    const criteria: ScreeningCriteria = await req.json().catch(() => ({}));
-    console.log('Received screening criteria:', criteria);
-
-    // Filter stocks based on criteria
-    let query = supabaseClient
-      .from('stocks')
-      .select('*');
-
-    if (criteria.countries?.length) {
-      const countryNames = SCREENING_CONSTANTS.COUNTRIES
-        .filter(c => criteria.countries?.includes(c.code))
-        .map(c => c.name);
-      query = query.in('country', countryNames);
-    }
-
-    if (criteria.industries?.length) {
-      const industryNames = SCREENING_CONSTANTS.INDUSTRIES
-        .filter(i => criteria.industries?.includes(i.id))
-        .map(i => i.name);
-      query = query.in('industry', industryNames);
-    }
-
-    if (criteria.exchanges?.length) {
-      const exchangeCodes = SCREENING_CONSTANTS.EXCHANGES
-        .filter(e => criteria.exchanges?.includes(e.code))
-        .map(e => e.code);
-      query = query.in('exchange', exchangeCodes);
-    }
-
-    // Apply metric filters
-    if (criteria.metrics?.length) {
-      criteria.metrics.forEach(metric => {
-        if (metric.min !== undefined) {
-          query = query.gte(metric.id, metric.min);
-        }
-        if (metric.max !== undefined) {
-          query = query.lte(metric.id, metric.max);
-        }
-      });
-    }
-
-    const { data: stocksData, error: stocksError } = await query;
-
-    if (stocksError) {
-      console.error('Error fetching stocks data:', stocksError);
-      throw new Error('Failed to fetch stocks data');
-    }
-
-    // Return the filtered data along with the constants
-    const response = {
-      stocks: stocksData,
-      constants: {
-        countries: SCREENING_CONSTANTS.COUNTRIES,
-        industries: SCREENING_CONSTANTS.INDUSTRIES,
-        exchanges: SCREENING_CONSTANTS.EXCHANGES
-      }
-    };
-
     return new Response(
-      JSON.stringify(response),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    );
-
-  } catch (error) {
-    console.error('Error in fetch-screening-filters:', error);
-    return new Response(
-      JSON.stringify({
-        error: 'Failed to fetch filter data',
-        details: error.message
-      }),
+      JSON.stringify(SCREENING_CONSTANTS),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+        status: 200 
+      }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400 
       }
     );
   }
