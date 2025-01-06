@@ -1,4 +1,4 @@
-import { corsHeaders } from '../utils/cors';
+import { corsHeaders } from '../utils/cors.ts';
 
 export async function syncCompanyProfiles(apiKey: string, supabase: any) {
   console.log('Fetching company profiles...');

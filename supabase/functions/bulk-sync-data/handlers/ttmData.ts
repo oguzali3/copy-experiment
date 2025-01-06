@@ -1,38 +1,43 @@
-import { corsHeaders } from '../utils/cors';
-
 export async function syncTTMData(apiKey: string, supabase: any) {
   console.log('Fetching TTM data...');
-  
-  const ttmMetricsUrl = `https://financialmodelingprep.com/api/v4/key-metrics-ttm-bulk?apikey=${apiKey}`;
-  const ttmRatiosUrl = `https://financialmodelingprep.com/api/v4/ratios-ttm-bulk?apikey=${apiKey}`;
+  const results = {
+    metrics: 0,
+    ratios: 0
+  };
 
-  const [ttmMetricsResponse, ttmRatiosResponse] = await Promise.all([
-    fetch(ttmMetricsUrl),
-    fetch(ttmRatiosUrl)
-  ]);
+  // Sync TTM metrics
+  const metricsUrl = `https://financialmodelingprep.com/api/v4/key-metrics-ttm-bulk?apikey=${apiKey}`;
+  const metricsResponse = await fetch(metricsUrl);
+  const metricsData = await metricsResponse.json();
 
-  const [ttmMetricsData, ttmRatiosData] = await Promise.all([
-    ttmMetricsResponse.json(),
-    ttmRatiosResponse.json()
-  ]);
-
-  if (Array.isArray(ttmRatiosData)) {
-    const { error: ttmRatiosError } = await supabase
+  if (Array.isArray(metricsData)) {
+    const { error: metricsError } = await supabase
       .from('ttm_ratios')
-      .upsert(ttmRatiosData.map(ratio => ({
-        symbol: ratio.symbol,
-        gross_margin_ttm: ratio.grossProfitMarginTTM,
-        operating_margin_ttm: ratio.operatingProfitMarginTTM,
-        net_profit_margin_ttm: ratio.netProfitMarginTTM,
-        return_on_equity_ttm: ratio.returnOnEquityTTM,
-        return_on_assets_ttm: ratio.returnOnAssetsTTM,
-        pe_ratio_ttm: ratio.priceEarningsRatioTTM,
-        price_to_book_ttm: ratio.priceToBookRatioTTM,
-        dividend_yield_ttm: ratio.dividendYieldTTM
+      .upsert(metricsData.map(metric => ({
+        symbol: metric.symbol,
+        ...metric
       })));
 
-    if (ttmRatiosError) throw ttmRatiosError;
-    return ttmRatiosData.length;
+    if (metricsError) throw metricsError;
+    results.metrics = metricsData.length;
   }
-  return 0;
+
+  // Sync TTM ratios
+  const ratiosUrl = `https://financialmodelingprep.com/api/v4/ratios-ttm-bulk?apikey=${apiKey}`;
+  const ratiosResponse = await fetch(ratiosUrl);
+  const ratiosData = await ratiosResponse.json();
+
+  if (Array.isArray(ratiosData)) {
+    const { error: ratiosError } = await supabase
+      .from('ttm_ratios')
+      .upsert(ratiosData.map(ratio => ({
+        symbol: ratio.symbol,
+        ...ratio
+      })));
+
+    if (ratiosError) throw ratiosError;
+    results.ratios = ratiosData.length;
+  }
+
+  return results;
 }

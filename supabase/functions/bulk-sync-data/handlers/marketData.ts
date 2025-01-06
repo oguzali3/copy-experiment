@@ -1,57 +1,53 @@
-import { corsHeaders } from '../utils/cors';
-
 export async function syncMarketData(apiKey: string, supabase: any) {
   console.log('Fetching market data...');
-  
+  const results = {
+    peers: 0,
+    priceTargets: 0,
+    recommendations: 0
+  };
+
+  // Sync stock peers
   const peersUrl = `https://financialmodelingprep.com/api/v4/stock-peers-bulk?apikey=${apiKey}`;
-  const targetsUrl = `https://financialmodelingprep.com/api/v4/price-target-summary-bulk?apikey=${apiKey}`;
-  const recommendationsUrl = `https://financialmodelingprep.com/api/v4/upgrades-downgrades-consensus-bulk?apikey=${apiKey}`;
-
-  const [peersResponse, targetsResponse, recommendationsResponse] = await Promise.all([
-    fetch(peersUrl),
-    fetch(targetsUrl),
-    fetch(recommendationsUrl)
-  ]);
-
-  const [peersData, targetsData, recommendationsData] = await Promise.all([
-    peersResponse.json(),
-    targetsResponse.json(),
-    recommendationsResponse.json()
-  ]);
-
-  let results = { peers: 0, targets: 0, recommendations: 0 };
+  const peersResponse = await fetch(peersUrl);
+  const peersData = await peersResponse.json();
 
   if (Array.isArray(peersData)) {
-    const peerRecords = peersData.flatMap(item => 
-      item.peersList.map((peer: string) => ({
-        symbol: item.symbol,
-        peer_symbol: peer
-      }))
-    );
-
     const { error: peersError } = await supabase
       .from('stock_peers')
-      .upsert(peerRecords);
+      .upsert(peersData.map(peer => ({
+        symbol: peer.symbol,
+        peer_symbol: peer.peerSymbol
+      })));
 
     if (peersError) throw peersError;
-    results.peers = peerRecords.length;
+    results.peers = peersData.length;
   }
+
+  // Sync price targets
+  const targetsUrl = `https://financialmodelingprep.com/api/v4/price-target-summary-bulk?apikey=${apiKey}`;
+  const targetsResponse = await fetch(targetsUrl);
+  const targetsData = await targetsResponse.json();
 
   if (Array.isArray(targetsData)) {
     const { error: targetsError } = await supabase
       .from('price_targets')
       .upsert(targetsData.map(target => ({
         symbol: target.symbol,
+        target_consensus: target.targetConsensus,
+        target_high: target.targetHigh,
         target_low: target.targetLow,
         target_mean: target.targetMean,
-        target_high: target.targetHigh,
-        target_consensus: target.targetConsensus,
         number_of_analysts: target.numberOfAnalysts
       })));
 
     if (targetsError) throw targetsError;
-    results.targets = targetsData.length;
+    results.priceTargets = targetsData.length;
   }
+
+  // Sync analyst recommendations
+  const recommendationsUrl = `https://financialmodelingprep.com/api/v4/upgrades-downgrades-consensus-bulk?apikey=${apiKey}`;
+  const recommendationsResponse = await fetch(recommendationsUrl);
+  const recommendationsData = await recommendationsResponse.json();
 
   if (Array.isArray(recommendationsData)) {
     const { error: recommendationsError } = await supabase
