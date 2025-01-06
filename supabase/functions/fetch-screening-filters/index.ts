@@ -5,6 +5,61 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Mapping of country codes to names
+const countryNames: { [key: string]: string } = {
+  US: "United States", UK: "United Kingdom", JP: "Japan", CN: "China", DE: "Germany",
+  FR: "France", CA: "Canada", AU: "Australia", BR: "Brazil", IN: "India",
+  RU: "Russia", KR: "South Korea", ES: "Spain", IT: "Italy", NL: "Netherlands",
+  CH: "Switzerland", SE: "Sweden", MX: "Mexico", SG: "Singapore", HK: "Hong Kong",
+  // Add more as needed
+};
+
+// Mapping of exchange codes to full names
+const exchangeNames: { [key: string]: string } = {
+  NYSE: "New York Stock Exchange",
+  NASDAQ: "NASDAQ Stock Market",
+  AMEX: "American Stock Exchange",
+  LSE: "London Stock Exchange",
+  TSX: "Toronto Stock Exchange",
+  HKSE: "Hong Kong Stock Exchange",
+  SSE: "Shanghai Stock Exchange",
+  JPX: "Japan Exchange Group",
+  EURONEXT: "Euronext",
+  ASX: "Australian Securities Exchange",
+  // Add more as needed
+};
+
+async function fetchAllStocks(apiKey: string) {
+  let allStocks = [];
+  let page = 0;
+  const limit = 1000;
+  
+  while (true) {
+    console.log(`Fetching stocks page ${page + 1}`);
+    const response = await fetch(
+      `https://financialmodelingprep.com/api/v3/stock-screener?apikey=${apiKey}&limit=${limit}&page=${page}`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch stocks page ${page + 1}`);
+    }
+    
+    const stocks = await response.json();
+    if (!stocks || stocks.length === 0) {
+      break;
+    }
+    
+    allStocks = allStocks.concat(stocks);
+    page++;
+    
+    // Add a small delay to avoid rate limiting
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  console.log(`Total stocks fetched: ${allStocks.length}`);
+  return allStocks;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -17,33 +72,22 @@ serve(async (req) => {
       throw new Error('FMP API key not configured');
     }
 
-    // Fetch countries
-    const countriesResponse = await fetch(
-      `https://financialmodelingprep.com/api/v3/get-all-countries?apikey=${apiKey}`
-    );
-    const countriesData = await countriesResponse.json();
-    console.log('Fetched countries:', countriesData?.length);
+    // Fetch all data in parallel
+    const [countriesResponse, sectorsResponse, exchangesResponse, industriesResponse] = await Promise.all([
+      fetch(`https://financialmodelingprep.com/api/v3/get-all-countries?apikey=${apiKey}`),
+      fetch(`https://financialmodelingprep.com/api/v3/sectors-list?apikey=${apiKey}`),
+      fetch(`https://financialmodelingprep.com/api/v3/exchanges-list?apikey=${apiKey}`),
+      fetch(`https://financialmodelingprep.com/api/v3/industries-list?apikey=${apiKey}`)
+    ]);
 
-    // Fetch sectors
-    const sectorsResponse = await fetch(
-      `https://financialmodelingprep.com/api/v3/sectors-list?apikey=${apiKey}`
-    );
-    const sectorsData = await sectorsResponse.json();
-    console.log('Fetched sectors:', sectorsData?.length);
+    const [countriesData, sectorsData, exchangesData, industriesData] = await Promise.all([
+      countriesResponse.json(),
+      sectorsResponse.json(),
+      exchangesResponse.json(),
+      industriesResponse.json()
+    ]);
 
-    // Fetch exchanges
-    const exchangesResponse = await fetch(
-      `https://financialmodelingprep.com/api/v3/exchanges-list?apikey=${apiKey}`
-    );
-    const exchangesData = await exchangesResponse.json();
-    console.log('Fetched exchanges:', exchangesData?.length);
-
-    // Fetch industries
-    const industriesResponse = await fetch(
-      `https://financialmodelingprep.com/api/v3/industries-list?apikey=${apiKey}`
-    );
-    const industriesData = await industriesResponse.json();
-    console.log('Fetched industries:', industriesData?.length);
+    console.log('Data fetched successfully');
 
     const metrics = [
       {
@@ -88,7 +132,8 @@ serve(async (req) => {
       ),
       countries: Array.isArray(countriesData) ? countriesData.map((code: string) => ({
         name: code,
-        description: `Companies based in ${code}`
+        description: `Companies based in ${countryNames[code] || code}`,
+        fullName: countryNames[code] || code
       })) : [],
       industries: Array.isArray(industriesData) ? industriesData.map((industry: string) => ({
         name: industry,
@@ -96,7 +141,8 @@ serve(async (req) => {
       })) : [],
       exchanges: Array.isArray(exchangesData) ? exchangesData.map((exchange: string) => ({
         name: exchange,
-        description: `Stocks listed on ${exchange}`
+        description: `Stocks listed on ${exchangeNames[exchange] || exchange}`,
+        fullName: exchangeNames[exchange] || exchange
       })) : []
     };
 

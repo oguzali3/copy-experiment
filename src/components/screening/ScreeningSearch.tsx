@@ -25,6 +25,7 @@ interface SearchItem {
   description: string;
   category?: string;
   id?: string;
+  fullName?: string;
 }
 
 export const ScreeningSearch = ({
@@ -91,6 +92,7 @@ export const ScreeningSearch = ({
     const itemName = (item.name || '').toLowerCase();
     const itemDescription = (item.description || '').toLowerCase();
     const itemCategory = (item.category || '').toLowerCase();
+    const itemFullName = (item.fullName || '').toLowerCase();
 
     if (type === "metrics") {
       return itemName.includes(searchTerm) ||
@@ -98,7 +100,8 @@ export const ScreeningSearch = ({
              itemDescription.includes(searchTerm);
     } else {
       return itemName.includes(searchTerm) ||
-             itemDescription.includes(searchTerm);
+             itemDescription.includes(searchTerm) ||
+             itemFullName?.includes(searchTerm);
     }
   });
 
@@ -140,6 +143,13 @@ export const ScreeningSearch = ({
     }
   };
 
+  const getDisplayName = (item: SearchItem) => {
+    if (type === "countries" || type === "exchanges") {
+      return `${item.name} - ${item.fullName || item.name}`;
+    }
+    return item.name;
+  };
+
   return (
     <div className="relative w-full">
       <Button
@@ -166,7 +176,7 @@ export const ScreeningSearch = ({
                   onSelect={() => handleSelect(item)}
                   className="flex flex-col items-start px-4 py-2 hover:bg-accent cursor-pointer"
                 >
-                  <p className="text-sm font-medium">{item.name}</p>
+                  <p className="text-sm font-medium">{getDisplayName(item)}</p>
                   <p className="text-xs text-muted-foreground">
                     {type === "metrics" ? item.category : item.description}
                   </p>
