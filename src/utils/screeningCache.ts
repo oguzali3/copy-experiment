@@ -1,9 +1,9 @@
-import { supabase } from "@/integrations/supabase/client";
+import { SCREENING_CONSTANTS } from './screeningConstants';
 
 interface CachedScreeningData {
-  countries: string[];
-  industries: string[];
-  exchanges: string[];
+  countries: typeof SCREENING_CONSTANTS.COUNTRIES;
+  industries: typeof SCREENING_CONSTANTS.INDUSTRIES;
+  exchanges: typeof SCREENING_CONSTANTS.EXCHANGES;
   timestamp: number;
 }
 
@@ -16,22 +16,13 @@ export const getScreeningData = async () => {
     return cachedData;
   }
 
-  try {
-    const { data, error } = await supabase.functions.invoke('fetch-screening-filters');
-    
-    if (error) throw error;
-    
-    if (data) {
-      cachedData = {
-        countries: data.countries,
-        industries: data.industries,
-        exchanges: data.exchanges,
-        timestamp: Date.now()
-      };
-      return cachedData;
-    }
-  } catch (error) {
-    console.error('Error fetching screening data:', error);
-    throw error;
-  }
+  // Use constant data instead of fetching from API
+  cachedData = {
+    countries: SCREENING_CONSTANTS.COUNTRIES,
+    industries: SCREENING_CONSTANTS.INDUSTRIES,
+    exchanges: SCREENING_CONSTANTS.EXCHANGES,
+    timestamp: Date.now()
+  };
+
+  return cachedData;
 };

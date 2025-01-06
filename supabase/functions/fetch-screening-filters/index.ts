@@ -1,10 +1,22 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { SCREENING_CONSTANTS } from "../../../src/utils/screeningConstants.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+interface ScreeningCriteria {
+  countries?: string[];
+  industries?: string[];
+  exchanges?: string[];
+  metrics?: {
+    id: string;
+    min?: number;
+    max?: number;
+  }[];
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -17,61 +29,67 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log('Fetching data from stocks table...');
+    // Parse the request body for filtering criteria
+    const criteria: ScreeningCriteria = await req.json().catch(() => ({}));
+    console.log('Received screening criteria:', criteria);
 
-    // Fetch all rows but only select the columns we need
-    const { data: stocksData, error: stocksError } = await supabaseClient
+    // Filter stocks based on criteria
+    let query = supabaseClient
       .from('stocks')
-      .select('country, industry, exchange');
+      .select('*');
+
+    if (criteria.countries?.length) {
+      const countryNames = SCREENING_CONSTANTS.COUNTRIES
+        .filter(c => criteria.countries?.includes(c.code))
+        .map(c => c.name);
+      query = query.in('country', countryNames);
+    }
+
+    if (criteria.industries?.length) {
+      const industryNames = SCREENING_CONSTANTS.INDUSTRIES
+        .filter(i => criteria.industries?.includes(i.id))
+        .map(i => i.name);
+      query = query.in('industry', industryNames);
+    }
+
+    if (criteria.exchanges?.length) {
+      const exchangeCodes = SCREENING_CONSTANTS.EXCHANGES
+        .filter(e => criteria.exchanges?.includes(e.code))
+        .map(e => e.code);
+      query = query.in('exchange', exchangeCodes);
+    }
+
+    // Apply metric filters
+    if (criteria.metrics?.length) {
+      criteria.metrics.forEach(metric => {
+        if (metric.min !== undefined) {
+          query = query.gte(metric.id, metric.min);
+        }
+        if (metric.max !== undefined) {
+          query = query.lte(metric.id, metric.max);
+        }
+      });
+    }
+
+    const { data: stocksData, error: stocksError } = await query;
 
     if (stocksError) {
       console.error('Error fetching stocks data:', stocksError);
       throw new Error('Failed to fetch stocks data');
     }
 
-    if (!stocksData) {
-      console.error('No data returned from stocks query');
-      throw new Error('No data available');
-    }
-
-    // Use Sets to ensure uniqueness and then convert back to sorted arrays
-    const countries = [...new Set(stocksData.map(row => row.country))]
-      .filter(Boolean)
-      .sort();
-
-    const industries = [...new Set(stocksData.map(row => row.industry))]
-      .filter(Boolean)
-      .sort();
-
-    const exchanges = [...new Set(stocksData.map(row => row.exchange))]
-      .filter(Boolean)
-      .sort();
-
-    console.log(`Found ${countries.length} countries, ${industries.length} industries, ${exchanges.length} exchanges`);
-
-    const metrics = [
-      { id: "revenue", name: "Revenue", category: "Income Statement" },
-      { id: "revenueGrowth", name: "Revenue Growth", category: "Growth" },
-      { id: "grossProfit", name: "Gross Profit", category: "Income Statement" },
-      { id: "operatingIncome", name: "Operating Income", category: "Income Statement" },
-      { id: "netIncome", name: "Net Income", category: "Income Statement" },
-      { id: "ebitda", name: "EBITDA", category: "Income Statement" },
-      { id: "totalAssets", name: "Total Assets", category: "Balance Sheet" },
-      { id: "totalLiabilities", name: "Total Liabilities", category: "Balance Sheet" },
-      { id: "totalEquity", name: "Total Equity", category: "Balance Sheet" },
-      { id: "operatingCashFlow", name: "Operating Cash Flow", category: "Cash Flow" },
-      { id: "freeCashFlow", name: "Free Cash Flow", category: "Cash Flow" }
-    ];
-
-    const filterData = {
-      countries,
-      industries,
-      exchanges,
-      metrics
+    // Return the filtered data along with the constants
+    const response = {
+      stocks: stocksData,
+      constants: {
+        countries: SCREENING_CONSTANTS.COUNTRIES,
+        industries: SCREENING_CONSTANTS.INDUSTRIES,
+        exchanges: SCREENING_CONSTANTS.EXCHANGES
+      }
     };
 
     return new Response(
-      JSON.stringify(filterData),
+      JSON.stringify(response),
       { 
         headers: { 
           ...corsHeaders, 
