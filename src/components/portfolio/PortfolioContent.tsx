@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { fetchFinancialData } from "@/utils/financialApi";
 import { Portfolio, Stock } from "./types";
+import { updatePortfolioStock, calculatePortfolioMetrics } from "./utils/portfolioOperations";
 
 const PortfolioContent = () => {
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
@@ -26,7 +27,6 @@ const PortfolioContent = () => {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          // No portfolio found - this is okay
           setPortfolio(null);
         } else {
           toast.error("Error fetching portfolio");
@@ -37,21 +37,17 @@ const PortfolioContent = () => {
       }
 
       if (data) {
-        // Transform portfolio_stocks data and fetch current prices
         const stocksPromises = (data.portfolio_stocks || []).map(async (stock: any) => {
           try {
-            // Fetch current price from API
             const quoteData = await fetchFinancialData('quote', stock.ticker);
             const currentPrice = quoteData[0]?.price || 0;
             
-            // Calculate updated metrics
             const shares = Number(stock.shares);
             const avgPrice = Number(stock.avg_price);
             const marketValue = shares * currentPrice;
             const gainLoss = marketValue - (shares * avgPrice);
             const gainLossPercent = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
 
-            // Update the stock in database with new values
             await supabase
               .from('portfolio_stocks')
               .update({
@@ -69,7 +65,7 @@ const PortfolioContent = () => {
               avgPrice,
               currentPrice,
               marketValue,
-              percentOfPortfolio: 0, // Will be calculated after all stocks are processed
+              percentOfPortfolio: 0,
               gainLoss,
               gainLossPercent
             };
@@ -77,7 +73,6 @@ const PortfolioContent = () => {
             console.error(`Error fetching price for ${stock.ticker}:`, error);
             toast.error(`Failed to fetch current price for ${stock.ticker}`);
             
-            // Return stock with existing values if API call fails
             return {
               ticker: stock.ticker,
               name: stock.name,
@@ -93,23 +88,13 @@ const PortfolioContent = () => {
         });
 
         const stocks = await Promise.all(stocksPromises);
+        const { totalValue, stocksWithPercentages } = calculatePortfolioMetrics(stocks);
         
-        // Calculate total portfolio value and percentages
-        const totalValue = stocks.reduce((sum, stock) => sum + stock.marketValue, 0);
-        
-        // Update portfolio total value in database
         await supabase
           .from('portfolios')
           .update({ total_value: totalValue })
           .eq('id', data.id);
 
-        // Calculate and update percentOfPortfolio for each stock
-        const stocksWithPercentages = stocks.map(stock => ({
-          ...stock,
-          percentOfPortfolio: totalValue > 0 ? (stock.marketValue / totalValue) * 100 : 0
-        }));
-
-        // Update percentOfPortfolio in database for each stock
         await Promise.all(stocksWithPercentages.map(stock =>
           supabase
             .from('portfolio_stocks')
@@ -118,14 +103,12 @@ const PortfolioContent = () => {
             .eq('ticker', stock.ticker)
         ));
 
-        const portfolioData: Portfolio = {
+        setPortfolio({
           id: data.id,
           name: data.name,
           stocks: stocksWithPercentages,
           totalValue
-        };
-        
-        setPortfolio(portfolioData);
+        });
       }
     } catch (error) {
       console.error('Error in fetchPortfolio:', error);
@@ -134,9 +117,70 @@ const PortfolioContent = () => {
     setLoading(false);
   };
 
+  const handleUpdatePortfolio = async (updatedPortfolio: Portfolio) => {
+    try {
+      await supabase
+        .from('portfolios')
+        .update({
+          name: updatedPortfolio.name,
+          total_value: updatedPortfolio.totalValue
+        })
+        .eq('id', updatedPortfolio.id);
+
+      const { data: currentStocks } = await supabase
+        .from('portfolio_stocks')
+        .select('*')
+        .eq('portfolio_id', updatedPortfolio.id);
+
+      const currentStocksMap = new Map(currentStocks?.map(s => [s.ticker, s]));
+      
+      for (const stock of updatedPortfolio.stocks) {
+        const existingStock = currentStocksMap.get(stock.ticker);
+        
+        if (existingStock) {
+          if (stock.shares !== existingStock.shares) {
+            const isTrimOperation = stock.shares < existingStock.shares;
+            await updatePortfolioStock(updatedPortfolio.id, stock, existingStock, isTrimOperation);
+          }
+        } else {
+          await supabase
+            .from('portfolio_stocks')
+            .insert({
+              portfolio_id: updatedPortfolio.id,
+              ticker: stock.ticker,
+              name: stock.name,
+              shares: stock.shares,
+              avg_price: stock.avgPrice,
+              current_price: stock.currentPrice,
+              market_value: stock.marketValue,
+              percent_of_portfolio: stock.percentOfPortfolio,
+              gain_loss: stock.gainLoss,
+              gain_loss_percent: stock.gainLossPercent
+            });
+        }
+      }
+
+      const updatedTickers = new Set(updatedPortfolio.stocks.map(s => s.ticker));
+      const tickersToDelete = [...currentStocksMap.keys()].filter(ticker => !updatedTickers.has(ticker));
+      
+      if (tickersToDelete.length > 0) {
+        await supabase
+          .from('portfolio_stocks')
+          .delete()
+          .eq('portfolio_id', updatedPortfolio.id)
+          .in('ticker', tickersToDelete);
+      }
+      
+      await fetchPortfolio();
+      toast.success("Portfolio updated successfully");
+    } catch (error) {
+      console.error('Error updating portfolio:', error);
+      toast.error("Failed to update portfolio");
+    }
+  };
+
   const handleAddPortfolio = async (newPortfolio: Portfolio) => {
     try {
-      // First create the portfolio
       const { data: portfolioData, error: portfolioError } = await supabase
         .from('portfolios')
         .insert({
@@ -148,7 +192,6 @@ const PortfolioContent = () => {
 
       if (portfolioError) throw portfolioError;
 
-      // Then add all the stocks
       const stockPromises = newPortfolio.stocks.map(stock => 
         supabase
           .from('portfolio_stocks')
@@ -191,122 +234,6 @@ const PortfolioContent = () => {
     } catch (error) {
       console.error('Error deleting portfolio:', error);
       toast.error("Failed to delete portfolio");
-    }
-  };
-
-  const handleUpdatePortfolio = async (updatedPortfolio: Portfolio) => {
-    try {
-      // Update portfolio name and total value
-      const { error: portfolioError } = await supabase
-        .from('portfolios')
-        .update({
-          name: updatedPortfolio.name,
-          total_value: updatedPortfolio.totalValue
-        })
-        .eq('id', updatedPortfolio.id);
-
-      if (portfolioError) throw portfolioError;
-
-      // Fetch current stocks to compare with updated ones
-      const { data: currentStocks } = await supabase
-        .from('portfolio_stocks')
-        .select('*')
-        .eq('portfolio_id', updatedPortfolio.id);
-
-      const currentStocksMap = new Map(currentStocks?.map(s => [s.ticker, s]));
-      
-      // Process only the stocks that have been modified
-      for (const stock of updatedPortfolio.stocks) {
-        const existingStock = currentStocksMap.get(stock.ticker);
-        
-        if (existingStock) {
-          // Only update if the shares count has changed
-          if (stock.shares !== existingStock.shares) {
-            // Determine if this is a trim operation
-            const isTrimOperation = stock.shares < existingStock.shares;
-            
-            if (isTrimOperation) {
-              // For trim operations, use the new share count directly
-              const { error: updateError } = await supabase
-                .from('portfolio_stocks')
-                .update({
-                  shares: stock.shares,
-                  current_price: stock.currentPrice,
-                  market_value: stock.shares * stock.currentPrice,
-                  percent_of_portfolio: stock.percentOfPortfolio,
-                  gain_loss: (stock.shares * stock.currentPrice) - (stock.shares * stock.avgPrice),
-                  gain_loss_percent: ((stock.currentPrice - stock.avgPrice) / stock.avgPrice) * 100
-                })
-                .eq('portfolio_id', updatedPortfolio.id)
-                .eq('ticker', stock.ticker);
-
-              if (updateError) throw updateError;
-            } else if (stock.shares > existingStock.shares) {
-              // For add operations, add to existing shares and recalculate average price
-              const newShares = stock.shares - existingStock.shares; // Only the difference
-              const totalShares = existingStock.shares + newShares;
-              const totalCost = (existingStock.shares * existingStock.avg_price) + 
-                             (newShares * stock.avgPrice);
-              const newAvgPrice = totalCost / totalShares;
-              
-              const { error: updateError } = await supabase
-                .from('portfolio_stocks')
-                .update({
-                  shares: totalShares,
-                  avg_price: newAvgPrice,
-                  current_price: stock.currentPrice,
-                  market_value: totalShares * stock.currentPrice,
-                  percent_of_portfolio: stock.percentOfPortfolio,
-                  gain_loss: (totalShares * stock.currentPrice) - (totalShares * newAvgPrice),
-                  gain_loss_percent: ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100
-                })
-                .eq('portfolio_id', updatedPortfolio.id)
-                .eq('ticker', stock.ticker);
-
-              if (updateError) throw updateError;
-            }
-          }
-        } else {
-          // Insert new stock
-          const { error: insertError } = await supabase
-            .from('portfolio_stocks')
-            .insert({
-              portfolio_id: updatedPortfolio.id,
-              ticker: stock.ticker,
-              name: stock.name,
-              shares: stock.shares,
-              avg_price: stock.avgPrice,
-              current_price: stock.currentPrice,
-              market_value: stock.marketValue,
-              percent_of_portfolio: stock.percentOfPortfolio,
-              gain_loss: stock.gainLoss,
-              gain_loss_percent: stock.gainLossPercent
-            });
-
-          if (insertError) throw insertError;
-        }
-      }
-
-      // Delete removed stocks
-      const updatedTickers = new Set(updatedPortfolio.stocks.map(s => s.ticker));
-      const tickersToDelete = [...currentStocksMap.keys()].filter(ticker => !updatedTickers.has(ticker));
-      
-      if (tickersToDelete.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('portfolio_stocks')
-          .delete()
-          .eq('portfolio_id', updatedPortfolio.id)
-          .in('ticker', tickersToDelete);
-
-        if (deleteError) throw deleteError;
-      }
-      
-      // Fetch the updated portfolio
-      await fetchPortfolio();
-      toast.success("Portfolio updated successfully");
-    } catch (error) {
-      console.error('Error updating portfolio:', error);
-      toast.error("Failed to update portfolio");
     }
   };
 
