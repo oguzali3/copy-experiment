@@ -41,13 +41,33 @@ serve(async (req) => {
 
     // Add metric filters with min/max values
     metrics?.forEach((metric: any) => {
-      if (metric.min !== undefined && metric.min !== '') {
-        queryParams.append(`${metric.id}MoreThan`, metric.min)
+      const { id, min, max } = metric;
+      
+      // Map the metric IDs to the actual API parameters
+      const apiParamMap: { [key: string]: string } = {
+        'marketCap': 'marketCapMoreThan',
+        'price': 'priceMoreThan',
+        'volume': 'volumeMoreThan',
+        'dividend': 'dividendMoreThan',
+        'beta': 'betaMoreThan'
+      };
+
+      const apiParamMapMax: { [key: string]: string } = {
+        'marketCap': 'marketCapLowerThan',
+        'price': 'priceLowerThan',
+        'volume': 'volumeLowerThan',
+        'dividend': 'dividendLowerThan',
+        'beta': 'betaLowerThan'
+      };
+
+      if (min !== undefined && min !== '' && apiParamMap[id]) {
+        queryParams.append(apiParamMap[id], min);
       }
-      if (metric.max !== undefined && metric.max !== '') {
-        queryParams.append(`${metric.id}LowerThan`, metric.max)
+      
+      if (max !== undefined && max !== '' && apiParamMapMax[id]) {
+        queryParams.append(apiParamMapMax[id], max);
       }
-    })
+    });
 
     console.log('Fetching from FMP with params:', queryParams.toString());
 
