@@ -1,11 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from './utils/cors.ts';
-import { handleSecFilings } from './handlers/secFilings.ts';
-import { handleCompanyNews } from './handlers/companyNews.ts';
-import { handleFinancialStatements } from './handlers/financialStatements.ts';
-import { handleInsiderTrades } from './handlers/insiderTrades.ts';
-import { handleInstitutionalHolders } from './handlers/institutionalHolders.ts';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "npm:@supabase/supabase-js@2.39.3"
+import { corsHeaders } from './utils/cors.ts'
+import { handleSecFilings } from './handlers/secFilings.ts'
+import { handleCompanyNews } from './handlers/companyNews.ts'
+import { handleFinancialStatements } from './handlers/financialStatements.ts'
+import { handleInsiderTrades } from './handlers/insiderTrades.ts'
+import { handleInstitutionalHolders } from './handlers/institutionalHolders.ts'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -65,7 +65,6 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
-      // Handle other endpoints with direct API calls
       case "search":
         const searchUrl = `https://financialmodelingprep.com/api/v3/search?query=${query}&limit=10&apikey=${apiKey}`;
         console.log('Fetching search results from:', searchUrl);
