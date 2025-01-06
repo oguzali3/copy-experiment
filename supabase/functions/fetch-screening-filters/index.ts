@@ -55,56 +55,54 @@ serve(async (req) => {
     const countriesResponse = await fetch(
       `https://financialmodelingprep.com/api/v3/get-all-countries?apikey=${apiKey}`
     );
-    const countries = await countriesResponse.json();
-    console.log('Fetched countries:', countries.length);
-
-    // Fetch sectors
-    const sectorsResponse = await fetch(
-      `https://financialmodelingprep.com/api/v3/sectors-list?apikey=${apiKey}`
-    );
-    const sectors = await sectorsResponse.json();
-    console.log('Fetched sectors:', sectors.length);
+    const countriesData = await countriesResponse.json();
+    console.log('Fetched countries:', countriesData?.length);
 
     // Fetch industries
     const industriesResponse = await fetch(
       `https://financialmodelingprep.com/api/v3/industries-list?apikey=${apiKey}`
     );
-    const industries = await industriesResponse.json();
-    console.log('Fetched industries:', industries.length);
+    const industriesData = await industriesResponse.json();
+    console.log('Fetched industries:', industriesData?.length);
 
     // Fetch exchanges
     const exchangesResponse = await fetch(
       `https://financialmodelingprep.com/api/v3/exchanges-list?apikey=${apiKey}`
     );
-    const exchanges = await exchangesResponse.json();
-    console.log('Fetched exchanges:', exchanges.length);
+    const exchangesData = await exchangesResponse.json();
+    console.log('Fetched exchanges:', exchangesData?.length);
     
-    return new Response(
-      JSON.stringify({
-        metrics: metrics.flatMap(category => 
-          category.metrics.map(metric => ({
-            ...metric,
-            category: category.category
-          }))
-        ),
-        countries: countries.map((country: any) => ({
-          name: country.name,
-          code: country.code,
-          description: `Companies based in ${country.name}`
-        })),
-        sectors: sectors.map((sector: string) => ({
-          name: sector,
-          description: `Companies in the ${sector} sector`
-        })),
-        industries: industries.map((industry: string) => ({
-          name: industry,
-          description: `Companies in the ${industry} industry`
-        })),
-        exchanges: exchanges.map((exchange: any) => ({
-          name: exchange.exchange,
-          description: `Stocks listed on ${exchange.exchange}`
+    const formattedResponse = {
+      metrics: metrics.flatMap(category => 
+        category.metrics.map(metric => ({
+          ...metric,
+          category: category.category
         }))
-      }),
+      ),
+      countries: Array.isArray(countriesData) ? countriesData.map((country: any) => ({
+        name: country.name || country.code,
+        code: country.code,
+        description: `Companies based in ${country.name || country.code}`
+      })) : [],
+      industries: Array.isArray(industriesData) ? industriesData.map((industry: string) => ({
+        name: industry,
+        description: `Companies in the ${industry} industry`
+      })) : [],
+      exchanges: Array.isArray(exchangesData) ? exchangesData.map((exchange: any) => ({
+        name: exchange.exchange || '',
+        description: `Stocks listed on ${exchange.exchange || 'this exchange'}`
+      })) : []
+    };
+
+    console.log('Sending formatted response:', {
+      metricsCount: formattedResponse.metrics.length,
+      countriesCount: formattedResponse.countries.length,
+      industriesCount: formattedResponse.industries.length,
+      exchangesCount: formattedResponse.exchanges.length
+    });
+
+    return new Response(
+      JSON.stringify(formattedResponse),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -113,7 +111,13 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in fetch-screening-filters:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        metrics: [],
+        countries: [],
+        industries: [],
+        exchanges: []
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,

@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScreeningMetric } from "@/types/screening";
-import { getScreeningData } from "@/utils/screeningCache";
 
 interface ScreeningSearchProps {
   type: "countries" | "industries" | "exchanges" | "metrics";
@@ -35,22 +34,37 @@ export const ScreeningSearch = ({
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log('Fetching data for type:', type);
         const { data, error } = await supabase.functions.invoke('fetch-screening-filters');
-        if (error) throw error;
+        
+        if (error) {
+          console.error('Error fetching data:', error);
+          throw error;
+        }
+        
+        if (!data) {
+          console.error('No data received from API');
+          setItems([]);
+          return;
+        }
+
+        console.log('Received data:', data);
         
         switch (type) {
           case "countries":
-            setItems(data?.countries || []);
+            setItems(Array.isArray(data.countries) ? data.countries : []);
             break;
           case "industries":
-            setItems(data?.industries || []);
+            setItems(Array.isArray(data.industries) ? data.industries : []);
             break;
           case "exchanges":
-            setItems(data?.exchanges || []);
+            setItems(Array.isArray(data.exchanges) ? data.exchanges : []);
             break;
           case "metrics":
-            setItems(data?.metrics || []);
+            setItems(Array.isArray(data.metrics) ? data.metrics : []);
             break;
+          default:
+            setItems([]);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -64,7 +78,10 @@ export const ScreeningSearch = ({
   }, [type]);
 
   const filteredItems = items.filter(item => {
-    if (!item) return false;
+    if (!item || typeof item !== 'object') {
+      console.log('Invalid item:', item);
+      return false;
+    }
     
     const searchTerm = searchQuery.toLowerCase();
     if (type === "metrics") {
@@ -82,7 +99,7 @@ export const ScreeningSearch = ({
   });
 
   const handleSelect = (item: any) => {
-    if (!item) return;
+    if (!item || !item.name) return;
 
     if (type === "metrics" && onMetricSelect) {
       onMetricSelect({
