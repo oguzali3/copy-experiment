@@ -215,52 +215,56 @@ const PortfolioContent = () => {
 
       const currentStocksMap = new Map(currentStocks?.map(s => [s.ticker, s]));
       
-      // Update or insert stocks
+      // Process only the stocks that have been modified
       for (const stock of updatedPortfolio.stocks) {
         const existingStock = currentStocksMap.get(stock.ticker);
         
         if (existingStock) {
-          // Determine if this is a trim operation by checking if the new share count is less than existing
-          const isTrimOperation = stock.shares < existingStock.shares;
-          
-          if (isTrimOperation) {
-            // For trim operations, use the new share count directly
-            const { error: updateError } = await supabase
-              .from('portfolio_stocks')
-              .update({
-                shares: stock.shares,
-                current_price: stock.currentPrice,
-                market_value: stock.shares * stock.currentPrice,
-                percent_of_portfolio: stock.percentOfPortfolio,
-                gain_loss: (stock.shares * stock.currentPrice) - (stock.shares * stock.avgPrice),
-                gain_loss_percent: ((stock.currentPrice - stock.avgPrice) / stock.avgPrice) * 100
-              })
-              .eq('portfolio_id', updatedPortfolio.id)
-              .eq('ticker', stock.ticker);
-
-            if (updateError) throw updateError;
-          } else {
-            // For add operations, add to existing shares and recalculate average price
-            const totalShares = Number(existingStock.shares) + stock.shares;
-            const totalCost = (Number(existingStock.shares) * Number(existingStock.avg_price)) + 
-                           (stock.shares * stock.avgPrice);
-            const newAvgPrice = totalCost / totalShares;
+          // Only update if the shares count has changed
+          if (stock.shares !== existingStock.shares) {
+            // Determine if this is a trim operation
+            const isTrimOperation = stock.shares < existingStock.shares;
             
-            const { error: updateError } = await supabase
-              .from('portfolio_stocks')
-              .update({
-                shares: totalShares,
-                avg_price: newAvgPrice,
-                current_price: stock.currentPrice,
-                market_value: totalShares * stock.currentPrice,
-                percent_of_portfolio: stock.percentOfPortfolio,
-                gain_loss: (totalShares * stock.currentPrice) - (totalShares * newAvgPrice),
-                gain_loss_percent: ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100
-              })
-              .eq('portfolio_id', updatedPortfolio.id)
-              .eq('ticker', stock.ticker);
+            if (isTrimOperation) {
+              // For trim operations, use the new share count directly
+              const { error: updateError } = await supabase
+                .from('portfolio_stocks')
+                .update({
+                  shares: stock.shares,
+                  current_price: stock.currentPrice,
+                  market_value: stock.shares * stock.currentPrice,
+                  percent_of_portfolio: stock.percentOfPortfolio,
+                  gain_loss: (stock.shares * stock.currentPrice) - (stock.shares * stock.avgPrice),
+                  gain_loss_percent: ((stock.currentPrice - stock.avgPrice) / stock.avgPrice) * 100
+                })
+                .eq('portfolio_id', updatedPortfolio.id)
+                .eq('ticker', stock.ticker);
 
-            if (updateError) throw updateError;
+              if (updateError) throw updateError;
+            } else if (stock.shares > existingStock.shares) {
+              // For add operations, add to existing shares and recalculate average price
+              const newShares = stock.shares - existingStock.shares; // Only the difference
+              const totalShares = existingStock.shares + newShares;
+              const totalCost = (existingStock.shares * existingStock.avg_price) + 
+                             (newShares * stock.avgPrice);
+              const newAvgPrice = totalCost / totalShares;
+              
+              const { error: updateError } = await supabase
+                .from('portfolio_stocks')
+                .update({
+                  shares: totalShares,
+                  avg_price: newAvgPrice,
+                  current_price: stock.currentPrice,
+                  market_value: totalShares * stock.currentPrice,
+                  percent_of_portfolio: stock.percentOfPortfolio,
+                  gain_loss: (totalShares * stock.currentPrice) - (totalShares * newAvgPrice),
+                  gain_loss_percent: ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100
+                })
+                .eq('portfolio_id', updatedPortfolio.id)
+                .eq('ticker', stock.ticker);
+
+              if (updateError) throw updateError;
+            }
           }
         } else {
           // Insert new stock
