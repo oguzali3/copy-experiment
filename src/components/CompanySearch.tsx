@@ -1,123 +1,62 @@
+import { useState } from "react";
 import { Search } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface CompanySearchProps {
   onCompanySelect: (company: any) => void;
 }
 
 export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [results, setResults] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    const searchStocks = async () => {
-      const trimmedQuery = searchQuery.trim().toLowerCase();
+  const handleBulkPopulate = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('bulk-populate');
       
-      if (!trimmedQuery) {
-        setResults([]);
-        setIsLoading(false);
-        return;
-      }
-
-      if (trimmedQuery.length < 2) {
-        setResults([]);
-        return;
-      }
-
-      setIsLoading(true);
-      console.log('Starting search with query:', trimmedQuery);
-
-      try {
-        const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-          body: { 
-            endpoint: 'search', 
-            query: trimmedQuery
-          }
-        });
-
-        if (error) throw error;
-        
-        console.log('Search results:', data);
-        setResults(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error('Search failed:', error);
-        setResults([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const timeoutId = setTimeout(() => {
-      searchStocks();
-    }, 300);
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [searchQuery]);
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: data.message,
+      });
+    } catch (error) {
+      console.error('Error populating companies:', error);
+      toast({
+        title: "Error",
+        description: "Failed to populate companies",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="relative w-full">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setIsOpen(true);
-          }}
-          className="w-full pl-10 pr-4 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Search companies..."
-        />
-      </div>
-
-      {isOpen && (searchQuery.length > 0 || isLoading) && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border max-h-[400px] overflow-y-auto z-50">
-          {isLoading && (
-            <div className="p-4 text-sm text-gray-500 text-center">
-              Searching...
-            </div>
-          )}
-          {!isLoading && searchQuery.length < 2 && (
-            <div className="p-4 text-sm text-gray-500 text-center">
-              Type at least 2 characters to search...
-            </div>
-          )}
-          {!isLoading && searchQuery.length >= 2 && results.length === 0 && (
-            <div className="p-4 text-sm text-gray-500 text-center">
-              No companies found.
-            </div>
-          )}
-          {results.map((company) => (
-            <div
-              key={company.symbol}
-              onClick={() => {
-                onCompanySelect({
-                  ticker: company.symbol,
-                  name: company.name,
-                });
-                setSearchQuery("");
-                setResults([]);
-                setIsOpen(false);
-              }}
-              className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-            >
-              <div className="flex items-center gap-2">
-                <div>
-                  <p className="text-sm font-medium">{company.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {company.symbol} {company.exchangeShortName ? `• ${company.exchangeShortName}` : ''}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
+    <div className="relative">
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search companies..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8"
+          />
         </div>
-      )}
+        <Button 
+          onClick={handleBulkPopulate} 
+          disabled={isLoading}
+          variant="outline"
+        >
+          {isLoading ? "Populating..." : "Populate Companies"}
+        </Button>
+      </div>
     </div>
   );
 };
