@@ -35,25 +35,22 @@ export const ScreeningSearch = ({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (type === "metrics") {
-          const { data, error } = await supabase.functions.invoke('fetch-screening-filters');
-          if (error) throw error;
-          if (data?.metrics) {
-            setItems(data.metrics);
-          }
-        } else {
-          const cachedData = await getScreeningData();
-          switch (type) {
-            case "countries":
-              setItems(cachedData.countries.map(country => country.name));
-              break;
-            case "industries":
-              setItems(cachedData.industries.map(industry => industry.name));
-              break;
-            case "exchanges":
-              setItems(cachedData.exchanges.map(exchange => exchange.name));
-              break;
-          }
+        const { data, error } = await supabase.functions.invoke('fetch-screening-filters');
+        if (error) throw error;
+        
+        switch (type) {
+          case "countries":
+            setItems(data?.countries || []);
+            break;
+          case "industries":
+            setItems(data?.industries || []);
+            break;
+          case "exchanges":
+            setItems(data?.exchanges || []);
+            break;
+          case "metrics":
+            setItems(data?.metrics || []);
+            break;
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -65,27 +62,33 @@ export const ScreeningSearch = ({
     fetchData();
   }, [type]);
 
-  const filteredItems = type === "metrics"
-    ? (items as ScreeningMetric[]).filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : (items as string[]).filter(item =>
-        typeof item === 'string' && item.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredItems = items.filter(item => {
+    const searchTerm = searchQuery.toLowerCase();
+    if (type === "metrics") {
+      return (
+        item.name.toLowerCase().includes(searchTerm) ||
+        item.category.toLowerCase().includes(searchTerm) ||
+        item.description.toLowerCase().includes(searchTerm)
       );
+    } else {
+      return (
+        item.name.toLowerCase().includes(searchTerm) ||
+        item.description.toLowerCase().includes(searchTerm)
+      );
+    }
+  });
 
-  const handleSelect = (item: string | ScreeningMetric) => {
+  const handleSelect = (item: any) => {
     if (type === "metrics" && onMetricSelect) {
-      const metric = item as ScreeningMetric;
       onMetricSelect({
-        id: metric.id,
-        name: metric.name,
-        category: metric.category,
+        id: item.id,
+        name: item.name,
+        category: item.category,
         min: "",
         max: ""
       });
     } else if (onSelect) {
-      const value = typeof item === "string" ? item : item.name;
+      const value = item.name;
       if (selected.includes(value)) {
         onSelect(selected.filter(i => i !== value));
       } else {
@@ -105,7 +108,7 @@ export const ScreeningSearch = ({
         <Search className="mr-2 h-4 w-4" />
         <span>
           {loading ? "Loading..." : type === "metrics"
-            ? "Select & search metrics"
+            ? "Search metrics..."
             : `Search ${type}...`}
         </span>
       </Button>
@@ -119,29 +122,18 @@ export const ScreeningSearch = ({
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
-              {filteredItems.map((item) => {
-                const itemValue = typeof item === "string" ? item : item.name;
-                return (
-                  <CommandItem
-                    key={typeof item === "string" ? item : item.id}
-                    onSelect={() => handleSelect(item)}
-                    className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
-                  >
-                    {type === "metrics" ? (
-                      <div>
-                        <p className="text-sm font-medium">
-                          {(item as ScreeningMetric).name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {(item as ScreeningMetric).category}
-                        </p>
-                      </div>
-                    ) : (
-                      <span>{itemValue}</span>
-                    )}
-                  </CommandItem>
-                );
-              })}
+              {filteredItems.map((item) => (
+                <CommandItem
+                  key={type === "metrics" ? item.id : item.name}
+                  onSelect={() => handleSelect(item)}
+                  className="flex flex-col items-start px-4 py-2 hover:bg-accent cursor-pointer"
+                >
+                  <p className="text-sm font-medium">{item.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {type === "metrics" ? item.category : item.description}
+                  </p>
+                </CommandItem>
+              ))}
             </CommandGroup>
           </CommandList>
         </Command>

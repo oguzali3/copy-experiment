@@ -36,23 +36,6 @@ const metrics = [
       { id: "roe", name: "ROE", description: "Return on equity" },
       { id: "roa", name: "ROA", description: "Return on assets" }
     ]
-  },
-  {
-    category: "Financial Health",
-    metrics: [
-      { id: "currentRatio", name: "Current Ratio", description: "Current assets to current liabilities" },
-      { id: "debtToEquity", name: "Debt to Equity", description: "Total debt to shareholders equity" },
-      { id: "interestCoverage", name: "Interest Coverage", description: "Operating income to interest expenses" },
-      { id: "quickRatio", name: "Quick Ratio", description: "Liquid assets to current liabilities" }
-    ]
-  },
-  {
-    category: "Dividend",
-    metrics: [
-      { id: "dividendYield", name: "Dividend Yield", description: "Annual dividend yield percentage" },
-      { id: "payoutRatio", name: "Payout Ratio", description: "Percentage of earnings paid as dividends" },
-      { id: "dividendGrowth", name: "Dividend Growth", description: "Year-over-year dividend growth" }
-    ]
   }
 ];
 
@@ -67,6 +50,13 @@ serve(async (req) => {
     if (!apiKey) {
       throw new Error('FMP API key not configured');
     }
+
+    // Fetch countries
+    const countriesResponse = await fetch(
+      `https://financialmodelingprep.com/api/v3/get-all-countries?apikey=${apiKey}`
+    );
+    const countries = await countriesResponse.json();
+    console.log('Fetched countries:', countries.length);
 
     // Fetch sectors
     const sectorsResponse = await fetch(
@@ -97,6 +87,11 @@ serve(async (req) => {
             category: category.category
           }))
         ),
+        countries: countries.map((country: any) => ({
+          name: country.name,
+          code: country.code,
+          description: `Companies based in ${country.name}`
+        })),
         sectors: sectors.map((sector: string) => ({
           name: sector,
           description: `Companies in the ${sector} sector`
