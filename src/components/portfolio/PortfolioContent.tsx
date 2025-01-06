@@ -152,14 +152,13 @@ const PortfolioContent = () => {
               })
               .eq('portfolio_id', updatedPortfolio.id)
               .eq('ticker', stock.ticker);
-          } else if (stock.shares > existingStock.shares) {
+          } else {
             // Add operation - Accumulate shares and calculate new weighted average
-            const additionalShares = stock.shares - existingStock.shares;
-            const totalShares = existingStock.shares + additionalShares;
+            const totalShares = existingStock.shares + stock.shares;
             
             // Calculate weighted average price
             const existingCost = existingStock.shares * existingStock.avg_price;
-            const additionalCost = additionalShares * stock.avgPrice;
+            const additionalCost = stock.shares * stock.avgPrice;
             const totalCost = existingCost + additionalCost;
             const newAvgPrice = totalCost / totalShares;
 
