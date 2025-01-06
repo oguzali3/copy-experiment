@@ -21,88 +21,75 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const results: Record<string, any> = {
-      profiles: [],
-      financials: [],
-      errors: []
-    };
+    const results: Record<string, any> = {};
 
-    console.log('Starting bulk data sync...');
-
-    // Fetch all company profiles in bulk
-    console.log('Fetching all company profiles...');
+    // Company Profiles
+    console.log('Fetching company profiles...');
     const profilesUrl = `https://financialmodelingprep.com/api/v4/company-profile/bulk?apikey=${apiKey}`;
     const profilesResponse = await fetch(profilesUrl);
     const profilesData = await profilesResponse.json();
-
+    
     if (Array.isArray(profilesData)) {
-      console.log(`Found ${profilesData.length} company profiles`);
-      
-      const profilesToUpsert = profilesData.map(profile => ({
-        symbol: profile.symbol,
-        name: profile.companyName,
-        exchange: profile.exchangeShortName,
-        currency: profile.currency,
-        country: profile.country,
-        sector: profile.sector,
-        industry: profile.industry,
-        fulltimeemployees: profile.fullTimeEmployees,
-        description: profile.description,
-        ceo: profile.ceo,
-        website: profile.website,
-        image: profile.image,
-        ipodate: profile.ipoDate
-      }));
-
       const { error: profilesError } = await supabase
         .from('company_profiles')
-        .upsert(profilesToUpsert);
+        .upsert(profilesData.map(profile => ({
+          symbol: profile.symbol,
+          name: profile.companyName,
+          exchange: profile.exchangeShortName,
+          currency: profile.currency,
+          country: profile.country,
+          sector: profile.sector,
+          industry: profile.industry,
+          fulltimeemployees: profile.fullTimeEmployees,
+          description: profile.description,
+          ceo: profile.ceo,
+          website: profile.website,
+          image: profile.image,
+          ipodate: profile.ipoDate
+        })));
 
-      if (profilesError) {
-        console.error('Error storing company profiles:', profilesError);
-        results.errors.push({ type: 'profiles', error: profilesError.message });
-      } else {
-        results.profiles = profilesToUpsert.map(p => p.symbol);
-      }
+      if (profilesError) throw profilesError;
+      results.profiles = profilesData.length;
     }
 
-    // Fetch all income statements in bulk
-    console.log('Fetching all income statements...');
-    const incomeStatementsUrl = `https://financialmodelingprep.com/api/v4/income-statement-bulk?period=annual&apikey=${apiKey}`;
-    const incomeStatementsResponse = await fetch(incomeStatementsUrl);
-    const incomeStatementsData = await incomeStatementsResponse.json();
+    // Financial Statements - Annual
+    console.log('Fetching annual financial statements...');
+    const periods = ['annual', 'quarter'];
+    
+    for (const period of periods) {
+      // Income Statements
+      const incomeUrl = `https://financialmodelingprep.com/api/v4/income-statement-bulk?period=${period}&apikey=${apiKey}`;
+      const balanceSheetUrl = `https://financialmodelingprep.com/api/v4/balance-sheet-statement-bulk?period=${period}&apikey=${apiKey}`;
+      const cashFlowUrl = `https://financialmodelingprep.com/api/v4/cash-flow-statement-bulk?period=${period}&apikey=${apiKey}`;
 
-    // Fetch all balance sheets in bulk
-    console.log('Fetching all balance sheets...');
-    const balanceSheetsUrl = `https://financialmodelingprep.com/api/v4/balance-sheet-statement-bulk?period=annual&apikey=${apiKey}`;
-    const balanceSheetsResponse = await fetch(balanceSheetsUrl);
-    const balanceSheetsData = await balanceSheetsResponse.json();
+      const [incomeResponse, balanceSheetResponse, cashFlowResponse] = await Promise.all([
+        fetch(incomeUrl),
+        fetch(balanceSheetUrl),
+        fetch(cashFlowUrl)
+      ]);
 
-    // Fetch all cash flow statements in bulk
-    console.log('Fetching all cash flow statements...');
-    const cashFlowsUrl = `https://financialmodelingprep.com/api/v4/cash-flow-statement-bulk?period=annual&apikey=${apiKey}`;
-    const cashFlowsResponse = await fetch(cashFlowsUrl);
-    const cashFlowsData = await cashFlowsResponse.json();
+      const [incomeData, balanceSheetData, cashFlowData] = await Promise.all([
+        incomeResponse.json(),
+        balanceSheetResponse.json(),
+        cashFlowResponse.json()
+      ]);
 
-    if (Array.isArray(incomeStatementsData) && Array.isArray(balanceSheetsData) && Array.isArray(cashFlowsData)) {
-      console.log(`Processing financial statements...`);
-      
-      // Create a map for quick lookups
+      // Create maps for quick lookups
       const balanceSheetsMap = new Map(
-        balanceSheetsData.map(bs => [`${bs.symbol}-${bs.date}`, bs])
+        balanceSheetData.map((bs: any) => [`${bs.symbol}-${bs.date}`, bs])
       );
       const cashFlowsMap = new Map(
-        cashFlowsData.map(cf => [`${cf.symbol}-${cf.date}`, cf])
+        cashFlowData.map((cf: any) => [`${cf.symbol}-${cf.date}`, cf])
       );
 
-      const financialsToUpsert = incomeStatementsData.map(income => {
+      const financialStatements = incomeData.map((income: any) => {
         const key = `${income.symbol}-${income.date}`;
         const balanceSheet = balanceSheetsMap.get(key);
         const cashFlow = cashFlowsMap.get(key);
 
         return {
           symbol: income.symbol,
-          period: 'annual',
+          period,
           date: income.date,
           calendar_year: new Date(income.date).getFullYear(),
           revenue: income.revenue,
@@ -126,25 +113,220 @@ serve(async (req) => {
         };
       });
 
-      const { error: financialsError } = await supabase
+      const { error: statementsError } = await supabase
         .from('financial_statements')
-        .upsert(financialsToUpsert);
+        .upsert(financialStatements);
 
-      if (financialsError) {
-        console.error('Error storing financial statements:', financialsError);
-        results.errors.push({ type: 'financials', error: financialsError.message });
-      } else {
-        results.financials = [...new Set(financialsToUpsert.map(f => f.symbol))];
+      if (statementsError) throw statementsError;
+      results[`${period}_statements`] = financialStatements.length;
+    }
+
+    // Metrics & Ratios
+    console.log('Fetching metrics and ratios...');
+    for (const period of periods) {
+      const metricsUrl = `https://financialmodelingprep.com/api/v4/key-metrics-bulk?period=${period}&apikey=${apiKey}`;
+      const ratiosUrl = `https://financialmodelingprep.com/api/v4/ratios-bulk?period=${period}&apikey=${apiKey}`;
+
+      const [metricsResponse, ratiosResponse] = await Promise.all([
+        fetch(metricsUrl),
+        fetch(ratiosUrl)
+      ]);
+
+      const [metricsData, ratiosData] = await Promise.all([
+        metricsResponse.json(),
+        ratiosResponse.json()
+      ]);
+
+      if (Array.isArray(metricsData)) {
+        const { error: metricsError } = await supabase
+          .from('financial_metrics')
+          .upsert(metricsData.map(metric => ({
+            symbol: metric.symbol,
+            period,
+            date: metric.date,
+            calendar_year: new Date(metric.date).getFullYear(),
+            pe_ratio: metric.peRatio,
+            price_to_book: metric.priceToBookRatio,
+            debt_to_equity: metric.debtToEquity,
+            free_cash_flow_yield: metric.freeCashFlowYield,
+            dividend_yield: metric.dividendYield,
+            operating_margin: metric.operatingProfitMargin,
+            net_margin: metric.netProfitMargin,
+            roa: metric.returnOnAssets,
+            roe: metric.returnOnEquity
+          })));
+
+        if (metricsError) throw metricsError;
+        results[`${period}_metrics`] = metricsData.length;
+      }
+
+      if (Array.isArray(ratiosData)) {
+        const { error: ratiosError } = await supabase
+          .from('financial_ratios')
+          .upsert(ratiosData.map(ratio => ({
+            symbol: ratio.symbol,
+            period,
+            date: ratio.date,
+            calendar_year: new Date(ratio.date).getFullYear(),
+            gross_margin_ratio: ratio.grossProfitMargin,
+            operating_margin_ratio: ratio.operatingProfitMargin,
+            net_profit_margin: ratio.netProfitMargin,
+            return_on_equity: ratio.returnOnEquity,
+            return_on_assets: ratio.returnOnAssets,
+            current_ratio: ratio.currentRatio,
+            quick_ratio: ratio.quickRatio,
+            debt_ratio: ratio.debtRatio,
+            debt_equity_ratio: ratio.debtToEquity,
+            interest_coverage: ratio.interestCoverage
+          })));
+
+        if (ratiosError) throw ratiosError;
+        results[`${period}_ratios`] = ratiosData.length;
       }
     }
 
-    console.log('Bulk sync completed');
+    // TTM Data
+    console.log('Fetching TTM data...');
+    const ttmMetricsUrl = `https://financialmodelingprep.com/api/v4/key-metrics-ttm-bulk?apikey=${apiKey}`;
+    const ttmRatiosUrl = `https://financialmodelingprep.com/api/v4/ratios-ttm-bulk?apikey=${apiKey}`;
+
+    const [ttmMetricsResponse, ttmRatiosResponse] = await Promise.all([
+      fetch(ttmMetricsUrl),
+      fetch(ttmRatiosUrl)
+    ]);
+
+    const [ttmMetricsData, ttmRatiosData] = await Promise.all([
+      ttmMetricsResponse.json(),
+      ttmRatiosResponse.json()
+    ]);
+
+    if (Array.isArray(ttmRatiosData)) {
+      const { error: ttmRatiosError } = await supabase
+        .from('ttm_ratios')
+        .upsert(ttmRatiosData.map(ratio => ({
+          symbol: ratio.symbol,
+          gross_margin_ttm: ratio.grossProfitMarginTTM,
+          operating_margin_ttm: ratio.operatingProfitMarginTTM,
+          net_profit_margin_ttm: ratio.netProfitMarginTTM,
+          return_on_equity_ttm: ratio.returnOnEquityTTM,
+          return_on_assets_ttm: ratio.returnOnAssetsTTM,
+          pe_ratio_ttm: ratio.priceEarningsRatioTTM,
+          price_to_book_ttm: ratio.priceToBookRatioTTM,
+          dividend_yield_ttm: ratio.dividendYieldTTM
+        })));
+
+      if (ttmRatiosError) throw ttmRatiosError;
+      results.ttm_ratios = ttmRatiosData.length;
+    }
+
+    // Growth Metrics
+    console.log('Fetching growth metrics...');
+    const growthUrls = [
+      `https://financialmodelingprep.com/api/v4/income-statement-growth-bulk?apikey=${apiKey}`,
+      `https://financialmodelingprep.com/api/v4/balance-sheet-growth-bulk?apikey=${apiKey}`,
+      `https://financialmodelingprep.com/api/v4/cash-flow-statement-growth-bulk?apikey=${apiKey}`
+    ];
+
+    const growthResponses = await Promise.all(growthUrls.map(url => fetch(url)));
+    const [incomeGrowth, balanceGrowth, cashFlowGrowth] = await Promise.all(
+      growthResponses.map(response => response.json())
+    );
+
+    if (Array.isArray(incomeGrowth)) {
+      const { error: growthError } = await supabase
+        .from('growth_metrics')
+        .upsert(incomeGrowth.map(growth => ({
+          symbol: growth.symbol,
+          period: 'annual',
+          date: growth.date,
+          calendar_year: new Date(growth.date).getFullYear(),
+          revenue_growth: growth.revenueGrowth,
+          gross_profit_growth: growth.grossProfitGrowth,
+          operating_income_growth: growth.operatingIncomeGrowth,
+          net_income_growth: growth.netIncomeGrowth,
+          eps_growth: growth.epsgrowth
+        })));
+
+      if (growthError) throw growthError;
+      results.growth_metrics = incomeGrowth.length;
+    }
+
+    // Stock Peers
+    console.log('Fetching stock peers...');
+    const peersUrl = `https://financialmodelingprep.com/api/v4/stock-peers-bulk?apikey=${apiKey}`;
+    const peersResponse = await fetch(peersUrl);
+    const peersData = await peersResponse.json();
+
+    if (Array.isArray(peersData)) {
+      const peerRecords = peersData.flatMap(item => 
+        item.peersList.map((peer: string) => ({
+          symbol: item.symbol,
+          peer_symbol: peer
+        }))
+      );
+
+      const { error: peersError } = await supabase
+        .from('stock_peers')
+        .upsert(peerRecords);
+
+      if (peersError) throw peersError;
+      results.peers = peerRecords.length;
+    }
+
+    // Price Targets
+    console.log('Fetching price targets...');
+    const targetsUrl = `https://financialmodelingprep.com/api/v4/price-target-summary-bulk?apikey=${apiKey}`;
+    const targetsResponse = await fetch(targetsUrl);
+    const targetsData = await targetsResponse.json();
+
+    if (Array.isArray(targetsData)) {
+      const { error: targetsError } = await supabase
+        .from('price_targets')
+        .upsert(targetsData.map(target => ({
+          symbol: target.symbol,
+          target_low: target.targetLow,
+          target_mean: target.targetMean,
+          target_high: target.targetHigh,
+          target_consensus: target.targetConsensus,
+          number_of_analysts: target.numberOfAnalysts
+        })));
+
+      if (targetsError) throw targetsError;
+      results.price_targets = targetsData.length;
+    }
+
+    // Analyst Recommendations
+    console.log('Fetching analyst recommendations...');
+    const recommendationsUrl = `https://financialmodelingprep.com/api/v4/upgrades-downgrades-consensus-bulk?apikey=${apiKey}`;
+    const recommendationsResponse = await fetch(recommendationsUrl);
+    const recommendationsData = await recommendationsResponse.json();
+
+    if (Array.isArray(recommendationsData)) {
+      const { error: recommendationsError } = await supabase
+        .from('analyst_recommendations')
+        .upsert(recommendationsData.map(rec => ({
+          symbol: rec.symbol,
+          date: rec.date,
+          analyst_company: rec.analystCompany,
+          analyst_name: rec.analystName,
+          recommendation: rec.recommendation,
+          previous_recommendation: rec.previousRecommendation,
+          action: rec.action,
+          target_price: rec.targetPrice,
+          previous_target_price: rec.previousTargetPrice
+        })));
+
+      if (recommendationsError) throw recommendationsError;
+      results.analyst_recommendations = recommendationsData.length;
+    }
+
+    console.log('Bulk sync completed successfully:', results);
     return new Response(JSON.stringify(results), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in bulk sync:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
