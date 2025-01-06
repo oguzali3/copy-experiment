@@ -6,8 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -20,15 +21,30 @@ serve(async (req) => {
 
     console.log('Starting bulk population of company profiles...')
 
-    // Fetch company profiles in bulk
-    const response = await fetch(`https://financialmodelingprep.com/api/v4/profile-bulk?apikey=${apiKey}`)
+    // Fetch company profiles in smaller chunks
+    const exchanges = ['NASDAQ', 'NYSE'];
+    let allProfiles = [];
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+    for (const exchange of exchanges) {
+      console.log(`Fetching profiles for ${exchange}...`);
+      const response = await fetch(
+        `https://financialmodelingprep.com/api/v4/profile/all?exchange=${exchange}&apikey=${apiKey}`
+      );
+      
+      if (!response.ok) {
+        console.error(`Error fetching ${exchange} profiles:`, response.status);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const profiles = await response.json();
+      console.log(`Fetched ${profiles.length} profiles from ${exchange}`);
+      allProfiles = [...allProfiles, ...profiles];
+      
+      // Add delay between API calls to avoid rate limiting
+      await delay(1000);
     }
 
-    const profiles = await response.json()
-    console.log(`Fetched ${profiles.length} company profiles`)
+    console.log(`Total profiles fetched: ${allProfiles.length}`);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -40,21 +56,23 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // First, clear existing data
+    // Clear existing data in smaller chunks
+    console.log('Clearing existing company profiles...');
     const { error: deleteError } = await supabase
       .from('company_profiles')
       .delete()
-      .neq('symbol', '') // Delete all records
+      .neq('symbol', '');
     
     if (deleteError) {
-      throw deleteError
+      console.error('Error clearing existing data:', deleteError);
+      throw deleteError;
     }
     
-    console.log('Cleared existing company profiles')
+    console.log('Cleared existing company profiles');
 
-    // Transform and insert profiles in batches
-    const batchSize = 100
-    const transformedProfiles = profiles.map((profile: any) => ({
+    // Transform and insert profiles in smaller batches
+    const batchSize = 50; // Reduced batch size
+    const transformedProfiles = allProfiles.map((profile: any) => ({
       symbol: profile.symbol,
       name: profile.companyName,
       exchange: profile.exchange,
@@ -69,23 +87,30 @@ serve(async (req) => {
       image: profile.image,
       ipodate: profile.ipoDate,
       updated_at: new Date().toISOString()
-    }))
+    }));
 
-    let successCount = 0
+    let successCount = 0;
     for (let i = 0; i < transformedProfiles.length; i += batchSize) {
-      const batch = transformedProfiles.slice(i, i + batchSize)
+      console.log(`Processing batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(transformedProfiles.length/batchSize)}`);
+      
+      const batch = transformedProfiles.slice(i, i + batchSize);
       const { error: insertError } = await supabase
         .from('company_profiles')
-        .insert(batch)
+        .insert(batch);
       
       if (insertError) {
-        console.error('Error inserting batch:', insertError)
-        throw insertError
+        console.error('Error inserting batch:', insertError);
+        throw insertError;
       }
       
-      successCount += batch.length
-      console.log(`Inserted batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(transformedProfiles.length/batchSize)}`)
+      successCount += batch.length;
+      console.log(`Successfully inserted batch ${Math.floor(i/batchSize) + 1}`);
+      
+      // Add small delay between batches to prevent resource exhaustion
+      await delay(500);
     }
+
+    console.log(`Completed! Inserted ${successCount} company profiles`);
 
     return new Response(
       JSON.stringify({
@@ -100,7 +125,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
