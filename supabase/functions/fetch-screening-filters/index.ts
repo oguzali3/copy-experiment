@@ -86,17 +86,17 @@ serve(async (req) => {
           category: category.category
         }))
       ),
-      countries: Array.isArray(countriesData) ? countriesData.map((country: any) => ({
-        name: country.name || country.code || '',
-        description: `Companies based in ${country.name || country.code || 'this country'}`
+      countries: Array.isArray(countriesData) ? countriesData.map((code: string) => ({
+        name: code,
+        description: `Companies based in ${code}`
       })) : [],
       industries: Array.isArray(industriesData) ? industriesData.map((industry: string) => ({
-        name: industry || '',
-        description: `Companies in the ${industry || 'this'} industry`
+        name: industry,
+        description: `Companies in the ${industry} industry`
       })) : [],
-      exchanges: Array.isArray(exchangesData) ? exchangesData.map((exchange: any) => ({
-        name: exchange.exchange || '',
-        description: `Stocks listed on ${exchange.exchange || 'this exchange'}`
+      exchanges: Array.isArray(exchangesData) ? exchangesData.map((exchange: string) => ({
+        name: exchange,
+        description: `Stocks listed on ${exchange}`
       })) : []
     };
 
