@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScreeningMetric } from "@/types/screening";
+import { getScreeningData } from "@/utils/screeningCache";
 
 interface ScreeningSearchProps {
   type: "countries" | "industries" | "exchanges" | "metrics";
@@ -32,36 +33,38 @@ export const ScreeningSearch = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchFilterData = async () => {
+    const fetchData = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('fetch-screening-filters');
-        
-        if (error) throw error;
-        
-        if (data) {
+        if (type === "metrics") {
+          // Fetch metrics directly as they're not cached
+          const { data, error } = await supabase.functions.invoke('fetch-screening-filters');
+          if (error) throw error;
+          if (data?.metrics) {
+            setItems(data.metrics);
+          }
+        } else {
+          // Use cached data for countries, industries, and exchanges
+          const cachedData = await getScreeningData();
           switch (type) {
             case "countries":
-              setItems(data.countries);
+              setItems(cachedData.countries);
               break;
             case "industries":
-              setItems(data.industries);
+              setItems(cachedData.industries);
               break;
             case "exchanges":
-              setItems(data.exchanges);
-              break;
-            case "metrics":
-              setItems(data.metrics);
+              setItems(cachedData.exchanges);
               break;
           }
         }
       } catch (error) {
-        console.error('Error fetching filter data:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchFilterData();
+    fetchData();
   }, [type]);
 
   const filteredItems = type === "metrics"
