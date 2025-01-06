@@ -11,9 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ScreeningMetric } from "@/types/screening";
-import { SearchItem } from "./types";
+import { SearchItem, SearchItemSchema } from "./types";
 import { SearchResult } from "./SearchResult";
 import { filterSearchItems, getPlaceholderText } from "./searchUtils";
+import { toast } from "sonner";
 
 interface ScreeningSearchProps {
   type: "countries" | "industries" | "exchanges" | "metrics";
@@ -41,35 +42,54 @@ export const ScreeningSearch = ({
         
         if (error) {
           console.error('Error fetching data:', error);
-          throw error;
+          toast.error(`Failed to fetch ${type}: ${error.message}`);
+          setItems([]);
+          return;
         }
         
         if (!data) {
           console.error('No data received from API');
+          toast.error(`No ${type} data available`);
           setItems([]);
           return;
         }
 
         console.log('Received data:', data);
         
+        let filteredItems: SearchItem[] = [];
+        
         switch (type) {
           case "countries":
-            setItems(data.countries || []);
+            filteredItems = data.countries || [];
             break;
           case "industries":
-            setItems(data.industries || []);
+            filteredItems = data.industries || [];
             break;
           case "exchanges":
-            setItems(data.exchanges || []);
+            filteredItems = data.exchanges || [];
             break;
           case "metrics":
-            setItems(data.metrics || []);
+            filteredItems = data.metrics || [];
             break;
           default:
-            setItems([]);
+            filteredItems = [];
         }
+
+        // Validate items
+        const validatedItems = filteredItems.filter(item => {
+          try {
+            SearchItemSchema.parse(item);
+            return true;
+          } catch (error) {
+            console.error('Invalid item:', item, error);
+            return false;
+          }
+        });
+
+        setItems(validatedItems);
       } catch (error) {
         console.error('Error fetching data:', error);
+        toast.error(`Failed to load ${type}`);
         setItems([]);
       } finally {
         setLoading(false);
@@ -82,25 +102,33 @@ export const ScreeningSearch = ({
   const filteredItems = filterSearchItems(items, searchQuery, type);
 
   const handleSelect = (item: SearchItem) => {
-    if (!item?.name) return;
-
-    if (type === "metrics" && onMetricSelect) {
-      onMetricSelect({
-        id: item.id || '',
-        name: item.name,
-        category: item.category || '',
-        min: "",
-        max: ""
-      });
-    } else if (onSelect) {
-      const value = item.name;
-      if (selected.includes(value)) {
-        onSelect(selected.filter(i => i !== value));
-      } else {
-        onSelect([...selected, value]);
+    try {
+      if (!item?.name) {
+        console.error('Invalid item selected:', item);
+        return;
       }
+
+      if (type === "metrics" && onMetricSelect) {
+        onMetricSelect({
+          id: item.id || '',
+          name: item.name,
+          category: item.category || '',
+          min: "",
+          max: ""
+        });
+      } else if (onSelect) {
+        const value = item.name;
+        if (selected.includes(value)) {
+          onSelect(selected.filter(i => i !== value));
+        } else {
+          onSelect([...selected, value]);
+        }
+      }
+      setOpen(false);
+    } catch (error) {
+      console.error('Error handling selection:', error);
+      toast.error('Failed to select item');
     }
-    setOpen(false);
   };
 
   return (
@@ -123,9 +151,9 @@ export const ScreeningSearch = ({
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
-              {filteredItems.map((item, index) => (
+              {filteredItems.map((item) => (
                 <SearchResult
-                  key={`${item.name}-${index}`}
+                  key={`${item.name}-${item.id || ''}`}
                   item={item}
                   type={type}
                   onSelect={handleSelect}

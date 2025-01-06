@@ -1,61 +1,79 @@
-import { SearchItem } from "./types";
+import { SearchItem, SearchItemSchema } from "./types";
 
 export const filterSearchItems = (
   items: SearchItem[],
   searchQuery: string,
   type: "countries" | "industries" | "exchanges" | "metrics"
 ): SearchItem[] => {
-  const searchTerm = searchQuery.toLowerCase().trim();
-  
-  if (!searchTerm) return items;
-  
-  return items.filter(item => {
-    if (!item) return false;
+  try {
+    console.log(`Filtering ${items.length} items for type: ${type}`);
+    const searchTerm = searchQuery.toLowerCase().trim();
     
-    const name = (item.name || '').toLowerCase();
-    const fullName = (item.fullName || '').toLowerCase();
-    const description = (item.description || '').toLowerCase();
-    const category = (item.category || '').toLowerCase();
+    if (!searchTerm) return items;
+    
+    return items.filter(item => {
+      try {
+        // Validate item structure
+        const validatedItem = SearchItemSchema.parse(item);
+        
+        const searchableFields = {
+          name: validatedItem.name.toLowerCase(),
+          fullName: validatedItem.fullName?.toLowerCase() || '',
+          description: validatedItem.description?.toLowerCase() || '',
+          category: validatedItem.category?.toLowerCase() || ''
+        };
 
-    // Basic search matches
-    const matchesName = name.includes(searchTerm);
-    const matchesFullName = fullName.includes(searchTerm);
-    const matchesDescription = description.includes(searchTerm);
-    const matchesCategory = type === "metrics" && category.includes(searchTerm);
+        // Log search attempt for debugging
+        console.log(`Searching item: ${JSON.stringify(searchableFields)}`);
 
-    // Special handling for countries and exchanges
-    if (type === "countries" || type === "exchanges") {
-      return (
-        name.includes(searchTerm) || // Partial code match
-        fullName.includes(searchTerm) || // Full name match
-        matchesDescription
-      );
-    }
+        const matches = {
+          name: searchableFields.name.includes(searchTerm),
+          fullName: searchableFields.fullName.includes(searchTerm),
+          description: searchableFields.description.includes(searchTerm),
+          category: type === "metrics" && searchableFields.category.includes(searchTerm)
+        };
 
-    return matchesName || matchesFullName || matchesDescription || matchesCategory;
-  });
+        // Log matches for debugging
+        console.log(`Matches for "${searchTerm}":`, matches);
+
+        return Object.values(matches).some(match => match);
+      } catch (error) {
+        console.error('Invalid item structure:', item, error);
+        return false;
+      }
+    });
+  } catch (error) {
+    console.error('Error filtering items:', error);
+    return [];
+  }
 };
 
 export const getDisplayName = (item: SearchItem, type: "countries" | "industries" | "exchanges" | "metrics"): string => {
-  if (type === "countries" || type === "exchanges") {
-    return `${item.name} - ${item.fullName || item.name}`;
+  try {
+    const validatedItem = SearchItemSchema.parse(item);
+    
+    if (type === "countries" || type === "exchanges") {
+      return `${validatedItem.name} - ${validatedItem.fullName || validatedItem.name}`;
+    }
+    return validatedItem.name;
+  } catch (error) {
+    console.error('Error getting display name:', error);
+    return 'Invalid Item';
   }
-  return item.name;
 };
 
-export const getPlaceholderText = (type: "countries" | "industries" | "exchanges" | "metrics", isLoading: boolean): string => {
+export const getPlaceholderText = (
+  type: "countries" | "industries" | "exchanges" | "metrics",
+  isLoading: boolean
+): string => {
   if (isLoading) return "Loading...";
   
-  switch (type) {
-    case "countries":
-      return "Search countries...";
-    case "industries":
-      return "Search industries...";
-    case "exchanges":
-      return "Search exchanges...";
-    case "metrics":
-      return "Search metrics...";
-    default:
-      return "Search...";
-  }
+  const placeholders = {
+    countries: "Search by country name or code...",
+    industries: "Search industries...",
+    exchanges: "Search by exchange name or code...",
+    metrics: "Search metrics...",
+  };
+
+  return placeholders[type] || "Search...";
 };
