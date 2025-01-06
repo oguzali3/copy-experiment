@@ -8,10 +8,28 @@ import { toast } from "sonner";
 
 export const Header = () => {
   const navigate = useNavigate();
-  const { session } = useSessionContext();
+  const { session, isLoading } = useSessionContext();
   const [isScrolled, setIsScrolled] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [show, setShow] = useState(true);
+
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      if (event === 'SIGNED_OUT') {
+        navigate('/');
+      } else if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed successfully');
+      } else if (event === 'USER_UPDATED') {
+        console.log('User session updated');
+      }
+    });
+
+    // Cleanup subscription
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   useEffect(() => {
     const controlNavbar = () => {
@@ -45,6 +63,8 @@ export const Header = () => {
         toast.error("Error signing out");
         console.error("Error:", error.message);
       } else {
+        // Clear any stored session data
+        localStorage.removeItem('supabase.auth.token');
         toast.success("Signed out successfully");
         navigate("/");
       }
@@ -53,6 +73,11 @@ export const Header = () => {
       console.error("Error:", error);
     }
   };
+
+  // Show loading state while checking session
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <header
