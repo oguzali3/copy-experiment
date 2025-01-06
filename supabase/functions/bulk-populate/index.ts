@@ -20,22 +20,19 @@ serve(async (req) => {
     }
 
     console.log('Starting bulk population of company profiles...')
-
-    // Process one exchange at a time with a smaller dataset
-    const exchange = 'NASDAQ';
-    console.log(`Fetching profiles for ${exchange}...`);
     
+    // Using the correct bulk profile endpoint
     const response = await fetch(
-      `https://financialmodelingprep.com/api/v4/profile/all?exchange=${exchange}&apikey=${apiKey}&limit=100`
+      `https://financialmodelingprep.com/api/v3/stock/list?apikey=${apiKey}`
     );
     
     if (!response.ok) {
-      console.error(`Error fetching ${exchange} profiles:`, response.status);
+      console.error(`Error fetching profiles:`, response.status);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const profiles = await response.json();
-    console.log(`Fetched ${profiles.length} profiles from ${exchange}`);
+    console.log(`Fetched ${profiles.length} profiles`);
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -47,12 +44,11 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Clear only existing NASDAQ records for the limited dataset
-    console.log(`Clearing existing ${exchange} company profiles...`);
+    // Clear only a limited set of existing records
+    console.log('Clearing existing company profiles...');
     const { error: deleteError } = await supabase
       .from('company_profiles')
       .delete()
-      .eq('exchange', exchange)
       .limit(100);
     
     if (deleteError) {
@@ -60,25 +56,26 @@ serve(async (req) => {
       throw deleteError;
     }
     
-    console.log(`Cleared existing ${exchange} company profiles`);
+    console.log('Cleared existing company profiles');
     await delay(2000); // Increased delay after delete operation
 
     // Transform and insert profiles in very small batches
-    const batchSize = 10; // Further reduced batch size
-    const transformedProfiles = profiles.map((profile: any) => ({
+    const batchSize = 10;
+    const limitedProfiles = profiles.slice(0, 100); // Limit to first 100 records
+    const transformedProfiles = limitedProfiles.map((profile: any) => ({
       symbol: profile.symbol,
-      name: profile.companyName,
+      name: profile.name,
       exchange: profile.exchange,
-      currency: profile.currency,
-      country: profile.country,
-      sector: profile.sector,
-      industry: profile.industry,
-      fulltimeemployees: profile.fullTimeEmployees,
-      description: profile.description,
-      ceo: profile.ceo,
-      website: profile.website,
-      image: profile.image,
-      ipodate: profile.ipoDate,
+      currency: 'USD', // Default since it's not in the basic endpoint
+      country: 'US', // Default since it's not in the basic endpoint
+      sector: null,
+      industry: null,
+      fulltimeemployees: null,
+      description: null,
+      ceo: null,
+      website: null,
+      image: null,
+      ipodate: null,
       updated_at: new Date().toISOString()
     }));
 
@@ -104,22 +101,20 @@ serve(async (req) => {
         successCount += batch.length;
         console.log(`Successfully inserted batch ${batchNumber} (${successCount} total records)`);
         
-        // Longer delay between batches
         await delay(2000);
       } catch (error) {
         console.error(`Failed to process batch ${batchNumber}:`, error);
-        // Continue with next batch instead of failing completely
-        await delay(3000); // Extra delay after error
+        await delay(3000);
         continue;
       }
     }
 
-    console.log(`Completed! Inserted ${successCount} ${exchange} company profiles`);
+    console.log(`Completed! Inserted ${successCount} company profiles`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Successfully populated ${successCount} ${exchange} company profiles`,
+        message: `Successfully populated ${successCount} company profiles`,
         count: successCount
       }),
       {
