@@ -1,4 +1,4 @@
-import { PortfolioContent } from "@/components/portfolio/PortfolioContent";
+import PortfolioContent from "@/components/portfolio/PortfolioContent";
 
 const Portfolio = () => {
   return <PortfolioContent />;

@@ -14,7 +14,7 @@ import { CompanySearch } from "../CompanySearch";
 import { PortfolioAllocationChart } from "./PortfolioAllocationChart";
 import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
 import { PortfolioTable } from "./PortfolioTable";
-import { Stock, Portfolio } from "./PortfolioContent";
+import { Stock, Portfolio } from "./types";
 
 interface PortfolioViewProps {
   portfolio: Portfolio;

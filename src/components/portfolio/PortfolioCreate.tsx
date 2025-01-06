@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Plus } from "lucide-react";
 import { CompanySearch } from "@/components/CompanySearch";
-import { Portfolio, Stock } from "./PortfolioContent";
+import { Portfolio, Stock } from "./types";
+
 import {
   Dialog,
   DialogContent,
@@ -238,3 +239,4 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
     </div>
   );
 };
+

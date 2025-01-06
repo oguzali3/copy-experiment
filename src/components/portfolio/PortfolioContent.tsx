@@ -17,13 +17,22 @@ const PortfolioContent = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("portfolios")
-        .select("*")
-        .single();
+        .select("*, portfolio_stocks(*)");
 
       if (error) {
         toast.error("Error fetching portfolio");
-      } else {
-        setPortfolio(data);
+        setLoading(false);
+        return;
+      }
+
+      if (data && data[0]) {
+        const portfolioData: Portfolio = {
+          id: data[0].id,
+          name: data[0].name,
+          stocks: data[0].portfolio_stocks || [],
+          totalValue: data[0].total_value || 0
+        };
+        setPortfolio(portfolioData);
       }
       setLoading(false);
     };
@@ -44,7 +53,7 @@ const PortfolioContent = () => {
   };
 
   if (loading) return <div>Loading...</div>;
-  if (!portfolio) return <PortfolioEmpty onAddPortfolio={handleAddPortfolio} />;
+  if (!portfolio) return <PortfolioEmpty onCreateClick={handleAddPortfolio} />;
 
   return (
     <PortfolioView

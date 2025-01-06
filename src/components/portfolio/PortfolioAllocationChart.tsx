@@ -1,5 +1,5 @@
 import { PieChart as PieChartRechart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import { Stock } from './PortfolioContent';
+import { Stock } from './types';
 
 interface PortfolioAllocationChartProps {
   stocks: Stock[];

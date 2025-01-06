@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ArrowUpIcon, ArrowDownIcon, Trash2 } from "lucide-react";
-import { Stock } from "./PortfolioContent";
+import { Stock } from "./types";
 
 interface PortfolioTableProps {
   stocks: Stock[];
