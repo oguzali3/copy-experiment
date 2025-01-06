@@ -1,12 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
-import { corsHeaders } from './utils/cors';
-import { syncCompanyProfiles } from './handlers/companyProfiles';
-import { syncFinancialStatements } from './handlers/financialStatements';
-import { syncMetricsAndRatios } from './handlers/metricsAndRatios';
-import { syncTTMData } from './handlers/ttmData';
-import { syncGrowthMetrics } from './handlers/growthMetrics';
-import { syncMarketData } from './handlers/marketData';
+import { corsHeaders } from './utils/cors.ts';
+import { syncCompanyProfiles } from './handlers/companyProfiles.ts';
+import { syncFinancialStatements } from './handlers/financialStatements.ts';
+import { syncMetricsAndRatios } from './handlers/metricsAndRatios.ts';
+import { syncTTMData } from './handlers/ttmData.ts';
+import { syncGrowthMetrics } from './handlers/growthMetrics.ts';
+import { syncMarketData } from './handlers/marketData.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

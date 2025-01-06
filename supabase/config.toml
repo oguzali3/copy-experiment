@@ -12,10 +12,19 @@ port = 54322
 enabled = true
 port = 54323
 
-[[fetch-financial-data.functions]]
-name = "fetch-financial-data"
-verify_jwt = false
+[inbucket]
+enabled = true
+port = 54324
 
-[[fetch-financial-data.functions]]
-name = "bulk-sync-data"
+[storage]
+enabled = true
+
+[auth]
+enabled = true
+
+[realtime]
+enabled = true
+
+[functions]
+[functions.bulk-sync-data]
 verify_jwt = false
