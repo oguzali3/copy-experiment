@@ -11,37 +11,8 @@ serve(async (req) => {
   }
 
   try {
-    const { 
-      countries, 
-      industries, 
-      exchanges,
-      marketCapMoreThan,
-      marketCapLowerThan,
-      priceMoreThan,
-      priceLowerThan,
-      betaMoreThan,
-      betaLowerThan,
-      volumeMoreThan,
-      volumeLowerThan,
-      dividendMoreThan,
-      dividendLowerThan
-    } = await req.json()
-
-    console.log('Received filters:', { 
-      countries, 
-      industries, 
-      exchanges,
-      marketCapMoreThan,
-      marketCapLowerThan,
-      priceMoreThan,
-      priceLowerThan,
-      betaMoreThan,
-      betaLowerThan,
-      volumeMoreThan,
-      volumeLowerThan,
-      dividendMoreThan,
-      dividendLowerThan
-    });
+    const { countries, industries, exchanges, metrics } = await req.json()
+    console.log('Received filters:', { countries, industries, exchanges, metrics });
 
     const apiKey = Deno.env.get('FMP_API_KEY')
     if (!apiKey) {
@@ -52,28 +23,31 @@ serve(async (req) => {
     const queryParams = new URLSearchParams()
     queryParams.append('apikey', apiKey)
 
-    // Add basic filters
+    // Add countries if they exist
     if (countries?.length > 0) {
-      queryParams.append('country', countries.join(','))
+      queryParams.append('country', countries.join(','));
+      console.log('Using countries:', countries);
     }
+
+    // Add industries if they exist
     if (industries?.length > 0) {
       queryParams.append('industry', industries.join(','))
     }
+
+    // Add exchanges if they exist
     if (exchanges?.length > 0) {
       queryParams.append('exchange', exchanges.join(','))
     }
 
-    // Add metric filters
-    if (marketCapMoreThan) queryParams.append('marketCapMoreThan', marketCapMoreThan)
-    if (marketCapLowerThan) queryParams.append('marketCapLowerThan', marketCapLowerThan)
-    if (priceMoreThan) queryParams.append('priceMoreThan', priceMoreThan)
-    if (priceLowerThan) queryParams.append('priceLowerThan', priceLowerThan)
-    if (betaMoreThan) queryParams.append('betaMoreThan', betaMoreThan)
-    if (betaLowerThan) queryParams.append('betaLowerThan', betaLowerThan)
-    if (volumeMoreThan) queryParams.append('volumeMoreThan', volumeMoreThan)
-    if (volumeLowerThan) queryParams.append('volumeLowerThan', volumeLowerThan)
-    if (dividendMoreThan) queryParams.append('dividendMoreThan', dividendMoreThan)
-    if (dividendLowerThan) queryParams.append('dividendLowerThan', dividendLowerThan)
+    // Add metric filters with min/max values
+    metrics?.forEach((metric: any) => {
+      if (metric.min !== undefined && metric.min !== '') {
+        queryParams.append(`${metric.id}MoreThan`, metric.min)
+      }
+      if (metric.max !== undefined && metric.max !== '') {
+        queryParams.append(`${metric.id}LowerThan`, metric.max)
+      }
+    })
 
     console.log('Fetching from FMP with params:', queryParams.toString());
 

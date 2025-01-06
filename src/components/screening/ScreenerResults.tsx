@@ -30,6 +30,7 @@ export const ScreenerResults = ({
   const { toast } = useToast();
 
   const handleScreenerRun = async () => {
+    // Check if at least one filter criteria is selected
     const hasMetrics = metrics.length > 0;
     const hasCountries = selectedCountries.length > 0;
     const hasIndustries = selectedIndustries.length > 0;
@@ -38,7 +39,7 @@ export const ScreenerResults = ({
     if (!hasMetrics && !hasCountries && !hasIndustries && !hasExchanges) {
       toast({
         title: "No criteria selected",
-        description: "Please select at least one filtering criteria",
+        description: "Please select at least one filtering criteria (countries, industries, exchanges, or metrics)",
         variant: "destructive",
       });
       return;
@@ -46,31 +47,17 @@ export const ScreenerResults = ({
 
     setIsLoading(true);
     try {
-      const queryParams: Record<string, any> = {};
-      
-      // Add basic filters
-      if (!excludeCountries && selectedCountries.length > 0) {
-        queryParams.countries = selectedCountries;
-      }
-      if (!excludeIndustries && selectedIndustries.length > 0) {
-        queryParams.industries = selectedIndustries;
-      }
-      if (!excludeExchanges && selectedExchanges.length > 0) {
-        queryParams.exchanges = selectedExchanges;
-      }
-
-      // Add metric filters
-      metrics.forEach(metric => {
-        if (metric.min) {
-          queryParams[`${metric.id}MoreThan`] = metric.min;
-        }
-        if (metric.max) {
-          queryParams[`${metric.id}LowerThan`] = metric.max;
-        }
-      });
-
       const { data, error } = await supabase.functions.invoke('fetch-screener-results', {
-        body: queryParams
+        body: {
+          countries: excludeCountries ? [] : selectedCountries,
+          industries: excludeIndustries ? [] : selectedIndustries,
+          exchanges: excludeExchanges ? [] : selectedExchanges,
+          metrics: metrics.map(m => ({
+            id: m.id,
+            min: m.min || undefined,
+            max: m.max || undefined
+          }))
+        }
       });
 
       if (error) throw error;
