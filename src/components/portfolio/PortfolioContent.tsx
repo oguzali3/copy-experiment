@@ -119,7 +119,6 @@ const PortfolioContent = () => {
 
   const handleUpdatePortfolio = async (updatedPortfolio: Portfolio) => {
     try {
-      // Update portfolio name and total value
       await supabase
         .from('portfolios')
         .update({
@@ -128,21 +127,17 @@ const PortfolioContent = () => {
         })
         .eq('id', updatedPortfolio.id);
 
-      // Get current stocks in the portfolio
       const { data: currentStocks } = await supabase
         .from('portfolio_stocks')
         .select('*')
         .eq('portfolio_id', updatedPortfolio.id);
 
-      // Create a map of current stocks for easy lookup
       const currentStocksMap = new Map(currentStocks?.map(s => [s.ticker, s]));
 
-      // Process each stock in the updated portfolio
       for (const stock of updatedPortfolio.stocks) {
         const existingStock = currentStocksMap.get(stock.ticker);
 
         if (existingStock) {
-          // Handle existing stock updates
           if (stock.shares < existingStock.shares) {
             // Trim operation - maintain existing average price
             await supabase
@@ -158,13 +153,20 @@ const PortfolioContent = () => {
               .eq('portfolio_id', updatedPortfolio.id)
               .eq('ticker', stock.ticker);
           } else if (stock.shares > existingStock.shares) {
-            // Add operation - calculate new weighted average
-            const newShares = stock.shares - existingStock.shares;
-            const totalShares = existingStock.shares + newShares;
+            // Add operation - Accumulate shares and calculate new weighted average
+            const additionalShares = stock.shares - existingStock.shares;
+            const totalShares = existingStock.shares + additionalShares;
+            
+            // Calculate weighted average price
             const existingCost = existingStock.shares * existingStock.avg_price;
-            const newCost = newShares * stock.avgPrice;
-            const totalCost = existingCost + newCost;
+            const additionalCost = additionalShares * stock.avgPrice;
+            const totalCost = existingCost + additionalCost;
             const newAvgPrice = totalCost / totalShares;
+
+            // Calculate updated metrics
+            const marketValue = totalShares * stock.currentPrice;
+            const gainLoss = marketValue - totalCost;
+            const gainLossPercent = ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100;
 
             await supabase
               .from('portfolio_stocks')
@@ -172,10 +174,10 @@ const PortfolioContent = () => {
                 shares: totalShares,
                 avg_price: newAvgPrice,
                 current_price: stock.currentPrice,
-                market_value: totalShares * stock.currentPrice,
+                market_value: marketValue,
                 percent_of_portfolio: stock.percentOfPortfolio,
-                gain_loss: (totalShares * stock.currentPrice) - (totalShares * newAvgPrice),
-                gain_loss_percent: ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100
+                gain_loss: gainLoss,
+                gain_loss_percent: gainLossPercent
               })
               .eq('portfolio_id', updatedPortfolio.id)
               .eq('ticker', stock.ticker);
