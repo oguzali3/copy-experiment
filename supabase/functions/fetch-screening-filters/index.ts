@@ -11,6 +11,7 @@ serve(async (req) => {
   }
 
   try {
+    // Define available financial metrics
     const metrics = [
       {
         id: "marketCap",
@@ -28,33 +29,57 @@ serve(async (req) => {
         id: "beta",
         name: "Beta",
         category: "Risk",
-        description: "Measure of stock volatility relative to market"
+        description: "Measure of stock's volatility compared to the market"
       },
       {
         id: "volume",
-        name: "Trading Volume",
+        name: "Volume",
         category: "Trading",
-        description: "Average daily trading volume"
+        description: "Trading volume"
       },
       {
-        id: "dividendYield",
+        id: "dividend",
         name: "Dividend Yield",
         category: "Income",
         description: "Annual dividend yield percentage"
       }
     ];
 
+    // Mock data for other filters
+    const countries = [
+      { name: "US", fullName: "United States" },
+      { name: "CA", fullName: "Canada" },
+    ];
+
+    const industries = [
+      { name: "Technology" },
+      { name: "Healthcare" },
+    ];
+
+    const exchanges = [
+      { name: "NYSE", fullName: "New York Stock Exchange" },
+      { name: "NASDAQ", fullName: "NASDAQ Stock Market" },
+    ];
+
     return new Response(
-      JSON.stringify({ metrics }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      JSON.stringify({
+        metrics,
+        countries,
+        industries,
+        exchanges,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      },
     )
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in fetch-screening-filters:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
+        status: 500,
       },
     )
   }

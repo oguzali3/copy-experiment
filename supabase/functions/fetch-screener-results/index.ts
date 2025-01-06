@@ -11,8 +11,37 @@ serve(async (req) => {
   }
 
   try {
-    const { countries, industries, exchanges, ...metrics } = await req.json()
-    console.log('Received filters:', { countries, industries, exchanges, metrics });
+    const { 
+      countries, 
+      industries, 
+      exchanges,
+      marketCapMoreThan,
+      marketCapLowerThan,
+      priceMoreThan,
+      priceLowerThan,
+      betaMoreThan,
+      betaLowerThan,
+      volumeMoreThan,
+      volumeLowerThan,
+      dividendMoreThan,
+      dividendLowerThan
+    } = await req.json()
+
+    console.log('Received filters:', { 
+      countries, 
+      industries, 
+      exchanges,
+      marketCapMoreThan,
+      marketCapLowerThan,
+      priceMoreThan,
+      priceLowerThan,
+      betaMoreThan,
+      betaLowerThan,
+      volumeMoreThan,
+      volumeLowerThan,
+      dividendMoreThan,
+      dividendLowerThan
+    });
 
     const apiKey = Deno.env.get('FMP_API_KEY')
     if (!apiKey) {
@@ -35,11 +64,16 @@ serve(async (req) => {
     }
 
     // Add metric filters
-    Object.entries(metrics).forEach(([key, value]) => {
-      if (value !== undefined && value !== '') {
-        queryParams.append(key, value.toString())
-      }
-    })
+    if (marketCapMoreThan) queryParams.append('marketCapMoreThan', marketCapMoreThan)
+    if (marketCapLowerThan) queryParams.append('marketCapLowerThan', marketCapLowerThan)
+    if (priceMoreThan) queryParams.append('priceMoreThan', priceMoreThan)
+    if (priceLowerThan) queryParams.append('priceLowerThan', priceLowerThan)
+    if (betaMoreThan) queryParams.append('betaMoreThan', betaMoreThan)
+    if (betaLowerThan) queryParams.append('betaLowerThan', betaLowerThan)
+    if (volumeMoreThan) queryParams.append('volumeMoreThan', volumeMoreThan)
+    if (volumeLowerThan) queryParams.append('volumeLowerThan', volumeLowerThan)
+    if (dividendMoreThan) queryParams.append('dividendMoreThan', dividendMoreThan)
+    if (dividendLowerThan) queryParams.append('dividendLowerThan', dividendLowerThan)
 
     console.log('Fetching from FMP with params:', queryParams.toString());
 
