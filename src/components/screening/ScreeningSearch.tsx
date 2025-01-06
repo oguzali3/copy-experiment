@@ -36,24 +36,22 @@ export const ScreeningSearch = ({
     const fetchData = async () => {
       try {
         if (type === "metrics") {
-          // Fetch metrics directly as they're not cached
           const { data, error } = await supabase.functions.invoke('fetch-screening-filters');
           if (error) throw error;
           if (data?.metrics) {
             setItems(data.metrics);
           }
         } else {
-          // Use cached data for countries, industries, and exchanges
           const cachedData = await getScreeningData();
           switch (type) {
             case "countries":
-              setItems(cachedData.countries);
+              setItems(cachedData.countries.map(country => country.name));
               break;
             case "industries":
-              setItems(cachedData.industries);
+              setItems(cachedData.industries.map(industry => industry.name));
               break;
             case "exchanges":
-              setItems(cachedData.exchanges);
+              setItems(cachedData.exchanges.map(exchange => exchange.name));
               break;
           }
         }
@@ -73,7 +71,7 @@ export const ScreeningSearch = ({
         item.category.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : (items as string[]).filter(item =>
-        item.toLowerCase().includes(searchQuery.toLowerCase())
+        typeof item === 'string' && item.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
   const handleSelect = (item: string | ScreeningMetric) => {
