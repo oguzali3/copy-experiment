@@ -78,28 +78,25 @@ export const ScreeningSearch = ({
   }, [type]);
 
   const filteredItems = items.filter(item => {
-    if (!item || typeof item !== 'object') {
-      console.log('Invalid item:', item);
-      return false;
-    }
+    if (!item) return false;
     
     const searchTerm = searchQuery.toLowerCase();
+    const itemName = item.name?.toLowerCase() || '';
+    const itemDescription = item.description?.toLowerCase() || '';
+    const itemCategory = item.category?.toLowerCase() || '';
+
     if (type === "metrics") {
-      return (
-        (item.name?.toLowerCase() || '').includes(searchTerm) ||
-        (item.category?.toLowerCase() || '').includes(searchTerm) ||
-        (item.description?.toLowerCase() || '').includes(searchTerm)
-      );
+      return itemName.includes(searchTerm) ||
+             itemCategory.includes(searchTerm) ||
+             itemDescription.includes(searchTerm);
     } else {
-      return (
-        (item.name?.toLowerCase() || '').includes(searchTerm) ||
-        (item.description?.toLowerCase() || '').includes(searchTerm)
-      );
+      return itemName.includes(searchTerm) ||
+             itemDescription.includes(searchTerm);
     }
   });
 
   const handleSelect = (item: any) => {
-    if (!item || !item.name) return;
+    if (!item?.name) return;
 
     if (type === "metrics" && onMetricSelect) {
       onMetricSelect({
@@ -120,6 +117,22 @@ export const ScreeningSearch = ({
     setOpen(false);
   };
 
+  const getPlaceholderText = () => {
+    if (loading) return "Loading...";
+    switch (type) {
+      case "countries":
+        return "Search countries...";
+      case "industries":
+        return "Search industries...";
+      case "exchanges":
+        return "Search exchanges...";
+      case "metrics":
+        return "Search metrics...";
+      default:
+        return "Search...";
+    }
+  };
+
   return (
     <div className="relative w-full">
       <Button
@@ -128,25 +141,21 @@ export const ScreeningSearch = ({
         onClick={() => setOpen(true)}
       >
         <Search className="mr-2 h-4 w-4" />
-        <span>
-          {loading ? "Loading..." : type === "metrics"
-            ? "Search metrics..."
-            : `Search ${type}...`}
-        </span>
+        <span>{getPlaceholderText()}</span>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <Command className="rounded-lg border shadow-md">
           <CommandInput
-            placeholder={`Search ${type}...`}
+            placeholder={getPlaceholderText()}
             value={searchQuery}
             onValueChange={setSearchQuery}
           />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
-              {filteredItems.map((item) => (
+              {filteredItems.map((item, index) => (
                 <CommandItem
-                  key={type === "metrics" ? item.id : item.name}
+                  key={type === "metrics" ? item.id : `${item.name}-${index}`}
                   onSelect={() => handleSelect(item)}
                   className="flex flex-col items-start px-4 py-2 hover:bg-accent cursor-pointer"
                 >

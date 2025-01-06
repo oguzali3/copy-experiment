@@ -80,13 +80,12 @@ serve(async (req) => {
         }))
       ),
       countries: Array.isArray(countriesData) ? countriesData.map((country: any) => ({
-        name: country.name || country.code,
-        code: country.code,
-        description: `Companies based in ${country.name || country.code}`
+        name: country.name || country.code || '',
+        description: `Companies based in ${country.name || country.code || 'this country'}`
       })) : [],
       industries: Array.isArray(industriesData) ? industriesData.map((industry: string) => ({
-        name: industry,
-        description: `Companies in the ${industry} industry`
+        name: industry || '',
+        description: `Companies in the ${industry || 'this'} industry`
       })) : [],
       exchanges: Array.isArray(exchangesData) ? exchangesData.map((exchange: any) => ({
         name: exchange.exchange || '',
