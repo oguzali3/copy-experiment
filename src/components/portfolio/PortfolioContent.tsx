@@ -119,6 +119,7 @@ const PortfolioContent = () => {
 
   const handleUpdatePortfolio = async (updatedPortfolio: Portfolio) => {
     try {
+      // Update portfolio name and total value
       await supabase
         .from('portfolios')
         .update({
@@ -127,22 +128,23 @@ const PortfolioContent = () => {
         })
         .eq('id', updatedPortfolio.id);
 
+      // Get current stocks in the portfolio
       const { data: currentStocks } = await supabase
         .from('portfolio_stocks')
         .select('*')
         .eq('portfolio_id', updatedPortfolio.id);
 
+      // Create a map of current stocks for easy lookup
       const currentStocksMap = new Map(currentStocks?.map(s => [s.ticker, s]));
-      
+
+      // Process each stock in the updated portfolio
       for (const stock of updatedPortfolio.stocks) {
         const existingStock = currentStocksMap.get(stock.ticker);
-        
+
         if (existingStock) {
-          // Determine if this is a trim operation by comparing with existing shares
-          const isTrimOperation = stock.shares < existingStock.shares;
-          
-          if (isTrimOperation) {
-            // For trim operations, use the new share count directly
+          // Handle existing stock updates
+          if (stock.shares < existingStock.shares) {
+            // Trim operation - maintain existing average price
             await supabase
               .from('portfolio_stocks')
               .update({
@@ -155,23 +157,14 @@ const PortfolioContent = () => {
               })
               .eq('portfolio_id', updatedPortfolio.id)
               .eq('ticker', stock.ticker);
-          } else {
-            // For additions, accumulate shares and calculate new average price
-            const totalShares = Number(existingStock.shares) + Number(stock.shares);
-            const existingCost = Number(existingStock.shares) * Number(existingStock.avg_price);
-            const newCost = Number(stock.shares) * Number(stock.avgPrice);
+          } else if (stock.shares > existingStock.shares) {
+            // Add operation - calculate new weighted average
+            const newShares = stock.shares - existingStock.shares;
+            const totalShares = existingStock.shares + newShares;
+            const existingCost = existingStock.shares * existingStock.avg_price;
+            const newCost = newShares * stock.avgPrice;
             const totalCost = existingCost + newCost;
             const newAvgPrice = totalCost / totalShares;
-
-            console.log('Adding to existing position:', {
-              ticker: stock.ticker,
-              existingShares: existingStock.shares,
-              newShares: stock.shares,
-              totalShares,
-              existingAvgPrice: existingStock.avg_price,
-              newStockAvgPrice: stock.avgPrice,
-              calculatedNewAvgPrice: newAvgPrice
-            });
 
             await supabase
               .from('portfolio_stocks')
@@ -188,7 +181,7 @@ const PortfolioContent = () => {
               .eq('ticker', stock.ticker);
           }
         } else {
-          // If it's a new stock, insert it as is
+          // Insert new stock position
           await supabase
             .from('portfolio_stocks')
             .insert({
@@ -206,6 +199,7 @@ const PortfolioContent = () => {
         }
       }
 
+      // Remove stocks that are no longer in the portfolio
       const updatedTickers = new Set(updatedPortfolio.stocks.map(s => s.ticker));
       const tickersToDelete = [...currentStocksMap.keys()].filter(ticker => !updatedTickers.has(ticker));
       
