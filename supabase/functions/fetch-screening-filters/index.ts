@@ -91,16 +91,36 @@ serve(async (req) => {
       return exchangeInfo;
     });
 
-    // Define available metrics for screening
     const metrics = [
       {
-        category: "Market Data",
+        category: "Valuation",
         metrics: [
           { id: "marketCap", name: "Market Cap", description: "Total market value of company's shares" },
-          { id: "price", name: "Price", description: "Current stock price" },
-          { id: "volume", name: "Volume", description: "Trading volume" },
-          { id: "beta", name: "Beta", description: "Stock's volatility compared to the market" },
-          { id: "dividendYield", name: "Dividend Yield", description: "Annual dividend yield percentage" }
+          { id: "peRatio", name: "P/E Ratio", description: "Price to earnings ratio" },
+          { id: "priceToBook", name: "Price to Book", description: "Market price to book value ratio" },
+          { id: "evToEbitda", name: "EV/EBITDA", description: "Enterprise value to EBITDA ratio" },
+          { id: "priceToSales", name: "P/S Ratio", description: "Price to sales ratio" },
+          { id: "evToSales", name: "EV/Sales", description: "Enterprise value to sales ratio" }
+        ]
+      },
+      {
+        category: "Growth",
+        metrics: [
+          { id: "revenueGrowth", name: "Revenue Growth", description: "Year-over-year revenue growth" },
+          { id: "epsGrowth", name: "EPS Growth", description: "Year-over-year EPS growth" },
+          { id: "profitGrowth", name: "Profit Growth", description: "Year-over-year profit growth" },
+          { id: "revenueGrowthTTM", name: "Revenue Growth TTM", description: "Trailing twelve months revenue growth" },
+          { id: "epsGrowthTTM", name: "EPS Growth TTM", description: "Trailing twelve months EPS growth" }
+        ]
+      },
+      {
+        category: "Profitability",
+        metrics: [
+          { id: "grossMargin", name: "Gross Margin", description: "Gross profit as percentage of revenue" },
+          { id: "operatingMargin", name: "Operating Margin", description: "Operating income as percentage of revenue" },
+          { id: "netMargin", name: "Net Margin", description: "Net income as percentage of revenue" },
+          { id: "roe", name: "ROE", description: "Return on equity" },
+          { id: "roa", name: "ROA", description: "Return on assets" }
         ]
       }
     ];
