@@ -17,25 +17,25 @@ const EXAMPLE_METRICS = [
   {
     name: "High Growth Companies",
     metrics: [
-      { id: "revenueGrowth", name: "Revenue Growth (%)", min: "20", max: "" },
-      { id: "operatingMargin", name: "Operating Margin (%)", min: "15", max: "" },
-      { id: "marketCap", name: "Market Cap ($M)", min: "1000", max: "" }
+      { id: "revenueGrowth", name: "Revenue Growth (%)", min: "20", max: "", category: "growth" },
+      { id: "operatingMargin", name: "Operating Margin (%)", min: "15", max: "", category: "profitability" },
+      { id: "marketCap", name: "Market Cap ($M)", min: "1000", max: "", category: "valuation" }
     ]
   },
   {
     name: "Value Stocks",
     metrics: [
-      { id: "peRatio", name: "P/E Ratio", min: "", max: "15" },
-      { id: "dividendYield", name: "Dividend Yield (%)", min: "3", max: "" },
-      { id: "priceToBook", name: "Price to Book", min: "", max: "2" }
+      { id: "peRatio", name: "P/E Ratio", min: "", max: "15", category: "valuation" },
+      { id: "dividendYield", name: "Dividend Yield (%)", min: "3", max: "", category: "dividend" },
+      { id: "priceToBook", name: "Price to Book", min: "", max: "2", category: "valuation" }
     ]
   },
   {
     name: "Quality Companies",
     metrics: [
-      { id: "roe", name: "Return on Equity (%)", min: "15", max: "" },
-      { id: "currentRatio", name: "Current Ratio", min: "1.5", max: "" },
-      { id: "debtToEquity", name: "Debt to Equity", min: "", max: "1" }
+      { id: "roe", name: "Return on Equity (%)", min: "15", max: "", category: "profitability" },
+      { id: "currentRatio", name: "Current Ratio", min: "1.5", max: "", category: "liquidity" },
+      { id: "debtToEquity", name: "Debt to Equity", min: "", max: "1", category: "leverage" }
     ]
   }
 ];
