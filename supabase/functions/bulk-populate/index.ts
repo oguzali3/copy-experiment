@@ -27,11 +27,22 @@ serve(async (req) => {
     );
     
     if (!response.ok) {
-      console.error(`Error fetching profiles:`, response.status);
+      console.error(`Error fetching profiles: ${response.status}`);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const profiles = await response.json();
+    const responseText = await response.text();
+    console.log('Raw API response:', responseText.substring(0, 200) + '...'); // Log first 200 chars
+
+    let profiles;
+    try {
+      profiles = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      console.error('Response text:', responseText);
+      throw new Error(`Failed to parse API response: ${parseError.message}`);
+    }
+
     console.log(`Fetched ${profiles.length} profiles`);
     
     // Initialize Supabase client
