@@ -52,13 +52,22 @@ export const ScreeningSearch = ({
         
         switch (type) {
           case "countries":
-            setItems(Array.isArray(data.countries) ? data.countries : []);
+            setItems(Array.isArray(data.countries) ? data.countries.map((country: any) => ({
+              name: country.name || country.code || '',
+              description: `Companies based in ${country.name || country.code || 'this country'}`
+            })) : []);
             break;
           case "industries":
-            setItems(Array.isArray(data.industries) ? data.industries : []);
+            setItems(Array.isArray(data.industries) ? data.industries.map((industry: string) => ({
+              name: industry || '',
+              description: `Companies in the ${industry || 'this'} industry`
+            })) : []);
             break;
           case "exchanges":
-            setItems(Array.isArray(data.exchanges) ? data.exchanges : []);
+            setItems(Array.isArray(data.exchanges) ? data.exchanges.map((exchange: any) => ({
+              name: exchange.exchange || '',
+              description: `Stocks listed on ${exchange.exchange || 'this exchange'}`
+            })) : []);
             break;
           case "metrics":
             setItems(Array.isArray(data.metrics) ? data.metrics : []);
