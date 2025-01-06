@@ -178,9 +178,11 @@ export const ScreeningSearch = ({
                   className="flex flex-col items-start px-4 py-2 hover:bg-accent cursor-pointer"
                 >
                   <p className="text-sm font-medium">{getDisplayName(item)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {type === "metrics" ? `${item.category} - ${item.description}` : item.description}
-                  </p>
+                  {item.description && (
+                    <p className="text-xs text-muted-foreground">
+                      {type === "metrics" ? `${item.category} - ${item.description}` : item.description}
+                    </p>
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>
