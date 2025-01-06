@@ -5,6 +5,7 @@ import { ScreeningMetric } from "@/types/screening";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
+import { categorizeFilters } from "@/utils/screening/filterUtils";
 
 interface ScreenerResultsProps {
   metrics: ScreeningMetric[];
@@ -47,16 +48,19 @@ export const ScreenerResults = ({
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-screener-results', {
+      // Categorize filters into basic and advanced
+      const { basicFilters, advancedFilters } = categorizeFilters(metrics);
+      console.log('Categorized filters:', { basicFilters, advancedFilters });
+
+      const { data, error } = await supabase.functions.invoke('fetch-advanced-screener', {
         body: {
+          filters: {
+            basicFilters,
+            advancedFilters
+          },
           countries: excludeCountries ? [] : selectedCountries,
           industries: excludeIndustries ? [] : selectedIndustries,
           exchanges: excludeExchanges ? [] : selectedExchanges,
-          metrics: metrics.map(m => ({
-            id: m.id,
-            min: m.min || undefined,
-            max: m.max || undefined
-          }))
         }
       });
 
