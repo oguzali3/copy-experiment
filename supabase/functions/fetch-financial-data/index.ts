@@ -60,6 +60,12 @@ serve(async (req) => {
       case "quote":
       case "key-metrics-ttm":
       case "key-metrics-historical":
+      case "financial-ratios":
+      case "financial-ratios-ttm":
+      case "growth-metrics":
+      case "analyst-recommendations":
+      case "price-target":
+      case "stock-peers":
         // Handle other endpoints with direct API calls
         const url = getEndpointUrl(endpoint, { symbol, apiKey, year, quarter, query });
         console.log(`Fetching data from URL: ${url}`);
@@ -103,6 +109,18 @@ function getEndpointUrl(endpoint: string, params: { symbol: string; apiKey: stri
       return `https://financialmodelingprep.com/api/v3/key-metrics-ttm/${symbol}?apikey=${apiKey}`;
     case "key-metrics-historical":
       return `https://financialmodelingprep.com/api/v3/key-metrics/${symbol}?period=annual&apikey=${apiKey}`;
+    case "financial-ratios":
+      return `https://financialmodelingprep.com/api/v3/ratios/${symbol}?apikey=${apiKey}`;
+    case "financial-ratios-ttm":
+      return `https://financialmodelingprep.com/api/v3/ratios-ttm/${symbol}?apikey=${apiKey}`;
+    case "growth-metrics":
+      return `https://financialmodelingprep.com/api/v3/financial-growth/${symbol}?apikey=${apiKey}`;
+    case "analyst-recommendations":
+      return `https://financialmodelingprep.com/api/v3/analyst-recommendations/${symbol}?apikey=${apiKey}`;
+    case "price-target":
+      return `https://financialmodelingprep.com/api/v4/price-target?symbol=${symbol}&apikey=${apiKey}`;
+    case "stock-peers":
+      return `https://financialmodelingprep.com/api/v4/stock_peers?symbol=${symbol}&apikey=${apiKey}`;
     default:
       throw new Error(`No URL mapping for endpoint: ${endpoint}`);
   }

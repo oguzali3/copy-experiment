@@ -5,3 +5,7 @@ verify_jwt = false
 verify_jwt = false
 [functions.fetch-analyst-estimates]
 verify_jwt = false
+[functions.sync-financial-data]
+verify_jwt = false
+[functions.sync-company-data]
+verify_jwt = false
