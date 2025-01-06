@@ -14,10 +14,10 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleBulkPopulate = async () => {
+  const handleBulkSync = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('bulk-populate');
+      const { data, error } = await supabase.functions.invoke('bulk-sync-data');
       
       if (error) throw error;
       
@@ -26,10 +26,10 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
         description: data.message,
       });
     } catch (error) {
-      console.error('Error populating companies:', error);
+      console.error('Error syncing company data:', error);
       toast({
         title: "Error",
-        description: "Failed to populate companies",
+        description: "Failed to sync company data",
         variant: "destructive",
       });
     } finally {
@@ -50,11 +50,11 @@ export const CompanySearch = ({ onCompanySelect }: CompanySearchProps) => {
           />
         </div>
         <Button 
-          onClick={handleBulkPopulate} 
+          onClick={handleBulkSync} 
           disabled={isLoading}
           variant="outline"
         >
-          {isLoading ? "Populating..." : "Populate Companies"}
+          {isLoading ? "Syncing..." : "Sync Companies"}
         </Button>
       </div>
     </div>
