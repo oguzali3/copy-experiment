@@ -20,6 +20,13 @@ interface ScreeningSearchProps {
   onMetricSelect?: (metric: ScreeningMetric) => void;
 }
 
+interface SearchItem {
+  name: string;
+  description: string;
+  category?: string;
+  id?: string;
+}
+
 export const ScreeningSearch = ({
   type,
   selected = [],
@@ -28,7 +35,7 @@ export const ScreeningSearch = ({
 }: ScreeningSearchProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<SearchItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -52,25 +59,16 @@ export const ScreeningSearch = ({
         
         switch (type) {
           case "countries":
-            setItems(Array.isArray(data.countries) ? data.countries.map((country: any) => ({
-              name: country.name || country.code || '',
-              description: `Companies based in ${country.name || country.code || 'this country'}`
-            })) : []);
+            setItems(data.countries || []);
             break;
           case "industries":
-            setItems(Array.isArray(data.industries) ? data.industries.map((industry: string) => ({
-              name: industry || '',
-              description: `Companies in the ${industry || 'this'} industry`
-            })) : []);
+            setItems(data.industries || []);
             break;
           case "exchanges":
-            setItems(Array.isArray(data.exchanges) ? data.exchanges.map((exchange: any) => ({
-              name: exchange.exchange || '',
-              description: `Stocks listed on ${exchange.exchange || 'this exchange'}`
-            })) : []);
+            setItems(data.exchanges || []);
             break;
           case "metrics":
-            setItems(Array.isArray(data.metrics) ? data.metrics : []);
+            setItems(data.metrics || []);
             break;
           default:
             setItems([]);
@@ -90,9 +88,9 @@ export const ScreeningSearch = ({
     if (!item) return false;
     
     const searchTerm = searchQuery.toLowerCase();
-    const itemName = item.name?.toLowerCase() || '';
-    const itemDescription = item.description?.toLowerCase() || '';
-    const itemCategory = item.category?.toLowerCase() || '';
+    const itemName = (item.name || '').toLowerCase();
+    const itemDescription = (item.description || '').toLowerCase();
+    const itemCategory = (item.category || '').toLowerCase();
 
     if (type === "metrics") {
       return itemName.includes(searchTerm) ||
@@ -104,14 +102,14 @@ export const ScreeningSearch = ({
     }
   });
 
-  const handleSelect = (item: any) => {
+  const handleSelect = (item: SearchItem) => {
     if (!item?.name) return;
 
     if (type === "metrics" && onMetricSelect) {
       onMetricSelect({
-        id: item.id,
+        id: item.id || '',
         name: item.name,
-        category: item.category,
+        category: item.category || '',
         min: "",
         max: ""
       });
