@@ -41,13 +41,46 @@ serve(async (req) => {
 
     // Add metric filters with min/max values
     metrics?.forEach((metric: any) => {
-      if (metric.min !== undefined && metric.min !== '') {
-        queryParams.append(`${metric.id}MoreThan`, metric.min)
+      const { id, min, max } = metric;
+      if (min !== undefined && min !== '') {
+        switch(id) {
+          case 'marketCap':
+            queryParams.append('marketCapMoreThan', min);
+            break;
+          case 'price':
+            queryParams.append('priceMoreThan', min);
+            break;
+          case 'volume':
+            queryParams.append('volumeMoreThan', min);
+            break;
+          case 'beta':
+            queryParams.append('betaMoreThan', min);
+            break;
+          case 'dividendYield':
+            queryParams.append('dividendMoreThan', min);
+            break;
+        }
       }
-      if (metric.max !== undefined && metric.max !== '') {
-        queryParams.append(`${metric.id}LowerThan`, metric.max)
+      if (max !== undefined && max !== '') {
+        switch(id) {
+          case 'marketCap':
+            queryParams.append('marketCapLowerThan', max);
+            break;
+          case 'price':
+            queryParams.append('priceLowerThan', max);
+            break;
+          case 'volume':
+            queryParams.append('volumeLowerThan', max);
+            break;
+          case 'beta':
+            queryParams.append('betaLowerThan', max);
+            break;
+          case 'dividendYield':
+            queryParams.append('dividendLowerThan', max);
+            break;
+        }
       }
-    })
+    });
 
     console.log('Fetching from FMP with params:', queryParams.toString());
 
