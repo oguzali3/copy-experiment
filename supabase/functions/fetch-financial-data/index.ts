@@ -6,6 +6,7 @@ import { handleCompanyNews } from './handlers/companyNews.ts'
 import { handleFinancialStatements } from './handlers/financialStatements.ts'
 import { handleInsiderTrades } from './handlers/insiderTrades.ts'
 import { handleInstitutionalHolders } from './handlers/institutionalHolders.ts'
+import { handleCompanyProfile } from './handlers/companyProfile.ts'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -30,6 +31,9 @@ serve(async (req) => {
     console.log('Received request with params:', { endpoint, symbol, type, from, to, query });
 
     switch (endpoint) {
+      case "profile":
+        return await handleCompanyProfile(apiKey, symbol);
+
       case "income-statement":
       case "balance-sheet":
       case "cash-flow-statement":
