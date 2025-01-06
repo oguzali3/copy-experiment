@@ -23,14 +23,32 @@ export const updatePortfolioStock = async (
         .eq('portfolio_id', portfolioId)
         .eq('ticker', stock.ticker);
     } else {
-      // Adding shares logic
-      const totalShares = existingStock.shares + stock.shares;
-      const totalCost = (existingStock.shares * existingStock.avg_price) + 
-                       (stock.shares * stock.avgPrice);
+      // Adding shares logic - properly accumulate with existing position
+      const existingShares = Number(existingStock.shares);
+      const newShares = Number(stock.shares);
+      const totalShares = existingShares + newShares;
+      
+      // Calculate weighted average price
+      const existingCost = existingShares * Number(existingStock.avg_price);
+      const newCost = newShares * Number(stock.avgPrice);
+      const totalCost = existingCost + newCost;
       const newAvgPrice = totalCost / totalShares;
+      
+      // Calculate updated metrics
       const marketValue = totalShares * stock.currentPrice;
       const gainLoss = marketValue - (totalShares * newAvgPrice);
       const gainLossPercent = ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100;
+
+      console.log('Updating position:', {
+        existingShares,
+        newShares,
+        totalShares,
+        existingCost,
+        newCost,
+        totalCost,
+        newAvgPrice,
+        marketValue
+      });
 
       return await supabase
         .from('portfolio_stocks')
