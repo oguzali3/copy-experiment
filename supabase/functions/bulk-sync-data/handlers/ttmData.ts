@@ -15,7 +15,11 @@ export async function syncTTMData(apiKey: string, supabase: any) {
       .from('ttm_ratios')
       .upsert(metricsData.map(metric => ({
         symbol: metric.symbol,
-        ...metric
+        gross_margin_ttm: metric.grossMarginTTM,
+        operating_margin_ttm: metric.operatingMarginTTM,
+        net_profit_margin_ttm: metric.netProfitMarginTTM,
+        return_on_equity_ttm: metric.returnOnEquityTTM,
+        return_on_assets_ttm: metric.returnOnAssetsTTM
       })));
 
     if (metricsError) throw metricsError;
@@ -32,7 +36,11 @@ export async function syncTTMData(apiKey: string, supabase: any) {
       .from('ttm_ratios')
       .upsert(ratiosData.map(ratio => ({
         symbol: ratio.symbol,
-        ...ratio
+        pe_ratio_ttm: ratio.peRatioTTM,
+        price_to_book_ttm: ratio.priceToBookTTM,
+        price_to_sales_ttm: ratio.priceToSalesTTM,
+        ev_to_ebitda_ttm: ratio.evToEbitdaTTM,
+        dividend_yield_ttm: ratio.dividendYieldTTM
       })));
 
     if (ratiosError) throw ratiosError;

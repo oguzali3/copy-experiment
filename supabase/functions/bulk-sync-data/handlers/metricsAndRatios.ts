@@ -18,7 +18,15 @@ export async function syncMetricsAndRatios(apiKey: string, supabase: any, period
         period: period,
         date: metric.date,
         calendar_year: new Date(metric.date).getFullYear(),
-        ...metric
+        pe_ratio: metric.peRatio,
+        price_to_book: metric.priceToBookRatio,
+        debt_to_equity: metric.debtToEquityRatio,
+        free_cash_flow_yield: metric.freeCashFlowYield,
+        dividend_yield: metric.dividendYield,
+        operating_margin: metric.operatingMargin,
+        net_margin: metric.netMargin,
+        roa: metric.roa,
+        roe: metric.roe
       })));
 
     if (metricsError) throw metricsError;
@@ -38,7 +46,15 @@ export async function syncMetricsAndRatios(apiKey: string, supabase: any, period
         period: period,
         date: ratio.date,
         calendar_year: new Date(ratio.date).getFullYear(),
-        ...ratio
+        gross_margin_ratio: ratio.grossMarginRatio,
+        operating_margin_ratio: ratio.operatingMarginRatio,
+        net_profit_margin: ratio.netProfitMargin,
+        return_on_equity: ratio.returnOnEquity,
+        return_on_assets: ratio.returnOnAssets,
+        current_ratio: ratio.currentRatio,
+        quick_ratio: ratio.quickRatio,
+        debt_ratio: ratio.debtRatio,
+        debt_equity_ratio: ratio.debtToEquityRatio
       })));
 
     if (ratiosError) throw ratiosError;

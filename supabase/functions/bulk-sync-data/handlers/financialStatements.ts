@@ -16,7 +16,18 @@ export async function syncFinancialStatements(apiKey: string, supabase: any, per
           period: period,
           date: item.date,
           calendar_year: new Date(item.date).getFullYear(),
-          ...item
+          revenue: item.revenue,
+          cost_of_revenue: item.costOfRevenue,
+          gross_profit: item.grossProfit,
+          operating_expenses: item.operatingExpenses,
+          operating_income: item.operatingIncome,
+          net_income: item.netIncome,
+          total_assets: item.totalAssets,
+          total_liabilities: item.totalLiabilities,
+          total_equity: item.totalEquity,
+          operating_cash_flow: item.operatingCashFlow,
+          capital_expenditure: item.capitalExpenditure,
+          free_cash_flow: item.freeCashFlow
         })));
 
       if (error) throw error;

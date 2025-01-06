@@ -1,12 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
-import { corsHeaders } from './utils/cors.ts';
-import { syncCompanyProfiles } from './handlers/companyProfiles.ts';
-import { syncFinancialStatements } from './handlers/financialStatements.ts';
-import { syncMetricsAndRatios } from './handlers/metricsAndRatios.ts';
-import { syncTTMData } from './handlers/ttmData.ts';
-import { syncGrowthMetrics } from './handlers/growthMetrics.ts';
-import { syncMarketData } from './handlers/marketData.ts';
+import { corsHeaders } from "./utils/cors.ts";
+import { syncCompanyProfiles } from "./handlers/companyProfiles.ts";
+import { syncFinancialStatements } from "./handlers/financialStatements.ts";
+import { syncMetricsAndRatios } from "./handlers/metricsAndRatios.ts";
+import { syncTTMData } from "./handlers/ttmData.ts";
+import { syncGrowthMetrics } from "./handlers/growthMetrics.ts";
+import { syncMarketData } from "./handlers/marketData.ts";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -26,15 +26,18 @@ serve(async (req) => {
     const results: Record<string, any> = {};
 
     // Sync company profiles
+    console.log('Starting company profiles sync...');
     results.profiles = await syncCompanyProfiles(apiKey, supabase);
     console.log('Completed syncing profiles:', results.profiles);
 
     // Sync financial statements for both annual and quarterly periods
     const periods = ['annual', 'quarter'] as const;
     for (const period of periods) {
+      console.log(`Starting ${period} statements sync...`);
       results[`${period}_statements`] = await syncFinancialStatements(apiKey, supabase, period);
       console.log(`Completed syncing ${period} statements:`, results[`${period}_statements`]);
       
+      console.log(`Starting ${period} metrics and ratios sync...`);
       const metricsResults = await syncMetricsAndRatios(apiKey, supabase, period);
       results[`${period}_metrics`] = metricsResults.metrics;
       results[`${period}_ratios`] = metricsResults.ratios;
@@ -42,14 +45,17 @@ serve(async (req) => {
     }
 
     // Sync TTM data
+    console.log('Starting TTM data sync...');
     results.ttm = await syncTTMData(apiKey, supabase);
     console.log('Completed syncing TTM data:', results.ttm);
 
     // Sync growth metrics
+    console.log('Starting growth metrics sync...');
     results.growth = await syncGrowthMetrics(apiKey, supabase);
     console.log('Completed syncing growth metrics:', results.growth);
 
     // Sync market data (peers, targets, recommendations)
+    console.log('Starting market data sync...');
     const marketResults = await syncMarketData(apiKey, supabase);
     results.market = marketResults;
     console.log('Completed syncing market data:', marketResults);

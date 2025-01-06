@@ -15,7 +15,14 @@ export async function syncGrowthMetrics(apiKey: string, supabase: any) {
           symbol: item.symbol,
           date: item.date,
           calendar_year: new Date(item.date).getFullYear(),
-          ...item
+          revenue_growth: item.revenueGrowth,
+          gross_profit_growth: item.grossProfitGrowth,
+          ebit_growth: item.ebitGrowth,
+          operating_income_growth: item.operatingIncomeGrowth,
+          net_income_growth: item.netIncomeGrowth,
+          eps_growth: item.epsgrowth,
+          operating_cash_flow_growth: item.operatingCashFlowGrowth,
+          free_cash_flow_growth: item.freeCashFlowGrowth
         })));
 
       if (error) throw error;
