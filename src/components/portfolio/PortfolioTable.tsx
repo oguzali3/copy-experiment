@@ -37,13 +37,30 @@ export const PortfolioTable = ({ stocks, onDeletePosition, onUpdatePosition }: P
 
   const handleSave = () => {
     if (editingStock) {
-      onUpdatePosition(editingStock, editValues.shares, editValues.avgPrice);
+      const currentStock = stocks.find(s => s.ticker === editingStock);
+      if (currentStock && editValues.shares >= 0) {
+        onUpdatePosition(editingStock, editValues.shares, editValues.avgPrice);
+      }
       setEditingStock(null);
     }
   };
 
   const handleCancel = () => {
     setEditingStock(null);
+  };
+
+  const handleSharesChange = (value: string) => {
+    const numValue = Number(value);
+    if (!isNaN(numValue) && numValue >= 0) {
+      setEditValues(prev => ({ ...prev, shares: numValue }));
+    }
+  };
+
+  const handlePriceChange = (value: string) => {
+    const numValue = Number(value);
+    if (!isNaN(numValue) && numValue >= 0) {
+      setEditValues(prev => ({ ...prev, avgPrice: numValue }));
+    }
   };
 
   return (
@@ -73,8 +90,9 @@ export const PortfolioTable = ({ stocks, onDeletePosition, onUpdatePosition }: P
                   <Input
                     type="number"
                     value={editValues.shares}
-                    onChange={(e) => setEditValues({ ...editValues, shares: Number(e.target.value) })}
+                    onChange={(e) => handleSharesChange(e.target.value)}
                     className="w-24 text-right"
+                    min="0"
                   />
                 ) : (
                   <div className="cursor-pointer hover:text-blue-600" onClick={() => handleEdit(stock)}>
@@ -87,8 +105,10 @@ export const PortfolioTable = ({ stocks, onDeletePosition, onUpdatePosition }: P
                   <Input
                     type="number"
                     value={editValues.avgPrice}
-                    onChange={(e) => setEditValues({ ...editValues, avgPrice: Number(e.target.value) })}
+                    onChange={(e) => handlePriceChange(e.target.value)}
                     className="w-24 text-right"
+                    min="0"
+                    step="0.01"
                   />
                 ) : (
                   <div className="cursor-pointer hover:text-blue-600" onClick={() => handleEdit(stock)}>
