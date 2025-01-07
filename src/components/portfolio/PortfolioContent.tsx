@@ -7,20 +7,21 @@ import { toast } from "sonner";
 import { fetchFinancialData } from "@/utils/financialApi";
 import { Portfolio, Stock } from "./types";
 import { updatePortfolioStock, calculatePortfolioMetrics } from "./utils/portfolioOperations";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const PortfolioContent = () => {
-  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
-    fetchPortfolio();
+    fetchPortfolios();
   }, []);
 
-  const fetchPortfolio = async () => {
+  const fetchPortfolios = async () => {
     setLoading(true);
     try {
-      // First, get the current user's session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -39,96 +40,103 @@ const PortfolioContent = () => {
       const { data, error } = await supabase
         .from("portfolios")
         .select("*, portfolio_stocks(*)")
-        .eq('user_id', session.user.id)
-        .maybeSingle();
+        .eq('user_id', session.user.id);
 
       if (error) {
-        toast.error("Error fetching portfolio");
-        console.error("Error fetching portfolio:", error);
+        toast.error("Error fetching portfolios");
+        console.error("Error fetching portfolios:", error);
         setLoading(false);
         return;
       }
 
       if (data) {
-        const stocksPromises = (data.portfolio_stocks || []).map(async (stock: any) => {
-          try {
-            const quoteData = await fetchFinancialData('quote', stock.ticker);
-            if (!quoteData || !quoteData[0]) {
-              console.error(`No quote data received for ${stock.ticker}`);
-              throw new Error(`Failed to fetch quote data for ${stock.ticker}`);
+        const processedPortfolios = await Promise.all(data.map(async (portfolio) => {
+          const stocksPromises = (portfolio.portfolio_stocks || []).map(async (stock: any) => {
+            try {
+              const quoteData = await fetchFinancialData('quote', stock.ticker);
+              if (!quoteData || !quoteData[0]) {
+                console.error(`No quote data received for ${stock.ticker}`);
+                throw new Error(`Failed to fetch quote data for ${stock.ticker}`);
+              }
+              
+              const currentPrice = quoteData[0]?.price || 0;
+              const shares = Number(stock.shares);
+              const avgPrice = Number(stock.avg_price);
+              const marketValue = shares * currentPrice;
+              const gainLoss = marketValue - (shares * avgPrice);
+              const gainLossPercent = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
+
+              await supabase
+                .from('portfolio_stocks')
+                .update({
+                  current_price: currentPrice,
+                  market_value: marketValue,
+                  gain_loss: gainLoss,
+                  gain_loss_percent: gainLossPercent
+                })
+                .eq('id', stock.id);
+
+              return {
+                ticker: stock.ticker,
+                name: stock.name,
+                shares,
+                avgPrice,
+                currentPrice,
+                marketValue,
+                percentOfPortfolio: 0,
+                gainLoss,
+                gainLossPercent
+              };
+            } catch (error) {
+              console.error(`Error fetching price for ${stock.ticker}:`, error);
+              toast.error(`Failed to fetch current price for ${stock.ticker}`);
+              
+              return {
+                ticker: stock.ticker,
+                name: stock.name,
+                shares: Number(stock.shares),
+                avgPrice: Number(stock.avg_price),
+                currentPrice: Number(stock.current_price),
+                marketValue: Number(stock.market_value),
+                percentOfPortfolio: Number(stock.percent_of_portfolio),
+                gainLoss: Number(stock.gain_loss),
+                gainLossPercent: Number(stock.gain_loss_percent)
+              };
             }
-            
-            const currentPrice = quoteData[0]?.price || 0;
-            const shares = Number(stock.shares);
-            const avgPrice = Number(stock.avg_price);
-            const marketValue = shares * currentPrice;
-            const gainLoss = marketValue - (shares * avgPrice);
-            const gainLossPercent = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
+          });
 
-            await supabase
+          const stocks = await Promise.all(stocksPromises);
+          const { totalValue, stocksWithPercentages } = calculatePortfolioMetrics(stocks);
+          
+          await supabase
+            .from('portfolios')
+            .update({ total_value: totalValue })
+            .eq('id', portfolio.id);
+
+          await Promise.all(stocksWithPercentages.map(stock =>
+            supabase
               .from('portfolio_stocks')
-              .update({
-                current_price: currentPrice,
-                market_value: marketValue,
-                gain_loss: gainLoss,
-                gain_loss_percent: gainLossPercent
-              })
-              .eq('id', stock.id);
+              .update({ percent_of_portfolio: stock.percentOfPortfolio })
+              .eq('portfolio_id', portfolio.id)
+              .eq('ticker', stock.ticker)
+          ));
 
-            return {
-              ticker: stock.ticker,
-              name: stock.name,
-              shares,
-              avgPrice,
-              currentPrice,
-              marketValue,
-              percentOfPortfolio: 0,
-              gainLoss,
-              gainLossPercent
-            };
-          } catch (error) {
-            console.error(`Error fetching price for ${stock.ticker}:`, error);
-            toast.error(`Failed to fetch current price for ${stock.ticker}`);
-            
-            return {
-              ticker: stock.ticker,
-              name: stock.name,
-              shares: Number(stock.shares),
-              avgPrice: Number(stock.avg_price),
-              currentPrice: Number(stock.current_price),
-              marketValue: Number(stock.market_value),
-              percentOfPortfolio: Number(stock.percent_of_portfolio),
-              gainLoss: Number(stock.gain_loss),
-              gainLossPercent: Number(stock.gain_loss_percent)
-            };
-          }
-        });
+          return {
+            id: portfolio.id,
+            name: portfolio.name,
+            stocks: stocksWithPercentages,
+            totalValue
+          };
+        }));
 
-        const stocks = await Promise.all(stocksPromises);
-        const { totalValue, stocksWithPercentages } = calculatePortfolioMetrics(stocks);
-        
-        await supabase
-          .from('portfolios')
-          .update({ total_value: totalValue })
-          .eq('id', data.id);
-
-        await Promise.all(stocksWithPercentages.map(stock =>
-          supabase
-            .from('portfolio_stocks')
-            .update({ percent_of_portfolio: stock.percentOfPortfolio })
-            .eq('portfolio_id', data.id)
-            .eq('ticker', stock.ticker)
-        ));
-
-        setPortfolio({
-          id: data.id,
-          name: data.name,
-          stocks: stocksWithPercentages,
-          totalValue
-        });
+        setPortfolios(processedPortfolios);
+        // Set the first portfolio as selected if none is selected
+        if (!selectedPortfolioId && processedPortfolios.length > 0) {
+          setSelectedPortfolioId(processedPortfolios[0].id);
+        }
       }
     } catch (error) {
-      console.error('Error in fetchPortfolio:', error);
+      console.error('Error in fetchPortfolios:', error);
       toast.error("Failed to fetch portfolio data");
     }
     setLoading(false);
@@ -136,7 +144,6 @@ const PortfolioContent = () => {
 
   const handleAddPortfolio = async (newPortfolio: Portfolio) => {
     try {
-      // Get the current user's session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -155,7 +162,7 @@ const PortfolioContent = () => {
         .insert({
           name: newPortfolio.name,
           total_value: newPortfolio.totalValue,
-          user_id: session.user.id  // Set the user_id when creating the portfolio
+          user_id: session.user.id
         })
         .select()
         .single();
@@ -181,7 +188,8 @@ const PortfolioContent = () => {
 
       await Promise.all(stockPromises);
       
-      await fetchPortfolio();
+      await fetchPortfolios();
+      setSelectedPortfolioId(portfolioData.id);
       setIsCreating(false);
       toast.success("Portfolio created successfully");
     } catch (error) {
@@ -241,7 +249,7 @@ const PortfolioContent = () => {
           .in('ticker', tickersToDelete);
       }
       
-      await fetchPortfolio();
+      await fetchPortfolios();
       toast.success("Portfolio updated successfully");
     } catch (error) {
       console.error('Error updating portfolio:', error);
@@ -258,7 +266,8 @@ const PortfolioContent = () => {
 
       if (error) throw error;
 
-      setPortfolio(null);
+      setPortfolios(prev => prev.filter(portfolio => portfolio.id !== id));
+      setSelectedPortfolioId(null);
       toast.success("Portfolio deleted successfully");
     } catch (error) {
       console.error('Error deleting portfolio:', error);
@@ -277,17 +286,41 @@ const PortfolioContent = () => {
     );
   }
 
-  if (!portfolio) {
+  if (portfolios.length === 0) {
     return <PortfolioEmpty onCreate={() => setIsCreating(true)} />;
   }
 
+  const selectedPortfolio = portfolios.find(p => p.id === selectedPortfolioId);
+
   return (
-    <PortfolioView
-      portfolio={portfolio}
-      onAddPortfolio={() => setIsCreating(true)}
-      onDeletePortfolio={handleDeletePortfolio}
-      onUpdatePortfolio={handleUpdatePortfolio}
-    />
+    <div className="space-y-6">
+      <div className="flex items-center space-x-4">
+        <Select
+          value={selectedPortfolioId || undefined}
+          onValueChange={(value) => setSelectedPortfolioId(value)}
+        >
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Select Portfolio" />
+          </SelectTrigger>
+          <SelectContent>
+            {portfolios.map((portfolio) => (
+              <SelectItem key={portfolio.id} value={portfolio.id}>
+                {portfolio.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {selectedPortfolio && (
+        <PortfolioView
+          portfolio={selectedPortfolio}
+          onAddPortfolio={() => setIsCreating(true)}
+          onDeletePortfolio={handleDeletePortfolio}
+          onUpdatePortfolio={handleUpdatePortfolio}
+        />
+      )}
+    </div>
   );
 };
 
