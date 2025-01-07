@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Settings, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PortfolioAllocationChart } from "./PortfolioAllocationChart";
 import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
@@ -44,7 +44,7 @@ export const PortfolioView = ({
       name: company.name,
       shares: Number(shares),
       avgPrice: Number(avgPrice),
-      currentPrice: 0, // Will be updated by the parent component
+      currentPrice: 0,
       marketValue: 0,
       percentOfPortfolio: 0,
       gainLoss: 0,
@@ -116,6 +116,14 @@ export const PortfolioView = ({
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{portfolio.name}</h1>
         <div className="flex items-center gap-4">
+          <Button 
+            variant="outline" 
+            className="text-blue-600 border-blue-600"
+            onClick={onAddPortfolio}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New Portfolio
+          </Button>
           <Button 
             variant="outline" 
             className="text-green-600 border-green-600"
