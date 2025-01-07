@@ -20,9 +20,26 @@ const PortfolioContent = () => {
   const fetchPortfolio = async () => {
     setLoading(true);
     try {
+      // First, get the current user's session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        toast.error("Error fetching user session");
+        console.error("Error fetching session:", sessionError);
+        setLoading(false);
+        return;
+      }
+
+      if (!session) {
+        toast.error("Please sign in to view portfolios");
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("portfolios")
         .select("*, portfolio_stocks(*)")
+        .eq('user_id', session.user.id)
         .maybeSingle();
 
       if (error) {
@@ -117,6 +134,62 @@ const PortfolioContent = () => {
     setLoading(false);
   };
 
+  const handleAddPortfolio = async (newPortfolio: Portfolio) => {
+    try {
+      // Get the current user's session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        toast.error("Error fetching user session");
+        console.error("Error fetching session:", sessionError);
+        return;
+      }
+
+      if (!session) {
+        toast.error("Please sign in to create a portfolio");
+        return;
+      }
+
+      const { data: portfolioData, error: portfolioError } = await supabase
+        .from('portfolios')
+        .insert({
+          name: newPortfolio.name,
+          total_value: newPortfolio.totalValue,
+          user_id: session.user.id  // Set the user_id when creating the portfolio
+        })
+        .select()
+        .single();
+
+      if (portfolioError) throw portfolioError;
+
+      const stockPromises = newPortfolio.stocks.map(stock => 
+        supabase
+          .from('portfolio_stocks')
+          .insert({
+            portfolio_id: portfolioData.id,
+            ticker: stock.ticker,
+            name: stock.name,
+            shares: stock.shares,
+            avg_price: stock.avgPrice,
+            current_price: stock.currentPrice,
+            market_value: stock.marketValue,
+            percent_of_portfolio: stock.percentOfPortfolio,
+            gain_loss: stock.gainLoss,
+            gain_loss_percent: stock.gainLossPercent
+          })
+      );
+
+      await Promise.all(stockPromises);
+      
+      await fetchPortfolio();
+      setIsCreating(false);
+      toast.success("Portfolio created successfully");
+    } catch (error) {
+      console.error('Error creating portfolio:', error);
+      toast.error("Failed to create portfolio");
+    }
+  };
+
   const handleUpdatePortfolio = async (updatedPortfolio: Portfolio) => {
     try {
       await supabase
@@ -173,47 +246,6 @@ const PortfolioContent = () => {
     } catch (error) {
       console.error('Error updating portfolio:', error);
       toast.error("Failed to update portfolio");
-    }
-  };
-
-  const handleAddPortfolio = async (newPortfolio: Portfolio) => {
-    try {
-      const { data: portfolioData, error: portfolioError } = await supabase
-        .from('portfolios')
-        .insert({
-          name: newPortfolio.name,
-          total_value: newPortfolio.totalValue
-        })
-        .select()
-        .single();
-
-      if (portfolioError) throw portfolioError;
-
-      const stockPromises = newPortfolio.stocks.map(stock => 
-        supabase
-          .from('portfolio_stocks')
-          .insert({
-            portfolio_id: portfolioData.id,
-            ticker: stock.ticker,
-            name: stock.name,
-            shares: stock.shares,
-            avg_price: stock.avgPrice,
-            current_price: stock.currentPrice,
-            market_value: stock.marketValue,
-            percent_of_portfolio: stock.percentOfPortfolio,
-            gain_loss: stock.gainLoss,
-            gain_loss_percent: stock.gainLossPercent
-          })
-      );
-
-      await Promise.all(stockPromises);
-      
-      await fetchPortfolio();
-      setIsCreating(false);
-      toast.success("Portfolio created successfully");
-    } catch (error) {
-      console.error('Error creating portfolio:', error);
-      toast.error("Failed to create portfolio");
     }
   };
 
