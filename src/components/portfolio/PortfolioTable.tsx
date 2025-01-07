@@ -91,11 +91,16 @@ export const PortfolioTable = ({ stocks, onDeletePosition, onUpdatePosition }: P
                     type="number"
                     value={editValues.shares}
                     onChange={(e) => handleSharesChange(e.target.value)}
-                    className="w-24 text-right"
+                    className="w-24 text-right cursor-text hover:border-blue-500 focus:border-blue-500"
                     min="0"
+                    step="any"
                   />
                 ) : (
-                  <div className="cursor-pointer hover:text-blue-600" onClick={() => handleEdit(stock)}>
+                  <div 
+                    className="cursor-pointer hover:text-blue-600 hover:underline" 
+                    onClick={() => handleEdit(stock)}
+                    title="Click to edit shares"
+                  >
                     {stock.shares.toLocaleString()}
                   </div>
                 )}
@@ -106,12 +111,16 @@ export const PortfolioTable = ({ stocks, onDeletePosition, onUpdatePosition }: P
                     type="number"
                     value={editValues.avgPrice}
                     onChange={(e) => handlePriceChange(e.target.value)}
-                    className="w-24 text-right"
+                    className="w-24 text-right cursor-text hover:border-blue-500 focus:border-blue-500"
                     min="0"
-                    step="0.01"
+                    step="any"
                   />
                 ) : (
-                  <div className="cursor-pointer hover:text-blue-600" onClick={() => handleEdit(stock)}>
+                  <div 
+                    className="cursor-pointer hover:text-blue-600 hover:underline" 
+                    onClick={() => handleEdit(stock)}
+                    title="Click to edit average price"
+                  >
                     {formatNumber(stock.avgPrice)}
                   </div>
                 )}
