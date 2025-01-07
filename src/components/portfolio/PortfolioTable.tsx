@@ -7,18 +7,43 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ArrowUpIcon, ArrowDownIcon, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowUpIcon, ArrowDownIcon, Trash2, Check, X } from "lucide-react";
 import { Stock } from "./types";
+import { useState } from "react";
 
 interface PortfolioTableProps {
   stocks: Stock[];
   onDeletePosition: (ticker: string) => void;
+  onUpdatePosition: (ticker: string, shares: number, avgPrice: number) => void;
 }
 
-export const PortfolioTable = ({ stocks, onDeletePosition }: PortfolioTableProps) => {
+export const PortfolioTable = ({ stocks, onDeletePosition, onUpdatePosition }: PortfolioTableProps) => {
+  const [editingStock, setEditingStock] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState({ shares: 0, avgPrice: 0 });
+
   const formatNumber = (value: number | undefined, isPercentage = false) => {
     if (value === undefined || value === null) return '-';
     return isPercentage ? `${value.toFixed(2)}%` : `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const handleEdit = (stock: Stock) => {
+    setEditingStock(stock.ticker);
+    setEditValues({
+      shares: stock.shares,
+      avgPrice: stock.avgPrice
+    });
+  };
+
+  const handleSave = () => {
+    if (editingStock) {
+      onUpdatePosition(editingStock, editValues.shares, editValues.avgPrice);
+      setEditingStock(null);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditingStock(null);
   };
 
   return (
@@ -43,8 +68,34 @@ export const PortfolioTable = ({ stocks, onDeletePosition }: PortfolioTableProps
             <TableRow key={stock.ticker}>
               <TableCell className="font-medium">{stock.ticker}</TableCell>
               <TableCell>{stock.name}</TableCell>
-              <TableCell className="text-right">{stock.shares.toLocaleString()}</TableCell>
-              <TableCell className="text-right">{formatNumber(stock.avgPrice)}</TableCell>
+              <TableCell className="text-right">
+                {editingStock === stock.ticker ? (
+                  <Input
+                    type="number"
+                    value={editValues.shares}
+                    onChange={(e) => setEditValues({ ...editValues, shares: Number(e.target.value) })}
+                    className="w-24 text-right"
+                  />
+                ) : (
+                  <div className="cursor-pointer hover:text-blue-600" onClick={() => handleEdit(stock)}>
+                    {stock.shares.toLocaleString()}
+                  </div>
+                )}
+              </TableCell>
+              <TableCell className="text-right">
+                {editingStock === stock.ticker ? (
+                  <Input
+                    type="number"
+                    value={editValues.avgPrice}
+                    onChange={(e) => setEditValues({ ...editValues, avgPrice: Number(e.target.value) })}
+                    className="w-24 text-right"
+                  />
+                ) : (
+                  <div className="cursor-pointer hover:text-blue-600" onClick={() => handleEdit(stock)}>
+                    {formatNumber(stock.avgPrice)}
+                  </div>
+                )}
+              </TableCell>
               <TableCell className="text-right">{formatNumber(stock.currentPrice)}</TableCell>
               <TableCell className="text-right">{formatNumber(stock.marketValue)}</TableCell>
               <TableCell className="text-right">{formatNumber(stock.percentOfPortfolio, true)}</TableCell>
@@ -64,13 +115,24 @@ export const PortfolioTable = ({ stocks, onDeletePosition }: PortfolioTableProps
                 </div>
               </TableCell>
               <TableCell className="text-right">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => onDeletePosition(stock.ticker)}
-                >
-                  <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-500" />
-                </Button>
+                {editingStock === stock.ticker ? (
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="icon" onClick={handleSave}>
+                      <Check className="h-4 w-4 text-green-500" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={handleCancel}>
+                      <X className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => onDeletePosition(stock.ticker)}
+                  >
+                    <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-500" />
+                  </Button>
+                )}
               </TableCell>
             </TableRow>
           ))}

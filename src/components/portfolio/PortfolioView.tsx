@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Settings, PlusCircle, MinusCircle } from "lucide-react";
+import { Settings } from "lucide-react";
 import { toast } from "sonner";
 import { PortfolioAllocationChart } from "./PortfolioAllocationChart";
 import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
@@ -8,7 +8,6 @@ import { PortfolioTable } from "./PortfolioTable";
 import { Stock, Portfolio } from "./types";
 import { PortfolioSettingsDialog } from "./dialogs/PortfolioSettingsDialog";
 import { AddPositionDialog } from "./dialogs/AddPositionDialog";
-import { TrimPositionDialog } from "./dialogs/TrimPositionDialog";
 
 interface PortfolioViewProps {
   portfolio: Portfolio;
@@ -25,7 +24,6 @@ export const PortfolioView = ({
 }: PortfolioViewProps) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddingTicker, setIsAddingTicker] = useState(false);
-  const [isTrimmingPosition, setIsTrimmingPosition] = useState(false);
 
   const handleUpdatePortfolioName = (newName: string) => {
     onUpdatePortfolio({
@@ -46,50 +44,42 @@ export const PortfolioView = ({
       name: company.name,
       shares: Number(shares),
       avgPrice: Number(avgPrice),
-      currentPrice: Math.random() * 1000, // Mock price
-      marketValue: Number(shares) * Number(avgPrice),
+      currentPrice: 0, // Will be updated by the parent component
+      marketValue: 0,
       percentOfPortfolio: 0,
       gainLoss: 0,
       gainLossPercent: 0
     };
 
     const updatedStocks = [...portfolio.stocks, newStock];
-    const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
-    
-    const stocksWithUpdatedPercentages = updatedStocks.map(stock => ({
-      ...stock,
-      percentOfPortfolio: (stock.marketValue / totalValue) * 100
-    }));
-
     onUpdatePortfolio({
       ...portfolio,
-      stocks: stocksWithUpdatedPercentages,
-      totalValue
+      stocks: updatedStocks,
     });
 
     toast.success(`Added ${newStock.name} to portfolio`);
   };
 
-  const handleTrimPosition = (selectedStock: Stock, sharesToTrim: number) => {
+  const handleUpdatePosition = (ticker: string, shares: number, avgPrice: number) => {
     const updatedStocks = portfolio.stocks.map(stock => {
-      if (stock.ticker === selectedStock.ticker) {
-        const remainingShares = stock.shares - sharesToTrim;
-        if (remainingShares < 0) {
-          toast.error("Cannot trim more shares than owned");
-          return stock;
-        }
-        const marketValue = remainingShares * stock.currentPrice;
+      if (stock.ticker === ticker) {
+        const marketValue = shares * stock.currentPrice;
+        const gainLoss = marketValue - (shares * avgPrice);
+        const gainLossPercent = ((stock.currentPrice - avgPrice) / avgPrice) * 100;
+        
         return {
           ...stock,
-          shares: remainingShares,
+          shares,
+          avgPrice,
           marketValue,
+          gainLoss,
+          gainLossPercent
         };
       }
       return stock;
     });
 
     const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
-    
     const stocksWithUpdatedPercentages = updatedStocks.map(stock => ({
       ...stock,
       percentOfPortfolio: (stock.marketValue / totalValue) * 100
@@ -101,7 +91,7 @@ export const PortfolioView = ({
       totalValue
     });
 
-    toast.success(`Trimmed ${sharesToTrim} shares of ${selectedStock.name}`);
+    toast.success(`Updated position for ${ticker}`);
   };
 
   const handleDeletePosition = (ticker: string) => {
@@ -128,19 +118,9 @@ export const PortfolioView = ({
         <div className="flex items-center gap-4">
           <Button 
             variant="outline" 
-            className="text-orange-600 border-orange-600"
-            onClick={() => setIsTrimmingPosition(true)}
-          >
-            <MinusCircle className="mr-2 h-4 w-4" />
-            Trim Position
-          </Button>
-
-          <Button 
-            variant="outline" 
             className="text-green-600 border-green-600"
             onClick={() => setIsAddingTicker(true)}
           >
-            <PlusCircle className="mr-2 h-4 w-4" />
             Add Position
           </Button>
         </div>
@@ -161,6 +141,7 @@ export const PortfolioView = ({
       <PortfolioTable 
         stocks={portfolio.stocks} 
         onDeletePosition={handleDeletePosition}
+        onUpdatePosition={handleUpdatePosition}
       />
 
       <div className="flex justify-end gap-4">
@@ -191,13 +172,6 @@ export const PortfolioView = ({
         isOpen={isAddingTicker}
         onOpenChange={setIsAddingTicker}
         onAddPosition={handleAddPosition}
-      />
-
-      <TrimPositionDialog
-        isOpen={isTrimmingPosition}
-        onOpenChange={setIsTrimmingPosition}
-        stocks={portfolio.stocks}
-        onTrimPosition={handleTrimPosition}
       />
     </div>
   );
