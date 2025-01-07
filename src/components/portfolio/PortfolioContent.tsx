@@ -40,8 +40,12 @@ const PortfolioContent = () => {
         const stocksPromises = (data.portfolio_stocks || []).map(async (stock: any) => {
           try {
             const quoteData = await fetchFinancialData('quote', stock.ticker);
-            const currentPrice = quoteData[0]?.price || 0;
+            if (!quoteData || !quoteData[0]) {
+              console.error(`No quote data received for ${stock.ticker}`);
+              throw new Error(`Failed to fetch quote data for ${stock.ticker}`);
+            }
             
+            const currentPrice = quoteData[0]?.price || 0;
             const shares = Number(stock.shares);
             const avgPrice = Number(stock.avg_price);
             const marketValue = shares * currentPrice;
@@ -139,10 +143,8 @@ const PortfolioContent = () => {
 
         if (existingStock) {
           if (stock.shares === existingStock.shares) {
-            // Skip if no change in shares
             continue;
           } else if (stock.shares < existingStock.shares) {
-            // Trim operation - maintain existing average price
             await supabase
               .from('portfolio_stocks')
               .update({
@@ -156,16 +158,13 @@ const PortfolioContent = () => {
               .eq('portfolio_id', updatedPortfolio.id)
               .eq('ticker', stock.ticker);
           } else {
-            // Add operation - Accumulate shares and calculate new weighted average
             const totalShares = existingStock.shares + stock.shares;
             
-            // Calculate weighted average price
             const existingCost = existingStock.shares * existingStock.avg_price;
             const additionalCost = stock.shares * stock.avgPrice;
             const totalCost = existingCost + additionalCost;
             const newAvgPrice = totalCost / totalShares;
 
-            // Calculate updated metrics
             const marketValue = totalShares * stock.currentPrice;
             const gainLoss = marketValue - totalCost;
             const gainLossPercent = ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100;
@@ -185,7 +184,6 @@ const PortfolioContent = () => {
               .eq('ticker', stock.ticker);
           }
         } else {
-          // Insert new stock position
           await supabase
             .from('portfolio_stocks')
             .insert({
@@ -203,7 +201,6 @@ const PortfolioContent = () => {
         }
       }
 
-      // Remove stocks that are no longer in the portfolio
       const updatedTickers = new Set(updatedPortfolio.stocks.map(s => s.ticker));
       const tickersToDelete = [...currentStocksMap.keys()].filter(ticker => !updatedTickers.has(ticker));
       
