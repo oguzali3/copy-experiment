@@ -23,15 +23,11 @@ const PortfolioContent = () => {
       const { data, error } = await supabase
         .from("portfolios")
         .select("*, portfolio_stocks(*)")
-        .single();
+        .maybeSingle();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          setPortfolio(null);
-        } else {
-          toast.error("Error fetching portfolio");
-          console.error("Error fetching portfolio:", error);
-        }
+        toast.error("Error fetching portfolio");
+        console.error("Error fetching portfolio:", error);
         setLoading(false);
         return;
       }
@@ -142,47 +138,7 @@ const PortfolioContent = () => {
         const existingStock = currentStocksMap.get(stock.ticker);
 
         if (existingStock) {
-          if (stock.shares === existingStock.shares) {
-            continue;
-          } else if (stock.shares < existingStock.shares) {
-            await supabase
-              .from('portfolio_stocks')
-              .update({
-                shares: stock.shares,
-                current_price: stock.currentPrice,
-                market_value: stock.shares * stock.currentPrice,
-                percent_of_portfolio: stock.percentOfPortfolio,
-                gain_loss: (stock.shares * stock.currentPrice) - (stock.shares * existingStock.avg_price),
-                gain_loss_percent: ((stock.currentPrice - existingStock.avg_price) / existingStock.avg_price) * 100
-              })
-              .eq('portfolio_id', updatedPortfolio.id)
-              .eq('ticker', stock.ticker);
-          } else {
-            const totalShares = existingStock.shares + stock.shares;
-            
-            const existingCost = existingStock.shares * existingStock.avg_price;
-            const additionalCost = stock.shares * stock.avgPrice;
-            const totalCost = existingCost + additionalCost;
-            const newAvgPrice = totalCost / totalShares;
-
-            const marketValue = totalShares * stock.currentPrice;
-            const gainLoss = marketValue - totalCost;
-            const gainLossPercent = ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100;
-
-            await supabase
-              .from('portfolio_stocks')
-              .update({
-                shares: totalShares,
-                avg_price: newAvgPrice,
-                current_price: stock.currentPrice,
-                market_value: marketValue,
-                percent_of_portfolio: stock.percentOfPortfolio,
-                gain_loss: gainLoss,
-                gain_loss_percent: gainLossPercent
-              })
-              .eq('portfolio_id', updatedPortfolio.id)
-              .eq('ticker', stock.ticker);
-          }
+          await updatePortfolioStock(updatedPortfolio.id, stock, existingStock);
         } else {
           await supabase
             .from('portfolio_stocks')
