@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,6 +23,15 @@ export const AddPositionDialog = ({
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [shares, setShares] = useState("");
   const [avgPrice, setAvgPrice] = useState("");
+
+  // Reset state when dialog is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedCompany(null);
+      setShares("");
+      setAvgPrice("");
+    }
+  }, [isOpen]);
 
   const handleAddPosition = () => {
     if (!selectedCompany || !shares || !avgPrice) return;
