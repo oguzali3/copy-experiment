@@ -4,6 +4,35 @@ import { Stock, Portfolio } from "../types";
 import { toast } from "sonner";
 import { calculatePortfolioMetrics } from "./portfolioOperations";
 
+const updateStockMetrics = async (stockId: string, metrics: any) => {
+  await supabase
+    .from('portfolio_stocks')
+    .update({
+      current_price: metrics.currentPrice,
+      market_value: metrics.marketValue,
+      gain_loss: metrics.gainLoss,
+      gain_loss_percent: metrics.gainLossPercent
+    })
+    .eq('id', stockId);
+};
+
+const updatePortfolioValue = async (portfolioId: string, totalValue: number) => {
+  await supabase
+    .from('portfolios')
+    .update({ total_value: totalValue })
+    .eq('id', portfolioId);
+};
+
+const updateStocksPercentages = async (portfolioId: string, stocks: Stock[]) => {
+  await Promise.all(stocks.map(stock =>
+    supabase
+      .from('portfolio_stocks')
+      .update({ percent_of_portfolio: stock.percentOfPortfolio })
+      .eq('portfolio_id', portfolioId)
+      .eq('ticker', stock.ticker)
+  ));
+};
+
 export const fetchPortfolioData = async () => {
   try {
     const { data, error } = await supabase
@@ -49,7 +78,7 @@ export const fetchPortfolioData = async () => {
           avgPrice,
           currentPrice,
           marketValue,
-          percentOfPortfolio: 0,
+          percentOfPortfolio: 0, // Will be calculated later
           gainLoss,
           gainLossPercent
         };
@@ -87,28 +116,4 @@ export const fetchPortfolioData = async () => {
     console.error('Error in fetchPortfolioData:', error);
     throw error;
   }
-};
-
-const updateStockMetrics = async (stockId: string, metrics: any) => {
-  await supabase
-    .from('portfolio_stocks')
-    .update(metrics)
-    .eq('id', stockId);
-};
-
-const updatePortfolioValue = async (portfolioId: string, totalValue: number) => {
-  await supabase
-    .from('portfolios')
-    .update({ total_value: totalValue })
-    .eq('id', portfolioId);
-};
-
-const updateStocksPercentages = async (portfolioId: string, stocks: Stock[]) => {
-  await Promise.all(stocks.map(stock =>
-    supabase
-      .from('portfolio_stocks')
-      .update({ percent_of_portfolio: stock.percentOfPortfolio })
-      .eq('portfolio_id', portfolioId)
-      .eq('ticker', stock.ticker)
-  ));
 };

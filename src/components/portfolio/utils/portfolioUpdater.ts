@@ -45,52 +45,15 @@ const fetchCurrentStocks = async (portfolioId: string) => {
 };
 
 const handleExistingStock = async (portfolio: Portfolio, stock: Stock, existingStock: any) => {
-  if (stock.shares === existingStock.shares) {
-    return;
-  }
-
-  if (stock.shares < existingStock.shares) {
-    await handleStockTrim(portfolio, stock, existingStock);
-  } else {
-    await handleStockAdd(portfolio, stock, existingStock);
-  }
-};
-
-const handleStockTrim = async (portfolio: Portfolio, stock: Stock, existingStock: any) => {
   await supabase
     .from('portfolio_stocks')
     .update({
       shares: stock.shares,
       current_price: stock.currentPrice,
-      market_value: stock.shares * stock.currentPrice,
+      market_value: stock.marketValue,
       percent_of_portfolio: stock.percentOfPortfolio,
-      gain_loss: (stock.shares * stock.currentPrice) - (stock.shares * existingStock.avg_price),
-      gain_loss_percent: ((stock.currentPrice - existingStock.avg_price) / existingStock.avg_price) * 100
-    })
-    .eq('portfolio_id', portfolio.id)
-    .eq('ticker', stock.ticker);
-};
-
-const handleStockAdd = async (portfolio: Portfolio, stock: Stock, existingStock: any) => {
-  const totalShares = existingStock.shares + stock.shares;
-  const existingCost = existingStock.shares * existingStock.avg_price;
-  const additionalCost = stock.shares * stock.avgPrice;
-  const totalCost = existingCost + additionalCost;
-  const newAvgPrice = totalCost / totalShares;
-  const marketValue = totalShares * stock.currentPrice;
-  const gainLoss = marketValue - totalCost;
-  const gainLossPercent = ((stock.currentPrice - newAvgPrice) / newAvgPrice) * 100;
-
-  await supabase
-    .from('portfolio_stocks')
-    .update({
-      shares: totalShares,
-      avg_price: newAvgPrice,
-      current_price: stock.currentPrice,
-      market_value: marketValue,
-      percent_of_portfolio: stock.percentOfPortfolio,
-      gain_loss: gainLoss,
-      gain_loss_percent: gainLossPercent
+      gain_loss: stock.gainLoss,
+      gain_loss_percent: stock.gainLossPercent
     })
     .eq('portfolio_id', portfolio.id)
     .eq('ticker', stock.ticker);
