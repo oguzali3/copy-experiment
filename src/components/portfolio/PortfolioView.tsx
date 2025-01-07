@@ -129,7 +129,7 @@ export const PortfolioView = ({
             className="text-green-600 border-green-600"
             onClick={() => setIsAddingTicker(true)}
           >
-            Add Position
+            Add a New Position
           </Button>
         </div>
       </div>
@@ -146,11 +146,16 @@ export const PortfolioView = ({
         </div>
       </div>
 
-      <PortfolioTable 
-        stocks={portfolio.stocks} 
-        onDeletePosition={handleDeletePosition}
-        onUpdatePosition={handleUpdatePosition}
-      />
+      <div className="space-y-2">
+        <p className="text-sm text-gray-600 italic">
+          Tip: Click directly on the Shares or Average Price values in the table below to edit existing positions.
+        </p>
+        <PortfolioTable 
+          stocks={portfolio.stocks} 
+          onDeletePosition={handleDeletePosition}
+          onUpdatePosition={handleUpdatePosition}
+        />
+      </div>
 
       <div className="flex justify-end gap-4">
         <Button 
