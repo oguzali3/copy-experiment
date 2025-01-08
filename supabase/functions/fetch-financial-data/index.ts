@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleSecFilings } from './handlers/secFilings.ts';
 import { handleQuote } from './handlers/quote.ts';
 import { handleProfile } from './handlers/profile.ts';
+import { handleFinancialStatements } from './handlers/financialStatements.ts';
 import { corsHeaders } from './utils/cors.ts';
 
 const FMP_API_KEY = Deno.env.get('FMP_API_KEY') || '';
@@ -27,6 +28,10 @@ serve(async (req) => {
         return await handleQuote(FMP_API_KEY, symbol);
       case 'profile':
         return await handleProfile(FMP_API_KEY, symbol);
+      case 'income-statement':
+      case 'balance-sheet-statement':
+      case 'cash-flow-statement':
+        return await handleFinancialStatements(FMP_API_KEY, symbol, endpoint);
       default:
         throw new Error(`Unsupported endpoint: ${endpoint}`);
     }
