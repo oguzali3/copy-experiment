@@ -1,91 +1,61 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from "../_shared/cors.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { handleSecFilings } from './handlers/secFilings.ts';
+import { handleQuote } from './handlers/quote.ts';
+import { handleProfile } from './handlers/profile.ts';
+import { handleIncomeStatement } from './handlers/incomeStatement.ts';
+import { handleBalanceSheet } from './handlers/balanceSheet.ts';
+import { handleCashFlow } from './handlers/cashFlow.ts';
+import { handleActives } from './handlers/actives.ts';
+import { handleInsiderTrades } from './handlers/insiderTrades.ts';
+import { handleInstitutionalHolders } from './handlers/institutionalHolders.ts';
+import { corsHeaders } from './utils/cors.ts';
 
-const FMP_API_KEY = Deno.env.get('FMP_API_KEY')
+const FMP_API_KEY = Deno.env.get('FMP_API_KEY') || '';
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { endpoint, symbol, from, to, page, query } = await req.json()
-    let url: string;
+    const { endpoint, symbol, type } = await req.json();
+    console.log('Received request:', { endpoint, symbol, type });
 
-    console.log(`Processing request for endpoint: ${endpoint}, symbol: ${symbol}, query: ${query}`)
+    if (!FMP_API_KEY) {
+      throw new Error('FMP_API_KEY is not set');
+    }
 
     switch (endpoint) {
-      case 'search':
-        url = `https://financialmodelingprep.com/api/v3/search?query=${query}&limit=10&apikey=${FMP_API_KEY}`
-        break
-      case 'actives':
-        url = `https://financialmodelingprep.com/api/v3/stock_market/actives?apikey=${FMP_API_KEY}`
-        break
+      case 'sec-filings':
+        return await handleSecFilings(FMP_API_KEY, symbol, type);
       case 'quote':
-        url = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${FMP_API_KEY}`
-        break
+        return await handleQuote(FMP_API_KEY, symbol);
       case 'profile':
-        url = `https://financialmodelingprep.com/api/v3/profile/${symbol}?apikey=${FMP_API_KEY}`
-        break
+        return await handleProfile(FMP_API_KEY, symbol);
       case 'income-statement':
-        url = `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?apikey=${FMP_API_KEY}`
-        break
+        return await handleIncomeStatement(FMP_API_KEY, symbol);
       case 'balance-sheet':
-        url = `https://financialmodelingprep.com/api/v3/balance-sheet-statement/${symbol}?apikey=${FMP_API_KEY}`
-        break
+        return await handleBalanceSheet(FMP_API_KEY, symbol);
       case 'cash-flow-statement':
-        url = `https://financialmodelingprep.com/api/v3/cash-flow-statement/${symbol}?apikey=${FMP_API_KEY}`
-        break
+        return await handleCashFlow(FMP_API_KEY, symbol);
+      case 'actives':
+        return await handleActives(FMP_API_KEY);
       case 'insider-trades':
-        url = `https://financialmodelingprep.com/api/v4/insider-trading?symbol=${symbol}&apikey=${FMP_API_KEY}`
-        break
+        return await handleInsiderTrades(FMP_API_KEY, symbol);
       case 'institutional-holders':
-        url = `https://financialmodelingprep.com/api/v3/institutional-holder/${symbol}?apikey=${FMP_API_KEY}`
-        break
-      case 'company-news':
-        if (!from || !to) {
-          throw new Error('From and to dates are required for company news endpoint')
-        }
-        url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&from=${from}&to=${to}&apikey=${FMP_API_KEY}`
-        break
-      case 'key-metrics-ttm':
-        url = `https://financialmodelingprep.com/api/v3/key-metrics-ttm/${symbol}?apikey=${FMP_API_KEY}`
-        break
-      case 'key-metrics-historical':
-        url = `https://financialmodelingprep.com/api/v3/key-metrics/${symbol}?apikey=${FMP_API_KEY}`
-        break
-      case 'dcf':
-        url = `https://financialmodelingprep.com/api/v3/discounted-cash-flow/${symbol}?apikey=${FMP_API_KEY}`
-        break
+        return await handleInstitutionalHolders(FMP_API_KEY, symbol);
       default:
-        throw new Error(`Unsupported endpoint: ${endpoint}`)
+        throw new Error(`Unsupported endpoint: ${endpoint}`);
     }
-
-    console.log(`Fetching data from: ${url}`)
-    const response = await fetch(url)
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    console.log(`Successfully fetched data for ${endpoint}`)
-
-    return new Response(
-      JSON.stringify(data),
-      { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      },
-    )
   } catch (error) {
-    console.error(`Error in fetch-financial-data:`, error)
+    console.error('Error processing request:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
-      },
-    )
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   }
-})
+});
