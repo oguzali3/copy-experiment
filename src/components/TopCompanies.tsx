@@ -39,10 +39,11 @@ export const TopCompanies = () => {
           name: stock.name,
           ticker: stock.symbol,
           marketCap: stock.marketCap ? formatMarketCap(stock.marketCap) : 'N/A',
-          price: stock.price.toFixed(2),
-          change: `${stock.changesPercentage.toFixed(2)}%`,
+          price: stock.price ? stock.price.toFixed(2) : 'N/A',
+          change: stock.changesPercentage ? `${stock.changesPercentage.toFixed(2)}%` : 'N/A',
           isPositive: stock.change > 0
         }));
+        console.log('Formatted data:', formattedData); // Debug log
         setCompanies(formattedData);
       } catch (error) {
         console.error('Error fetching active stocks:', error);
@@ -58,15 +59,17 @@ export const TopCompanies = () => {
   }, []);
 
   const formatMarketCap = (marketCap: number) => {
-    if (!marketCap || isNaN(marketCap)) return 'N/A';
+    if (!marketCap || isNaN(marketCap) || marketCap === 0) return 'N/A';
+    
+    // Convert to billions for easier reading
     if (marketCap >= 1e12) {
-      return `${(marketCap / 1e12).toFixed(2)}T`;
+      return `$${(marketCap / 1e12).toFixed(2)}T`;
     } else if (marketCap >= 1e9) {
-      return `${(marketCap / 1e9).toFixed(2)}B`;
+      return `$${(marketCap / 1e9).toFixed(2)}B`;
     } else if (marketCap >= 1e6) {
-      return `${(marketCap / 1e6).toFixed(2)}M`;
+      return `$${(marketCap / 1e6).toFixed(2)}M`;
     }
-    return `${marketCap.toFixed(2)}`;
+    return `$${marketCap.toLocaleString()}`;
   };
 
   const handleSort = (field: SortField) => {
