@@ -9,12 +9,15 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, from, to, page } = await req.json()
+    const { endpoint, symbol, from, to, page, query } = await req.json()
     let url: string;
 
-    console.log(`Processing request for endpoint: ${endpoint}, symbol: ${symbol}`)
+    console.log(`Processing request for endpoint: ${endpoint}, symbol: ${symbol}, query: ${query}`)
 
     switch (endpoint) {
+      case 'search':
+        url = `https://financialmodelingprep.com/api/v3/search?query=${query}&limit=10&apikey=${FMP_API_KEY}`
+        break
       case 'actives':
         url = `https://financialmodelingprep.com/api/v3/stock_market/actives?apikey=${FMP_API_KEY}`
         break
