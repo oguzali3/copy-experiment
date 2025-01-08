@@ -1,25 +1,28 @@
 import { Card } from "@/components/ui/card";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { MetricsSearch } from "./MetricsSearch";
 import { CompanySearch } from "./CompanySearch";
 import { CompanyTableHeader } from "./CompanyTableHeader";
 import { CompanyTableRow } from "./CompanyTableRow";
-import { fetchFinancialData } from "@/utils/financialApi";
+
+const initialCompanies = [
+  { rank: 1, name: "Apple Inc.", ticker: "AAPL", marketCap: "3.02T", price: "192.53", change: "+2.41%", isPositive: true },
+  { rank: 2, name: "Microsoft", ticker: "MSFT", marketCap: "2.89T", price: "374.58", change: "+1.85%", isPositive: true },
+  { rank: 3, name: "Alphabet", ticker: "GOOGL", marketCap: "1.89T", price: "141.80", change: "-0.45%", isPositive: false },
+  { rank: 4, name: "Amazon", ticker: "AMZN", marketCap: "1.78T", price: "153.42", change: "+1.23%", isPositive: true },
+  { rank: 5, name: "NVIDIA", ticker: "NVDA", marketCap: "1.22T", price: "495.22", change: "+3.12%", isPositive: true },
+  { rank: 6, name: "Meta", ticker: "META", marketCap: "905B", price: "353.96", change: "-0.78%", isPositive: false },
+  { rank: 7, name: "Tesla", ticker: "TSLA", marketCap: "857B", price: "248.48", change: "+2.15%", isPositive: true },
+  { rank: 8, name: "Berkshire", ticker: "BRK.A", marketCap: "785B", price: "544,900", change: "+0.32%", isPositive: true },
+  { rank: 9, name: "Eli Lilly", ticker: "LLY", marketCap: "674B", price: "571.22", change: "-1.45%", isPositive: false },
+  { rank: 10, name: "JPMorgan", ticker: "JPM", marketCap: "498B", price: "172.26", change: "+0.89%", isPositive: true },
+];
 
 type SortDirection = "asc" | "desc" | null;
-type SortField = "price" | "change";
-
-interface ActiveStock {
-  symbol: string;
-  name: string;
-  change: number;
-  price: number;
-  changesPercentage: number;
-}
+type SortField = "marketCap" | "price" | "change";
 
 export const TopCompanies = () => {
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [companies, setCompanies] = useState(initialCompanies);
   const [sortConfig, setSortConfig] = useState<{
     field: SortField | null;
     direction: SortDirection;
@@ -27,34 +30,6 @@ export const TopCompanies = () => {
     field: null,
     direction: null,
   });
-
-  useEffect(() => {
-    const fetchMostActive = async () => {
-      try {
-        setIsLoading(true);
-        const data = await fetchFinancialData('actives', '');
-        const formattedData = data.slice(0, 10).map((stock: ActiveStock, index: number) => ({
-          rank: index + 1,
-          name: stock.name,
-          ticker: stock.symbol,
-          price: stock.price ? stock.price.toFixed(2) : 'N/A',
-          change: stock.changesPercentage ? `${stock.changesPercentage.toFixed(2)}%` : 'N/A',
-          isPositive: stock.change > 0
-        }));
-        console.log('Formatted data:', formattedData); // Debug log
-        setCompanies(formattedData);
-      } catch (error) {
-        console.error('Error fetching active stocks:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMostActive();
-    // Refresh data every minute
-    const interval = setInterval(fetchMostActive, 60000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleSort = (field: SortField) => {
     let direction: SortDirection = "desc";
@@ -64,7 +39,11 @@ export const TopCompanies = () => {
     }
 
     const sortedCompanies = [...companies].sort((a, b) => {
-      if (field === "price") {
+      if (field === "marketCap") {
+        const valueA = parseFloat(a[field].replace("T", "000").replace("B", ""));
+        const valueB = parseFloat(b[field].replace("T", "000").replace("B", ""));
+        return direction === "asc" ? valueA - valueB : valueB - valueA;
+      } else if (field === "price") {
         const valueA = parseFloat(a[field].replace(",", ""));
         const valueB = parseFloat(b[field].replace(",", ""));
         return direction === "asc" ? valueA - valueB : valueB - valueA;
@@ -92,11 +71,12 @@ export const TopCompanies = () => {
 
   const handleMetricSelect = (metricId: string) => {
     console.log("Metric selected:", metricId);
+    // This is just a placeholder since TopCompanies doesn't need metric selection
   };
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-[#111827]">Most Active Stocks</h2>
+      <h2 className="text-2xl font-bold text-[#111827]">Featured Companies</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <MetricsSearch onMetricSelect={handleMetricSelect} />
         <CompanySearch onCompanySelect={handleCompanySelect} />
@@ -106,13 +86,7 @@ export const TopCompanies = () => {
           <table className="w-full">
             <CompanyTableHeader sortConfig={sortConfig} onSort={handleSort} />
             <tbody className="divide-y divide-gray-200">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-3 text-center text-gray-500">
-                    Loading...
-                  </td>
-                </tr>
-              ) : companies.map((company, index) => (
+              {companies.map((company, index) => (
                 <CompanyTableRow
                   key={company.ticker}
                   company={company}

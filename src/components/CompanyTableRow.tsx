@@ -4,6 +4,7 @@ interface CompanyTableRowProps {
   company: {
     name: string;
     ticker: string;
+    marketCap: string;
     price: string;
     change: string;
     isPositive: boolean;
@@ -30,6 +31,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
         <div className="font-medium text-gray-900">{company.name}</div>
       </td>
       <td className="px-4 py-3 text-sm font-medium text-blue-600">{company.ticker}</td>
+      <td className="px-4 py-3 text-sm text-gray-500">${company.marketCap}</td>
       <td className="px-4 py-3 text-sm text-gray-900">${company.price}</td>
       <td className="px-4 py-3">
         <div className={`flex items-center ${company.isPositive ? 'text-success' : 'text-warning'}`}>
