@@ -7,7 +7,7 @@ import { CompanyTableRow } from "./CompanyTableRow";
 import { fetchFinancialData } from "@/utils/financialApi";
 
 type SortDirection = "asc" | "desc" | null;
-type SortField = "marketCap" | "price" | "change";
+type SortField = "price" | "change";
 
 interface ActiveStock {
   symbol: string;
@@ -15,7 +15,6 @@ interface ActiveStock {
   change: number;
   price: number;
   changesPercentage: number;
-  marketCap: number;
 }
 
 export const TopCompanies = () => {
@@ -38,7 +37,6 @@ export const TopCompanies = () => {
           rank: index + 1,
           name: stock.name,
           ticker: stock.symbol,
-          marketCap: stock.marketCap ? formatMarketCap(stock.marketCap) : 'N/A',
           price: stock.price ? stock.price.toFixed(2) : 'N/A',
           change: stock.changesPercentage ? `${stock.changesPercentage.toFixed(2)}%` : 'N/A',
           isPositive: stock.change > 0
@@ -58,20 +56,6 @@ export const TopCompanies = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const formatMarketCap = (marketCap: number) => {
-    if (!marketCap || isNaN(marketCap) || marketCap === 0) return 'N/A';
-    
-    // Convert to billions for easier reading
-    if (marketCap >= 1e12) {
-      return `$${(marketCap / 1e12).toFixed(2)}T`;
-    } else if (marketCap >= 1e9) {
-      return `$${(marketCap / 1e9).toFixed(2)}B`;
-    } else if (marketCap >= 1e6) {
-      return `$${(marketCap / 1e6).toFixed(2)}M`;
-    }
-    return `$${marketCap.toLocaleString()}`;
-  };
-
   const handleSort = (field: SortField) => {
     let direction: SortDirection = "desc";
     
@@ -80,11 +64,7 @@ export const TopCompanies = () => {
     }
 
     const sortedCompanies = [...companies].sort((a, b) => {
-      if (field === "marketCap") {
-        const valueA = parseFloat(a[field].replace("T", "000").replace("B", ""));
-        const valueB = parseFloat(b[field].replace("T", "000").replace("B", ""));
-        return direction === "asc" ? valueA - valueB : valueB - valueA;
-      } else if (field === "price") {
+      if (field === "price") {
         const valueA = parseFloat(a[field].replace(",", ""));
         const valueB = parseFloat(b[field].replace(",", ""));
         return direction === "asc" ? valueA - valueB : valueB - valueA;
@@ -128,7 +108,7 @@ export const TopCompanies = () => {
             <tbody className="divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-3 text-center text-gray-500">
+                  <td colSpan={5} className="px-4 py-3 text-center text-gray-500">
                     Loading...
                   </td>
                 </tr>

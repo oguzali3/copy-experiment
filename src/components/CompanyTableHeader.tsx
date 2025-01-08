@@ -1,7 +1,7 @@
 import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 
 type SortDirection = "asc" | "desc" | null;
-type SortField = "marketCap" | "price" | "change";
+type SortField = "price" | "change";
 
 interface CompanyTableHeaderProps {
   sortConfig: {
@@ -29,13 +29,6 @@ export const CompanyTableHeader = ({ sortConfig, onSort }: CompanyTableHeaderPro
         <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Rank</th>
         <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Company</th>
         <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Ticker</th>
-        <th 
-          className="px-4 py-3 text-left text-sm font-semibold text-gray-600 cursor-pointer hover:text-blue-600"
-          onClick={() => onSort("marketCap")}
-        >
-          Market Cap
-          {getSortIcon("marketCap")}
-        </th>
         <th 
           className="px-4 py-3 text-left text-sm font-semibold text-gray-600 cursor-pointer hover:text-blue-600"
           onClick={() => onSort("price")}
