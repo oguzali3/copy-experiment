@@ -26,5 +26,6 @@ port = 54325
 [realtime]
 enabled = true
 
+[functions]
 [functions.fetch-financial-data]
 verify_jwt = false
