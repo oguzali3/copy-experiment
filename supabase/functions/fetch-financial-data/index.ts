@@ -31,10 +31,17 @@ serve(async (req) => {
       case 'cash-flow-statement':
         url = `https://financialmodelingprep.com/api/v3/cash-flow-statement/${symbol}?apikey=${FMP_API_KEY}`
         break
+      case 'insider-trades':
+        url = `https://financialmodelingprep.com/api/v4/insider-trading?symbol=${symbol}&apikey=${FMP_API_KEY}`
+        break
+      case 'institutional-holders':
+        url = `https://financialmodelingprep.com/api/v3/institutional-holder/${symbol}?apikey=${FMP_API_KEY}`
+        break
       default:
         throw new Error(`Unsupported endpoint: ${endpoint}`)
     }
 
+    console.log(`Fetching data from: ${url}`)
     const response = await fetch(url)
     const data = await response.json()
 
@@ -46,6 +53,7 @@ serve(async (req) => {
       },
     )
   } catch (error) {
+    console.error(`Error in fetch-financial-data:`, error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
