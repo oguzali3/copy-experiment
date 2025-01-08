@@ -9,8 +9,10 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, from, to } = await req.json()
+    const { endpoint, symbol, from, to, page } = await req.json()
     let url: string;
+
+    console.log(`Processing request for endpoint: ${endpoint}, symbol: ${symbol}`)
 
     switch (endpoint) {
       case 'actives':
@@ -26,7 +28,7 @@ serve(async (req) => {
         url = `https://financialmodelingprep.com/api/v3/income-statement/${symbol}?apikey=${FMP_API_KEY}`
         break
       case 'balance-sheet':
-        url = `https://financialmodelingprep.com/api/v3/balance-sheet/${symbol}?apikey=${FMP_API_KEY}`
+        url = `https://financialmodelingprep.com/api/v3/balance-sheet-statement/${symbol}?apikey=${FMP_API_KEY}`
         break
       case 'cash-flow-statement':
         url = `https://financialmodelingprep.com/api/v3/cash-flow-statement/${symbol}?apikey=${FMP_API_KEY}`
@@ -38,6 +40,9 @@ serve(async (req) => {
         url = `https://financialmodelingprep.com/api/v3/institutional-holder/${symbol}?apikey=${FMP_API_KEY}`
         break
       case 'company-news':
+        if (!from || !to) {
+          throw new Error('From and to dates are required for company news endpoint')
+        }
         url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&from=${from}&to=${to}&apikey=${FMP_API_KEY}`
         break
       default:
@@ -46,7 +51,13 @@ serve(async (req) => {
 
     console.log(`Fetching data from: ${url}`)
     const response = await fetch(url)
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
     const data = await response.json()
+    console.log(`Successfully fetched data for ${endpoint}`)
 
     return new Response(
       JSON.stringify(data),
