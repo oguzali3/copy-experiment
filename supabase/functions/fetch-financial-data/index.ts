@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleSecFilings } from './handlers/secFilings.ts';
+import { handleQuote } from './handlers/quote.ts';
 import { corsHeaders } from './utils/cors.ts';
 
 const FMP_API_KEY = Deno.env.get('FMP_API_KEY') || '';
@@ -11,16 +12,18 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, type } = await req.json();
-    console.log('Received request:', { endpoint, symbol, type });
-
     if (!FMP_API_KEY) {
       throw new Error('FMP_API_KEY is not set');
     }
 
+    const { endpoint, symbol, type } = await req.json();
+    console.log('Received request:', { endpoint, symbol, type });
+
     switch (endpoint) {
       case 'sec-filings':
         return await handleSecFilings(FMP_API_KEY, symbol, type);
+      case 'quote':
+        return await handleQuote(FMP_API_KEY, symbol);
       default:
         throw new Error(`Unsupported endpoint: ${endpoint}`);
     }
