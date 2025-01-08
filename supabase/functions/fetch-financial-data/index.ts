@@ -9,7 +9,7 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol } = await req.json()
+    const { endpoint, symbol, from, to } = await req.json()
     let url: string;
 
     switch (endpoint) {
@@ -36,6 +36,9 @@ serve(async (req) => {
         break
       case 'institutional-holders':
         url = `https://financialmodelingprep.com/api/v3/institutional-holder/${symbol}?apikey=${FMP_API_KEY}`
+        break
+      case 'company-news':
+        url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&from=${from}&to=${to}&apikey=${FMP_API_KEY}`
         break
       default:
         throw new Error(`Unsupported endpoint: ${endpoint}`)
