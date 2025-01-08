@@ -45,6 +45,12 @@ serve(async (req) => {
         }
         url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&from=${from}&to=${to}&apikey=${FMP_API_KEY}`
         break
+      case 'key-metrics-ttm':
+        url = `https://financialmodelingprep.com/api/v3/key-metrics-ttm/${symbol}?apikey=${FMP_API_KEY}`
+        break
+      case 'key-metrics-historical':
+        url = `https://financialmodelingprep.com/api/v3/key-metrics/${symbol}?apikey=${FMP_API_KEY}`
+        break
       default:
         throw new Error(`Unsupported endpoint: ${endpoint}`)
     }
