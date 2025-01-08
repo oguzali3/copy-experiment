@@ -38,7 +38,7 @@ export const TopCompanies = () => {
           rank: index + 1,
           name: stock.name,
           ticker: stock.symbol,
-          marketCap: formatMarketCap(stock.marketCap),
+          marketCap: stock.marketCap ? formatMarketCap(stock.marketCap) : 'N/A',
           price: stock.price.toFixed(2),
           change: `${stock.changesPercentage.toFixed(2)}%`,
           isPositive: stock.change > 0
@@ -58,12 +58,15 @@ export const TopCompanies = () => {
   }, []);
 
   const formatMarketCap = (marketCap: number) => {
+    if (!marketCap || isNaN(marketCap)) return 'N/A';
     if (marketCap >= 1e12) {
       return `${(marketCap / 1e12).toFixed(2)}T`;
     } else if (marketCap >= 1e9) {
-      return `${(marketCap / 1e9).toFixed(0)}B`;
+      return `${(marketCap / 1e9).toFixed(2)}B`;
+    } else if (marketCap >= 1e6) {
+      return `${(marketCap / 1e6).toFixed(2)}M`;
     }
-    return `${(marketCap / 1e6).toFixed(0)}M`;
+    return `${marketCap.toFixed(2)}`;
   };
 
   const handleSort = (field: SortField) => {
