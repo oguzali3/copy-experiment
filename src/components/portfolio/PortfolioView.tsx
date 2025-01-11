@@ -39,25 +39,58 @@ export const PortfolioView = ({
       return;
     }
 
-    const newStock: Stock = {
-      ticker: company.ticker,
-      name: company.name,
-      shares: Number(shares),
-      avgPrice: Number(avgPrice),
-      currentPrice: 0,
-      marketValue: 0,
-      percentOfPortfolio: 0,
-      gainLoss: 0,
-      gainLossPercent: 0
-    };
-
-    const updatedStocks = [...portfolio.stocks, newStock];
+    const newShares = Number(shares);
+    const newAvgPrice = Number(avgPrice);
+  
+    // Check if the stock already exists in the portfolio
+    const updatedStocks = portfolio.stocks.map(stock => {
+      if (stock.ticker === company.ticker) {
+        // If the stock exists, update it
+        const totalCost = (stock.shares * stock.avgPrice) + (newShares * newAvgPrice);
+        const updatedShares = stock.shares + newShares;
+        const updatedAvgPrice = totalCost / updatedShares;
+        const updatedMarketValue = updatedShares * stock.currentPrice;
+        const updatedGainLoss = updatedMarketValue - (updatedShares * updatedAvgPrice);
+        const updatedGainLossPercent = ((stock.currentPrice - updatedAvgPrice) / updatedAvgPrice) * 100;
+  
+        return {
+          ...stock,
+          shares: updatedShares,
+          avgPrice: updatedAvgPrice,
+          marketValue: updatedMarketValue,
+          gainLoss: updatedGainLoss,
+          gainLossPercent: updatedGainLossPercent,
+        };
+      }
+      return stock; // Leave other stocks unchanged
+    });
+  
+    // Check if the stock was not found in the portfolio (i.e., it's a new stock)
+    const stockExists = portfolio.stocks.some(stock => stock.ticker === company.ticker);
+    if (!stockExists) {
+      const newStock: Stock = {
+        ticker: company.ticker,
+        name: company.name,
+        shares: newShares,
+        avgPrice: newAvgPrice,
+        currentPrice: 0,
+        marketValue: 0,
+        percentOfPortfolio: 0,
+        gainLoss: 0,
+        gainLossPercent: 0,
+      };
+  
+      updatedStocks.push(newStock);
+      toast.success(`Added ${newStock.name} to portfolio`);
+    } else {
+      toast.success(`Updated ${company.name} in portfolio`);
+    }
+  
+    // Update portfolio state
     onUpdatePortfolio({
       ...portfolio,
       stocks: updatedStocks,
     });
-
-    toast.success(`Added ${newStock.name} to portfolio`);
   };
 
   const handleUpdatePosition = (ticker: string, shares: number, avgPrice: number) => {
