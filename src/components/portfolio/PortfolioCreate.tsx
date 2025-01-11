@@ -31,22 +31,25 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
     const existingStockIndex = stocks.findIndex(s => s.ticker === company.ticker);
     
     if (existingStockIndex >= 0) {
-      // Update existing position
+      // Update existing position with one additional share
       const existingStock = stocks[existingStockIndex];
-      const newShares = existingStock.shares + 0; // Default to 0 for now, will be updated by user
-      const newAvgPrice = existingStock.avgPrice; // Keep current avg price, will be updated when shares are added
+      const newShares = existingStock.shares + 1; // Add one share to existing position
+      
+      // Calculate new average price based on existing position and new share
+      const totalCost = (existingStock.shares * existingStock.avgPrice) + (1 * existingStock.currentPrice);
+      const newAvgPrice = totalCost / newShares;
       
       handleUpdateStock(existingStockIndex, newShares, newAvgPrice);
-      toast.info(`${company.ticker} already exists in portfolio. Update shares and price in the table below.`);
+      toast.info(`Added 1 share to existing ${company.ticker} position`);
       return;
     }
 
-    // Add as new position
+    // Add as new position with 1 share
     const newStock: Stock = {
       ticker: company.ticker,
       name: company.name,
-      shares: 0,
-      avgPrice: 0,
+      shares: 1,
+      avgPrice: Math.random() * 1000, // Mock price for the first share
       currentPrice: Math.random() * 1000, // Mock price
       marketValue: 0,
       percentOfPortfolio: 0,
