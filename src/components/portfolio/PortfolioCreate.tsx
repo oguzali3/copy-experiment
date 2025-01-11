@@ -30,9 +30,10 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
     // Check if stock already exists in portfolio
     const existingStockIndex = stocks.findIndex(s => s.ticker === company.ticker);
     
+    console.log(existingStockIndex);
     if (existingStockIndex !== -1) {
       const existingStock = stocks[existingStockIndex];
-      
+      console.log(existingStock);
       // Calculate total shares (current + new)
       const totalShares = existingStock.shares + newShares;
       
