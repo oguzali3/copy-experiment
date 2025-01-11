@@ -23,6 +23,8 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
   const [name, setName] = useState("");
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [isAddingStock, setIsAddingStock] = useState(false);
+  const [newShares, setNewShares] = useState<number>(0);
+  const [newAvgPrice, setNewAvgPrice] = useState<number>(0);
 
   const handleAddStock = (company: any) => {
     setIsAddingStock(false);
@@ -33,11 +35,19 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
     if (existingStockIndex >= 0) {
       // Update existing position
       const existingStock = stocks[existingStockIndex];
-      const newShares = existingStock.shares + 0; // Default to 0 for now, will be updated by user
-      const newAvgPrice = existingStock.avgPrice; // Keep current avg price, will be updated when shares are added
       
-      handleUpdateStock(existingStockIndex, newShares, newAvgPrice);
-      toast.info(`${company.ticker} already exists in portfolio. Update shares and price in the table below.`);
+      // Calculate total shares (current shares + new shares)
+      const totalShares = existingStock.shares + newShares;
+      
+      // Calculate new average price
+      // ((current shares × current avg price) + (new shares × new avg price)) ÷ total shares
+      const newAveragePrice = (
+        (existingStock.shares * existingStock.avgPrice) + 
+        (newShares * newAvgPrice)
+      ) / totalShares;
+      
+      handleUpdateStock(existingStockIndex, totalShares, newAveragePrice);
+      toast.info(`Updated position in ${company.ticker}`);
       return;
     }
 
@@ -45,10 +55,10 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
     const newStock: Stock = {
       ticker: company.ticker,
       name: company.name,
-      shares: 0,
-      avgPrice: 0,
+      shares: newShares,
+      avgPrice: newAvgPrice,
       currentPrice: Math.random() * 1000, // Mock price
-      marketValue: 0,
+      marketValue: newShares * newAvgPrice,
       percentOfPortfolio: 0,
       gainLoss: 0,
       gainLossPercent: 0
@@ -58,27 +68,18 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
 
   const handleUpdateStock = (index: number, newShares: number, newAvgPrice: number) => {
     const updatedStock = stocks[index];
-    const existingPosition = stocks[index];
-    
-    // Calculate new average price if adding to existing position
-    let finalAvgPrice = newAvgPrice;
-    if (existingPosition.shares > 0 && newShares > existingPosition.shares) {
-      const additionalShares = newShares - existingPosition.shares;
-      const totalCost = (existingPosition.shares * existingPosition.avgPrice) + (additionalShares * newAvgPrice);
-      finalAvgPrice = totalCost / newShares;
-    }
     
     // Calculate new values for the position
     const marketValue = newShares * updatedStock.currentPrice;
-    const gainLoss = marketValue - (newShares * finalAvgPrice);
-    const gainLossPercent = ((updatedStock.currentPrice - finalAvgPrice) / finalAvgPrice) * 100;
+    const gainLoss = marketValue - (newShares * newAvgPrice);
+    const gainLossPercent = ((updatedStock.currentPrice - newAvgPrice) / newAvgPrice) * 100;
 
     // Update only the selected stock
     setStocks(prevStocks => prevStocks.map((stock, i) => 
       i === index ? {
         ...stock,
         shares: newShares,
-        avgPrice: finalAvgPrice,
+        avgPrice: newAvgPrice,
         marketValue,
         gainLoss,
         gainLossPercent
@@ -148,7 +149,29 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
                   <DialogHeader>
                     <DialogTitle>Add Stock to Portfolio</DialogTitle>
                   </DialogHeader>
-                  <div className="py-4">
+                  <div className="py-4 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Number of Shares</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={newShares}
+                        onChange={(e) => setNewShares(Number(e.target.value))}
+                        placeholder="Enter number of shares"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Average Price</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={newAvgPrice}
+                        onChange={(e) => setNewAvgPrice(Number(e.target.value))}
+                        placeholder="Enter average price"
+                      />
+                    </div>
                     <CompanySearch onCompanySelect={handleAddStock} />
                   </div>
                 </DialogContent>
@@ -177,22 +200,10 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
                           {stock.name}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <Input
-                            type="number"
-                            min="0"
-                            value={stock.shares}
-                            onChange={(e) => handleUpdateStock(index, Number(e.target.value), stock.avgPrice)}
-                            className="w-32"
-                          />
+                          {stock.shares}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <Input
-                            type="number"
-                            min="0"
-                            value={stock.avgPrice}
-                            onChange={(e) => handleUpdateStock(index, stock.shares, Number(e.target.value))}
-                            className="w-32"
-                          />
+                          ${stock.avgPrice.toFixed(2)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <Button
