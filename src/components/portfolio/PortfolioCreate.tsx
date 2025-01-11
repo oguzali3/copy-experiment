@@ -23,75 +23,29 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
   const [name, setName] = useState("");
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [isAddingStock, setIsAddingStock] = useState(false);
-  const [newShares, setNewShares] = useState<number>(0);
-  const [newAvgPrice, setNewAvgPrice] = useState<number>(0);
 
   const handleAddStock = (company: any) => {
-    // Check if stock already exists in portfolio
-    const existingStockIndex = stocks.findIndex(s => s.ticker === company.ticker);
+    setIsAddingStock(false);
     
-    console.log(existingStockIndex);
-    if (existingStockIndex !== -1) {
-      const existingStock = stocks[existingStockIndex];
-      console.log(existingStock);
-      // Calculate total shares (current + new)
-      const totalShares = existingStock.shares + newShares;
-      
-      console.log('Shares Calculation:');
-      console.log('Existing shares:', existingStock.shares);
-      console.log('New shares to add:', newShares);
-      console.log('Total shares after addition:', totalShares);
-      
-      // Calculate new average price
-      // ((current shares × current avg price) + (new shares × new avg price)) ÷ total shares
-      const newAveragePrice = (
-        (existingStock.shares * existingStock.avgPrice) + 
-        (newShares * newAvgPrice)
-      ) / totalShares;
-
-      console.log('Average Price Calculation:');
-      console.log('Current avg price:', existingStock.avgPrice);
-      console.log('New shares avg price:', newAvgPrice);
-      console.log('Calculated new average price:', newAveragePrice);
-
-      // Update the existing position with new values
-      const updatedStock = {
-        ...existingStock,
-        shares: totalShares,
-        avgPrice: newAveragePrice,
-        marketValue: totalShares * existingStock.currentPrice,
-        gainLoss: (totalShares * existingStock.currentPrice) - (totalShares * newAveragePrice),
-        gainLossPercent: ((existingStock.currentPrice - newAveragePrice) / newAveragePrice) * 100
-      };
-
-      console.log('Final Updated Stock:', updatedStock);
-
-      setStocks(stocks.map((stock, index) => 
-        index === existingStockIndex ? updatedStock : stock
-      ));
-
-      toast.success(`Updated position for ${company.ticker}`);
-    } else {
-      // Add as new position
-      const newStock: Stock = {
-        ticker: company.ticker,
-        name: company.name,
-        shares: newShares,
-        avgPrice: newAvgPrice,
-        currentPrice: Math.random() * 1000, // Mock price
-        marketValue: newShares * newAvgPrice,
-        percentOfPortfolio: 0,
-        gainLoss: 0,
-        gainLossPercent: 0
-      };
-      setStocks([...stocks, newStock]);
-      toast.success(`Added ${company.ticker} to portfolio`);
+    // Check if stock already exists in portfolio
+    if (stocks.some(s => s.ticker === company.ticker)) {
+      toast.info(`${company.ticker} already exists in portfolio. Update shares and price in the table below.`);
+      return;
     }
 
-    // Reset form
-    setNewShares(0);
-    setNewAvgPrice(0);
-    setIsAddingStock(false);
+    // Add as new position
+    const newStock: Stock = {
+      ticker: company.ticker,
+      name: company.name,
+      shares: 0,
+      avgPrice: 0,
+      currentPrice: Math.random() * 1000, // Mock price
+      marketValue: 0,
+      percentOfPortfolio: 0,
+      gainLoss: 0,
+      gainLossPercent: 0
+    };
+    setStocks([...stocks, newStock]);
   };
 
   const handleUpdateStock = (index: number, newShares: number, newAvgPrice: number) => {
@@ -177,30 +131,8 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
                   <DialogHeader>
                     <DialogTitle>Add Stock to Portfolio</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4">
+                  <div className="py-4">
                     <CompanySearch onCompanySelect={handleAddStock} />
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium">Shares</label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={newShares}
-                          onChange={(e) => setNewShares(Number(e.target.value))}
-                          placeholder="Number of shares"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Average Price</label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={newAvgPrice}
-                          onChange={(e) => setNewAvgPrice(Number(e.target.value))}
-                          placeholder="Average price per share"
-                        />
-                      </div>
-                    </div>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -261,7 +193,6 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
                 </table>
               </div>
             )}
-
           </div>
 
           <div className="flex justify-between pt-4">

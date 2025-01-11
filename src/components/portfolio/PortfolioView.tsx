@@ -63,15 +63,10 @@ export const PortfolioView = ({
   const handleUpdatePosition = (ticker: string, shares: number, avgPrice: number) => {
     const updatedStocks = portfolio.stocks.map(stock => {
       if (stock.ticker === ticker) {
-        const totalPrice= (stock.shares*stock.avgPrice)+(shares*avgPrice);
-        const TotalShares = stock.shares+shares;
-        const avgPrice = totalPrice/shares;
-        const marketValue = TotalShares * stock.currentPrice;
+        const marketValue = shares * stock.currentPrice;
         const gainLoss = marketValue - (shares * avgPrice);
         const gainLossPercent = ((stock.currentPrice - avgPrice) / avgPrice) * 100;
-        console.log(TotalShares);
-        console.log(avgPrice);
-
+        
         return {
           ...stock,
           shares,
