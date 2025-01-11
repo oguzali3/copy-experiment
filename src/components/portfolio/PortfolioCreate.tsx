@@ -28,7 +28,15 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
     setIsAddingStock(false);
     
     // Check if stock already exists in portfolio
-    if (stocks.some(s => s.ticker === company.ticker)) {
+    const existingStockIndex = stocks.findIndex(s => s.ticker === company.ticker);
+    
+    if (existingStockIndex >= 0) {
+      // Update existing position
+      const existingStock = stocks[existingStockIndex];
+      const newShares = existingStock.shares + 0; // Default to 0 for now, will be updated by user
+      const newAvgPrice = existingStock.avgPrice; // Keep current avg price, will be updated when shares are added
+      
+      handleUpdateStock(existingStockIndex, newShares, newAvgPrice);
       toast.info(`${company.ticker} already exists in portfolio. Update shares and price in the table below.`);
       return;
     }
@@ -50,18 +58,27 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
 
   const handleUpdateStock = (index: number, newShares: number, newAvgPrice: number) => {
     const updatedStock = stocks[index];
+    const existingPosition = stocks[index];
+    
+    // Calculate new average price if adding to existing position
+    let finalAvgPrice = newAvgPrice;
+    if (existingPosition.shares > 0 && newShares > existingPosition.shares) {
+      const additionalShares = newShares - existingPosition.shares;
+      const totalCost = (existingPosition.shares * existingPosition.avgPrice) + (additionalShares * newAvgPrice);
+      finalAvgPrice = totalCost / newShares;
+    }
     
     // Calculate new values for the position
     const marketValue = newShares * updatedStock.currentPrice;
-    const gainLoss = marketValue - (newShares * newAvgPrice);
-    const gainLossPercent = ((updatedStock.currentPrice - newAvgPrice) / newAvgPrice) * 100;
+    const gainLoss = marketValue - (newShares * finalAvgPrice);
+    const gainLossPercent = ((updatedStock.currentPrice - finalAvgPrice) / finalAvgPrice) * 100;
 
     // Update only the selected stock
     setStocks(prevStocks => prevStocks.map((stock, i) => 
       i === index ? {
         ...stock,
         shares: newShares,
-        avgPrice: newAvgPrice,
+        avgPrice: finalAvgPrice,
         marketValue,
         gainLoss,
         gainLossPercent
