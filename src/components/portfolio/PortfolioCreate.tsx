@@ -36,12 +36,22 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
       // Calculate total shares (current + new)
       const totalShares = existingStock.shares + newShares;
       
+      console.log('Shares Calculation:');
+      console.log('Existing shares:', existingStock.shares);
+      console.log('New shares to add:', newShares);
+      console.log('Total shares after addition:', totalShares);
+      
       // Calculate new average price
       // ((current shares × current avg price) + (new shares × new avg price)) ÷ total shares
       const newAveragePrice = (
         (existingStock.shares * existingStock.avgPrice) + 
         (newShares * newAvgPrice)
       ) / totalShares;
+
+      console.log('Average Price Calculation:');
+      console.log('Current avg price:', existingStock.avgPrice);
+      console.log('New shares avg price:', newAvgPrice);
+      console.log('Calculated new average price:', newAveragePrice);
 
       // Update the existing position with new values
       const updatedStock = {
@@ -52,6 +62,8 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
         gainLoss: (totalShares * existingStock.currentPrice) - (totalShares * newAveragePrice),
         gainLossPercent: ((existingStock.currentPrice - newAveragePrice) / newAveragePrice) * 100
       };
+
+      console.log('Final Updated Stock:', updatedStock);
 
       setStocks(stocks.map((stock, index) => 
         index === existingStockIndex ? updatedStock : stock
