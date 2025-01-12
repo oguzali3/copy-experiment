@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 type WebSocketMessage = {
   s: string;  // ticker
   t: number;  // timestamp
@@ -119,15 +121,20 @@ let websocketInstance: StockWebSocket | null = null;
 
 export const getWebSocket = async () => {
   if (!websocketInstance) {
-    const { data: { FMP_API_KEY }, error } = await supabase.functions.invoke('get-secret', {
-      body: { name: 'FMP_API_KEY' }
-    });
-    
-    if (error || !FMP_API_KEY) {
-      throw new Error('Failed to get FMP API key');
+    try {
+      const { data: { FMP_API_KEY }, error } = await supabase.functions.invoke('get-secret', {
+        body: { name: 'FMP_API_KEY' }
+      });
+      
+      if (error || !FMP_API_KEY) {
+        throw new Error('Failed to get FMP API key');
+      }
+      
+      websocketInstance = new StockWebSocket(FMP_API_KEY);
+    } catch (error) {
+      console.error('Error initializing WebSocket:', error);
+      throw error;
     }
-    
-    websocketInstance = new StockWebSocket(FMP_API_KEY);
   }
   return websocketInstance;
 };

@@ -17,14 +17,26 @@ export const useStockWebSocket = (ticker?: string) => {
       }
     };
 
+    let isSubscribed = true;
+
     getWebSocket()
       .then(ws => {
-        ws.subscribe(ticker, handleUpdate);
-        return () => ws.unsubscribe(ticker, handleUpdate);
+        if (isSubscribed) {
+          ws.subscribe(ticker, handleUpdate);
+        }
+        return () => {
+          if (isSubscribed) {
+            ws.unsubscribe(ticker, handleUpdate);
+          }
+        };
       })
       .catch(error => {
         console.error('Failed to initialize WebSocket:', error);
       });
+
+    return () => {
+      isSubscribed = false;
+    };
   }, [ticker]);
 
   return { price, lastUpdate };
