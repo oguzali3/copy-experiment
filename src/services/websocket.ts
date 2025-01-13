@@ -21,12 +21,14 @@ class StockWebSocket {
   private apiKey: string;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 10;
-  private reconnectDelay = 1000; // Start with 1 second
+  private reconnectDelay = 1000;
   private isConnecting = false;
   private pendingSubscriptions: Set<string> = new Set();
   private isAuthenticated = false;
   private connectionId: string | null = null;
   private reconnectTimeout: number | null = null;
+  private lastConnectionAttempt: number = 0;
+  private minReconnectInterval = 2000; // Minimum 2 seconds between connection attempts
 
   private constructor(apiKey: string) {
     console.log('Initializing StockWebSocket');
@@ -51,14 +53,20 @@ class StockWebSocket {
   }
 
   private async connect() {
+    const now = Date.now();
+    if (now - this.lastConnectionAttempt < this.minReconnectInterval) {
+      console.log('Throttling connection attempts');
+      return;
+    }
+    this.lastConnectionAttempt = now;
+
     if (this.ws?.readyState === WebSocket.OPEN) {
-      console.log('Closing existing WebSocket connection');
-      this.ws.close();
-      this.ws = null;
+      console.log('WebSocket already connected');
+      return;
     }
 
     if (this.isConnecting) {
-      console.log('WebSocket connection already in progress');
+      console.log('Connection already in progress');
       return;
     }
 
@@ -102,14 +110,15 @@ class StockWebSocket {
         console.log('WebSocket disconnected:', event);
         this.isConnecting = false;
         
-        // Only reset authentication if it's not a "Connected from another location" scenario
-        if (!this.connectionId) {
-          this.isAuthenticated = false;
+        if (event.code === 1005) {
+          console.log('Clean disconnect, resetting connection state');
+          this.reset();
+          return;
         }
         
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
-          const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts), 30000); // Max 30 seconds
-          console.log(`Attempting reconnect in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+          const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts), 30000);
+          console.log(`Scheduling reconnect in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
           this.reconnectTimeout = window.setTimeout(() => {
             this.reconnectAttempts++;
             this.connect();
@@ -131,6 +140,11 @@ class StockWebSocket {
   }
 
   private authenticate() {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.log('Cannot authenticate - WebSocket not connected');
+      return;
+    }
+
     const loginMessage = {
       event: "login",
       data: { 
@@ -139,7 +153,7 @@ class StockWebSocket {
       }
     };
     console.log('Sending login message:', JSON.stringify(loginMessage).replace(this.apiKey, '[REDACTED]'));
-    this.ws?.send(JSON.stringify(loginMessage));
+    this.ws.send(JSON.stringify(loginMessage));
   }
 
   private handleLoginResponse(message: any) {
@@ -151,9 +165,8 @@ class StockWebSocket {
       this.resubscribeAll();
     } else if (message.status === 401) {
       if (message.message === 'Connected from another location') {
-        // Keep trying with the same connection ID
-        this.ws?.close();
-        this.connect();
+        console.log('Connection conflict detected, resetting connection');
+        this.reset();
       } else {
         console.log('Authentication failed');
         this.reset();
@@ -166,7 +179,6 @@ class StockWebSocket {
     if (message.status === 200 && message.data?.ticker) {
       this.pendingSubscriptions.delete(message.data.ticker.toLowerCase());
     } else if (message.status === 401) {
-      // Re-authenticate on unauthorized
       this.authenticate();
     }
   }
@@ -198,6 +210,7 @@ class StockWebSocket {
   }
 
   private reset() {
+    console.log('Resetting WebSocket connection state');
     this.reconnectAttempts = 0;
     this.isAuthenticated = false;
     this.connectionId = null;
