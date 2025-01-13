@@ -21,11 +21,12 @@ class StockWebSocket {
   private apiKey: string;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 10;
-  private reconnectDelay = 2000;
+  private reconnectDelay = 1000; // Start with 1 second
   private isConnecting = false;
   private pendingSubscriptions: Set<string> = new Set();
   private isAuthenticated = false;
   private connectionId: string | null = null;
+  private reconnectTimeout: number | null = null;
 
   private constructor(apiKey: string) {
     console.log('Initializing StockWebSocket');
@@ -61,8 +62,12 @@ class StockWebSocket {
       return;
     }
 
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
     this.isConnecting = true;
-    this.isAuthenticated = false;
     console.log('Connecting to WebSocket...');
     
     try {
@@ -96,16 +101,22 @@ class StockWebSocket {
       this.ws.onclose = (event) => {
         console.log('WebSocket disconnected:', event);
         this.isConnecting = false;
-        this.isAuthenticated = false;
-        this.connectionId = null;
+        
+        // Only reset authentication if it's not a "Connected from another location" scenario
+        if (!this.connectionId) {
+          this.isAuthenticated = false;
+        }
         
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.reconnectAttempts++;
-          const delay = this.reconnectDelay * Math.min(this.reconnectAttempts, 5);
-          console.log(`Attempting reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-          setTimeout(() => this.connect(), delay);
+          const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts), 30000); // Max 30 seconds
+          console.log(`Attempting reconnect in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+          this.reconnectTimeout = window.setTimeout(() => {
+            this.reconnectAttempts++;
+            this.connect();
+          }, delay);
         } else {
           console.error('Max reconnection attempts reached');
+          this.reset();
         }
       };
 
@@ -124,7 +135,7 @@ class StockWebSocket {
       event: "login",
       data: { 
         apiKey: this.apiKey,
-        connectionId: this.connectionId || undefined
+        connectionId: this.connectionId
       }
     };
     console.log('Sending login message:', JSON.stringify(loginMessage).replace(this.apiKey, '[REDACTED]'));
@@ -136,15 +147,16 @@ class StockWebSocket {
     if (message.status === 200) {
       this.isAuthenticated = true;
       this.reconnectAttempts = 0;
-      this.connectionId = message.connectionId || null;
+      this.connectionId = message.connectionId || this.connectionId;
       this.resubscribeAll();
     } else if (message.status === 401) {
       if (message.message === 'Connected from another location') {
-        // Force reconnect with the same connection ID to take over the session
+        // Keep trying with the same connection ID
         this.ws?.close();
+        this.connect();
       } else {
-        console.log('Authentication failed, reconnecting...');
-        this.ws?.close();
+        console.log('Authentication failed');
+        this.reset();
       }
     }
   }
@@ -183,6 +195,19 @@ class StockWebSocket {
         }
       });
     }
+  }
+
+  private reset() {
+    this.reconnectAttempts = 0;
+    this.isAuthenticated = false;
+    this.connectionId = null;
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    this.ws?.close();
+    this.ws = null;
+    StockWebSocket.instance = null;
   }
 
   subscribe(ticker: string, callback: WebSocketSubscriber) {
@@ -233,17 +258,10 @@ class StockWebSocket {
 
   disconnect() {
     console.log('Disconnecting WebSocket');
-    this.ws?.close();
-    this.ws = null;
-    this.subscribers.clear();
-    this.pendingSubscriptions.clear();
-    this.isAuthenticated = false;
-    this.connectionId = null;
-    StockWebSocket.instance = null;
+    this.reset();
   }
 }
 
-// Create singleton instance
 export const getWebSocket = async () => {
   return StockWebSocket.getInstance();
 };
