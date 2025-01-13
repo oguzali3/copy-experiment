@@ -7,9 +7,13 @@ import { handleInsiderTrades } from './handlers/insiderTrades.ts';
 import { handleInstitutionalHolders } from './handlers/institutionalHolders.ts';
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
-      headers: corsHeaders,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      },
       status: 204
     });
   }
@@ -60,7 +64,6 @@ serve(async (req) => {
       case "quote":
       case "key-metrics-ttm":
       case "key-metrics-historical":
-        // Handle other endpoints with direct API calls
         const url = getEndpointUrl(endpoint, { symbol, apiKey, year, quarter, query });
         console.log(`Fetching data from URL: ${url}`);
         const response = await fetch(url);
@@ -74,10 +77,16 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error('Error:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        details: 'An error occurred while processing your request'
+      }), 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });
 
