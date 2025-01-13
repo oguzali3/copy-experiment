@@ -23,6 +23,7 @@ class StockWebSocket {
   private reconnectDelay = 2000;
   private isConnecting = false;
   private pendingSubscriptions: Set<string> = new Set();
+  private isAuthenticated = false;
 
   constructor(apiKey: string) {
     console.log('Initializing StockWebSocket');
@@ -32,8 +33,9 @@ class StockWebSocket {
 
   private async connect() {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      console.log('WebSocket already connected');
-      return;
+      console.log('Closing existing WebSocket connection');
+      this.ws.close();
+      this.ws = null;
     }
 
     if (this.isConnecting) {
@@ -42,6 +44,7 @@ class StockWebSocket {
     }
 
     this.isConnecting = true;
+    this.isAuthenticated = false;
     console.log('Connecting to WebSocket...');
     
     try {
@@ -50,31 +53,7 @@ class StockWebSocket {
       this.ws.onopen = () => {
         console.log('WebSocket connection established');
         this.isConnecting = false;
-        const loginMessage = {
-          event: "login",
-          data: { apiKey: this.apiKey }
-        };
-        console.log('Sending login message:', JSON.stringify(loginMessage).replace(this.apiKey, '[REDACTED]'));
-        this.ws?.send(JSON.stringify(loginMessage));
-
-        // Resubscribe to all tickers
-        const allTickers = Array.from(this.subscribers.keys());
-        if (allTickers.length > 0) {
-          this.pendingSubscriptions = new Set(allTickers);
-          console.log('Resubscribing to tickers:', allTickers);
-          // Send individual subscription messages for each ticker
-          allTickers.forEach(ticker => {
-            this.ws?.send(JSON.stringify({
-              event: "subscribe",
-              data: {
-                ticker: ticker.toUpperCase(),
-                type: ["trade", "quote"]
-              }
-            }));
-          });
-        }
-
-        this.reconnectAttempts = 0;
+        this.authenticate();
       };
 
       this.ws.onmessage = (event) => {
@@ -83,29 +62,23 @@ class StockWebSocket {
           console.log('WebSocket message received:', message);
           
           if (message.event === 'login') {
-            console.log('Login response:', message);
+            this.handleLoginResponse(message);
           } else if (message.event === 'subscribe') {
-            console.log('Subscribe response:', message);
-            if (message.status === 200 && message.data?.ticker) {
-              this.pendingSubscriptions.delete(message.data.ticker.toLowerCase());
-            }
+            this.handleSubscribeResponse(message);
           } else if (message.event === 'heartbeat') {
-            // Silently handle heartbeat messages
-            return;
+            return; // Silently handle heartbeat messages
           } else if (message.s) {
-            const ticker = message.s.toLowerCase();
-            if (ticker && this.subscribers.has(ticker)) {
-              this.subscribers.get(ticker)?.forEach(callback => callback(message));
-            }
+            this.handleStockUpdate(message);
           }
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error, 'Raw message:', event.data);
+          console.error('Error parsing WebSocket message:', error);
         }
       };
 
       this.ws.onclose = (event) => {
         console.log('WebSocket disconnected:', event);
         this.isConnecting = false;
+        this.isAuthenticated = false;
         
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
           this.reconnectAttempts++;
@@ -127,13 +100,70 @@ class StockWebSocket {
     }
   }
 
+  private authenticate() {
+    const loginMessage = {
+      event: "login",
+      data: { apiKey: this.apiKey }
+    };
+    console.log('Sending login message:', JSON.stringify(loginMessage).replace(this.apiKey, '[REDACTED]'));
+    this.ws?.send(JSON.stringify(loginMessage));
+  }
+
+  private handleLoginResponse(message: any) {
+    console.log('Login response:', message);
+    if (message.status === 200) {
+      this.isAuthenticated = true;
+      this.reconnectAttempts = 0;
+      this.resubscribeAll();
+    } else if (message.status === 401) {
+      console.log('Authentication failed, reconnecting...');
+      this.ws?.close();
+    }
+  }
+
+  private handleSubscribeResponse(message: any) {
+    console.log('Subscribe response:', message);
+    if (message.status === 200 && message.data?.ticker) {
+      this.pendingSubscriptions.delete(message.data.ticker.toLowerCase());
+    } else if (message.status === 401) {
+      // Re-authenticate on unauthorized
+      this.authenticate();
+    }
+  }
+
+  private handleStockUpdate(message: WebSocketMessage) {
+    const ticker = message.s.toLowerCase();
+    if (ticker && this.subscribers.has(ticker)) {
+      this.subscribers.get(ticker)?.forEach(callback => callback(message));
+    }
+  }
+
+  private resubscribeAll() {
+    const allTickers = Array.from(this.subscribers.keys());
+    if (allTickers.length > 0) {
+      this.pendingSubscriptions = new Set(allTickers);
+      console.log('Resubscribing to tickers:', allTickers);
+      allTickers.forEach(ticker => {
+        if (this.ws?.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify({
+            event: "subscribe",
+            data: {
+              ticker: ticker.toUpperCase(),
+              type: ["trade", "quote"]
+            }
+          }));
+        }
+      });
+    }
+  }
+
   subscribe(ticker: string, callback: WebSocketSubscriber) {
     ticker = ticker.toLowerCase();
     console.log(`Subscribing to ${ticker}`);
     
     if (!this.subscribers.has(ticker)) {
       this.subscribers.set(ticker, new Set());
-      if (this.ws?.readyState === WebSocket.OPEN) {
+      if (this.ws?.readyState === WebSocket.OPEN && this.isAuthenticated) {
         const subscribeMessage = {
           event: "subscribe",
           data: {
@@ -144,8 +174,6 @@ class StockWebSocket {
         console.log('Sending subscribe message:', subscribeMessage);
         this.ws.send(JSON.stringify(subscribeMessage));
         this.pendingSubscriptions.add(ticker);
-      } else {
-        console.warn(`WebSocket not ready (state: ${this.ws?.readyState}), subscription will be sent when connected`);
       }
     }
     this.subscribers.get(ticker)?.add(callback);
@@ -160,7 +188,7 @@ class StockWebSocket {
       if (tickerSubscribers.size === 0) {
         this.subscribers.delete(ticker);
         this.pendingSubscriptions.delete(ticker);
-        if (this.ws?.readyState === WebSocket.OPEN) {
+        if (this.ws?.readyState === WebSocket.OPEN && this.isAuthenticated) {
           const unsubscribeMessage = {
             event: "unsubscribe",
             data: {
@@ -181,6 +209,7 @@ class StockWebSocket {
     this.ws = null;
     this.subscribers.clear();
     this.pendingSubscriptions.clear();
+    this.isAuthenticated = false;
   }
 }
 
