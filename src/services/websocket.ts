@@ -19,8 +19,9 @@ class StockWebSocket {
   private subscribers: Map<string, Set<WebSocketSubscriber>> = new Map();
   private apiKey: string;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000;
+  private maxReconnectAttempts = 10; // Increased from 5 to 10
+  private reconnectDelay = 2000; // Increased from 1000 to 2000ms
+  private isConnecting = false;
 
   constructor(apiKey: string) {
     console.log('Initializing StockWebSocket');
@@ -28,81 +29,93 @@ class StockWebSocket {
     this.connect();
   }
 
-  private connect() {
+  private async connect() {
     if (this.ws?.readyState === WebSocket.OPEN) {
       console.log('WebSocket already connected');
       return;
     }
 
+    if (this.isConnecting) {
+      console.log('WebSocket connection already in progress');
+      return;
+    }
+
+    this.isConnecting = true;
     console.log('Connecting to WebSocket...');
-    this.ws = new WebSocket('wss://websockets.financialmodelingprep.com');
+    
+    try {
+      this.ws = new WebSocket('wss://websockets.financialmodelingprep.com');
 
-    this.ws.onopen = () => {
-      console.log('WebSocket connection established');
-      const loginMessage = {
-        event: "login",
-        data: { apiKey: this.apiKey }
+      this.ws.onopen = () => {
+        console.log('WebSocket connection established');
+        this.isConnecting = false;
+        const loginMessage = {
+          event: "login",
+          data: { apiKey: this.apiKey }
+        };
+        console.log('Sending login message:', JSON.stringify(loginMessage).replace(this.apiKey, '[REDACTED]'));
+        this.ws?.send(JSON.stringify(loginMessage));
+
+        // Resubscribe to all tickers
+        const allTickers = Array.from(this.subscribers.keys());
+        if (allTickers.length > 0) {
+          console.log('Resubscribing to tickers:', allTickers);
+          this.ws?.send(JSON.stringify({
+            event: "subscribe",
+            data: { tickers: allTickers }
+          }));
+        }
+
+        this.reconnectAttempts = 0;
       };
-      console.log('Sending login message:', JSON.stringify(loginMessage).replace(this.apiKey, '[REDACTED]'));
-      this.ws?.send(JSON.stringify(loginMessage));
 
-      // Resubscribe to all tickers
-      const allTickers = Array.from(this.subscribers.keys());
-      if (allTickers.length > 0) {
-        console.log('Resubscribing to tickers:', allTickers);
-        this.ws?.send(JSON.stringify({
-          event: "subscribe",
-          data: { tickers: allTickers }
-        }));
-      }
-
-      this.reconnectAttempts = 0;
-    };
-
-    this.ws.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        console.log('WebSocket message received:', message);
-        
-        // If it's a login response
-        if (message.event === 'login') {
-          console.log('Login response:', message);
-        }
-        
-        // If it's a subscription response
-        if (message.event === 'subscribe') {
-          console.log('Subscribe response:', message);
-        }
-        
-        // If it's a trade or quote message
-        if (message.s) {
-          const ticker = message.s.toLowerCase();
-          console.log(`Received price update for ${ticker}:`, message);
-          if (ticker && this.subscribers.has(ticker)) {
-            console.log(`Dispatching ${ticker} update to ${this.subscribers.get(ticker)?.size} subscribers`);
-            this.subscribers.get(ticker)?.forEach(callback => callback(message));
+      this.ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          console.log('WebSocket message received:', message);
+          
+          // Handle different message types
+          if (message.event === 'login') {
+            console.log('Login response:', message);
+          } else if (message.event === 'subscribe') {
+            console.log('Subscribe response:', message);
+          } else if (message.event === 'heartbeat') {
+            // Silently handle heartbeat messages
+            return;
+          } else if (message.s) {
+            const ticker = message.s.toLowerCase();
+            if (ticker && this.subscribers.has(ticker)) {
+              console.log(`Dispatching ${ticker} update to ${this.subscribers.get(ticker)?.size} subscribers:`, message);
+              this.subscribers.get(ticker)?.forEach(callback => callback(message));
+            }
           }
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error, 'Raw message:', event.data);
         }
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-      }
-    };
+      };
 
-    this.ws.onclose = (event) => {
-      console.log('WebSocket disconnected:', event);
-      if (this.reconnectAttempts < this.maxReconnectAttempts) {
-        this.reconnectAttempts++;
-        const delay = this.reconnectDelay * this.reconnectAttempts;
-        console.log(`Attempting reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-        setTimeout(() => this.connect(), delay);
-      } else {
-        console.error('Max reconnection attempts reached');
-      }
-    };
+      this.ws.onclose = (event) => {
+        console.log('WebSocket disconnected:', event);
+        this.isConnecting = false;
+        
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.reconnectAttempts++;
+          const delay = this.reconnectDelay * Math.min(this.reconnectAttempts, 5); // Cap the delay multiplication at 5
+          console.log(`Attempting reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+          setTimeout(() => this.connect(), delay);
+        } else {
+          console.error('Max reconnection attempts reached');
+        }
+      };
 
-    this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
+      this.ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        this.isConnecting = false;
+      };
+    } catch (error) {
+      console.error('Error creating WebSocket connection:', error);
+      this.isConnecting = false;
+    }
   }
 
   subscribe(ticker: string, callback: WebSocketSubscriber) {
