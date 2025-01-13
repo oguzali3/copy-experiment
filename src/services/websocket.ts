@@ -35,7 +35,7 @@ class StockWebSocket {
     }
 
     console.log('Connecting to WebSocket...');
-    this.ws = new WebSocket('wss://ws.financialmodelingprep.com/v1');
+    this.ws = new WebSocket('wss://websockets.financialmodelingprep.com');
 
     this.ws.onopen = () => {
       console.log('WebSocket connection established');
