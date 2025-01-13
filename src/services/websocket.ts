@@ -15,6 +15,7 @@ type WebSocketMessage = {
 type WebSocketSubscriber = (data: WebSocketMessage) => void;
 
 class StockWebSocket {
+  private static instance: StockWebSocket | null = null;
   private ws: WebSocket | null = null;
   private subscribers: Map<string, Set<WebSocketSubscriber>> = new Map();
   private apiKey: string;
@@ -24,11 +25,28 @@ class StockWebSocket {
   private isConnecting = false;
   private pendingSubscriptions: Set<string> = new Set();
   private isAuthenticated = false;
+  private connectionId: string | null = null;
 
-  constructor(apiKey: string) {
+  private constructor(apiKey: string) {
     console.log('Initializing StockWebSocket');
     this.apiKey = apiKey;
     this.connect();
+  }
+
+  public static async getInstance(): Promise<StockWebSocket> {
+    if (!StockWebSocket.instance) {
+      const { data: { FMP_API_KEY }, error } = await supabase.functions.invoke('get-secret', {
+        body: { name: 'FMP_API_KEY' }
+      });
+      
+      if (error || !FMP_API_KEY) {
+        console.error('Failed to get FMP API key:', error);
+        throw new Error('Failed to get FMP API key');
+      }
+      
+      StockWebSocket.instance = new StockWebSocket(FMP_API_KEY);
+    }
+    return StockWebSocket.instance;
   }
 
   private async connect() {
@@ -66,7 +84,7 @@ class StockWebSocket {
           } else if (message.event === 'subscribe') {
             this.handleSubscribeResponse(message);
           } else if (message.event === 'heartbeat') {
-            return; // Silently handle heartbeat messages
+            // Silently handle heartbeat messages
           } else if (message.s) {
             this.handleStockUpdate(message);
           }
@@ -79,6 +97,7 @@ class StockWebSocket {
         console.log('WebSocket disconnected:', event);
         this.isConnecting = false;
         this.isAuthenticated = false;
+        this.connectionId = null;
         
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
           this.reconnectAttempts++;
@@ -103,7 +122,10 @@ class StockWebSocket {
   private authenticate() {
     const loginMessage = {
       event: "login",
-      data: { apiKey: this.apiKey }
+      data: { 
+        apiKey: this.apiKey,
+        connectionId: this.connectionId || undefined
+      }
     };
     console.log('Sending login message:', JSON.stringify(loginMessage).replace(this.apiKey, '[REDACTED]'));
     this.ws?.send(JSON.stringify(loginMessage));
@@ -114,10 +136,16 @@ class StockWebSocket {
     if (message.status === 200) {
       this.isAuthenticated = true;
       this.reconnectAttempts = 0;
+      this.connectionId = message.connectionId || null;
       this.resubscribeAll();
     } else if (message.status === 401) {
-      console.log('Authentication failed, reconnecting...');
-      this.ws?.close();
+      if (message.message === 'Connected from another location') {
+        // Force reconnect with the same connection ID to take over the session
+        this.ws?.close();
+      } else {
+        console.log('Authentication failed, reconnecting...');
+        this.ws?.close();
+      }
     }
   }
 
@@ -210,31 +238,12 @@ class StockWebSocket {
     this.subscribers.clear();
     this.pendingSubscriptions.clear();
     this.isAuthenticated = false;
+    this.connectionId = null;
+    StockWebSocket.instance = null;
   }
 }
 
 // Create singleton instance
-let websocketInstance: StockWebSocket | null = null;
-
 export const getWebSocket = async () => {
-  if (!websocketInstance) {
-    try {
-      console.log('Fetching FMP API key from Supabase...');
-      const { data: { FMP_API_KEY }, error } = await supabase.functions.invoke('get-secret', {
-        body: { name: 'FMP_API_KEY' }
-      });
-      
-      if (error || !FMP_API_KEY) {
-        console.error('Failed to get FMP API key:', error);
-        throw new Error('Failed to get FMP API key');
-      }
-      
-      console.log('Successfully retrieved API key, initializing WebSocket...');
-      websocketInstance = new StockWebSocket(FMP_API_KEY);
-    } catch (error) {
-      console.error('Error initializing WebSocket:', error);
-      throw error;
-    }
-  }
-  return websocketInstance;
+  return StockWebSocket.getInstance();
 };
