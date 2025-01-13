@@ -3,6 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Content-Type': 'application/json'
 }
 
 serve(async (req) => {
@@ -84,13 +85,13 @@ serve(async (req) => {
             time: new Date().toISOString(),
             price: quoteData[0].price || 0
           }]),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { headers: corsHeaders }
         );
       }
 
       return new Response(
         JSON.stringify(chartData),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: corsHeaders }
       );
     } else {
       // For other timeframes, use historical daily data
@@ -128,7 +129,7 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify(chartData),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: corsHeaders }
       );
     }
   } catch (error) {
@@ -141,12 +142,9 @@ serve(async (req) => {
       }),
       { 
         status: 400,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      },
-    )
+        headers: corsHeaders
+      }
+    );
   }
 })
 
