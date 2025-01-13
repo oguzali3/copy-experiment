@@ -23,7 +23,7 @@ class StockWebSocket {
   private reconnectDelay = 1000;
 
   constructor(apiKey: string) {
-    console.log('Initializing StockWebSocket with API key length:', apiKey?.length || 0);
+    console.log('Initializing StockWebSocket');
     this.apiKey = apiKey;
     this.connect();
   }
@@ -35,16 +35,16 @@ class StockWebSocket {
     }
 
     console.log('Connecting to WebSocket...');
-    this.ws = new WebSocket('wss://websockets.financialmodelingprep.com');
+    this.ws = new WebSocket('wss://ws.financialmodelingprep.com/v1');
 
     this.ws.onopen = () => {
-      console.log('WebSocket connection established, sending login...');
-      const loginMessage = JSON.stringify({
+      console.log('WebSocket connection established');
+      const loginMessage = {
         event: "login",
         data: { apiKey: this.apiKey }
-      });
-      console.log('Login message:', loginMessage.replace(this.apiKey, '[REDACTED]'));
-      this.ws?.send(loginMessage);
+      };
+      console.log('Sending login message:', JSON.stringify(loginMessage).replace(this.apiKey, '[REDACTED]'));
+      this.ws?.send(JSON.stringify(loginMessage));
 
       // Resubscribe to all tickers
       const allTickers = Array.from(this.subscribers.keys());
@@ -52,7 +52,7 @@ class StockWebSocket {
         console.log('Resubscribing to tickers:', allTickers);
         this.ws?.send(JSON.stringify({
           event: "subscribe",
-          data: { ticker: allTickers }
+          data: { tickers: allTickers }
         }));
       }
 
@@ -64,9 +64,20 @@ class StockWebSocket {
         const message = JSON.parse(event.data);
         console.log('WebSocket message received:', message);
         
+        // If it's a login response
+        if (message.event === 'login') {
+          console.log('Login response:', message);
+        }
+        
+        // If it's a subscription response
+        if (message.event === 'subscribe') {
+          console.log('Subscribe response:', message);
+        }
+        
         // If it's a trade or quote message
         if (message.s) {
           const ticker = message.s.toLowerCase();
+          console.log(`Received price update for ${ticker}:`, message);
           if (ticker && this.subscribers.has(ticker)) {
             console.log(`Dispatching ${ticker} update to ${this.subscribers.get(ticker)?.size} subscribers`);
             this.subscribers.get(ticker)?.forEach(callback => callback(message));
@@ -100,12 +111,12 @@ class StockWebSocket {
     if (!this.subscribers.has(ticker)) {
       this.subscribers.set(ticker, new Set());
       if (this.ws?.readyState === WebSocket.OPEN) {
-        const subscribeMessage = JSON.stringify({
+        const subscribeMessage = {
           event: "subscribe",
-          data: { ticker: ticker }
-        });
+          data: { tickers: [ticker] }
+        };
         console.log('Sending subscribe message:', subscribeMessage);
-        this.ws.send(subscribeMessage);
+        this.ws.send(JSON.stringify(subscribeMessage));
       } else {
         console.warn(`WebSocket not ready (state: ${this.ws?.readyState}), subscription will be sent when connected`);
       }
@@ -122,12 +133,12 @@ class StockWebSocket {
       if (tickerSubscribers.size === 0) {
         this.subscribers.delete(ticker);
         if (this.ws?.readyState === WebSocket.OPEN) {
-          const unsubscribeMessage = JSON.stringify({
+          const unsubscribeMessage = {
             event: "unsubscribe",
-            data: { ticker: ticker }
-          });
+            data: { tickers: [ticker] }
+          };
           console.log('Sending unsubscribe message:', unsubscribeMessage);
-          this.ws.send(unsubscribeMessage);
+          this.ws.send(JSON.stringify(unsubscribeMessage));
         }
       }
     }
