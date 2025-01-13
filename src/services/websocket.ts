@@ -30,10 +30,11 @@ class StockWebSocket {
   private connect() {
     if (this.ws?.readyState === WebSocket.OPEN) return;
 
+    console.log('Initializing WebSocket connection...');
     this.ws = new WebSocket('wss://websockets.financialmodelingprep.com');
 
     this.ws.onopen = () => {
-      console.log('WebSocket connected');
+      console.log('WebSocket connected, sending login...');
       // Login with API key
       this.ws?.send(JSON.stringify({
         event: "login",
@@ -43,6 +44,7 @@ class StockWebSocket {
       // Resubscribe to all tickers
       const allTickers = Array.from(this.subscribers.keys());
       if (allTickers.length > 0) {
+        console.log('Resubscribing to tickers:', allTickers);
         this.ws?.send(JSON.stringify({
           event: "subscribe",
           data: { ticker: allTickers }
@@ -56,6 +58,7 @@ class StockWebSocket {
     this.ws.onmessage = (event) => {
       try {
         const message: WebSocketMessage = JSON.parse(event.data);
+        console.log('WebSocket message received:', message);
         const ticker = message.s?.toLowerCase();
         if (ticker && this.subscribers.has(ticker)) {
           this.subscribers.get(ticker)?.forEach(callback => callback(message));
@@ -80,9 +83,11 @@ class StockWebSocket {
 
   subscribe(ticker: string, callback: WebSocketSubscriber) {
     ticker = ticker.toLowerCase();
+    console.log(`Subscribing to ${ticker}`);
     if (!this.subscribers.has(ticker)) {
       this.subscribers.set(ticker, new Set());
       if (this.ws?.readyState === WebSocket.OPEN) {
+        console.log(`Sending subscribe message for ${ticker}`);
         this.ws.send(JSON.stringify({
           event: "subscribe",
           data: { ticker: ticker }
@@ -94,12 +99,14 @@ class StockWebSocket {
 
   unsubscribe(ticker: string, callback: WebSocketSubscriber) {
     ticker = ticker.toLowerCase();
+    console.log(`Unsubscribing from ${ticker}`);
     const tickerSubscribers = this.subscribers.get(ticker);
     if (tickerSubscribers) {
       tickerSubscribers.delete(callback);
       if (tickerSubscribers.size === 0) {
         this.subscribers.delete(ticker);
         if (this.ws?.readyState === WebSocket.OPEN) {
+          console.log(`Sending unsubscribe message for ${ticker}`);
           this.ws.send(JSON.stringify({
             event: "unsubscribe",
             data: { ticker: ticker }
@@ -110,6 +117,7 @@ class StockWebSocket {
   }
 
   disconnect() {
+    console.log('Disconnecting WebSocket');
     this.ws?.close();
     this.ws = null;
     this.subscribers.clear();
