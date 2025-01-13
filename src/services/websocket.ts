@@ -23,23 +23,28 @@ class StockWebSocket {
   private reconnectDelay = 1000;
 
   constructor(apiKey: string) {
+    console.log('Initializing StockWebSocket with API key length:', apiKey?.length || 0);
     this.apiKey = apiKey;
     this.connect();
   }
 
   private connect() {
-    if (this.ws?.readyState === WebSocket.OPEN) return;
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      console.log('WebSocket already connected');
+      return;
+    }
 
-    console.log('Initializing WebSocket connection...');
+    console.log('Connecting to WebSocket...');
     this.ws = new WebSocket('wss://websockets.financialmodelingprep.com');
 
     this.ws.onopen = () => {
-      console.log('WebSocket connected, sending login...');
-      // Login with API key
-      this.ws?.send(JSON.stringify({
+      console.log('WebSocket connection established, sending login...');
+      const loginMessage = JSON.stringify({
         event: "login",
         data: { apiKey: this.apiKey }
-      }));
+      });
+      console.log('Login message:', loginMessage.replace(this.apiKey, '[REDACTED]'));
+      this.ws?.send(loginMessage);
 
       // Resubscribe to all tickers
       const allTickers = Array.from(this.subscribers.keys());
@@ -51,28 +56,36 @@ class StockWebSocket {
         }));
       }
 
-      // Reset reconnect attempts on successful connection
       this.reconnectAttempts = 0;
     };
 
     this.ws.onmessage = (event) => {
       try {
-        const message: WebSocketMessage = JSON.parse(event.data);
+        const message = JSON.parse(event.data);
         console.log('WebSocket message received:', message);
-        const ticker = message.s?.toLowerCase();
-        if (ticker && this.subscribers.has(ticker)) {
-          this.subscribers.get(ticker)?.forEach(callback => callback(message));
+        
+        // If it's a trade or quote message
+        if (message.s) {
+          const ticker = message.s.toLowerCase();
+          if (ticker && this.subscribers.has(ticker)) {
+            console.log(`Dispatching ${ticker} update to ${this.subscribers.get(ticker)?.size} subscribers`);
+            this.subscribers.get(ticker)?.forEach(callback => callback(message));
+          }
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
       }
     };
 
-    this.ws.onclose = () => {
-      console.log('WebSocket disconnected');
+    this.ws.onclose = (event) => {
+      console.log('WebSocket disconnected:', event);
       if (this.reconnectAttempts < this.maxReconnectAttempts) {
         this.reconnectAttempts++;
-        setTimeout(() => this.connect(), this.reconnectDelay * this.reconnectAttempts);
+        const delay = this.reconnectDelay * this.reconnectAttempts;
+        console.log(`Attempting reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+        setTimeout(() => this.connect(), delay);
+      } else {
+        console.error('Max reconnection attempts reached');
       }
     };
 
@@ -87,11 +100,14 @@ class StockWebSocket {
     if (!this.subscribers.has(ticker)) {
       this.subscribers.set(ticker, new Set());
       if (this.ws?.readyState === WebSocket.OPEN) {
-        console.log(`Sending subscribe message for ${ticker}`);
-        this.ws.send(JSON.stringify({
+        const subscribeMessage = JSON.stringify({
           event: "subscribe",
           data: { ticker: ticker }
-        }));
+        });
+        console.log('Sending subscribe message:', subscribeMessage);
+        this.ws.send(subscribeMessage);
+      } else {
+        console.warn(`WebSocket not ready (state: ${this.ws?.readyState}), subscription will be sent when connected`);
       }
     }
     this.subscribers.get(ticker)?.add(callback);
@@ -106,11 +122,12 @@ class StockWebSocket {
       if (tickerSubscribers.size === 0) {
         this.subscribers.delete(ticker);
         if (this.ws?.readyState === WebSocket.OPEN) {
-          console.log(`Sending unsubscribe message for ${ticker}`);
-          this.ws.send(JSON.stringify({
+          const unsubscribeMessage = JSON.stringify({
             event: "unsubscribe",
             data: { ticker: ticker }
-          }));
+          });
+          console.log('Sending unsubscribe message:', unsubscribeMessage);
+          this.ws.send(unsubscribeMessage);
         }
       }
     }
@@ -130,14 +147,17 @@ let websocketInstance: StockWebSocket | null = null;
 export const getWebSocket = async () => {
   if (!websocketInstance) {
     try {
+      console.log('Fetching FMP API key from Supabase...');
       const { data: { FMP_API_KEY }, error } = await supabase.functions.invoke('get-secret', {
         body: { name: 'FMP_API_KEY' }
       });
       
       if (error || !FMP_API_KEY) {
+        console.error('Failed to get FMP API key:', error);
         throw new Error('Failed to get FMP API key');
       }
       
+      console.log('Successfully retrieved API key, initializing WebSocket...');
       websocketInstance = new StockWebSocket(FMP_API_KEY);
     } catch (error) {
       console.error('Error initializing WebSocket:', error);
