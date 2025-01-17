@@ -13,9 +13,13 @@ import { useCashFlowData } from "@/hooks/useCashFlowData";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
-  const { financialData, isLoading: isIncomeStatementLoading } = useFinancialData(ticker, timeFrame === 'quarterly' ? 'quarter' : 'annual');
-  const { filteredData: balanceSheetData, isLoading: isBalanceSheetLoading } = useBalanceSheetData(ticker, timeFrame === 'quarterly' ? 'quarter' : 'annual');
-  const { data: cashFlowData, isLoading: isCashFlowLoading } = useCashFlowData(ticker, timeFrame === 'quarterly' ? 'quarter' : 'annual');
+  
+  // Update period parameter based on timeFrame
+  const period = timeFrame === 'quarterly' ? 'quarter' : 'annual';
+  
+  const { financialData, isLoading: isIncomeStatementLoading } = useFinancialData(ticker, period);
+  const { filteredData: balanceSheetData, isLoading: isBalanceSheetLoading } = useBalanceSheetData(ticker, period);
+  const { data: cashFlowData, isLoading: isCashFlowLoading } = useCashFlowData(ticker, period);
   
   const {
     startDate,
@@ -50,6 +54,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   // Ensure cashFlowData is properly formatted before transformation
   const formattedCashFlowData = Array.isArray(cashFlowData) ? cashFlowData : [];
   console.log('Formatted Cash Flow Data:', formattedCashFlowData);
+  console.log('Current time frame:', timeFrame);
+  console.log('Period for API calls:', period);
 
   const metricData = transformFinancialData(
     financialData,
