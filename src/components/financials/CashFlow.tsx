@@ -94,10 +94,14 @@ export const CashFlow = ({
     .slice(0, period === 'quarter' ? 20 : 10);
 
   const formatPeriod = (date: string) => {
-    return new Date(date).getFullYear().toString();
+    const dateObj = new Date(date);
+    if (period === 'quarter') {
+      const quarter = Math.floor((dateObj.getMonth() + 3) / 3);
+      return `Q${quarter} ${dateObj.getFullYear()}`;
+    }
+    return dateObj.getFullYear().toString();
   };
 
-  // Define metrics with exact field names from API response
   const metrics = [
     { id: "netIncome", label: "Net Income", field: "netIncome" },
     { id: "depreciationAndAmortization", label: "Depreciation & Amortization", field: "depreciationAndAmortization" },

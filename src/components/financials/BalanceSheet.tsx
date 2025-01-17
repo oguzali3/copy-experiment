@@ -33,6 +33,7 @@ export const BalanceSheet = ({
         filteredData={filteredData}
         selectedMetrics={selectedMetrics}
         onMetricsChange={onMetricsChange}
+        timeFrame={timeFrame}
       />
     </div>
   );
