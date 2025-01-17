@@ -40,7 +40,12 @@ export const FinancialDataTable = ({
   return (
     <div className="overflow-x-auto">
       <Table>
-        <IncomeStatementHeader periods={periods} />
+        <IncomeStatementHeader 
+          periods={periods}
+          metrics={INCOME_STATEMENT_METRICS}
+          selectedMetrics={selectedMetrics}
+          onMetricsChange={onMetricToggle}
+        />
         <TableBody>
           {INCOME_STATEMENT_METRICS.map((metric) => {
             const values = combinedData.map((current, index) => {
