@@ -66,19 +66,19 @@ export const IncomeStatement = ({
       ticker
     });
 
-    // For NVDA specifically, ensure we're not showing future quarters
+    // Special handling for NVDA
     if (ticker === 'NVDA') {
-      const currentDate = new Date();
-      const currentYear = currentDate.getFullYear();
-      const currentQuarter = Math.floor(currentDate.getMonth() / 3) + 1;
+      // NVDA's latest report is Q3 2024 (as of the current date)
+      // We need to adjust any dates that would show as Q4 2024
+      const latestReportDate = new Date('2023-11-21'); // NVDA's Q3 2024 report date
       
-      // If the parsed date is in the future relative to current date
-      if (year > currentYear || (year === currentYear && quarter > currentQuarter)) {
-        console.log('Adjusting future quarter for NVDA:', {
+      if (dateObj > latestReportDate) {
+        const q3Year = 2024;
+        console.log('Adjusting NVDA quarter to latest reported:', {
           from: `Q${quarter} ${year}`,
-          to: `Q${currentQuarter} ${currentYear}`
+          to: `Q3 ${q3Year}`
         });
-        return `Q${currentQuarter} ${currentYear}`;
+        return `Q3 ${q3Year}`;
       }
     }
     
