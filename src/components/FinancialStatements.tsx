@@ -47,10 +47,14 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     );
   }
 
+  // Ensure cashFlowData is properly formatted before transformation
+  const formattedCashFlowData = Array.isArray(cashFlowData) ? cashFlowData : [];
+  console.log('Formatted Cash Flow Data:', formattedCashFlowData);
+
   const metricData = transformFinancialData(
     financialData,
     balanceSheetData,
-    cashFlowData,
+    formattedCashFlowData,
     selectedMetrics,
     timePeriods,
     sliderValue,
