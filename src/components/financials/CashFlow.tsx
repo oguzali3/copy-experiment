@@ -23,7 +23,7 @@ export const CashFlow = ({
     queryKey: ['cash-flow-statement', ticker],
     queryFn: async () => {
       const data = await fetchFinancialData('cash-flow-statement', ticker);
-      console.log('Cash Flow Statement API Response:', data);
+      console.log('Raw Cash Flow Statement API Response:', data);
       return data;
     },
     enabled: !!ticker,
@@ -43,16 +43,6 @@ export const CashFlow = ({
       notation: 'compact',
       maximumFractionDigits: 1
     }).format(value);
-  };
-
-  const parseNumber = (value: any): number => {
-    if (typeof value === 'number') return value;
-    if (!value) return 0;
-    if (typeof value === 'string') {
-      // Remove any commas and convert to number
-      return parseFloat(value.replace(/,/g, ''));
-    }
-    return 0;
   };
 
   if (isLoading) {
@@ -91,27 +81,18 @@ export const CashFlow = ({
     );
   }
 
-  // Process TTM data
-  const ttmData = financialData.find((item: any) => item.period === 'TTM') || financialData[0];
-  
-  // Process annual data
-  const annualData = financialData
-    .filter((item: any) => item.period !== 'TTM')
-    .sort((a: any, b: any) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      return dateB.getTime() - dateA.getTime();
-    })
-    .slice(0, 10);
+  // Sort data by date in descending order
+  const sortedData = [...financialData].sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateB.getTime() - dateA.getTime();
+  });
 
-  const sortedData = ttmData ? [ttmData, ...annualData] : annualData;
-
-  const formatPeriod = (row: any) => {
-    if (row.period === 'TTM') return 'TTM';
-    return new Date(row.date).getFullYear().toString() || 'N/A';
+  const formatPeriod = (date: string) => {
+    return new Date(date).getFullYear().toString();
   };
 
-  // Updated metrics array to match exact API response field names
+  // Define metrics with exact field names from API response
   const metrics = [
     { id: "netIncome", label: "Net Income", field: "netIncome" },
     { id: "depreciationAndAmortization", label: "Depreciation & Amortization", field: "depreciationAndAmortization" },
@@ -155,9 +136,9 @@ export const CashFlow = ({
                 <TableRow>
                   <TableHead className="w-[50px] sticky left-0 z-20 bg-white"></TableHead>
                   <TableHead className="w-[250px] sticky left-[50px] z-20 bg-gray-50 font-semibold">Metrics</TableHead>
-                  {sortedData.map((row: any, index: number) => (
-                    <TableHead key={`${formatPeriod(row)}-${index}`} className="text-right min-w-[120px]">
-                      {formatPeriod(row)}
+                  {sortedData.map((row, index) => (
+                    <TableHead key={`${row.date}-${index}`} className="text-right min-w-[120px]">
+                      {formatPeriod(row.date)}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -175,11 +156,14 @@ export const CashFlow = ({
                     <TableCell className="font-medium sticky left-[50px] z-20 bg-gray-50">
                       {metric.label}
                     </TableCell>
-                    {sortedData.map((row: any, index: number) => (
-                      <TableCell key={`${row.date}-${metric.id}-${index}`} className="text-right">
-                        {formatValue(parseNumber(row[metric.field]))}
-                      </TableCell>
-                    ))}
+                    {sortedData.map((row, index) => {
+                      const value = row[metric.field] || 0;
+                      return (
+                        <TableCell key={`${row.date}-${metric.id}-${index}`} className="text-right">
+                          {formatValue(value)}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ))}
               </TableBody>
