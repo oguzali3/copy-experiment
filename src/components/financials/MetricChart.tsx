@@ -1,5 +1,5 @@
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { getMetricColor, formatYAxis, calculateCAGR } from './chartUtils';
+import { getMetricColor, formatYAxis } from './chartUtils';
 import { ChartTooltip } from './ChartTooltip';
 import { Button } from "@/components/ui/button";
 import { BarChart3, LineChart } from "lucide-react";
@@ -30,25 +30,27 @@ export const MetricChart = ({
     );
   }
 
-  // Sort data chronologically
+  // Sort data chronologically, handling both quarterly and annual formats
   const sortedData = [...data].sort((a, b) => {
     if (a.period === 'TTM') return 1;
     if (b.period === 'TTM') return -1;
+    
+    // Handle quarterly format (Q1 2023, Q2 2023, etc.)
+    if (a.period.includes('Q') && b.period.includes('Q')) {
+      const [aQ, aYear] = a.period.split(' ');
+      const [bQ, bYear] = b.period.split(' ');
+      
+      if (aYear !== bYear) {
+        return parseInt(aYear) - parseInt(bYear);
+      }
+      return parseInt(aQ.slice(1)) - parseInt(bQ.slice(1));
+    }
+    
+    // Handle annual format
     return parseInt(a.period) - parseInt(b.period);
   });
 
-  // Calculate CAGR and total change for each metric
-  const cagrResults: Record<string, number> = {};
-  const totalChangeResults: Record<string, number> = {};
-  metrics.forEach(metric => {
-    const firstValue = sortedData[0][metric];
-    const lastValue = sortedData[sortedData.length - 1][metric];
-    const years = sortedData[sortedData.length - 1].period === 'TTM' 
-      ? sortedData.length - 2 
-      : sortedData.length - 1;
-    cagrResults[metric] = calculateCAGR(firstValue, lastValue, years);
-    totalChangeResults[metric] = ((lastValue - firstValue) / firstValue) * 100;
-  });
+  console.log('Sorted chart data:', sortedData);
 
   return (
     <div className="w-full bg-white p-4 rounded-lg space-y-4">
@@ -56,7 +58,10 @@ export const MetricChart = ({
         <div className="flex gap-2 items-center">
           {metrics.map((metric) => (
             <div key={metric} className="flex items-center gap-2">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md" style={{ backgroundColor: `${getMetricColor(metrics.indexOf(metric))}20` }}>
+              <div 
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md" 
+                style={{ backgroundColor: `${getMetricColor(metrics.indexOf(metric))}20` }}
+              >
                 <span className="font-medium">{getMetricDisplayName(metric)}</span>
                 <div className="flex gap-1">
                   <Button
@@ -142,17 +147,30 @@ export const MetricChart = ({
 
       <div className="mt-4 border-t pt-4">
         <div className="flex flex-col gap-2">
-          {metrics.map((metric, index) => (
-            <div key={metric} className="flex items-center gap-3">
-              <div 
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: getMetricColor(index) }}
-              />
-              <span className="text-gray-900 font-medium">
-                {ticker} - {getMetricDisplayName(metric)} (Annual) (Total Change: {totalChangeResults[metric].toFixed(2)}%) (CAGR: {cagrResults[metric].toFixed(2)}%)
-              </span>
-            </div>
-          ))}
+          {metrics.map((metric, index) => {
+            // Calculate growth rates
+            const firstValue = sortedData[sortedData.length - 1][metric];
+            const lastValue = sortedData[0][metric];
+            const totalChange = ((lastValue - firstValue) / Math.abs(firstValue)) * 100;
+            const periods = sortedData.length - 1;
+            const cagr = periods > 0 ? 
+              (Math.pow(lastValue / firstValue, 1 / periods) - 1) * 100 : 
+              0;
+
+            return (
+              <div key={metric} className="flex items-center gap-3">
+                <div 
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: getMetricColor(index) }}
+                />
+                <span className="text-gray-900 font-medium">
+                  {ticker} - {getMetricDisplayName(metric)} {' '}
+                  (Total Change: {totalChange.toFixed(2)}%) {' '}
+                  {periods > 0 && `(CAGR: ${cagr.toFixed(2)}%)`}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
