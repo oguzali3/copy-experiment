@@ -55,12 +55,24 @@ export const IncomeStatement = ({
     const month = dateObj.getMonth();
     const year = dateObj.getFullYear();
     const quarter = Math.floor(month / 3) + 1;
+    
+    // Log the date parsing for debugging
+    console.log('Parsing date:', {
+      originalDate: date,
+      parsedDate: dateObj,
+      month,
+      year,
+      quarter
+    });
+    
     return `Q${quarter} ${year}`;
   };
 
   const periods = combinedData.map((item: any) => {
     if (item.period === "TTM") return "TTM";
     if (timeFrame === 'quarterly') {
+      // Log the raw date before processing
+      console.log('Processing item date:', item.date);
       return getQuarterFromDate(item.date);
     }
     return new Date(item.date).getFullYear().toString();
