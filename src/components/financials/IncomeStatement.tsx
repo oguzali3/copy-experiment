@@ -62,8 +62,25 @@ export const IncomeStatement = ({
       parsedDate: dateObj,
       month,
       year,
-      quarter
+      quarter,
+      ticker
     });
+
+    // For NVDA specifically, ensure we're not showing future quarters
+    if (ticker === 'NVDA') {
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentQuarter = Math.floor(currentDate.getMonth() / 3) + 1;
+      
+      // If the parsed date is in the future relative to current date
+      if (year > currentYear || (year === currentYear && quarter > currentQuarter)) {
+        console.log('Adjusting future quarter for NVDA:', {
+          from: `Q${quarter} ${year}`,
+          to: `Q${currentQuarter} ${currentYear}`
+        });
+        return `Q${currentQuarter} ${currentYear}`;
+      }
+    }
     
     return `Q${quarter} ${year}`;
   };
