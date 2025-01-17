@@ -49,7 +49,7 @@ serve(async (req) => {
         return await handleCompanyNews(apiKey, symbol, from, to);
         
       case "income-statement":
-      case "balance-sheet":
+      case "balance-sheet-statement":
       case "cash-flow-statement":
         return await handleFinancialStatements(apiKey, symbol, endpoint);
 
