@@ -11,11 +11,13 @@ interface BalanceSheetProps {
 }
 
 export const BalanceSheet = ({ 
+  timeFrame,
   selectedMetrics, 
   onMetricsChange,
   ticker 
 }: BalanceSheetProps) => {
-  const { filteredData, isLoading, error } = useBalanceSheetData(ticker);
+  const period = timeFrame === 'quarterly' ? 'quarter' : 'annual';
+  const { filteredData, isLoading, error } = useBalanceSheetData(ticker, period);
 
   if (isLoading) {
     return <BalanceSheetLoading />;

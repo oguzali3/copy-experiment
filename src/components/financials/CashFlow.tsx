@@ -15,14 +15,17 @@ interface CashFlowProps {
 }
 
 export const CashFlow = ({ 
+  timeFrame,
   selectedMetrics, 
   onMetricsChange,
   ticker 
 }: CashFlowProps) => {
+  const period = timeFrame === 'quarterly' ? 'quarter' : 'annual';
+  
   const { data: financialData, isLoading, error } = useQuery({
-    queryKey: ['cash-flow-statement', ticker],
+    queryKey: ['cash-flow-statement', ticker, period],
     queryFn: async () => {
-      const data = await fetchFinancialData('cash-flow-statement', ticker);
+      const data = await fetchFinancialData('cash-flow-statement', ticker, period);
       console.log('Raw Cash Flow Statement API Response:', data);
       return data;
     },
@@ -81,12 +84,14 @@ export const CashFlow = ({
     );
   }
 
-  // Sort data by date in descending order
-  const sortedData = [...financialData].sort((a, b) => {
-    const dateA = new Date(a.date);
-    const dateB = new Date(b.date);
-    return dateB.getTime() - dateA.getTime();
-  });
+  // Sort data by date in descending order and limit to 20 items if quarterly
+  const sortedData = [...financialData]
+    .sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return dateB.getTime() - dateA.getTime();
+    })
+    .slice(0, period === 'quarter' ? 20 : 10);
 
   const formatPeriod = (date: string) => {
     return new Date(date).getFullYear().toString();
