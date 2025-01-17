@@ -27,9 +27,21 @@ export const BalanceSheetTable = ({
     const dateObj = new Date(date);
     if (timeFrame === 'quarterly') {
       const quarter = Math.floor((dateObj.getMonth() + 3) / 3);
-      return `Q${quarter} ${dateObj.getFullYear()}`;
+      const year = dateObj.getFullYear();
+      const monthDay = dateObj.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric'
+      });
+      return {
+        quarter: `Q${quarter} ${year}`,
+        date: monthDay
+      };
     }
-    return dateObj.getFullYear().toString();
+    return {
+      quarter: dateObj.getFullYear().toString(),
+      date: ''
+    };
   };
 
   return (
@@ -41,11 +53,15 @@ export const BalanceSheetTable = ({
               <TableRow>
                 <TableHead className="w-[50px] sticky left-0 z-20 bg-white"></TableHead>
                 <TableHead className="w-[250px] sticky left-[50px] z-20 bg-gray-50 font-semibold">Metrics</TableHead>
-                {filteredData.map((row, index) => (
-                  <TableHead key={`${row.date}-${index}`} className="text-right min-w-[120px]">
-                    {formatPeriod(row.date)}
-                  </TableHead>
-                ))}
+                {filteredData.map((row, index) => {
+                  const { quarter, date } = formatPeriod(row.date);
+                  return (
+                    <TableHead key={`${row.date}-${index}`} className="text-right min-w-[120px]">
+                      <div>{quarter}</div>
+                      {date && <div className="text-xs text-gray-500">{date}</div>}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             </TableHeader>
             <TableBody>
