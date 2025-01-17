@@ -1,7 +1,6 @@
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { BalanceSheetHeader } from "./BalanceSheetHeader";
 import { formatValue, parseNumber, metrics } from "./BalanceSheetUtils";
 
 interface BalanceSheetTableProps {
