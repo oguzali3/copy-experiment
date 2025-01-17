@@ -2,18 +2,18 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchFinancialData } from "@/utils/financialApi";
 import { parseNumber } from "@/components/financials/BalanceSheetUtils";
 
-export const useBalanceSheetData = (ticker: string) => {
+export const useBalanceSheetData = (ticker: string, period: 'annual' | 'quarter' = 'annual') => {
   // Fetch balance sheet data
   const { data: balanceSheetData, isLoading: isBalanceSheetLoading, error: balanceSheetError } = useQuery({
-    queryKey: ['balance-sheet', ticker],
-    queryFn: () => fetchFinancialData('balance-sheet-statement', ticker),
+    queryKey: ['balance-sheet', ticker, period],
+    queryFn: () => fetchFinancialData('balance-sheet-statement', ticker, period),
     enabled: !!ticker,
   });
 
   // Fetch income statement data for shares outstanding
   const { data: incomeStatementData, isLoading: isIncomeStatementLoading } = useQuery({
-    queryKey: ['income-statement', ticker],
-    queryFn: () => fetchFinancialData('income-statement', ticker),
+    queryKey: ['income-statement', ticker, period],
+    queryFn: () => fetchFinancialData('income-statement', ticker, period),
     enabled: !!ticker,
   });
 
@@ -22,21 +22,19 @@ export const useBalanceSheetData = (ticker: string) => {
       return { combinedData: [], error: balanceSheetError };
     }
 
-    // Get annual data sorted by date
-    const annualBalanceSheet = balanceSheetData
-      .filter((item: any) => item.period === 'FY')
+    // Get data sorted by date
+    const sortedBalanceSheet = balanceSheetData
       .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 10);
+      .slice(0, period === 'quarter' ? 20 : 10);
 
-    const annualIncomeStatement = incomeStatementData
-      ?.filter((item: any) => item.period === 'FY')
-      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 10);
+    const sortedIncomeStatement = incomeStatementData
+      ?.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, period === 'quarter' ? 20 : 10);
 
     // Combine balance sheet and income statement data by date
-    const combinedData = annualBalanceSheet.map((balanceSheet: any) => {
-      const matchingIncomeStatement = annualIncomeStatement?.find(
-        (income: any) => new Date(income.date).getFullYear() === new Date(balanceSheet.date).getFullYear()
+    const combinedData = sortedBalanceSheet.map((balanceSheet: any) => {
+      const matchingIncomeStatement = sortedIncomeStatement?.find(
+        (income: any) => new Date(income.date).getTime() === new Date(balanceSheet.date).getTime()
       );
       return {
         ...balanceSheet,
@@ -44,32 +42,7 @@ export const useBalanceSheetData = (ticker: string) => {
       };
     });
 
-    // Get TTM data
-    const ttmBalanceSheet = balanceSheetData.find((item: any) => item.period === 'TTM');
-    const ttmIncomeStatement = incomeStatementData?.find((item: any) => item.period === 'TTM');
-
-    // If TTM values match the most recent annual values, use the annual values
-    const mostRecentAnnual = combinedData[0];
-    const shouldUseMostRecentAnnual = 
-      ttmBalanceSheet && 
-      mostRecentAnnual && 
-      Math.abs(parseNumber(ttmBalanceSheet.totalStockholdersEquity) - parseNumber(mostRecentAnnual.totalStockholdersEquity)) < 0.01;
-
-    // Add TTM data if available
-    const filteredData = ttmBalanceSheet && ttmIncomeStatement
-      ? [{ 
-          ...ttmBalanceSheet,
-          weightedAverageShsOutDil: shouldUseMostRecentAnnual 
-            ? mostRecentAnnual.weightedAverageShsOutDil 
-            : ttmIncomeStatement.weightedAverageShsOutDil,
-          date: ttmBalanceSheet.date,
-          period: 'TTM'
-        }, 
-        ...combinedData
-      ] 
-      : combinedData;
-
-    return { filteredData, error: null };
+    return { filteredData: combinedData, error: null };
   };
 
   const isLoading = isBalanceSheetLoading || isIncomeStatementLoading;

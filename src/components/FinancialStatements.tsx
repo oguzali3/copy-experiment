@@ -13,9 +13,9 @@ import { useCashFlowData } from "@/hooks/useCashFlowData";
 
 export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
-  const { financialData, isLoading: isIncomeStatementLoading } = useFinancialData(ticker);
-  const { filteredData: balanceSheetData, isLoading: isBalanceSheetLoading } = useBalanceSheetData(ticker);
-  const { data: cashFlowData, isLoading: isCashFlowLoading } = useCashFlowData(ticker);
+  const { financialData, isLoading: isIncomeStatementLoading } = useFinancialData(ticker, timeFrame === 'quarterly' ? 'quarter' : 'annual');
+  const { filteredData: balanceSheetData, isLoading: isBalanceSheetLoading } = useBalanceSheetData(ticker, timeFrame === 'quarterly' ? 'quarter' : 'annual');
+  const { data: cashFlowData, isLoading: isCashFlowLoading } = useCashFlowData(ticker, timeFrame === 'quarterly' ? 'quarter' : 'annual');
   
   const {
     startDate,

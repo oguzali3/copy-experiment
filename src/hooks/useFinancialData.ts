@@ -2,12 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToLongString } from "@/utils/dateFormatters";
 
-export const useFinancialData = (ticker: string) => {
+export const useFinancialData = (ticker: string, period: 'annual' | 'quarter' = 'annual') => {
   const { data: financialData, isLoading } = useQuery({
-    queryKey: ['financial-data', ticker],
+    queryKey: ['financial-data', ticker, period],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-        body: { endpoint: 'income-statement', symbol: ticker }
+        body: { endpoint: 'income-statement', symbol: ticker, period }
       });
 
       if (error) throw error;

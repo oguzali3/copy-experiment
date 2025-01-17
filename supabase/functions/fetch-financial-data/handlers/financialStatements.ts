@@ -1,9 +1,8 @@
 import { corsHeaders } from '../utils/cors.ts';
 
-export async function handleFinancialStatements(apiKey: string, symbol: string, endpoint: string) {
+export async function handleFinancialStatements(apiKey: string, symbol: string, endpoint: string, period: string = 'annual') {
   try {
-    const period = 'annual';
-    console.log(`Fetching ${endpoint} for ${symbol}`);
+    console.log(`Fetching ${endpoint} for ${symbol} with period ${period}`);
     const url = `https://financialmodelingprep.com/api/v3/${endpoint}/${symbol}?period=${period}&apikey=${apiKey}`;
     console.log('Requesting URL:', url);
 
@@ -14,8 +13,13 @@ export async function handleFinancialStatements(apiKey: string, symbol: string, 
       throw new Error(`API request failed: ${response.statusText}`);
     }
 
-    console.log(`Received ${endpoint} data:`, data);
-    return new Response(JSON.stringify(data), {
+    // For quarterly data, limit to last 20 quarters
+    const limitedData = period === 'quarter' 
+      ? data.slice(0, 20)  // Take only the last 20 quarters
+      : data;
+
+    console.log(`Received ${endpoint} data:`, limitedData);
+    return new Response(JSON.stringify(limitedData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

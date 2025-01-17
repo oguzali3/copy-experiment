@@ -19,14 +19,14 @@ serve(async (req) => {
   }
 
   try {
-    const { endpoint, symbol, type, from, to, query, year, quarter } = await req.json();
+    const { endpoint, symbol, type, from, to, query, year, quarter, period = 'annual' } = await req.json();
     const apiKey = Deno.env.get("FMP_API_KEY");
 
     if (!apiKey) {
       throw new Error("FMP_API_KEY is not set");
     }
 
-    console.log('Received request with params:', { endpoint, symbol, type, from, to, query });
+    console.log('Received request with params:', { endpoint, symbol, type, from, to, query, period });
 
     switch (endpoint) {
       case "search":
@@ -51,7 +51,7 @@ serve(async (req) => {
       case "income-statement":
       case "balance-sheet-statement":
       case "cash-flow-statement":
-        return await handleFinancialStatements(apiKey, symbol, endpoint);
+        return await handleFinancialStatements(apiKey, symbol, endpoint, period);
 
       case "institutional-holders":
         return await handleInstitutionalHolders(apiKey, symbol);
