@@ -24,7 +24,7 @@ const isCashFlowMetric = (metric: string) => {
     "commonStockIssued", "commonStockRepurchased", "dividendsPaid",
     "otherFinancingActivites", "netCashUsedProvidedByFinancingActivities",
     "effectOfForexChangesOnCash", "netChangeInCash", "cashAtEndOfPeriod",
-    "cashAtBeginningOfPeriod"
+    "cashAtBeginningOfPeriod", "netIncome"
   ];
   return cashFlowMetrics.includes(metric);
 };
@@ -54,10 +54,20 @@ export const transformFinancialData = (
   const startYear = timePeriods[sliderValue[0]];
   const endYear = timePeriods[sliderValue[1]];
 
+  // Format cash flow data to match the expected structure
+  const formattedCashFlowData = Array.isArray(cashFlowData) 
+    ? cashFlowData.map(item => ({
+        ...item,
+        period: item.calendarYear || (item.period === 'TTM' ? 'TTM' : item.date?.split('-')[0])
+      }))
+    : [];
+
+  console.log('Formatted Cash Flow Data:', formattedCashFlowData);
+
   // Get annual data without TTM
   const annualData = financialData[ticker]?.annual?.filter((item: any) => item.period !== 'TTM') || [];
   const annualBalanceSheet = balanceSheetData?.filter((item: any) => item.period !== 'TTM') || [];
-  const annualCashFlow = cashFlowData?.filter((item: any) => item.period !== 'TTM') || [];
+  const annualCashFlow = formattedCashFlowData.filter((item: any) => item.period !== 'TTM') || [];
 
   // Transform data based on metric types
   let transformedData = annualData.map((item: any) => {
@@ -76,7 +86,7 @@ export const transformFinancialData = (
         }
       } else if (isCashFlowMetric(metric)) {
         const cashFlowItem = annualCashFlow.find((cf: any) => 
-          new Date(cf.date).getFullYear().toString() === period
+          cf.period?.toString() === period?.toString()
         );
         if (cashFlowItem) {
           periodData[metric] = typeof cashFlowItem[metric] === 'string'
@@ -103,7 +113,7 @@ export const transformFinancialData = (
   if (endYear === 'TTM') {
     const ttmIncomeStatement = financialData[ticker]?.annual?.find((item: any) => item.period === 'TTM');
     const ttmBalanceSheet = balanceSheetData?.find((item: any) => item.period === 'TTM');
-    const ttmCashFlow = cashFlowData?.find((item: any) => item.period === 'TTM');
+    const ttmCashFlow = formattedCashFlowData?.find((item: any) => item.period === 'TTM');
 
     if (ttmIncomeStatement || ttmBalanceSheet || ttmCashFlow) {
       const ttmData: Record<string, any> = { period: 'TTM' };
@@ -135,6 +145,8 @@ export const transformFinancialData = (
   // Filter and sort data
   transformedData = filterByTimeRange(transformedData, startYear, endYear);
   transformedData = sortChronologically(transformedData);
+
+  console.log('Final Transformed Data:', transformedData);
 
   // Calculate statistics
   return calculateMetricStatistics(transformedData, selectedMetrics);
