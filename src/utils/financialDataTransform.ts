@@ -75,40 +75,41 @@ export const transformFinancialData = (
 
   console.log('Formatted Cash Flow Data:', formattedCashFlowData);
 
-  // Get data without TTM based on timeFrame
-  const periodData = timeFrame === 'quarterly' 
-    ? (Array.isArray(financialData) ? financialData : []).filter((item: any) => item.period !== 'TTM')
-    : (financialData[ticker]?.annual?.filter((item: any) => item.period !== 'TTM') || []);
+  // Handle different data structures based on timeFrame
+  let periodData;
+  if (timeFrame === 'quarterly') {
+    // Ensure financialData is treated as an array for quarterly data
+    periodData = Array.isArray(financialData) 
+      ? financialData.map(item => ({
+          ...item,
+          period: formatQuarterPeriod(item.date)
+        }))
+      : [];
+  } else {
+    // Handle annual data structure
+    periodData = (financialData[ticker]?.annual?.filter((item: any) => item.period !== 'TTM') || []);
+  }
 
-  const periodBalanceSheet = balanceSheetData?.filter((item: any) => item.period !== 'TTM') || [];
-  const periodCashFlow = formattedCashFlowData.filter((item: any) => item.period !== 'TTM') || [];
+  const periodBalanceSheet = (balanceSheetData || []).map((item: any) => ({
+    ...item,
+    period: timeFrame === 'quarterly' ? formatQuarterPeriod(item.date) : item.period
+  }));
 
   // Transform data based on metric types
   let transformedData = periodData.map((item: any) => {
-    const period = timeFrame === 'quarterly' 
-      ? formatQuarterPeriod(item.date)
-      : item.period;
-
+    const period = item.period;
     let periodData: Record<string, any> = { period };
 
     selectedMetrics.forEach(metric => {
       if (isBalanceSheetMetric(metric)) {
-        const balanceSheetItem = periodBalanceSheet.find((bs: any) => 
-          timeFrame === 'quarterly'
-            ? formatQuarterPeriod(bs.date) === period
-            : new Date(bs.date).getFullYear().toString() === period
-        );
+        const balanceSheetItem = periodBalanceSheet.find((bs: any) => bs.period === period);
         if (balanceSheetItem) {
           periodData[metric] = typeof balanceSheetItem[metric] === 'string'
             ? parseFloat(balanceSheetItem[metric].replace(/,/g, ''))
             : balanceSheetItem[metric];
         }
       } else if (isCashFlowMetric(metric)) {
-        const cashFlowItem = periodCashFlow.find((cf: any) => 
-          timeFrame === 'quarterly'
-            ? formatQuarterPeriod(cf.date) === period
-            : cf.period?.toString() === period?.toString()
-        );
+        const cashFlowItem = formattedCashFlowData.find((cf: any) => cf.period === period);
         if (cashFlowItem) {
           periodData[metric] = typeof cashFlowItem[metric] === 'string'
             ? parseFloat(cashFlowItem[metric].replace(/,/g, ''))
@@ -133,8 +134,11 @@ export const transformFinancialData = (
   // Add TTM data if it exists and is selected
   if (endYear === 'TTM') {
     const ttmIncomeStatement = timeFrame === 'quarterly'
-      ? (Array.isArray(financialData) ? financialData : []).find((item: any) => item.period === 'TTM')
+      ? Array.isArray(financialData) 
+        ? financialData.find((item: any) => item.period === 'TTM')
+        : null
       : financialData[ticker]?.annual?.find((item: any) => item.period === 'TTM');
+
     const ttmBalanceSheet = balanceSheetData?.find((item: any) => item.period === 'TTM');
     const ttmCashFlow = formattedCashFlowData?.find((item: any) => item.period === 'TTM');
 
