@@ -16,8 +16,6 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   
   // Update period parameter based on timeFrame
   const period = timeFrame === 'quarterly' ? 'quarter' : 'annual';
-  console.log('Current time frame:', timeFrame);
-  console.log('Period for API calls:', period);
   
   const { financialData, isLoading: isIncomeStatementLoading } = useFinancialData(ticker, period);
   const { filteredData: balanceSheetData, isLoading: isBalanceSheetLoading } = useBalanceSheetData(ticker, period);
@@ -55,7 +53,6 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
   // Ensure cashFlowData is properly formatted before transformation
   const formattedCashFlowData = Array.isArray(cashFlowData) ? cashFlowData : [];
-  console.log('Formatted Cash Flow Data:', formattedCashFlowData);
 
   const metricData = transformFinancialData(
     financialData,
