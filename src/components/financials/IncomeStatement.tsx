@@ -13,13 +13,19 @@ import { INCOME_STATEMENT_METRICS } from "@/utils/metricDefinitions";
 
 interface IncomeStatementProps {
   ticker: string;
+  timeFrame: "annual" | "quarterly" | "ttm";
+  selectedMetrics: string[];
+  onMetricsChange: (metrics: string[]) => void;
 }
 
-export const IncomeStatement = ({ ticker }: IncomeStatementProps) => {
-  const [timeframe, setTimeframe] = useState<"annual" | "quarterly">("annual");
+export const IncomeStatement = ({ 
+  ticker, 
+  timeFrame,
+  selectedMetrics,
+  onMetricsChange 
+}: IncomeStatementProps) => {
+  const [timeframe, setTimeframe] = useState<"annual" | "quarterly">(timeFrame === "ttm" ? "annual" : timeFrame);
   const {
-    selectedMetrics,
-    setSelectedMetrics,
     metricTypes,
     handleMetricTypeChange,
     getMetricData,
@@ -48,16 +54,15 @@ export const IncomeStatement = ({ ticker }: IncomeStatementProps) => {
         period: timeframe === "annual" ? item.calendar_year : getQuarterLabel(item.date, item.calendar_year),
       };
 
-      // Add selected metrics to the formatted item
       selectedMetrics.forEach((metric) => {
         const metricDef = INCOME_STATEMENT_METRICS.find((m) => m.id === metric);
         if (metricDef) {
-          formattedItem[metric] = item[metricDef.key];
+          formattedItem[metric] = item[metric];
         }
       });
 
       return formattedItem;
-    }).reverse(); // Reverse to show oldest to newest
+    }).reverse();
   };
 
   const getQuarterLabel = (dateStr: string, year: number) => {
@@ -65,18 +70,14 @@ export const IncomeStatement = ({ ticker }: IncomeStatementProps) => {
     const month = dateObj.getMonth();
     const quarter = Math.floor(month / 3) + 1;
 
-    // Get current date for comparison
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const currentQuarter = Math.floor(currentDate.getMonth() / 3) + 1;
 
-    // Company-specific adjustments
     const companyAdjustments: Record<string, { date: string; quarter: number; year: number }> = {
       'NVDA': { date: '2023-11-21', quarter: 3, year: 2024 },
-      // Add more companies as needed with their latest reporting dates
     };
 
-    // Check if we have specific handling for this company
     if (companyAdjustments[ticker]) {
       const { date: latestReportDate, quarter: latestQuarter, year: latestYear } = companyAdjustments[ticker];
       if (dateObj > new Date(latestReportDate)) {
@@ -88,7 +89,6 @@ export const IncomeStatement = ({ ticker }: IncomeStatementProps) => {
       }
     }
 
-    // General future date prevention
     if (year > currentYear || (year === currentYear && quarter > currentQuarter)) {
       console.log(`Preventing future quarter display for ${ticker}:`, {
         from: `Q${quarter} ${year}`,
@@ -111,20 +111,21 @@ export const IncomeStatement = ({ ticker }: IncomeStatementProps) => {
       <Card className="p-6">
         <div className="space-y-6">
           <IncomeStatementHeader
-            ticker={ticker}
             metrics={INCOME_STATEMENT_METRICS}
             selectedMetrics={selectedMetrics}
-            onMetricsChange={setSelectedMetrics}
+            onMetricsChange={onMetricsChange}
           />
           <TimeFrameSelector
-            timeframe={timeframe}
-            onTimeframeChange={setTimeframe}
+            timeFrame={timeframe}
+            onTimeFrameChange={setTimeframe}
           />
           <IncomeStatementMetrics
-            data={financialData}
-            metrics={INCOME_STATEMENT_METRICS}
-            selectedMetrics={selectedMetrics}
-            timeframe={timeframe}
+            metricId=""
+            label=""
+            values={[]}
+            isSelected={false}
+            onToggle={() => {}}
+            formatValue={(value) => value?.toString() || ''}
           />
         </div>
       </Card>
