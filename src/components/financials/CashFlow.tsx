@@ -148,8 +148,8 @@ export const CashFlow = ({
                 <TableRow>
                   <TableHead className="w-[50px] sticky left-0 z-20 bg-white"></TableHead>
                   <TableHead className="w-[250px] sticky left-[50px] z-20 bg-gray-50 font-semibold">Metrics</TableHead>
-                  {sortedData.map((row: any) => (
-                    <TableHead key={row.date} className="text-right min-w-[120px]">
+                  {sortedData.map((row: any, index: number) => (
+                    <TableHead key={`${formatPeriod(row)}-${index}`} className="text-right min-w-[120px]">
                       {formatPeriod(row)}
                     </TableHead>
                   ))}
@@ -168,8 +168,8 @@ export const CashFlow = ({
                     <TableCell className="font-medium sticky left-[50px] z-20 bg-gray-50">
                       {metric.label}
                     </TableCell>
-                    {sortedData.map((row: any) => (
-                      <TableCell key={`${row.date}-${metric.id}`} className="text-right">
+                    {sortedData.map((row: any, index: number) => (
+                      <TableCell key={`${row.date}-${metric.id}-${index}`} className="text-right">
                         {formatValue(parseNumber(row[metric.id]))}
                       </TableCell>
                     ))}
