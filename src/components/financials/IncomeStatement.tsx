@@ -50,52 +50,20 @@ export const IncomeStatement = ({
 
   const combinedData = ttmData ? [ttmData, ...regularData] : regularData;
 
-  const getFiscalQuarterAndYear = (date: string, companyTicker: string) => {
+  const getQuarterFromDate = (date: string) => {
     const dateObj = new Date(date);
     const month = dateObj.getMonth();
     const year = dateObj.getFullYear();
-
-    // Define fiscal year ends for different companies
-    const fiscalYearEnds: { [key: string]: number } = {
-      'AAPL': 8,  // September
-      'NVDA': 0,  // January
-      'MSFT': 5,  // June
-      'ORCL': 4,  // May
-      'ADBE': 11, // December
-      // Add more companies as needed
-    };
-
-    // Default to December fiscal year end if company not found
-    const fiscalYearEnd = fiscalYearEnds[companyTicker] ?? 11;
-    
-    // Calculate fiscal year
-    const fiscalYear = month > fiscalYearEnd ? year + 1 : year;
-
-    // Calculate fiscal quarter
-    let fiscalQuarter;
-    const monthsAfterFiscalYearEnd = (month - fiscalYearEnd + 12) % 12;
-    
-    if (monthsAfterFiscalYearEnd < 3) {
-      fiscalQuarter = 1;
-    } else if (monthsAfterFiscalYearEnd < 6) {
-      fiscalQuarter = 2;
-    } else if (monthsAfterFiscalYearEnd < 9) {
-      fiscalQuarter = 3;
-    } else {
-      fiscalQuarter = 4;
-    }
-
-    return { fiscalQuarter, fiscalYear };
+    const quarter = Math.floor(month / 3) + 1;
+    return `Q${quarter} ${year}`;
   };
 
   const periods = combinedData.map((item: any) => {
     if (item.period === "TTM") return "TTM";
     if (timeFrame === 'quarterly') {
-      const { fiscalQuarter, fiscalYear } = getFiscalQuarterAndYear(item.date, ticker);
-      return `Q${fiscalQuarter} ${fiscalYear}`;
+      return getQuarterFromDate(item.date);
     }
-    const { fiscalYear } = getFiscalQuarterAndYear(item.date, ticker);
-    return fiscalYear.toString();
+    return new Date(item.date).getFullYear().toString();
   });
 
   return (
