@@ -15,7 +15,7 @@ export const useCashFlowData = (ticker: string, period: 'annual' | 'quarter' = '
         throw error;
       }
 
-      console.log('Cash flow data received:', data);
+      console.log(`Received ${period} cash flow data:`, data);
       return data;
     },
     enabled: !!ticker,
