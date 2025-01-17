@@ -48,12 +48,11 @@ export const CashFlow = ({
   const parseNumber = (value: any): number => {
     if (typeof value === 'number') return value;
     if (!value) return 0;
-    // Handle string values that might be in scientific notation
-    if (typeof value === 'string' && value.includes('e')) {
-      return Number(value);
+    if (typeof value === 'string') {
+      // Remove any commas and convert to number
+      return parseFloat(value.replace(/,/g, ''));
     }
-    // Remove any commas and convert to number
-    return parseFloat(value.toString().replace(/,/g, ''));
+    return 0;
   };
 
   if (isLoading) {
@@ -112,6 +111,7 @@ export const CashFlow = ({
     return new Date(row.date).getFullYear().toString() || 'N/A';
   };
 
+  // Updated metrics array to match exact API response field names
   const metrics = [
     { id: "netIncome", label: "Net Income", field: "netIncome" },
     { id: "depreciationAndAmortization", label: "Depreciation & Amortization", field: "depreciationAndAmortization" },
