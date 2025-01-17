@@ -12,13 +12,14 @@ interface IncomeStatementProps {
 }
 
 export const IncomeStatement = ({ 
+  timeFrame,
   selectedMetrics, 
   onMetricsChange, 
   ticker 
 }: IncomeStatementProps) => {
   const { data: financialData, isLoading, error } = useQuery({
-    queryKey: ['income-statement', ticker],
-    queryFn: () => fetchFinancialData('income-statement', ticker),
+    queryKey: ['income-statement', ticker, timeFrame],
+    queryFn: () => fetchFinancialData('income-statement', ticker, timeFrame === 'quarterly' ? 'quarter' : 'annual'),
     enabled: !!ticker,
   });
 
@@ -42,16 +43,42 @@ export const IncomeStatement = ({
   }
 
   const ttmData = financialData.find((item: any) => item.period === "TTM");
-  const annualData = financialData
-    .filter((item: any) => item.period === "FY")
+  const regularData = financialData
+    .filter((item: any) => item.period !== "TTM")
     .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 10);
+    .slice(0, timeFrame === 'quarterly' ? 20 : 10);
 
-  const combinedData = ttmData ? [ttmData, ...annualData] : annualData;
+  const combinedData = ttmData ? [ttmData, ...regularData] : regularData;
+
+  const getFiscalQuarter = (date: string) => {
+    const month = new Date(date).getMonth();
+    // Apple's fiscal quarters:
+    // Q1: Oct-Dec (months 9-11)
+    // Q2: Jan-Mar (months 0-2)
+    // Q3: Apr-Jun (months 3-5)
+    // Q4: Jul-Sep (months 6-8)
+    if (month >= 9) return 1;
+    if (month >= 6) return 4;
+    if (month >= 3) return 3;
+    return 2;
+  };
+
+  const getFiscalYear = (date: string) => {
+    const dateObj = new Date(date);
+    const month = dateObj.getMonth();
+    const year = dateObj.getFullYear();
+    // If the month is October or later (fiscal Q1), it's part of the next fiscal year
+    return month >= 9 ? year + 1 : year;
+  };
 
   const periods = combinedData.map((item: any) => {
     if (item.period === "TTM") return "TTM";
-    return new Date(item.date).getFullYear().toString();
+    if (timeFrame === 'quarterly') {
+      const fiscalQuarter = getFiscalQuarter(item.date);
+      const fiscalYear = getFiscalYear(item.date);
+      return `Q${fiscalQuarter} ${fiscalYear}`;
+    }
+    return getFiscalYear(item.date).toString();
   });
 
   return (
@@ -61,7 +88,7 @@ export const IncomeStatement = ({
         periods={periods}
         selectedMetrics={selectedMetrics}
         onMetricToggle={handleMetricToggle}
-        annualData={annualData}
+        annualData={regularData}
       />
     </div>
   );
