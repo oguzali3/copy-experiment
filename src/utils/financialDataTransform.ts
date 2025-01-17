@@ -77,7 +77,7 @@ export const transformFinancialData = (
 
   // Get data without TTM based on timeFrame
   const periodData = timeFrame === 'quarterly' 
-    ? financialData.filter((item: any) => item.period !== 'TTM')
+    ? (Array.isArray(financialData) ? financialData : []).filter((item: any) => item.period !== 'TTM')
     : (financialData[ticker]?.annual?.filter((item: any) => item.period !== 'TTM') || []);
 
   const periodBalanceSheet = balanceSheetData?.filter((item: any) => item.period !== 'TTM') || [];
@@ -133,7 +133,7 @@ export const transformFinancialData = (
   // Add TTM data if it exists and is selected
   if (endYear === 'TTM') {
     const ttmIncomeStatement = timeFrame === 'quarterly'
-      ? financialData.find((item: any) => item.period === 'TTM')
+      ? (Array.isArray(financialData) ? financialData : []).find((item: any) => item.period === 'TTM')
       : financialData[ticker]?.annual?.find((item: any) => item.period === 'TTM');
     const ttmBalanceSheet = balanceSheetData?.find((item: any) => item.period === 'TTM');
     const ttmCashFlow = formattedCashFlowData?.find((item: any) => item.period === 'TTM');
