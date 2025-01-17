@@ -6,7 +6,7 @@ export const useBalanceSheetData = (ticker: string) => {
   // Fetch balance sheet data
   const { data: balanceSheetData, isLoading: isBalanceSheetLoading, error: balanceSheetError } = useQuery({
     queryKey: ['balance-sheet', ticker],
-    queryFn: () => fetchFinancialData('balance-sheet', ticker),
+    queryFn: () => fetchFinancialData('balance-sheet-statement', ticker),
     enabled: !!ticker,
   });
 
