@@ -5,19 +5,21 @@ interface IncomeStatementHeaderProps {
   metrics: MetricDefinition[];
   selectedMetrics: string[];
   onMetricsChange: (metrics: string[]) => void;
+  periods: string[];
 }
 
 export const IncomeStatementHeader = ({ 
   metrics,
   selectedMetrics,
-  onMetricsChange
+  onMetricsChange,
+  periods
 }: IncomeStatementHeaderProps) => {
   return (
     <TableHeader>
       <TableRow>
         <TableHead className="w-[50px]"></TableHead>
         <TableHead className="w-[250px] bg-gray-50 font-semibold">Metrics</TableHead>
-        {selectedMetrics.map((period) => (
+        {periods?.map((period) => (
           <TableHead key={period} className="text-right min-w-[120px]">
             {period}
           </TableHead>

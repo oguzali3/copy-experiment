@@ -24,7 +24,7 @@ export const IncomeStatement = ({
   selectedMetrics,
   onMetricsChange 
 }: IncomeStatementProps) => {
-  const [timeframe, setTimeframe] = useState<"annual" | "quarterly">(timeFrame === "ttm" ? "annual" : timeFrame);
+  const [currentTimeFrame, setCurrentTimeFrame] = useState<"annual" | "quarterly" | "ttm">(timeFrame);
   const {
     metricTypes,
     handleMetricTypeChange,
@@ -32,11 +32,11 @@ export const IncomeStatement = ({
   } = useMetrics(ticker);
 
   const { data: financialData, isLoading, error } = useQuery({
-    queryKey: ['income-statement', ticker, timeframe],
+    queryKey: ['income-statement', ticker, currentTimeFrame],
     queryFn: async () => {
-      console.log('Fetching income statement data:', { ticker, timeframe });
+      console.log('Fetching income statement data:', { ticker, currentTimeFrame });
       const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-        body: { endpoint: 'income-statement', symbol: ticker, period: timeframe }
+        body: { endpoint: 'income-statement', symbol: ticker, period: currentTimeFrame }
       });
       
       if (error) throw error;
@@ -51,7 +51,7 @@ export const IncomeStatement = ({
 
     return data.map((item: any) => {
       const formattedItem: any = {
-        period: timeframe === "annual" ? item.calendar_year : getQuarterLabel(item.date, item.calendar_year),
+        period: currentTimeFrame === "annual" ? item.calendar_year : getQuarterLabel(item.date, item.calendar_year),
       };
 
       selectedMetrics.forEach((metric) => {
@@ -105,6 +105,7 @@ export const IncomeStatement = ({
   if (!financialData) return null;
 
   const chartData = formatChartData(financialData);
+  const periods = chartData.map(item => item.period);
 
   return (
     <div className="space-y-6">
@@ -114,10 +115,11 @@ export const IncomeStatement = ({
             metrics={INCOME_STATEMENT_METRICS}
             selectedMetrics={selectedMetrics}
             onMetricsChange={onMetricsChange}
+            periods={periods}
           />
           <TimeFrameSelector
-            timeFrame={timeframe}
-            onTimeFrameChange={setTimeframe}
+            timeFrame={currentTimeFrame}
+            onTimeFrameChange={setCurrentTimeFrame}
           />
           <IncomeStatementMetrics
             metricId=""
