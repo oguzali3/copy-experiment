@@ -38,11 +38,32 @@ export const Header = () => {
   }, [lastScrollY]);
 
   useEffect(() => {
-    // Check authentication state on protected routes
-    const protectedRoutes = ['/portfolio', '/dashboard', '/watchlists'];
-    if (!isLoading && !session && protectedRoutes.includes(location.pathname)) {
-      navigate('/signin');
-    }
+    const checkAndRefreshSession = async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        if (!currentSession && !isLoading) {
+          // Clear any stale session data
+          await supabase.auth.signOut();
+          
+          const protectedRoutes = ['/portfolio', '/dashboard', '/watchlists'];
+          if (protectedRoutes.includes(location.pathname)) {
+            toast.error("Session expired. Please sign in again.");
+            navigate('/signin');
+          }
+        }
+      } catch (error) {
+        console.error("Session check error:", error);
+        // Only show error toast if we're on a protected route
+        const protectedRoutes = ['/portfolio', '/dashboard', '/watchlists'];
+        if (protectedRoutes.includes(location.pathname)) {
+          toast.error("Authentication error. Please sign in again.");
+          navigate('/signin');
+        }
+      }
+    };
+
+    checkAndRefreshSession();
   }, [session, isLoading, location.pathname, navigate]);
 
   const handleSignOut = async () => {
@@ -52,6 +73,8 @@ export const Header = () => {
         toast.error("Error signing out");
         console.error("Error:", error.message);
       } else {
+        // Clear any stored session data
+        localStorage.removeItem('supabase.auth.token');
         toast.success("Signed out successfully");
         navigate("/");
       }
