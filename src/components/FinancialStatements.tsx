@@ -61,7 +61,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     selectedMetrics,
     timePeriods,
     sliderValue,
-    ticker
+    ticker,
+    timeFrame
   );
 
   return (

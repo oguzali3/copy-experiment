@@ -40,6 +40,14 @@ const isBalanceSheetMetric = (metric: string) => {
   return balanceSheetMetrics.includes(metric);
 };
 
+const formatQuarterPeriod = (date: string) => {
+  const dateObj = new Date(date);
+  const year = dateObj.getFullYear();
+  const month = dateObj.getMonth();
+  const quarter = Math.floor(month / 3) + 1;
+  return `Q${quarter} ${year}`;
+};
+
 export const transformFinancialData = (
   financialData: any,
   balanceSheetData: any,
@@ -47,7 +55,8 @@ export const transformFinancialData = (
   selectedMetrics: string[],
   timePeriods: string[],
   sliderValue: number[],
-  ticker: string
+  ticker: string,
+  timeFrame: 'annual' | 'quarterly' | 'ttm' = 'annual'
 ) => {
   if (!selectedMetrics.length) return [];
 
@@ -58,26 +67,36 @@ export const transformFinancialData = (
   const formattedCashFlowData = Array.isArray(cashFlowData) 
     ? cashFlowData.map(item => ({
         ...item,
-        period: item.calendarYear || (item.period === 'TTM' ? 'TTM' : item.date?.split('-')[0])
+        period: timeFrame === 'quarterly' 
+          ? formatQuarterPeriod(item.date)
+          : (item.calendarYear || (item.period === 'TTM' ? 'TTM' : item.date?.split('-')[0]))
       }))
     : [];
 
   console.log('Formatted Cash Flow Data:', formattedCashFlowData);
 
-  // Get annual data without TTM
-  const annualData = financialData[ticker]?.annual?.filter((item: any) => item.period !== 'TTM') || [];
-  const annualBalanceSheet = balanceSheetData?.filter((item: any) => item.period !== 'TTM') || [];
-  const annualCashFlow = formattedCashFlowData.filter((item: any) => item.period !== 'TTM') || [];
+  // Get data without TTM based on timeFrame
+  const periodData = timeFrame === 'quarterly' 
+    ? financialData.filter((item: any) => item.period !== 'TTM')
+    : (financialData[ticker]?.annual?.filter((item: any) => item.period !== 'TTM') || []);
+
+  const periodBalanceSheet = balanceSheetData?.filter((item: any) => item.period !== 'TTM') || [];
+  const periodCashFlow = formattedCashFlowData.filter((item: any) => item.period !== 'TTM') || [];
 
   // Transform data based on metric types
-  let transformedData = annualData.map((item: any) => {
-    const period = item.period;
+  let transformedData = periodData.map((item: any) => {
+    const period = timeFrame === 'quarterly' 
+      ? formatQuarterPeriod(item.date)
+      : item.period;
+
     let periodData: Record<string, any> = { period };
 
     selectedMetrics.forEach(metric => {
       if (isBalanceSheetMetric(metric)) {
-        const balanceSheetItem = annualBalanceSheet.find((bs: any) => 
-          new Date(bs.date).getFullYear().toString() === period
+        const balanceSheetItem = periodBalanceSheet.find((bs: any) => 
+          timeFrame === 'quarterly'
+            ? formatQuarterPeriod(bs.date) === period
+            : new Date(bs.date).getFullYear().toString() === period
         );
         if (balanceSheetItem) {
           periodData[metric] = typeof balanceSheetItem[metric] === 'string'
@@ -85,8 +104,10 @@ export const transformFinancialData = (
             : balanceSheetItem[metric];
         }
       } else if (isCashFlowMetric(metric)) {
-        const cashFlowItem = annualCashFlow.find((cf: any) => 
-          cf.period?.toString() === period?.toString()
+        const cashFlowItem = periodCashFlow.find((cf: any) => 
+          timeFrame === 'quarterly'
+            ? formatQuarterPeriod(cf.date) === period
+            : cf.period?.toString() === period?.toString()
         );
         if (cashFlowItem) {
           periodData[metric] = typeof cashFlowItem[metric] === 'string'
@@ -111,7 +132,9 @@ export const transformFinancialData = (
 
   // Add TTM data if it exists and is selected
   if (endYear === 'TTM') {
-    const ttmIncomeStatement = financialData[ticker]?.annual?.find((item: any) => item.period === 'TTM');
+    const ttmIncomeStatement = timeFrame === 'quarterly'
+      ? financialData.find((item: any) => item.period === 'TTM')
+      : financialData[ticker]?.annual?.find((item: any) => item.period === 'TTM');
     const ttmBalanceSheet = balanceSheetData?.find((item: any) => item.period === 'TTM');
     const ttmCashFlow = formattedCashFlowData?.find((item: any) => item.period === 'TTM');
 
