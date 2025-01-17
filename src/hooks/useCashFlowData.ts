@@ -7,11 +7,7 @@ export const useCashFlowData = (ticker: string, period: 'annual' | 'quarter' = '
     queryFn: async () => {
       console.log('Fetching cash flow data for:', ticker, 'period:', period);
       const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-        body: { 
-          endpoint: 'cash-flow-statement', 
-          symbol: ticker, 
-          period 
-        }
+        body: { endpoint: 'cash-flow-statement', symbol: ticker, period }
       });
 
       if (error) {
