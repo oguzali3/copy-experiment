@@ -28,26 +28,17 @@ export const ScreenerResults = ({
   excludeIndustries,
   excludeExchanges
 }: ScreenerResultsProps) => {
-  // Ref for scrolling to top of results
   const resultsRef = useRef<HTMLDivElement>(null);
-
-  // State management
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(false);
-  const [pageInfo, setPageInfo] = useState<{
-    cursors: { [key: number]: string };
-    currentCursor: string | null;
-  }>({
-    cursors: {},
-    currentCursor: null
-  });
+  const [cursorHistory, setCursorHistory] = useState<string[]>(['']);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleScreenerRun = async (resetPagination = true, cursor: string | null = null) => {
-    // Validate if any criteria is selected
     const hasMetrics = metrics.length > 0;
     const hasCountries = selectedCountries.length > 0;
     const hasIndustries = selectedIndustries.length > 0;
@@ -64,7 +55,6 @@ export const ScreenerResults = ({
 
     setIsLoading(true);
     try {
-      // Build and execute GraphQL query
       const { query } = buildScreeningQuery(metrics, {
         cursor: cursor || '',
         limit: RESULTS_PER_PAGE
@@ -88,36 +78,31 @@ export const ScreenerResults = ({
         throw new Error(errors[0].message);
       }
 
-      // Process response data
       const { nodes, pageInfo: responsePageInfo } = data.screenCompanies;
       const transformedResults = transformGraphQLResponse(nodes);
       
-      // Handle pagination state
       if (resetPagination) {
         setCurrentPage(1);
-        setPageInfo({
-          cursors: {
-            1: '',
-            2: responsePageInfo.endCursor
-          },
-          currentCursor: ''
-        });
-        setTotalResults(responsePageInfo.total);
+        setCursorHistory(['']);
       } else {
-        setPageInfo(prev => ({
-          cursors: {
-            ...prev.cursors,
-            [currentPage + 1]: responsePageInfo.endCursor
-          },
-          currentCursor: cursor || ''
-        }));
+        // Update cursor history based on navigation direction
+        if (cursor === cursorHistory[currentPage - 2]) {
+          // Going backward - remove the last cursor
+          setCursorHistory(prev => prev.slice(0, currentPage - 1));
+        } else {
+          // Going forward - add the new cursor
+          setCursorHistory(prev => [...prev, cursor || '']);
+        }
       }
-      
-      // Update results and pagination state
+
       setResults(transformedResults);
       setHasNextPage(responsePageInfo.hasNextPage);
+      setNextCursor(responsePageInfo.endCursor);
+      
+      if (resetPagination) {
+        setTotalResults(responsePageInfo.total);
+      }
 
-      // Show success toast
       toast({
         title: "Screener Results",
         description: `Found ${responsePageInfo.total} matching stocks`,
@@ -129,21 +114,18 @@ export const ScreenerResults = ({
         description: error.message || "Failed to run screener. Please try again.",
         variant: "destructive",
       });
-      // Reset states on error
       setResults([]);
       setTotalResults(0);
       setHasNextPage(false);
+      setNextCursor(null);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Pagination handlers
   const handleNextPage = () => {
-    if (hasNextPage && !isLoading) {
+    if (hasNextPage && !isLoading && nextCursor) {
       const nextPage = currentPage + 1;
-      const nextCursor = pageInfo.cursors[nextPage];
-      
       setCurrentPage(nextPage);
       handleScreenerRun(false, nextCursor);
     }
@@ -152,8 +134,7 @@ export const ScreenerResults = ({
   const handlePreviousPage = () => {
     if (currentPage > 1 && !isLoading) {
       const prevPage = currentPage - 1;
-      const prevCursor = pageInfo.cursors[prevPage];
-      
+      const prevCursor = cursorHistory[prevPage - 1];
       setCurrentPage(prevPage);
       handleScreenerRun(false, prevCursor);
     }
