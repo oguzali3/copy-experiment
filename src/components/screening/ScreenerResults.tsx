@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ScreeningTable } from "./ScreeningTable";
 import { ScreeningMetric } from "@/types/screening";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { buildScreeningQuery, transformGraphQLResponse } from "@/utils/graphqlUtils";
+import PaginationControls from "./PaginationControls";
 
 interface ScreenerResultsProps {
   metrics: ScreeningMetric[];
@@ -16,6 +17,8 @@ interface ScreenerResultsProps {
   excludeExchanges: boolean;
 }
 
+const RESULTS_PER_PAGE = 25;
+
 export const ScreenerResults = ({ 
   metrics,
   selectedCountries,
@@ -25,12 +28,26 @@ export const ScreenerResults = ({
   excludeIndustries,
   excludeExchanges
 }: ScreenerResultsProps) => {
+  // Ref for scrolling to top of results
+  const resultsRef = useRef<HTMLDivElement>(null);
+
+  // State management
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [pageInfo, setPageInfo] = useState<{
+    cursors: { [key: number]: string };
+    currentCursor: string | null;
+  }>({
+    cursors: {},
+    currentCursor: null
+  });
   const { toast } = useToast();
 
-  const handleScreenerRun = async () => {
-    // Check if at least one filter criteria is selected
+  const handleScreenerRun = async (resetPagination = true, cursor: string | null = null) => {
+    // Validate if any criteria is selected
     const hasMetrics = metrics.length > 0;
     const hasCountries = selectedCountries.length > 0;
     const hasIndustries = selectedIndustries.length > 0;
@@ -47,7 +64,11 @@ export const ScreenerResults = ({
 
     setIsLoading(true);
     try {
-      const { query } = buildScreeningQuery(metrics);
+      // Build and execute GraphQL query
+      const { query } = buildScreeningQuery(metrics, {
+        cursor: cursor || '',
+        limit: RESULTS_PER_PAGE
+      });
 
       const response = await fetch('http://localhost:4000/graphql', {
         method: 'POST',
@@ -67,12 +88,39 @@ export const ScreenerResults = ({
         throw new Error(errors[0].message);
       }
 
-      const transformedResults = transformGraphQLResponse(data);
-      setResults(transformedResults);
+      // Process response data
+      const { nodes, pageInfo: responsePageInfo } = data.screenCompanies;
+      const transformedResults = transformGraphQLResponse(nodes);
       
+      // Handle pagination state
+      if (resetPagination) {
+        setCurrentPage(1);
+        setPageInfo({
+          cursors: {
+            1: '',
+            2: responsePageInfo.endCursor
+          },
+          currentCursor: ''
+        });
+        setTotalResults(responsePageInfo.total);
+      } else {
+        setPageInfo(prev => ({
+          cursors: {
+            ...prev.cursors,
+            [currentPage + 1]: responsePageInfo.endCursor
+          },
+          currentCursor: cursor || ''
+        }));
+      }
+      
+      // Update results and pagination state
+      setResults(transformedResults);
+      setHasNextPage(responsePageInfo.hasNextPage);
+
+      // Show success toast
       toast({
         title: "Screener Results",
-        description: `Found ${transformedResults.length} matching stocks`,
+        description: `Found ${responsePageInfo.total} matching stocks`,
       });
     } catch (error) {
       console.error('Error running screener:', error);
@@ -81,18 +129,42 @@ export const ScreenerResults = ({
         description: error.message || "Failed to run screener. Please try again.",
         variant: "destructive",
       });
+      // Reset states on error
       setResults([]);
+      setTotalResults(0);
+      setHasNextPage(false);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Pagination handlers
+  const handleNextPage = () => {
+    if (hasNextPage && !isLoading) {
+      const nextPage = currentPage + 1;
+      const nextCursor = pageInfo.cursors[nextPage];
+      
+      setCurrentPage(nextPage);
+      handleScreenerRun(false, nextCursor);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1 && !isLoading) {
+      const prevPage = currentPage - 1;
+      const prevCursor = pageInfo.cursors[prevPage];
+      
+      setCurrentPage(prevPage);
+      handleScreenerRun(false, prevCursor);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div ref={resultsRef} className="flex items-center justify-between">
         <Button 
           className="bg-[#077dfa] hover:bg-[#077dfa]/90"
-          onClick={handleScreenerRun}
+          onClick={() => handleScreenerRun(true)}
           disabled={isLoading}
         >
           {isLoading ? (
@@ -105,10 +177,22 @@ export const ScreenerResults = ({
           )}
         </Button>
         <div className="text-sm text-gray-500">
-          Screener Results: {results.length}
+          Total Results: {totalResults}
         </div>
       </div>
       <ScreeningTable metrics={metrics} results={results} />
+      {results.length > 0 && (
+        <PaginationControls
+          currentPage={currentPage}
+          hasNextPage={hasNextPage}
+          isLoading={isLoading}
+          totalResults={totalResults}
+          resultsPerPage={RESULTS_PER_PAGE}
+          onNextPage={handleNextPage}
+          onPreviousPage={handlePreviousPage}
+          resultsRef={resultsRef}
+        />
+      )}
     </div>
   );
 };
