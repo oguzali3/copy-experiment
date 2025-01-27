@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScreeningTable } from "./ScreeningTable";
 import { ScreeningMetric } from "@/types/screening";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
+import { buildScreeningQuery, transformGraphQLResponse } from "@/utils/graphqlUtils";
 
 interface ScreenerResultsProps {
   metrics: ScreeningMetric[];
@@ -39,7 +39,7 @@ export const ScreenerResults = ({
     if (!hasMetrics && !hasCountries && !hasIndustries && !hasExchanges) {
       toast({
         title: "No criteria selected",
-        description: "Please select at least one filtering criteria (countries, industries, exchanges, or metrics)",
+        description: "Please select at least one filtering criteria",
         variant: "destructive",
       });
       return;
@@ -47,30 +47,32 @@ export const ScreenerResults = ({
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-screener-results', {
-        body: {
-          countries: excludeCountries ? [] : selectedCountries,
-          industries: excludeIndustries ? [] : selectedIndustries,
-          exchanges: excludeExchanges ? [] : selectedExchanges,
-          metrics: metrics.map(m => ({
-            id: m.id,
-            min: m.min || undefined,
-            max: m.max || undefined
-          }))
-        }
+      const { query } = buildScreeningQuery(metrics);
+
+      const response = await fetch('http://localhost:4000/graphql', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query })
       });
 
-      if (error) throw error;
-      
-      if (!data || !Array.isArray(data)) {
-        throw new Error('Invalid response from screener');
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
       }
 
-      setResults(data);
+      const { data, errors } = await response.json();
+
+      if (errors) {
+        throw new Error(errors[0].message);
+      }
+
+      const transformedResults = transformGraphQLResponse(data);
+      setResults(transformedResults);
       
       toast({
         title: "Screener Results",
-        description: `Found ${data.length} matching stocks`,
+        description: `Found ${transformedResults.length} matching stocks`,
       });
     } catch (error) {
       console.error('Error running screener:', error);

@@ -15,6 +15,7 @@ import { SearchItem, SearchItemSchema } from "./types";
 import { SearchResult } from "./SearchResult";
 import { filterSearchItems, getPlaceholderText } from "./searchUtils";
 import { toast } from "sonner";
+import { METRICS_CONFIG } from "@/constants/metrics";
 
 interface ScreeningSearchProps {
   type: "countries" | "industries" | "exchanges" | "metrics";
@@ -22,7 +23,15 @@ interface ScreeningSearchProps {
   onSelect?: (selected: string[]) => void;
   onMetricSelect?: (metric: ScreeningMetric) => void;
 }
-
+const searchItems = (items: any[], query: string) => {
+  const lowerQuery = query.toLowerCase();
+  return items.filter(
+    item => 
+      item.name.toLowerCase().includes(lowerQuery) ||
+      item.description.toLowerCase().includes(lowerQuery) ||
+      item.field.toLowerCase().includes(lowerQuery)
+  );
+};
 export const ScreeningSearch = ({
   type,
   selected = [],
@@ -113,6 +122,7 @@ export const ScreeningSearch = ({
           id: item.id || '',
           name: item.name,
           category: item.category || '',
+          field: item.id || '', // Using id as field if not provided
           min: "",
           max: ""
         });
@@ -130,6 +140,9 @@ export const ScreeningSearch = ({
       toast.error('Failed to select item');
     }
   };
+  const getPlaceholderText = () => {
+    return "Search metrics...";
+  };
 
   return (
     <div className="relative w-full">
@@ -139,27 +152,37 @@ export const ScreeningSearch = ({
         onClick={() => setOpen(true)}
       >
         <Search className="mr-2 h-4 w-4" />
-        <span>{getPlaceholderText(type, loading)}</span>
+        <span>{getPlaceholderText()}</span>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <Command className="rounded-lg border shadow-md">
           <CommandInput
-            placeholder={getPlaceholderText(type, loading)}
+            placeholder={getPlaceholderText()}
             value={searchQuery}
             onValueChange={setSearchQuery}
           />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup>
-              {filteredItems.map((item) => (
-                <SearchResult
-                  key={`${item.name}-${item.id || ''}`}
-                  item={item}
-                  type={type}
-                  onSelect={handleSelect}
-                />
-              ))}
-            </CommandGroup>
+            {METRICS_CONFIG.map((category) => {
+              const filteredMetrics = searchItems(category.metrics, searchQuery);
+              if (filteredMetrics.length === 0) return null;
+              
+              return (
+                <CommandGroup key={category.category} heading={category.category}>
+                  {filteredMetrics.map((metric) => (
+                    <SearchResult
+                      key={metric.id}
+                      item={{
+                        ...metric,
+                        category: category.category
+                      }}
+                      type="metrics"
+                      onSelect={handleSelect}
+                    />
+                  ))}
+                </CommandGroup>
+              );
+            })}
           </CommandList>
         </Command>
       </CommandDialog>

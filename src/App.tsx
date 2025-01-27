@@ -19,6 +19,8 @@ import Watchlists from "./pages/Watchlists";
 import Portfolio from "./pages/Portfolio";
 import Settings from "./pages/Settings";
 import { useState, useEffect } from 'react';
+import { ApolloProvider } from "@apollo/client";
+import client from "./integrations/apollo/apolloClient";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,8 +63,15 @@ const App = () => {
                     <Route path="/analysis" element={<Analysis />} />
                     <Route path="/company/:ticker/news" element={<CompanyNews />} />
                     <Route path="/charting" element={<Charting />} />
-                    <Route path="/screening" element={<Screening />} />
-                    <Route path="/watchlists" element={<Watchlists />} />
+                    {/* ApolloProvider for Screening */}
+                    <Route
+                      path="/screening"
+                      element={
+                        <ApolloProvider client={client}>
+                          <Screening />
+                        </ApolloProvider>
+                      }
+                    />                    <Route path="/watchlists" element={<Watchlists />} />
                     <Route path="/portfolio" element={<Portfolio />} />
                     <Route path="/settings" element={<Settings />} />
                     {/* Catch all route */}
