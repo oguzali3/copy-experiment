@@ -46,7 +46,7 @@ const App = () => {
       >
         <TooltipProvider>
           <SidebarProvider>
-            <div className="min-h-screen flex w-full dark:bg-[#1c1c20] dark:text-white">
+            <div className="min-h-screen flex w-full bg-background text-foreground">
               <Toaster />
               <Sonner />
               <BrowserRouter>
