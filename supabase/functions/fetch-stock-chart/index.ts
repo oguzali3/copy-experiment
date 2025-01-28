@@ -39,11 +39,11 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      console.log('Raw intraday data received, count:', data?.length);
+      console.log('Raw intraday data received:', data);
 
       if (!Array.isArray(data)) {
-        console.error('Invalid data format received:', typeof data);
-        throw new Error('Invalid intraday data format received from API');
+        console.error('Invalid data format received:', data);
+        throw new Error('Invalid data format received from API');
       }
 
       // Get the most recent trading day's data
@@ -59,7 +59,7 @@ serve(async (req) => {
         })
         .map(item => ({
           time: item.date,
-          price: parseFloat(item.close) || 0
+          price: typeof item.close === 'number' ? item.close : parseFloat(item.close) || 0
         }))
         .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
@@ -75,6 +75,7 @@ serve(async (req) => {
         }
         
         const quoteData = await quoteResponse.json();
+        console.log('Quote data received:', quoteData);
         
         if (!Array.isArray(quoteData) || quoteData.length === 0) {
           throw new Error('Invalid quote data format received from API');
@@ -105,7 +106,7 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      console.log('Historical data received:', data?.historical?.length, 'data points');
+      console.log('Historical data received:', data);
       
       if (!data?.historical || !Array.isArray(data.historical)) {
         console.error('Invalid historical data format received:', data);
@@ -114,26 +115,30 @@ serve(async (req) => {
 
       const chartData = data.historical
         .map((item: any) => {
-          if (!item?.date || !item?.close) return null;
+          if (!item?.date || typeof item?.close !== 'number') {
+            console.log('Skipping invalid data point:', item);
+            return null;
+          }
           return {
             time: item.date,
-            price: parseFloat(item.close) || 0
+            price: item.close
           };
         })
-        .filter(item => item !== null)
+        .filter((item): item is { time: string; price: number } => item !== null)
         .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 
       if (chartData.length === 0) {
         throw new Error('No valid historical data points found');
       }
 
+      console.log(`Returning ${chartData.length} historical data points`);
       return new Response(
         JSON.stringify(chartData),
         { headers: corsHeaders }
       );
     }
   } catch (error) {
-    console.error('Error in fetch-stock-chart:', error.message);
+    console.error('Error in fetch-stock-chart:', error);
     
     return new Response(
       JSON.stringify({ 
