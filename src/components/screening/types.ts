@@ -6,6 +6,8 @@ export const SearchItemSchema = z.object({
   category: z.string().optional(),
   id: z.string().optional(),
   fullName: z.string().optional(),
+  field: z.string().optional(),
+  table: z.string().optional()
 });
 
 export type SearchItem = z.infer<typeof SearchItemSchema>;

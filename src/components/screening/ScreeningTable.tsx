@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Table,
@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/table";
 import { ScreeningMetric } from "@/types/screening";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface ScreeningTableProps {
   metrics: ScreeningMetric[];
@@ -25,6 +24,21 @@ type SortConfig = {
 export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
   const navigate = useNavigate();
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
+
+  // Get the available metrics based on the actual data in results
+  const availableMetrics = useMemo(() => {
+    if (results.length === 0) return [];
+    
+    // Get all fields that have values in the results
+    const firstResult = results[0];
+    const availableFields = new Set(Object.keys(firstResult));
+    
+    // Filter metrics to only include those that have data
+    return metrics.filter(metric => 
+      availableFields.has(metric.field.toLowerCase()) || 
+      availableFields.has(metric.id.toLowerCase())
+    );
+  }, [metrics, results]);
 
   const handleTickerClick = (ticker: string) => {
     navigate(`/analysis?ticker=${ticker}`);
@@ -64,7 +78,28 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
       : <ArrowDown className="h-4 w-4 ml-1" />;
   };
 
+  const formatValue = (value: any, metric: ScreeningMetric) => {
+    if (value === undefined || value === null) return '-';
+    
+    if (metric.field.toLowerCase().includes('margin') || 
+        metric.field.toLowerCase().includes('growth') ||
+        metric.field.toLowerCase().includes('ratio')) {
+      return `${Number(value).toFixed(2)}%`;
+    }
+    
+    // Format large numbers
+    if (typeof value === 'number' && Math.abs(value) >= 1000000) {
+      return `$${(value / 1000000).toFixed(2)}M`;
+    }
+    
+    return `$${Number(value).toLocaleString()}`;
+  };
+
   const sortedResults = getSortedResults();
+
+  if (results.length === 0) {
+    return <div className="text-center py-4 text-gray-500">No results found</div>;
+  }
 
   return (
     <div className="border rounded-lg">
@@ -89,15 +124,15 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
                 {getSortIcon('companyName')}
               </div>
             </TableHead>
-            {metrics.map((metric) => (
+            {availableMetrics.map((metric) => (
               <TableHead 
                 key={metric.id}
                 className="cursor-pointer hover:bg-gray-50"
-                onClick={() => handleSort(metric.id)}
+                onClick={() => handleSort(metric.field.toLowerCase())}
               >
                 <div className="flex items-center">
                   {metric.name}
-                  {getSortIcon(metric.id)}
+                  {getSortIcon(metric.field.toLowerCase())}
                 </div>
               </TableHead>
             ))}
@@ -114,13 +149,10 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
                   {company.symbol}
                 </button>
               </TableCell>
-              <TableCell>{company.companyName}</TableCell>
-              {metrics.map((metric) => (
+              <TableCell>{company.companyName || '-'}</TableCell>
+              {availableMetrics.map((metric) => (
                 <TableCell key={metric.id}>
-                  {metric.id.toLowerCase().includes('margin') || metric.id.toLowerCase().includes('growth')
-                    ? `${company[metric.id]}%`
-                    : `$${company[metric.id]}`
-                  }
+                  {formatValue(company[metric.field.toLowerCase()], metric)}
                 </TableCell>
               ))}
             </TableRow>

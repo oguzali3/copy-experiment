@@ -23,6 +23,7 @@ interface ScreeningSearchProps {
   onSelect?: (selected: string[]) => void;
   onMetricSelect?: (metric: ScreeningMetric) => void;
 }
+
 const searchItems = (items: any[], query: string) => {
   const lowerQuery = query.toLowerCase();
   return items.filter(
@@ -32,6 +33,7 @@ const searchItems = (items: any[], query: string) => {
       item.field.toLowerCase().includes(lowerQuery)
   );
 };
+
 export const ScreeningSearch = ({
   type,
   selected = [],
@@ -110,7 +112,7 @@ export const ScreeningSearch = ({
 
   const filteredItems = filterSearchItems(items, searchQuery, type);
 
-  const handleSelect = (item: SearchItem) => {
+  const handleSelect = (item: SearchItem & { table?: string }) => {
     try {
       if (!item?.name) {
         console.error('Invalid item selected:', item);
@@ -122,7 +124,8 @@ export const ScreeningSearch = ({
           id: item.id || '',
           name: item.name,
           category: item.category || '',
-          field: item.id || '', // Using id as field if not provided
+          field: item.field || item.id || '',
+          table: item.table,  // Pass the table from the metric
           min: "",
           max: ""
         });
@@ -140,9 +143,6 @@ export const ScreeningSearch = ({
       toast.error('Failed to select item');
     }
   };
-  const getPlaceholderText = () => {
-    return "Search metrics...";
-  };
 
   return (
     <div className="relative w-full">
@@ -152,12 +152,12 @@ export const ScreeningSearch = ({
         onClick={() => setOpen(true)}
       >
         <Search className="mr-2 h-4 w-4" />
-        <span>{getPlaceholderText()}</span>
+        <span>Search metrics...</span>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <Command className="rounded-lg border shadow-md">
           <CommandInput
-            placeholder={getPlaceholderText()}
+            placeholder="Search metrics..."
             value={searchQuery}
             onValueChange={setSearchQuery}
           />
@@ -174,7 +174,8 @@ export const ScreeningSearch = ({
                       key={metric.id}
                       item={{
                         ...metric,
-                        category: category.category
+                        category: category.category,
+                        table: metric.table  // Include the table in the passed item
                       }}
                       type="metrics"
                       onSelect={handleSelect}

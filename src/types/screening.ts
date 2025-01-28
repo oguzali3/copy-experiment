@@ -1,12 +1,14 @@
 // src/types/screening.ts
 
-// Base screening metric interface
+// src/types/screening.ts
+
 export interface ScreeningMetric {
   id: string;
   name: string;
   category?: string;
   description?: string;
   field: string;
+  table?: string;
   min?: string;
   max?: string;
 }
