@@ -24,27 +24,27 @@ export const CompanyTableHeader = ({ sortConfig, onSort }: CompanyTableHeaderPro
   };
 
   return (
-    <thead className="bg-gray-50">
+    <thead className="bg-[#2c2c35]">
       <tr>
-        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Rank</th>
-        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Company</th>
-        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">Ticker</th>
+        <th className="px-4 py-3 text-left text-sm font-semibold text-white">Rank</th>
+        <th className="px-4 py-3 text-left text-sm font-semibold text-white">Company</th>
+        <th className="px-4 py-3 text-left text-sm font-semibold text-white">Ticker</th>
         <th 
-          className="px-4 py-3 text-left text-sm font-semibold text-gray-600 cursor-pointer hover:text-blue-600"
+          className="px-4 py-3 text-left text-sm font-semibold text-white cursor-pointer hover:text-blue-400"
           onClick={() => onSort("marketCap")}
         >
           Market Cap
           {getSortIcon("marketCap")}
         </th>
         <th 
-          className="px-4 py-3 text-left text-sm font-semibold text-gray-600 cursor-pointer hover:text-blue-600"
+          className="px-4 py-3 text-left text-sm font-semibold text-white cursor-pointer hover:text-blue-400"
           onClick={() => onSort("price")}
         >
           Price
           {getSortIcon("price")}
         </th>
         <th 
-          className="px-4 py-3 text-left text-sm font-semibold text-gray-600 cursor-pointer hover:text-blue-600"
+          className="px-4 py-3 text-left text-sm font-semibold text-white cursor-pointer hover:text-blue-400"
           onClick={() => onSort("change")}
         >
           Change
