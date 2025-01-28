@@ -35,6 +35,7 @@ serve(async (req) => {
       
       const response = await fetch(intradayEndpoint);
       if (!response.ok) {
+        console.error('API request failed:', response.status, response.statusText);
         throw new Error(`API request failed with status ${response.status}`);
       }
 
@@ -71,6 +72,7 @@ serve(async (req) => {
         const quoteResponse = await fetch(quoteEndpoint);
         
         if (!quoteResponse.ok) {
+          console.error('Quote API request failed:', quoteResponse.status, quoteResponse.statusText);
           throw new Error(`Quote API request failed with status ${quoteResponse.status}`);
         }
         
@@ -102,6 +104,7 @@ serve(async (req) => {
       
       const response = await fetch(endpoint);
       if (!response.ok) {
+        console.error('Historical API request failed:', response.status, response.statusText);
         throw new Error(`Historical API request failed with status ${response.status}`);
       }
 
