@@ -76,16 +76,16 @@ export const TopCompanies = () => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-foreground">Featured Companies</h2>
+      <h2 className="text-2xl font-bold text-[#111827]">Featured Companies</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <MetricsSearch onMetricSelect={handleMetricSelect} />
         <CompanySearch onCompanySelect={handleCompanySelect} />
       </div>
-      <Card className="overflow-hidden bg-card">
+      <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <CompanyTableHeader sortConfig={sortConfig} onSort={handleSort} />
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-gray-200">
               {companies.map((company, index) => (
                 <CompanyTableRow
                   key={company.ticker}

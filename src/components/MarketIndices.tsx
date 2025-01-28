@@ -74,12 +74,12 @@ export const MarketIndices = () => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-foreground">Market Indices</h2>
+      <h2 className="text-2xl font-bold text-[#111827]">Market Indices</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {loading ? (
           // Loading skeletons
           Array(6).fill(0).map((_, i) => (
-            <Card key={i} className="p-4 bg-card">
+            <Card key={i} className="p-4">
               <div className="space-y-2">
                 <Skeleton className="h-6 w-24" />
                 <Skeleton className="h-8 w-32" />
@@ -90,11 +90,11 @@ export const MarketIndices = () => {
         ) : (
           // Actual data
           indexData.map((index) => (
-            <Card key={index.name} className="p-4 hover:shadow-lg transition-shadow bg-card">
+            <Card key={index.name} className="p-4 hover:shadow-lg transition-shadow">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-semibold text-foreground">{index.name}</h3>
-                  <p className="text-2xl font-bold mt-1 text-foreground">{index.value}</p>
+                  <h3 className="font-semibold text-[#111827]">{index.name}</h3>
+                  <p className="text-2xl font-bold mt-1">{index.value}</p>
                 </div>
                 <div className={`flex items-center ${index.isPositive ? 'text-success' : 'text-warning'}`}>
                   {index.isPositive ? (
