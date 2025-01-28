@@ -12,14 +12,14 @@ export const LiveStockData = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {stocks.map((stock) => (
-        <Card key={stock.symbol} className="p-4 bg-white/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
+        <Card key={stock.symbol} className="p-4 bg-card hover:shadow-md transition-shadow">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">{stock.symbol}</h3>
-              <p className="text-sm text-gray-500">Vol: {stock.volume}</p>
+              <h3 className="text-lg font-bold text-foreground">{stock.symbol}</h3>
+              <p className="text-sm text-muted-foreground">Vol: {stock.volume}</p>
             </div>
             <div className="text-right">
-              <div className="text-lg font-medium text-gray-900">${stock.price}</div>
+              <div className="text-lg font-medium text-foreground">${stock.price}</div>
               <div
                 className={`flex items-center justify-end text-sm ${
                   stock.change > 0 ? "text-success" : "text-warning"
