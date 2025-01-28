@@ -12,8 +12,8 @@ import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -36,7 +36,7 @@ export const DashboardSidebar = () => {
 
   return (
     <Sidebar 
-      className="bg-[#191d25] border-r-0 transition-all duration-300 dark:bg-[#1c1c20]" 
+      className="bg-[#191d25] dark:bg-[#1c1c20] border-r-0 transition-all duration-300" 
       collapsible="icon"
     >
       <div 
