@@ -21,10 +21,10 @@ export const METRICS_CONFIG = [
         table: TableName.COMPANY_PROFILES_DYNAMIC
       },
       {
-        id: "market_cap",
+        id: "marketcap",
         name: "Market Cap",
         description: "Total market value of company's shares",
-        field: "market_cap",
+        field: "marketcap",
         table: TableName.COMPANY_PROFILES_DYNAMIC
       },
       {
@@ -42,10 +42,10 @@ export const METRICS_CONFIG = [
         table: TableName.COMPANY_PROFILES_DYNAMIC
       },
       {
-        id: "average_volume",
+        id: "averagevolume",
         name: "Average Volume",
         description: "Average trading volume",
-        field: "average_volume",
+        field: "averagevolume",
         table: TableName.COMPANY_PROFILES_DYNAMIC
       }
     ]
