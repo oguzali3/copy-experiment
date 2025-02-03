@@ -21,6 +21,12 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 } | null;
 
+// Define base metrics that should always be shown
+const BASE_METRICS = [
+  { id: 'price', field: 'price', name: 'Price' },
+  { id: 'marketCap', field: 'marketCap', name: 'Market Cap' }
+];
+
 const formatCurrency = (value: number, compact: boolean = false) => {
   if (value === null || value === undefined) return '-';
   
@@ -92,20 +98,25 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
   const navigate = useNavigate();
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
 
+  // Filter out base metrics from user-selected metrics to avoid duplicates
+  const filteredMetrics = useMemo(() => {
+    return metrics.filter(metric => 
+      !BASE_METRICS.some(baseMetric => baseMetric.field === metric.field)
+    );
+  }, [metrics]);
+
   // Get all available metrics based on the actual data in results
   const availableMetrics = useMemo(() => {
     if (results.length === 0) return [];
     
-    // Get all fields that have values in the results
     const firstResult = results[0];
     const availableFields = new Set(Object.keys(firstResult));
     
-    // Filter metrics to only include those that have data
-    return metrics.filter(metric => 
+    return filteredMetrics.filter(metric => 
       availableFields.has(metric.field) || 
       availableFields.has(metric.id)
     );
-  }, [metrics, results]);
+  }, [filteredMetrics, results]);
 
   const handleTickerClick = (ticker: string) => {
     navigate(`/analysis?ticker=${ticker}`);
@@ -167,7 +178,7 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
         <TableHeader>
           <TableRow>
             <TableHead 
-              className="cursor-pointer hover:bg-gray-50"
+              className="cursor-pointer hover:bg-gray-50 text-left"
               onClick={() => handleSort('symbol')}
             >
               <div className="flex items-center whitespace-nowrap">
@@ -176,7 +187,7 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
               </div>
             </TableHead>
             <TableHead 
-              className="cursor-pointer hover:bg-gray-50"
+              className="cursor-pointer hover:bg-gray-50 text-left"
               onClick={() => handleSort('companyName')}
             >
               <div className="flex items-center whitespace-nowrap">
@@ -184,13 +195,27 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
                 {getSortIcon('companyName')}
               </div>
             </TableHead>
+            {/* Always show base metrics */}
+            {BASE_METRICS.map((metric) => (
+              <TableHead 
+                key={metric.id}
+                className="cursor-pointer hover:bg-gray-50 text-right"
+                onClick={() => handleSort(metric.field)}
+              >
+                <div className="flex items-center justify-end whitespace-nowrap">
+                  {metric.name}
+                  {getSortIcon(metric.field)}
+                </div>
+              </TableHead>
+            ))}
+            {/* Show additional selected metrics */}
             {availableMetrics.map((metric) => (
               <TableHead 
                 key={metric.id}
-                className="cursor-pointer hover:bg-gray-50"
+                className="cursor-pointer hover:bg-gray-50 text-right"
                 onClick={() => handleSort(metric.field)}
               >
-                <div className="flex items-center whitespace-nowrap">
+                <div className="flex items-center justify-end whitespace-nowrap">
                   {metric.name}
                   {getSortIcon(metric.field)}
                 </div>
@@ -201,7 +226,7 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
         <TableBody>
           {sortedResults.map((company) => (
             <TableRow key={company.symbol}>
-              <TableCell>
+              <TableCell className="text-left">
                 <button
                   onClick={() => handleTickerClick(company.symbol)}
                   className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
@@ -209,9 +234,16 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
                   {company.symbol}
                 </button>
               </TableCell>
-              <TableCell className="whitespace-nowrap">
+              <TableCell className="whitespace-nowrap text-left">
                 {company.companyName || '-'}
               </TableCell>
+              {/* Always show base metrics values */}
+              {BASE_METRICS.map((metric) => (
+                <TableCell key={metric.id} className="text-right">
+                  {formatValue(company[metric.field], metric.field)}
+                </TableCell>
+              ))}
+              {/* Show additional selected metrics values */}
               {availableMetrics.map((metric) => (
                 <TableCell key={metric.id} className="text-right">
                   {formatValue(company[metric.field], metric.field)}
