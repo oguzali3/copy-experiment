@@ -21,11 +21,78 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 } | null;
 
+const formatCurrency = (value: number, compact: boolean = false) => {
+  if (value === null || value === undefined) return '-';
+  
+  if (compact) {
+    if (Math.abs(value) >= 1_000_000_000_000) {
+      return `$${(value / 1_000_000_000_000).toFixed(2)}T`;
+    }
+    if (Math.abs(value) >= 1_000_000_000) {
+      return `$${(value / 1_000_000_000).toFixed(2)}B`;
+    }
+    if (Math.abs(value) >= 1_000_000) {
+      return `$${(value / 1_000_000).toFixed(2)}M`;
+    }
+  }
+  
+  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
+const formatPercentage = (value: number) => {
+  if (value === null || value === undefined) return '-';
+  return `${value.toFixed(2)}%`;
+};
+
+const formatValue = (value: any, metricField: string) => {
+  if (value === null || value === undefined) return '-';
+  
+  const fieldLower = metricField.toLowerCase();
+  
+  // Handle percentage metrics
+  if (fieldLower.includes('margin') || 
+      fieldLower.includes('ratio') || 
+      fieldLower.includes('growth') ||
+      fieldLower.includes('return') ||
+      fieldLower.includes('yield')) {
+    return formatPercentage(value);
+  }
+  
+  // Handle price
+  if (fieldLower === 'price') {
+    return formatCurrency(value, false);
+  }
+  
+  // Handle market cap and other large numbers
+  if (fieldLower === 'marketcap' || 
+      fieldLower.includes('revenue') || 
+      fieldLower.includes('income') || 
+      fieldLower.includes('ebitda') ||
+      fieldLower.includes('assets') ||
+      fieldLower.includes('liabilities') ||
+      fieldLower.includes('cash') ||
+      fieldLower.includes('debt')) {
+    return formatCurrency(value, true);
+  }
+  
+  // Handle volume
+  if (fieldLower.includes('volume')) {
+    return value.toLocaleString();
+  }
+  
+  // Default number formatting
+  if (typeof value === 'number') {
+    return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  }
+  
+  return value;
+};
+
 export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
   const navigate = useNavigate();
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
 
-  // Get the available metrics based on the actual data in results
+  // Get all available metrics based on the actual data in results
   const availableMetrics = useMemo(() => {
     if (results.length === 0) return [];
     
@@ -35,8 +102,8 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
     
     // Filter metrics to only include those that have data
     return metrics.filter(metric => 
-      availableFields.has(metric.field.toLowerCase()) || 
-      availableFields.has(metric.id.toLowerCase())
+      availableFields.has(metric.field) || 
+      availableFields.has(metric.id)
     );
   }, [metrics, results]);
 
@@ -66,6 +133,12 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
       if (aValue === null || aValue === undefined) return 1;
       if (bValue === null || bValue === undefined) return -1;
 
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortConfig.direction === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
       const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
@@ -78,31 +151,18 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
       : <ArrowDown className="h-4 w-4 ml-1" />;
   };
 
-  const formatValue = (value: any, metric: ScreeningMetric) => {
-    if (value === undefined || value === null) return '-';
-    
-    if (metric.field.toLowerCase().includes('margin') || 
-        metric.field.toLowerCase().includes('growth') ||
-        metric.field.toLowerCase().includes('ratio')) {
-      return `${Number(value).toFixed(2)}%`;
-    }
-    
-    // Format large numbers
-    if (typeof value === 'number' && Math.abs(value) >= 1000000) {
-      return `$${(value / 1000000).toFixed(2)}M`;
-    }
-    
-    return `$${Number(value).toLocaleString()}`;
-  };
-
   const sortedResults = getSortedResults();
 
   if (results.length === 0) {
-    return <div className="text-center py-4 text-gray-500">No results found</div>;
+    return (
+      <div className="text-center py-8 text-gray-500">
+        No results found. Try adjusting your screening criteria.
+      </div>
+    );
   }
 
   return (
-    <div className="border rounded-lg">
+    <div className="border rounded-lg overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -110,7 +170,7 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
               className="cursor-pointer hover:bg-gray-50"
               onClick={() => handleSort('symbol')}
             >
-              <div className="flex items-center">
+              <div className="flex items-center whitespace-nowrap">
                 Ticker
                 {getSortIcon('symbol')}
               </div>
@@ -119,7 +179,7 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
               className="cursor-pointer hover:bg-gray-50"
               onClick={() => handleSort('companyName')}
             >
-              <div className="flex items-center">
+              <div className="flex items-center whitespace-nowrap">
                 Company
                 {getSortIcon('companyName')}
               </div>
@@ -128,11 +188,11 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
               <TableHead 
                 key={metric.id}
                 className="cursor-pointer hover:bg-gray-50"
-                onClick={() => handleSort(metric.field.toLowerCase())}
+                onClick={() => handleSort(metric.field)}
               >
-                <div className="flex items-center">
+                <div className="flex items-center whitespace-nowrap">
                   {metric.name}
-                  {getSortIcon(metric.field.toLowerCase())}
+                  {getSortIcon(metric.field)}
                 </div>
               </TableHead>
             ))}
@@ -149,10 +209,12 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
                   {company.symbol}
                 </button>
               </TableCell>
-              <TableCell>{company.companyName || '-'}</TableCell>
+              <TableCell className="whitespace-nowrap">
+                {company.companyName || '-'}
+              </TableCell>
               {availableMetrics.map((metric) => (
-                <TableCell key={metric.id}>
-                  {formatValue(company[metric.field.toLowerCase()], metric)}
+                <TableCell key={metric.id} className="text-right">
+                  {formatValue(company[metric.field], metric.field)}
                 </TableCell>
               ))}
             </TableRow>

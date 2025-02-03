@@ -1,94 +1,131 @@
 // src/utils/graphqlUtils.ts
-// src/utils/graphqlUtils.ts
 import { ScreeningMetric } from "@/types/screening";
 
-// Define exact field names with their proper casing
 const fieldNameCasing: Record<string, string> = {
   // Market Data
   price: "price",
-  marketcap: "marketcap",
+  marketCap: "marketCap",
   beta: "beta",
   volume: "volume",
-  averagevolume: "averageVolume",
+  averageVolume: "averageVolume",
 
-  // Income Statement - Revenue & Profitability
+  // Income Statement Fields (exact casing from DB schema)
   revenue: "revenue",
-  costofrevenue: "costOfRevenue",
-  grossprofit: "grossProfit",
-  grossprofitratio: "grossProfitRatio",
-  operatingincome: "operatingIncome",
-  operatingincomeratio: "operatingIncomeRatio",
-  netincome: "netIncome",
-  netincomeratio: "netIncomeRatio",
+  costOfRevenue: "costOfRevenue",
+  grossProfit: "grossProfit",
+  grossProfitRatio: "grossProfitRatio",
+  ResearchAndDevelopmentExpenses: "ResearchAndDevelopmentExpenses",
+  GeneralAndAdministrativeExpenses: "GeneralAndAdministrativeExpenses",
+  SellingAndMarketingExpenses: "SellingAndMarketingExpenses",
+  SellingGeneralAndAdministrativeExpenses: "SellingGeneralAndAdministrativeExpenses",
+  otherExpenses: "otherExpenses",
+  operatingExpenses: "operatingExpenses",
+  costAndExpenses: "costAndExpenses",
+  interestExpense: "interestExpense",
+  interestIncome: "interestIncome",
+  depreciationAndAmortization: "depreciationAndAmortization",
+  EBITDA: "EBITDA",
+  EBITDARatio: "EBITDARatio",
+  operatingIncome: "operatingIncome",
+  operatingIncomeRatio: "operatingIncomeRatio",
+  totalOtherIncomeExpensesNet: "totalOtherIncomeExpensesNet",
+  incomeBeforeTax: "incomeBeforeTax",
+  incomeBeforeTaxRatio: "incomeBeforeTaxRatio",
+  incomeTaxExpense: "incomeTaxExpense",
+  netIncome: "netIncome",
+  netIncomeRatio: "netIncomeRatio",
+  EPS: "EPS",
+  EPSDiluted: "EPSDiluted",
+  weightedAverageShsOut: "weightedAverageShsOut",
+  weightedAverageShsOutDil: "weightedAverageShsOutDil",
 
-  // Income Statement - Operating Expenses
-  researchanddevelopmentexpenses: "researchAndDevelopmentExpenses",
-  generalandadministrativeexpenses: "generalAndAdministrativeExpenses",
-  sellingandmarketingexpenses: "sellingAndMarketingExpenses",
-  sellinggeneralandadministrativeexpenses: "sellingGeneralAndAdministrativeExpenses",
-  operatingexpenses: "operatingExpenses",
-  costandexpenses: "costAndExpenses",
-
-  // Income Statement - Financial & Tax
-  interestexpense: "interestExpense",
-  interestincome: "interestIncome",
-  totalotherincomeexpensesnet: "totalOtherIncomeExpensesNet",
-  incomebeforetax: "incomeBeforeTax",
-  incomebeforetaxratio: "incomeBeforeTaxRatio",
-  incometaxexpense: "incomeTaxExpense",
-
-  // Income Statement - Per Share & Other Metrics
-  eps: "EPS",
-  epsdiluted: "EPSDiluted",
-  weightedaverageshsout: "weightedAverageShsOut",
-  weightedaverageshsoutdil: "weightedAverageShsOutDil",
-  ebitda: "EBITDA",
-  ebitdaratio: "EBITDARatio",
-  depreciationandamortization: "depreciationAndAmortization"
 };
 
 const fieldToTableMapping: Record<string, string> = {
   // Company Profiles Dynamic fields
   price: "COMPANY_PROFILES_DYNAMIC",
-  marketcap: "COMPANY_PROFILES_DYNAMIC",
+  marketCap: "COMPANY_PROFILES_DYNAMIC",
   beta: "COMPANY_PROFILES_DYNAMIC",
   volume: "COMPANY_PROFILES_DYNAMIC",
-  averagevolume: "COMPANY_PROFILES_DYNAMIC",
+  averageVolume: "COMPANY_PROFILES_DYNAMIC",
 
-  // Income Statement - Revenue & Profitability
+  // Income Statement fields
   revenue: "INCOME_STATEMENTS",
-  costofrevenue: "INCOME_STATEMENTS",
-  grossprofit: "INCOME_STATEMENTS",
-  grossprofitratio: "INCOME_STATEMENTS",
-  operatingincome: "INCOME_STATEMENTS",
-  operatingincomeratio: "INCOME_STATEMENTS",
-  netincome: "INCOME_STATEMENTS",
-  netincomeratio: "INCOME_STATEMENTS",
+  costOfRevenue: "INCOME_STATEMENTS",
+  grossProfit: "INCOME_STATEMENTS",
+  grossProfitRatio: "INCOME_STATEMENTS",
+  ResearchAndDevelopmentExpenses: "INCOME_STATEMENTS",
+  GeneralAndAdministrativeExpenses: "INCOME_STATEMENTS",
+  SellingAndMarketingExpenses: "INCOME_STATEMENTS",
+  SellingGeneralAndAdministrativeExpenses: "INCOME_STATEMENTS",
+  otherExpenses: "INCOME_STATEMENTS",
+  operatingExpenses: "INCOME_STATEMENTS",
+  costAndExpenses: "INCOME_STATEMENTS",
+  interestExpense: "INCOME_STATEMENTS",
+  interestIncome: "INCOME_STATEMENTS",
+  depreciationAndAmortization: "INCOME_STATEMENTS",
+  EBITDA: "INCOME_STATEMENTS",
+  EBITDARatio: "INCOME_STATEMENTS",
+  operatingIncome: "INCOME_STATEMENTS",
+  operatingIncomeRatio: "INCOME_STATEMENTS",
+  totalOtherIncomeExpensesNet: "INCOME_STATEMENTS",
+  incomeBeforeTax: "INCOME_STATEMENTS",
+  incomeBeforeTaxRatio: "INCOME_STATEMENTS",
+  incomeTaxExpense: "INCOME_STATEMENTS",
+  netIncome: "INCOME_STATEMENTS",
+  netIncomeRatio: "INCOME_STATEMENTS",
+  EPS: "INCOME_STATEMENTS",
+  EPSDiluted: "INCOME_STATEMENTS",
+  weightedAverageShsOut: "INCOME_STATEMENTS",
+  weightedAverageShsOutDil: "INCOME_STATEMENTS",
 
-  // Income Statement - Operating Expenses
-  researchanddevelopmentexpenses: "INCOME_STATEMENTS",
-  generalandadministrativeexpenses: "INCOME_STATEMENTS",
-  sellingandmarketingexpenses: "INCOME_STATEMENTS",
-  sellinggeneralandadministrativeexpenses: "INCOME_STATEMENTS",
-  operatingexpenses: "INCOME_STATEMENTS",
-  costandexpenses: "INCOME_STATEMENTS",
+  cashAndCashEquivalents: "BALANCE_SHEET_STATEMENTS",
+  shortTermInvestments: "BALANCE_SHEET_STATEMENTS",
+  cashAndShortTermInvestments: "BALANCE_SHEET_STATEMENTS",
+  netReceivables: "BALANCE_SHEET_STATEMENTS",
+  inventory: "BALANCE_SHEET_STATEMENTS",
+  otherCurrentAssets: "BALANCE_SHEET_STATEMENTS",
+  totalCurrentAssets: "BALANCE_SHEET_STATEMENTS",
+  propertyPlantEquipmentNet: "BALANCE_SHEET_STATEMENTS",
+  goodwill: "BALANCE_SHEET_STATEMENTS",
+  intangibleAssets: "BALANCE_SHEET_STATEMENTS",
+  goodwillAndIntangibleAssets: "BALANCE_SHEET_STATEMENTS",
+  longTermInvestments: "BALANCE_SHEET_STATEMENTS",
+  taxAssets: "BALANCE_SHEET_STATEMENTS",
+  otherNonCurrentAssets: "BALANCE_SHEET_STATEMENTS",
+  totalNonCurrentAssets: "BALANCE_SHEET_STATEMENTS",
+  otherAssets: "BALANCE_SHEET_STATEMENTS",
+  totalAssets: "BALANCE_SHEET_STATEMENTS",
+  totalInvestments: "BALANCE_SHEET_STATEMENTS",
 
-  // Income Statement - Financial & Tax
-  interestexpense: "INCOME_STATEMENTS",
-  interestincome: "INCOME_STATEMENTS",
-  totalotherincomeexpensesnet: "INCOME_STATEMENTS",
-  incomebeforetax: "INCOME_STATEMENTS",
-  incomebeforetaxratio: "INCOME_STATEMENTS",
-  incometaxexpense: "INCOME_STATEMENTS",
+  // Balance Sheet - Liabilities
+  accountPayables: "BALANCE_SHEET_STATEMENTS",
+  shortTermDebt: "BALANCE_SHEET_STATEMENTS",
+  taxPayables: "BALANCE_SHEET_STATEMENTS",
+  deferredRevenue: "BALANCE_SHEET_STATEMENTS",
+  otherCurrentLiabilities: "BALANCE_SHEET_STATEMENTS",
+  totalCurrentLiabilities: "BALANCE_SHEET_STATEMENTS",
+  longTermDebt: "BALANCE_SHEET_STATEMENTS",
+  deferredRevenueNonCurrent: "BALANCE_SHEET_STATEMENTS",
+  deferrredTaxLiabilitiesNonCurrent: "BALANCE_SHEET_STATEMENTS",
+  otherNonCurrentLiabilities: "BALANCE_SHEET_STATEMENTS",
+  totalNonCurrentLiabilities: "BALANCE_SHEET_STATEMENTS",
+  otherLiabilities: "BALANCE_SHEET_STATEMENTS",
+  totalLiabilities: "BALANCE_SHEET_STATEMENTS",
+  totalDebt: "BALANCE_SHEET_STATEMENTS",
+  netDebt: "BALANCE_SHEET_STATEMENTS",
+  capitalLeaseObligations: "BALANCE_SHEET_STATEMENTS",
 
-  // Income Statement - Per Share & Other Metrics
-  eps: "INCOME_STATEMENTS",
-  epsdiluted: "INCOME_STATEMENTS",
-  weightedaverageshsout: "INCOME_STATEMENTS",
-  weightedaverageshsoutdil: "INCOME_STATEMENTS",
-  ebitda: "INCOME_STATEMENTS",
-  ebitdaratio: "INCOME_STATEMENTS",
-  depreciationandamortization: "INCOME_STATEMENTS"
+  // Balance Sheet - Equity
+  preferredStock: "BALANCE_SHEET_STATEMENTS",
+  commonStock: "BALANCE_SHEET_STATEMENTS",
+  retainedEarnings: "BALANCE_SHEET_STATEMENTS",
+  accumulatedOtherComprehensiveIncomeLoss: "BALANCE_SHEET_STATEMENTS",
+  othertotalStockholdersEquity: "BALANCE_SHEET_STATEMENTS",
+  totalStockholdersEquity: "BALANCE_SHEET_STATEMENTS",
+  minorityInterest: "BALANCE_SHEET_STATEMENTS",
+  totalEquity: "BALANCE_SHEET_STATEMENTS",
+  totalLiabilitiesAndStockholdersEquity: "BALANCE_SHEET_STATEMENTS"
 };
 
 interface PaginationOptions {
@@ -98,8 +135,7 @@ interface PaginationOptions {
 
 // Helper function to get correct field casing
 const getFieldWithCorrectCasing = (field: string): string => {
-  const lowerField = field.toLowerCase();
-  return fieldNameCasing[lowerField] || lowerField;
+  return fieldNameCasing[field] || field;
 };
 
 export const buildScreeningQuery = (
@@ -111,10 +147,9 @@ export const buildScreeningQuery = (
   const filters = metrics
     .map(metric => {
       const filters = [];
-      // Get the field with correct casing while using lowercase for mapping lookup
-      const fieldLower = metric.field.toLowerCase();
-      const fieldWithCasing = getFieldWithCorrectCasing(metric.field);
-      const table = fieldToTableMapping[fieldLower];
+      const fieldName = getFieldWithCorrectCasing(metric.field);
+      // Get the table name from the mapping or use the provided table name
+      const table = fieldToTableMapping[fieldName] || metric.table;
 
       if (!table) {
         console.warn(`No table mapping found for field: ${metric.field}`);
@@ -123,16 +158,16 @@ export const buildScreeningQuery = (
 
       if (metric.min) {
         filters.push({
-          table,
-          field: fieldWithCasing, // Use correct casing
+          table: table.toUpperCase(), // Ensure table name is uppercase
+          field: fieldName,
           operator: "GREATER_THAN",
           value: metric.min
         });
       }
       if (metric.max) {
         filters.push({
-          table,
-          field: fieldWithCasing, // Use correct casing
+          table: table.toUpperCase(), // Ensure table name is uppercase
+          field: fieldName,
           operator: "LESS_THAN",
           value: metric.max
         });
@@ -186,15 +221,20 @@ export const transformGraphQLResponse = (data: any[]) => {
 
     if (item.fields && Array.isArray(item.fields)) {
       item.fields.forEach((field: any) => {
-        console.log('Processing field:', field);
-        const fieldParts = field.fieldName.split('_');
-        const fieldName = fieldParts[fieldParts.length - 1].toLowerCase();
+        const fieldName = field.fieldName;
         const value = !isNaN(field.value) ? parseFloat(field.value) : field.value;
         result[fieldName] = value;
       });
     }
     
-    console.log('Transformed result:', result);
+    // Ensure required fields exist
+    const requiredFields = ['price', 'marketCap', 'companyName'];
+    requiredFields.forEach(field => {
+      if (!result.hasOwnProperty(field)) {
+        result[field] = null;
+      }
+    });
+    
     return result;
   });
 };
