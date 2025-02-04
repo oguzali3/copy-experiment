@@ -10,7 +10,6 @@ export enum TableName {
   COMPANY_PROFILES_STATIC = 'company_profiles_static',
   DCF = 'dcf',
   FILTERS = 'filters',
-  INCOME_STATEMENTS = '  INCOME_STATEMENTS',
   INCOME_STATEMENTS_ANNUAL = 'income_statements_annual',
   INCOME_STATEMENTS_QUARTERLY = 'income_statements_quarterly',
   KEY_METRICS_ANNUAL = 'key_metrics_annual',

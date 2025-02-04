@@ -57,56 +57,56 @@ export const METRICS_CONFIG = [
         name: "Revenue",
         description: "Total revenue/sales for the period",
         field: "revenue",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "costOfRevenue",
         name: "Cost of Revenue",
         description: "Direct costs attributable to goods and services sold",
         field: "costOfRevenue",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "grossProfit",
         name: "Gross Profit",
         description: "Revenue minus cost of revenue",
         field: "grossProfit",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "grossProfitRatio",
         name: "Gross Profit Margin",
         description: "Gross profit as a percentage of revenue",
         field: "grossProfitRatio",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "operatingIncome",
         name: "Operating Income",
         description: "Profit from core business operations (EBIT)",
         field: "operatingIncome",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "operatingIncomeRatio",
         name: "Operating Margin",
         description: "Operating income as a percentage of revenue",
         field: "operatingIncomeRatio",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "netIncome",
         name: "Net Income",
         description: "Total earnings/profit for the period",
         field: "netIncome",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "netIncomeRatio",
         name: "Net Profit Margin",
         description: "Net income as a percentage of revenue",
         field: "netIncomeRatio",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       }
     ]
   },
@@ -118,49 +118,49 @@ export const METRICS_CONFIG = [
         name: "R&D Expenses",
         description: "Research and development costs",
         field: "ResearchAndDevelopmentExpenses",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "GeneralAndAdministrativeExpenses",
         name: "G&A Expenses",
         description: "General and administrative expenses",
         field: "GeneralAndAdministrativeExpenses",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "SellingAndMarketingExpenses",
         name: "Sales & Marketing",
         description: "Selling and marketing expenses",
         field: "SellingAndMarketingExpenses",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "SellingGeneralAndAdministrativeExpenses",
         name: "SG&A Expenses",
         description: "Combined selling, general, and administrative expenses",
         field: "SellingGeneralAndAdministrativeExpenses",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "otherExpenses",
         name: "Other Expenses",
         description: "Other operating expenses",
         field: "otherExpenses",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "operatingExpenses",
         name: "Operating Expenses",
         description: "Total operating expenses",
         field: "operatingExpenses",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "costAndExpenses",
         name: "Total Costs & Expenses",
         description: "Total of all costs and expenses",
         field: "costAndExpenses",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       }
     ]
   },
@@ -172,42 +172,42 @@ export const METRICS_CONFIG = [
         name: "Interest Income",
         description: "Income earned from interest-bearing assets",
         field: "interestIncome",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "interestExpense",
         name: "Interest Expense",
         description: "Cost of borrowed funds",
         field: "interestExpense",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "totalOtherIncomeExpensesNet",
         name: "Other Income/Expenses",
         description: "Net of other non-operating income and expenses",
         field: "totalOtherIncomeExpensesNet",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "incomeBeforeTax",
         name: "Pre-tax Income",
         description: "Income before tax expenses",
         field: "incomeBeforeTax",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "incomeBeforeTaxRatio",
         name: "Pre-tax Margin",
         description: "Pre-tax income as a percentage of revenue",
         field: "incomeBeforeTaxRatio",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "incomeTaxExpense",
         name: "Income Tax Expense",
         description: "Total tax expense for the period",
         field: "incomeTaxExpense",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       }
     ]
   },
@@ -219,49 +219,49 @@ export const METRICS_CONFIG = [
         name: "EPS",
         description: "Basic earnings per share",
         field: "EPS",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "EPSDiluted",
         name: "Diluted EPS",
         description: "Diluted earnings per share",
         field: "EPSDiluted",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "weightedAverageShsOut",
         name: "Shares Outstanding",
         description: "Weighted average shares outstanding",
         field: "weightedAverageShsOut",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "weightedAverageShsOutDil",
         name: "Diluted Shares Outstanding",
         description: "Weighted average diluted shares outstanding",
         field: "weightedAverageShsOutDil",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "EBITDA",
         name: "EBITDA",
         description: "Earnings before interest, taxes, depreciation, and amortization",
         field: "EBITDA",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "EBITDARatio",
         name: "EBITDA Margin",
         description: "EBITDA as a percentage of revenue",
         field: "EBITDARatio",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       },
       {
         id: "depreciationAndAmortization",
         name: "D&A",
         description: "Depreciation and amortization expense",
         field: "depreciationAndAmortization",
-        table: TableName.INCOME_STATEMENTS
+        table: TableName.INCOME_STATEMENTS_ANNUAL
       }
     ]
   },
