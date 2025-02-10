@@ -7,7 +7,8 @@ import {
   PieChart, 
   Home,
   Filter,
-  Building
+  Building,
+  UserRound
 } from "lucide-react";
 import {
   Sidebar,
@@ -29,6 +30,7 @@ const menuItems = [
   { title: "Screening", icon: Filter, path: "/screening" },
   { title: "Watchlists", icon: List, path: "/watchlists" },
   { title: "Portfolio", icon: PieChart, path: "/portfolio" },
+  { title: "Profile", icon: UserRound, path: "/profile" },
   { title: "Settings", icon: Settings, path: "/settings" },
 ];
 
