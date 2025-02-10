@@ -1,3 +1,4 @@
+
 project_id = "eiilyloldbgnxtrysaky"
 [functions.fetch-stock-chart]
 verify_jwt = false
