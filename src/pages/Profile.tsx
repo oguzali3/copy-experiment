@@ -176,7 +176,7 @@ const Profile = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="relative mb-24">
+      <div className="relative mb-6">
         {/* Header Background with Upload Functionality */}
         <input
           type="file"
@@ -266,7 +266,7 @@ const Profile = () => {
       <Button 
         variant="ghost" 
         onClick={() => setIsEditing(!isEditing)}
-        className="ml-8 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
+        className="mb-8 pl-0 text-gray-600 hover:text-gray-900 hover:bg-transparent"
       >
         <Settings className="w-4 h-4 mr-2" />
         Edit Profile
