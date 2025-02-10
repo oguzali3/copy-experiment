@@ -213,11 +213,11 @@ const Profile = () => {
           )}
         </div>
         
-        {/* Profile Info Section - Restructured */}
-        <div className="absolute -bottom-20 left-0 right-0">
-          <div className="flex flex-col items-center">
+        {/* Profile Info Section */}
+        <div className="absolute -bottom-20 left-8">
+          <div className="flex flex-col">
             {/* Avatar with Upload Functionality */}
-            <div className="relative mb-3"> {/* Added margin bottom */}
+            <div className="relative">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -253,22 +253,22 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Name and Username - Now centered below avatar */}
-            <div className="text-center mb-4"> {/* Added text-center and margin */}
+            {/* Name and Username - Now below avatar */}
+            <div className="mt-3">
               <h1 className="text-2xl font-bold mb-1">John Doe</h1>
               <p className="text-gray-600">@johndoe</p>
             </div>
-
-            {/* Edit Profile Button */}
-            <Button 
-              variant="ghost" 
-              onClick={() => setIsEditing(!isEditing)}
-              className="text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Edit Profile
-            </Button>
           </div>
+
+          {/* Edit Profile Button */}
+          <Button 
+            variant="ghost" 
+            onClick={() => setIsEditing(!isEditing)}
+            className="mt-4 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Edit Profile
+          </Button>
         </div>
       </div>
 
