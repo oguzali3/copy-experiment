@@ -64,42 +64,52 @@ const Profile = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 px-4">
-      <div className="relative h-48 bg-gradient-to-r from-purple-100 to-purple-50 rounded-lg">
-        <div className="absolute -bottom-16 left-8 flex items-end space-x-4">
-          <div className="relative">
-            <div className="w-32 h-32 rounded-full bg-white border-4 border-white overflow-hidden">
-              {avatarUrl ? (
-                <img 
-                  src={avatarUrl} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-purple-100 flex items-center justify-center">
-                  <Camera className="w-8 h-8 text-purple-400" />
-                </div>
-              )}
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="relative mb-16">
+        {/* Header Background */}
+        <div className="h-40 bg-purple-50 rounded-xl" />
+        
+        {/* Profile Info Section */}
+        <div className="absolute -bottom-12 left-0 right-0 px-8">
+          <div className="flex items-end gap-6">
+            {/* Avatar */}
+            <div className="relative">
+              <div className="w-24 h-24 rounded-full bg-white border-4 border-white overflow-hidden">
+                {avatarUrl ? (
+                  <img 
+                    src={avatarUrl} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-purple-100 flex items-center justify-center">
+                    <Camera className="w-6 h-6 text-purple-400" />
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-          <div className="mb-4 flex-1">
-            <h1 className="text-2xl font-bold">John Doe</h1>
-            <p className="text-gray-600">@johndoe</p>
-          </div>
-          <div className="mb-4">
+
+            {/* Name and Username */}
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold mb-1">John Doe</h1>
+              <p className="text-gray-600">@johndoe</p>
+            </div>
+
+            {/* Edit Profile Button */}
             <Button 
               variant="outline" 
               onClick={() => setIsEditing(!isEditing)}
-              className="flex items-center space-x-2"
+              className="mb-2"
             >
-              <Settings className="w-4 h-4" />
-              <span>Edit Profile</span>
+              <Settings className="w-4 h-4 mr-2" />
+              Edit Profile
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="mt-20">
+      {/* Main Content */}
+      <div className="space-y-8">
         {isEditing ? (
           <Card className="p-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -190,35 +200,38 @@ const Profile = () => {
             </form>
           </Card>
         ) : (
-          <div className="space-y-6">
+          <>
+            {/* Bio */}
             <div className="prose max-w-none">
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-lg">
                 Investor and tech enthusiast. Sharing insights about market trends and investment opportunities.
               </p>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 text-gray-600">
-                <LinkIcon className="w-4 h-4" />
-                <a href="#" className="hover:text-purple-600">website.com</a>
-              </div>
-              <div className="flex items-center space-x-2 text-gray-600">
-                <Twitter className="w-4 h-4" />
-                <a href="#" className="hover:text-purple-600">@twitter_handle</a>
-              </div>
-              <div className="flex items-center space-x-2 text-gray-600">
-                <Linkedin className="w-4 h-4" />
-                <a href="#" className="hover:text-purple-600">LinkedIn</a>
-              </div>
+            {/* Social Links */}
+            <div className="flex items-center gap-6 text-gray-600">
+              <a href="#" className="flex items-center gap-2 hover:text-purple-600 transition-colors">
+                <LinkIcon className="w-5 h-5" />
+                <span>website.com</span>
+              </a>
+              <a href="#" className="flex items-center gap-2 hover:text-purple-600 transition-colors">
+                <Twitter className="w-5 h-5" />
+                <span>@twitter_handle</span>
+              </a>
+              <a href="#" className="flex items-center gap-2 hover:text-purple-600 transition-colors">
+                <Linkedin className="w-5 h-5" />
+                <span>LinkedIn</span>
+              </a>
             </div>
 
-            <div className="border-t pt-6">
-              <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+            {/* Recent Activity */}
+            <div className="pt-8 border-t">
+              <h2 className="text-2xl font-bold mb-6">Recent Activity</h2>
               <div className="text-gray-600">
                 No activity yet
               </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
