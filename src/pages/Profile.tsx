@@ -259,18 +259,18 @@ const Profile = () => {
               <p className="text-gray-600">@johndoe</p>
             </div>
           </div>
-
-          {/* Edit Profile Button */}
-          <Button 
-            variant="ghost" 
-            onClick={() => setIsEditing(!isEditing)}
-            className="absolute right-0 -top-4 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Edit Profile
-          </Button>
         </div>
       </div>
+
+      {/* Edit Profile Button - moved back to original position */}
+      <Button 
+        variant="ghost" 
+        onClick={() => setIsEditing(!isEditing)}
+        className="mb-8 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
+      >
+        <Settings className="w-4 h-4 mr-2" />
+        Edit Profile
+      </Button>
 
       {/* Main Content */}
       <div className="space-y-8">
