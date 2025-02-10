@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
@@ -261,7 +262,7 @@ const Profile = () => {
           <Button 
             variant="ghost" 
             onClick={() => setIsEditing(!isEditing)}
-            className="mb-0 mt-4 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
+            className="mb-0 mt-4 ml-0 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
           >
             <Settings className="w-4 h-4 mr-2" />
             Edit Profile
