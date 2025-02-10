@@ -20,8 +20,11 @@ const Profile = () => {
   const user = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const { register, handleSubmit, setValue } = useForm<ProfileData>({
     defaultValues: {
@@ -35,6 +38,59 @@ const Profile = () => {
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleBannerClick = () => {
+    bannerInputRef.current?.click();
+  };
+
+  const handleBannerChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    try {
+      setIsUploadingBanner(true);
+      
+      // Upload file to Supabase storage
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
+      
+      const { error: uploadError, data } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update banner_url in profiles table
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ banner_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      setBannerUrl(publicUrl);
+      toast({
+        title: "Success",
+        description: "Banner image updated successfully",
+      });
+    } catch (error) {
+      console.error('Error uploading banner:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update banner image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingBanner(false);
+    }
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,8 +177,41 @@ const Profile = () => {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="relative mb-16">
-        {/* Header Background */}
-        <div className="h-40 bg-purple-50 rounded-xl" />
+        {/* Header Background with Upload Functionality */}
+        <input
+          type="file"
+          ref={bannerInputRef}
+          onChange={handleBannerChange}
+          accept="image/*"
+          className="hidden"
+        />
+        <div 
+          className="h-40 bg-purple-50 rounded-xl overflow-hidden cursor-pointer group relative"
+          onClick={handleBannerClick}
+        >
+          {bannerUrl ? (
+            <div className="relative w-full h-full">
+              <img 
+                src={bannerUrl} 
+                alt="Banner" 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+              <Camera className="w-6 h-6 text-purple-400" />
+              <span className="ml-2 text-purple-400">Upload banner image</span>
+            </div>
+          )}
+          {isUploadingBanner && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+            </div>
+          )}
+        </div>
         
         {/* Profile Info Section */}
         <div className="absolute -bottom-12 left-0 right-0 px-8">
