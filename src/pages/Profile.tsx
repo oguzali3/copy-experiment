@@ -1,14 +1,14 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { toast } from "@/components/ui/use-toast";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useUser } from '@supabase/auth-helpers-react';
 import { Camera, Link as LinkIcon, Twitter, Linkedin, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type ProfileData = {
+  full_name: string;
   username: string;
   bio: string;
   website: string;
@@ -23,18 +23,68 @@ const Profile = () => {
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [profileData, setProfileData] = useState<ProfileData>({
+    full_name: "",
+    username: "",
+    bio: "",
+    website: "",
+    twitter: "",
+    linkedin: ""
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const { register, handleSubmit, setValue } = useForm<ProfileData>({
-    defaultValues: {
-      username: "",
-      bio: "",
-      website: "",
-      twitter: "",
-      linkedin: "",
-    },
+    defaultValues: profileData
   });
+
+  useEffect(() => {
+    if (user) {
+      fetchProfileData();
+    }
+  }, [user]);
+
+  const fetchProfileData = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setProfileData({
+          full_name: data.full_name || "",
+          username: data.username || "",
+          bio: data.bio || "",
+          website: data.website || "",
+          twitter: data.social_twitter || "",
+          linkedin: data.social_linkedin || ""
+        });
+        setAvatarUrl(data.avatar_url);
+        setBannerUrl(data.banner_url);
+
+        // Update form values
+        setValue("full_name", data.full_name || "");
+        setValue("username", data.username || "");
+        setValue("bio", data.bio || "");
+        setValue("website", data.website || "");
+        setValue("twitter", data.social_twitter || "");
+        setValue("linkedin", data.social_linkedin || "");
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile data",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -149,6 +199,7 @@ const Profile = () => {
       const { error } = await supabase
         .from('profiles')
         .update({
+          full_name: data.full_name,
           username: data.username,
           bio: data.bio,
           website: data.website,
@@ -158,6 +209,9 @@ const Profile = () => {
         .eq('id', user.id);
 
       if (error) throw error;
+
+      // Update local state
+      setProfileData(data);
 
       toast({
         title: "Profile Updated",
@@ -177,7 +231,6 @@ const Profile = () => {
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       <div className="relative mb-20">
-        {/* Header Background with Upload Functionality */}
         <input
           type="file"
           ref={bannerInputRef}
@@ -213,10 +266,8 @@ const Profile = () => {
           )}
         </div>
         
-        {/* Profile Info Section */}
         <div className="absolute -bottom-16 left-0 right-0 px-8">
           <div className="flex items-end gap-6 mt-4">
-            {/* Avatar with Upload Functionality */}
             <div className="relative">
               <input
                 type="file"
@@ -253,17 +304,15 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Name and Username */}
             <div className="flex-1">
-              <h1 className="text-2xl font-bold mb-1">John Doe</h1>
-              <p className="text-gray-600">@johndoe</p>
+              <h1 className="text-2xl font-bold mb-1">{profileData.full_name || "Add your name"}</h1>
+              <p className="text-gray-600">@{profileData.username || "username"}</p>
             </div>
 
-            {/* Edit Profile Button */}
             <Button 
               variant="ghost" 
               onClick={() => setIsEditing(!isEditing)}
-              className="mb-0 mt-4 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
+              className="mb-0 mt-4 ml-auto text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
             >
               <Settings className="w-4 h-4 mr-2" />
               Edit Profile
@@ -272,15 +321,26 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="space-y-8">
         {isEditing ? (
           <Card className="p-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
+                  <label htmlFor="full_name" className="text-sm font-medium">
+                    Name
+                  </label>
+                  <input
+                    id="full_name"
+                    {...register("full_name")}
+                    className="w-full p-2 border rounded-md"
+                    placeholder="Your full name"
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <label htmlFor="username" className="text-sm font-medium">
-                    Username
+                    @handle
                   </label>
                   <input
                     id="username"
@@ -365,30 +425,33 @@ const Profile = () => {
           </Card>
         ) : (
           <>
-            {/* Bio */}
             <div className="prose max-w-none">
               <p className="text-gray-600 text-lg">
-                Investor and tech enthusiast. Sharing insights about market trends and investment opportunities.
+                {profileData.bio || "Add a bio to tell people about yourself"}
               </p>
             </div>
 
-            {/* Social Links */}
             <div className="flex items-center gap-6 text-gray-600">
-              <a href="#" className="flex items-center gap-2 hover:text-purple-600 transition-colors">
-                <LinkIcon className="w-5 h-5" />
-                <span>website.com</span>
-              </a>
-              <a href="#" className="flex items-center gap-2 hover:text-purple-600 transition-colors">
-                <Twitter className="w-5 h-5" />
-                <span>@twitter_handle</span>
-              </a>
-              <a href="#" className="flex items-center gap-2 hover:text-purple-600 transition-colors">
-                <Linkedin className="w-5 h-5" />
-                <span>LinkedIn</span>
-              </a>
+              {profileData.website && (
+                <a href={profileData.website} className="flex items-center gap-2 hover:text-purple-600 transition-colors">
+                  <LinkIcon className="w-5 h-5" />
+                  <span>{profileData.website}</span>
+                </a>
+              )}
+              {profileData.twitter && (
+                <a href={`https://twitter.com/${profileData.twitter}`} className="flex items-center gap-2 hover:text-purple-600 transition-colors">
+                  <Twitter className="w-5 h-5" />
+                  <span>@{profileData.twitter}</span>
+                </a>
+              )}
+              {profileData.linkedin && (
+                <a href={profileData.linkedin} className="flex items-center gap-2 hover:text-purple-600 transition-colors">
+                  <Linkedin className="w-5 h-5" />
+                  <span>LinkedIn</span>
+                </a>
+              )}
             </div>
 
-            {/* Recent Activity */}
             <div className="pt-8 border-t">
               <h2 className="text-2xl font-bold mb-6">Recent Activity</h2>
               <div className="text-gray-600">
