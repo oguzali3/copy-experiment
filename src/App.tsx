@@ -19,6 +19,7 @@ import Screening from "./pages/Screening";
 import Watchlists from "./pages/Watchlists";
 import Portfolio from "./pages/Portfolio";
 import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
 import { useState, useEffect } from 'react';
 
 const queryClient = new QueryClient({
