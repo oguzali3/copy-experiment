@@ -639,6 +639,7 @@ export type Database = {
           social_linkedin: string | null
           social_twitter: string | null
           subscriber_count: number | null
+          subscribers: number | null
           updated_at: string
           username: string | null
           website: string | null
@@ -653,6 +654,7 @@ export type Database = {
           social_linkedin?: string | null
           social_twitter?: string | null
           subscriber_count?: number | null
+          subscribers?: number | null
           updated_at?: string
           username?: string | null
           website?: string | null
@@ -667,6 +669,7 @@ export type Database = {
           social_linkedin?: string | null
           social_twitter?: string | null
           subscriber_count?: number | null
+          subscribers?: number | null
           updated_at?: string
           username?: string | null
           website?: string | null

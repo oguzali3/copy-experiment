@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
@@ -14,7 +15,6 @@ type ProfileData = {
   website: string;
   twitter: string;
   linkedin: string;
-  subscribers: number;
 };
 
 const Profile = () => {
@@ -30,8 +30,8 @@ const Profile = () => {
     website: "",
     twitter: "",
     linkedin: "",
-    subscribers: 0
   });
+  const [subscriberCount, setSubscriberCount] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { register, handleSubmit, setValue } = useForm<ProfileData>({
@@ -64,9 +64,9 @@ const Profile = () => {
           website: data.website || "",
           twitter: data.social_twitter || "",
           linkedin: data.social_linkedin || "",
-          subscribers: data.subscribers || 0
         });
         setAvatarUrl(data.avatar_url);
+        setSubscriberCount(data.subscriber_count || 0);
 
         // Update form values
         setValue("full_name", data.full_name || "");
@@ -227,8 +227,8 @@ const Profile = () => {
           {profileData.bio || "Add a bio to tell people about yourself"}
         </p>
         <div className="text-gray-600 mb-4">
-          {profileData.subscribers > 0 && (
-            <span className="font-medium">{profileData.subscribers}K+ subscribers</span>
+          {subscriberCount > 0 && (
+            <span className="font-medium">{subscriberCount}K+ subscribers</span>
           )}
         </div>
       </div>
@@ -261,7 +261,7 @@ const Profile = () => {
             <div className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="full_name" className="text-sm font-medium">
-                  Name
+                  Username
                 </label>
                 <input
                   id="full_name"
