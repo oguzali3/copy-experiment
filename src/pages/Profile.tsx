@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { toast } from "@/components/ui/use-toast";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useUser } from '@supabase/auth-helpers-react';
 import { Camera, Link as LinkIcon, Twitter, Linkedin, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,8 @@ const Profile = () => {
   const user = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { register, handleSubmit, setValue } = useForm<ProfileData>({
     defaultValues: {
@@ -30,6 +32,59 @@ const Profile = () => {
       linkedin: "",
     },
   });
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    try {
+      setIsUploading(true);
+      
+      // Upload file to Supabase storage
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
+      
+      const { error: uploadError, data } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update avatar_url in profiles table
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      toast({
+        title: "Success",
+        description: "Profile picture updated successfully",
+      });
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile picture. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const onSubmit = async (data: ProfileData) => {
     if (!user) return;
@@ -72,21 +127,41 @@ const Profile = () => {
         {/* Profile Info Section */}
         <div className="absolute -bottom-12 left-0 right-0 px-8">
           <div className="flex items-end gap-6">
-            {/* Avatar */}
+            {/* Avatar with Upload Functionality */}
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-white border-4 border-white overflow-hidden">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                className="hidden"
+              />
+              <div 
+                className="w-24 h-24 rounded-full bg-white border-4 border-white overflow-hidden cursor-pointer group"
+                onClick={handleAvatarClick}
+              >
                 {avatarUrl ? (
-                  <img 
-                    src={avatarUrl} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover"
-                  />
+                  <div className="relative w-full h-full">
+                    <img 
+                      src={avatarUrl} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Camera className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
                 ) : (
-                  <div className="w-full h-full bg-purple-100 flex items-center justify-center">
+                  <div className="w-full h-full bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
                     <Camera className="w-6 h-6 text-purple-400" />
                   </div>
                 )}
               </div>
+              {isUploading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+                </div>
+              )}
             </div>
 
             {/* Name and Username */}
