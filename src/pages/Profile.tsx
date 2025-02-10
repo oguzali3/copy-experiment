@@ -176,7 +176,7 @@ const Profile = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="relative mb-16">
+      <div className="relative mb-20">
         {/* Header Background with Upload Functionality */}
         <input
           type="file"
@@ -214,8 +214,8 @@ const Profile = () => {
         </div>
         
         {/* Profile Info Section */}
-        <div className="absolute -bottom-12 left-0 right-0 px-8">
-          <div className="flex items-end gap-6">
+        <div className="absolute -bottom-16 left-0 right-0 px-8">
+          <div className="flex items-end gap-6 mt-4">
             {/* Avatar with Upload Functionality */}
             <div className="relative">
               <input
