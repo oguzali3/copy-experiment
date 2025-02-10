@@ -512,30 +512,89 @@ export type Database = {
           },
         ]
       }
+      portfolio_subscriptions: {
+        Row: {
+          created_at: string | null
+          end_date: string
+          id: string
+          portfolio_id: string | null
+          price_paid: number
+          start_date: string | null
+          subscriber_id: string | null
+          subscription_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_date: string
+          id?: string
+          portfolio_id?: string | null
+          price_paid: number
+          start_date?: string | null
+          subscriber_id?: string | null
+          subscription_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          portfolio_id?: string | null
+          price_paid?: number
+          start_date?: string | null
+          subscriber_id?: string | null
+          subscription_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_subscriptions_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       portfolios: {
         Row: {
+          annual_price: number | null
           created_at: string
           id: string
+          is_paid: boolean | null
+          is_public: boolean | null
+          monthly_price: number | null
           name: string
           total_value: number | null
           updated_at: string
           user_id: string | null
+          yearly_performance: number | null
         }
         Insert: {
+          annual_price?: number | null
           created_at?: string
           id?: string
+          is_paid?: boolean | null
+          is_public?: boolean | null
+          monthly_price?: number | null
           name: string
           total_value?: number | null
           updated_at?: string
           user_id?: string | null
+          yearly_performance?: number | null
         }
         Update: {
+          annual_price?: number | null
           created_at?: string
           id?: string
+          is_paid?: boolean | null
+          is_public?: boolean | null
+          monthly_price?: number | null
           name?: string
           total_value?: number | null
           updated_at?: string
           user_id?: string | null
+          yearly_performance?: number | null
         }
         Relationships: []
       }
@@ -572,27 +631,39 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           created_at: string
           full_name: string | null
           id: string
+          social_linkedin: string | null
+          social_twitter: string | null
           updated_at: string
           username: string | null
+          website: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           full_name?: string | null
           id: string
+          social_linkedin?: string | null
+          social_twitter?: string | null
           updated_at?: string
           username?: string | null
+          website?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          social_linkedin?: string | null
+          social_twitter?: string | null
           updated_at?: string
           username?: string | null
+          website?: string | null
         }
         Relationships: []
       }
