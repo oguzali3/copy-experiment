@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
@@ -215,60 +214,58 @@ const Profile = () => {
         
         {/* Profile Info Section */}
         <div className="absolute -bottom-16 left-0 right-0 px-8">
-          <div className="flex items-end gap-6 mt-4">
-            {/* Avatar with Upload Functionality */}
-            <div className="relative">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept="image/*"
-                className="hidden"
-              />
-              <div 
-                className="w-24 h-24 rounded-full bg-white border-4 border-white overflow-hidden cursor-pointer group"
-                onClick={handleAvatarClick}
-              >
-                {avatarUrl ? (
-                  <div className="relative w-full h-full">
-                    <img 
-                      src={avatarUrl} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Camera className="w-6 h-6 text-white" />
-                    </div>
+          {/* Avatar */}
+          <div className="relative">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              className="hidden"
+            />
+            <div 
+              className="w-24 h-24 rounded-full bg-white border-4 border-white overflow-hidden cursor-pointer group"
+              onClick={handleAvatarClick}
+            >
+              {avatarUrl ? (
+                <div className="relative w-full h-full">
+                  <img 
+                    src={avatarUrl} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="w-6 h-6 text-white" />
                   </div>
-                ) : (
-                  <div className="w-full h-full bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                    <Camera className="w-6 h-6 text-purple-400" />
-                  </div>
-                )}
-              </div>
-              {isUploading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+                </div>
+              ) : (
+                <div className="w-full h-full bg-purple-100 flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                  <Camera className="w-6 h-6 text-purple-400" />
                 </div>
               )}
             </div>
-
-            {/* Name and Username */}
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold mb-1">John Doe</h1>
-              <p className="text-gray-600">@johndoe</p>
-            </div>
-
-            {/* Edit Profile Button */}
-            <Button 
-              variant="ghost" 
-              onClick={() => setIsEditing(!isEditing)}
-              className="mb-0 mt-4 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Edit Profile
-            </Button>
+            {isUploading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+              </div>
+            )}
           </div>
+
+          {/* Name and Username - Now separated */}
+          <div className="mt-4">
+            <h1 className="text-2xl font-bold mb-1">John Doe</h1>
+            <p className="text-gray-600">@johndoe</p>
+          </div>
+
+          {/* Edit Profile Button */}
+          <Button 
+            variant="ghost" 
+            onClick={() => setIsEditing(!isEditing)}
+            className="mb-0 mt-4 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Edit Profile
+          </Button>
         </div>
       </div>
 
