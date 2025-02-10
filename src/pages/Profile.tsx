@@ -176,7 +176,7 @@ const Profile = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="relative mb-16">
+      <div className="relative mb-24"> {/* Increased margin bottom to accommodate new layout */}
         {/* Header Background with Upload Functionality */}
         <input
           type="file"
@@ -213,11 +213,11 @@ const Profile = () => {
           )}
         </div>
         
-        {/* Profile Info Section */}
-        <div className="absolute -bottom-12 left-0 right-0 px-8">
-          <div className="flex items-end gap-6">
+        {/* Profile Info Section - Restructured */}
+        <div className="absolute -bottom-20 left-0 right-0">
+          <div className="flex flex-col items-center">
             {/* Avatar with Upload Functionality */}
-            <div className="relative">
+            <div className="relative mb-3"> {/* Added margin bottom */}
               <input
                 type="file"
                 ref={fileInputRef}
@@ -253,8 +253,8 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Name and Username */}
-            <div className="flex-1">
+            {/* Name and Username - Now centered below avatar */}
+            <div className="text-center mb-4"> {/* Added text-center and margin */}
               <h1 className="text-2xl font-bold mb-1">John Doe</h1>
               <p className="text-gray-600">@johndoe</p>
             </div>
@@ -263,7 +263,7 @@ const Profile = () => {
             <Button 
               variant="ghost" 
               onClick={() => setIsEditing(!isEditing)}
-              className="mb-0 mt-4 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
+              className="text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
             >
               <Settings className="w-4 h-4 mr-2" />
               Edit Profile
