@@ -97,9 +97,9 @@ const Profile = () => {
 
             {/* Edit Profile Button */}
             <Button 
-              variant="outline" 
+              variant="ghost" 
               onClick={() => setIsEditing(!isEditing)}
-              className="mb-2"
+              className="mb-0 mt-4 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
             >
               <Settings className="w-4 h-4 mr-2" />
               Edit Profile
