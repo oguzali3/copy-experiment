@@ -253,7 +253,7 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Name and Username moved below profile picture */}
+            {/* Name and Username */}
             <div className="flex flex-col items-start">
               <h1 className="text-2xl font-bold">John Doe</h1>
               <p className="text-gray-600">@johndoe</p>
@@ -262,11 +262,11 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Edit Profile Button - moved back to original position */}
+      {/* Edit Profile Button */}
       <Button 
         variant="ghost" 
         onClick={() => setIsEditing(!isEditing)}
-        className="mb-8 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
+        className="ml-8 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
       >
         <Settings className="w-4 h-4 mr-2" />
         Edit Profile
