@@ -426,51 +426,59 @@ const Profile = () => {
 
           <div className="py-6">
             {activeTab === 'portfolios' && (
-              <div className="space-y-2">
-                {userPortfolios.length > 0 ? (
-                  userPortfolios.map((portfolio) => (
-                    <button
-                      key={portfolio.id}
-                      className="w-full group transition-all duration-300 hover:scale-[1.01]"
-                      onClick={() => handlePortfolioClick(portfolio.id)}
-                    >
-                      <div className="py-3 px-4 bg-gradient-to-br from-white to-gray-50/90 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <div className="flex flex-col">
-                            <h3 className="text-base font-semibold text-gray-900 group-hover:text-gray-800">
-                              {portfolio.name}
-                            </h3>
-                            <span className="text-sm text-gray-500 font-medium">
-                              ${portfolio.total_value?.toLocaleString() || '0'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {portfolio.yearly_performance !== null && (
-                              <div className={`flex items-center px-3 py-1 rounded-md ${
-                                portfolio.yearly_performance >= 0 
-                                  ? 'text-green-600 bg-green-50 group-hover:bg-green-100/80' 
-                                  : 'text-red-600 bg-red-50 group-hover:bg-red-100/80'
-                              } transition-colors duration-300`}>
-                                {portfolio.yearly_performance >= 0 ? (
-                                  <TrendingUp className="w-3.5 h-3.5 mr-1" />
-                                ) : (
-                                  <TrendingDown className="w-3.5 h-3.5 mr-1" />
-                                )}
-                                <span className="text-sm font-semibold">
-                                  {Math.abs(portfolio.yearly_performance).toFixed(2)}%
-                                </span>
-                              </div>
-                            )}
+              <div className="space-y-4">
+                <Button 
+                  className="w-full bg-gradient-to-r from-[#9b87f5] to-[#8B5CF6] hover:from-[#8B5CF6] hover:to-[#7C3AED] text-white font-medium py-2.5"
+                >
+                  Create A Portfolio Subscription Service
+                </Button>
+                
+                <div className="space-y-2">
+                  {userPortfolios.length > 0 ? (
+                    userPortfolios.map((portfolio) => (
+                      <button
+                        key={portfolio.id}
+                        className="w-full group transition-all duration-300 hover:scale-[1.01]"
+                        onClick={() => handlePortfolioClick(portfolio.id)}
+                      >
+                        <div className="py-3 px-4 bg-gradient-to-br from-white to-gray-50/90 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex flex-col">
+                              <h3 className="text-base font-semibold text-gray-900 group-hover:text-gray-800">
+                                {portfolio.name}
+                              </h3>
+                              <span className="text-sm text-gray-500 font-medium">
+                                ${portfolio.total_value?.toLocaleString() || '0'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {portfolio.yearly_performance !== null && (
+                                <div className={`flex items-center px-3 py-1 rounded-md ${
+                                  portfolio.yearly_performance >= 0 
+                                    ? 'text-green-600 bg-green-50 group-hover:bg-green-100/80' 
+                                    : 'text-red-600 bg-red-50 group-hover:bg-red-100/80'
+                                } transition-colors duration-300`}>
+                                  {portfolio.yearly_performance >= 0 ? (
+                                    <TrendingUp className="w-3.5 h-3.5 mr-1" />
+                                  ) : (
+                                    <TrendingDown className="w-3.5 h-3.5 mr-1" />
+                                  )}
+                                  <span className="text-sm font-semibold">
+                                    {Math.abs(portfolio.yearly_performance).toFixed(2)}%
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="text-gray-600">
-                    No portfolios yet
-                  </div>
-                )}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="text-gray-600">
+                      No portfolios yet
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             {activeTab === 'subscribers' && (
