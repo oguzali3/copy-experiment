@@ -1,12 +1,12 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { toast } from "@/components/ui/use-toast";
 import { useState, useRef, useEffect } from "react";
 import { useUser } from '@supabase/auth-helpers-react';
-import { Camera, Link as LinkIcon, Twitter, Linkedin, Settings, MoreHorizontal } from "lucide-react";
+import { Camera, Link as LinkIcon, Twitter, Linkedin, Settings, MoreHorizontal, TrendingUp, TrendingDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from 'react-router-dom';
 
 type ProfileData = {
   full_name: string;
@@ -18,11 +18,18 @@ type ProfileData = {
 };
 
 const Profile = () => {
+  const navigate = useNavigate();
   const user = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('portfolios');
+  const [userPortfolios, setUserPortfolios] = useState<Array<{
+    id: string;
+    name: string;
+    yearly_performance: number | null;
+    total_value: number | null;
+  }>>([]);
   const [profileData, setProfileData] = useState<ProfileData>({
     full_name: "",
     username: "",
@@ -41,6 +48,7 @@ const Profile = () => {
   useEffect(() => {
     if (user) {
       fetchProfileData();
+      fetchUserPortfolios();
     }
   }, [user]);
 
@@ -81,6 +89,28 @@ const Profile = () => {
       toast({
         title: "Error",
         description: "Failed to load profile data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchUserPortfolios = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('portfolios')
+        .select('id, name, yearly_performance, total_value')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setUserPortfolios(data || []);
+    } catch (error) {
+      console.error('Error fetching portfolios:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load portfolios",
         variant: "destructive",
       });
     }
@@ -134,6 +164,10 @@ const Profile = () => {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handlePortfolioClick = (portfolioId: string) => {
+    navigate(`/portfolio/${portfolioId}`);
   };
 
   const onSubmit = async (data: ProfileData) => {
@@ -392,8 +426,45 @@ const Profile = () => {
 
           <div className="py-8">
             {activeTab === 'portfolios' && (
-              <div className="text-gray-600">
-                No portfolios yet
+              <div className="space-y-4">
+                {userPortfolios.length > 0 ? (
+                  userPortfolios.map((portfolio) => (
+                    <div
+                      key={portfolio.id}
+                      onClick={() => handlePortfolioClick(portfolio.id)}
+                      className="flex items-center justify-between p-4 bg-white border rounded-lg cursor-pointer hover:bg-gray-50"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <h3 className="text-lg font-medium">{portfolio.name}</h3>
+                        <span className="text-sm text-gray-500">
+                          ${portfolio.total_value?.toLocaleString() || '0'}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {portfolio.yearly_performance !== null && (
+                          <div className={`flex items-center ${
+                            portfolio.yearly_performance >= 0 
+                              ? 'text-green-600' 
+                              : 'text-red-600'
+                          }`}>
+                            {portfolio.yearly_performance >= 0 ? (
+                              <TrendingUp className="w-4 h-4 mr-1" />
+                            ) : (
+                              <TrendingDown className="w-4 h-4 mr-1" />
+                            )}
+                            <span className="font-medium">
+                              {Math.abs(portfolio.yearly_performance).toFixed(2)}%
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-gray-600">
+                    No portfolios yet
+                  </div>
+                )}
               </div>
             )}
             {activeTab === 'subscribers' && (
