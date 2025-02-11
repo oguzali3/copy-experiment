@@ -30,7 +30,7 @@ const Portfolio = () => {
     return null;
   }
 
-  return <PortfolioContent portfolioId={selectedPortfolioId} />;
+  return selectedPortfolioId ? <PortfolioContent selectedPortfolioId={selectedPortfolioId} /> : null;
 };
 
 export default Portfolio;

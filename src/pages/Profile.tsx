@@ -429,10 +429,11 @@ const Profile = () => {
               <div className="space-y-4">
                 {userPortfolios.length > 0 ? (
                   userPortfolios.map((portfolio) => (
-                    <div
+                    <Button
                       key={portfolio.id}
+                      variant="outline"
+                      className="w-full flex items-center justify-between p-4 bg-white hover:bg-gray-50"
                       onClick={() => handlePortfolioClick(portfolio.id)}
-                      className="flex items-center justify-between p-4 bg-white border rounded-lg cursor-pointer hover:bg-gray-50"
                     >
                       <div className="flex items-center space-x-4">
                         <h3 className="text-lg font-medium">{portfolio.name}</h3>
@@ -458,7 +459,7 @@ const Profile = () => {
                           </div>
                         )}
                       </div>
-                    </div>
+                    </Button>
                   ))
                 ) : (
                   <div className="text-gray-600">
