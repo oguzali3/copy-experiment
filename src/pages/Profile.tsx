@@ -426,40 +426,45 @@ const Profile = () => {
 
           <div className="py-8">
             {activeTab === 'portfolios' && (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {userPortfolios.length > 0 ? (
                   userPortfolios.map((portfolio) => (
-                    <Button
+                    <button
                       key={portfolio.id}
-                      variant="outline"
-                      className="w-full flex items-center justify-between p-4 bg-white hover:bg-gray-50"
+                      className="w-full group transition-all duration-300 hover:scale-[1.01]"
                       onClick={() => handlePortfolioClick(portfolio.id)}
                     >
-                      <div className="flex items-center space-x-4">
-                        <h3 className="text-lg font-medium">{portfolio.name}</h3>
-                        <span className="text-sm text-gray-500">
-                          ${portfolio.total_value?.toLocaleString() || '0'}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {portfolio.yearly_performance !== null && (
-                          <div className={`flex items-center ${
-                            portfolio.yearly_performance >= 0 
-                              ? 'text-green-600' 
-                              : 'text-red-600'
-                          }`}>
-                            {portfolio.yearly_performance >= 0 ? (
-                              <TrendingUp className="w-4 h-4 mr-1" />
-                            ) : (
-                              <TrendingDown className="w-4 h-4 mr-1" />
-                            )}
-                            <span className="font-medium">
-                              {Math.abs(portfolio.yearly_performance).toFixed(2)}%
+                      <div className="p-6 bg-gradient-to-br from-white to-gray-50/90 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <div className="flex flex-col gap-1">
+                            <h3 className="text-xl font-semibold text-gray-900 group-hover:text-gray-800">
+                              {portfolio.name}
+                            </h3>
+                            <span className="text-lg text-gray-500 font-medium">
+                              ${portfolio.total_value?.toLocaleString() || '0'}
                             </span>
                           </div>
-                        )}
+                          <div className="flex items-center gap-2">
+                            {portfolio.yearly_performance !== null && (
+                              <div className={`flex items-center px-4 py-2 rounded-lg ${
+                                portfolio.yearly_performance >= 0 
+                                  ? 'text-green-600 bg-green-50 group-hover:bg-green-100/80' 
+                                  : 'text-red-600 bg-red-50 group-hover:bg-red-100/80'
+                              } transition-colors duration-300`}>
+                                {portfolio.yearly_performance >= 0 ? (
+                                  <TrendingUp className="w-4 h-4 mr-1.5" />
+                                ) : (
+                                  <TrendingDown className="w-4 h-4 mr-1.5" />
+                                )}
+                                <span className="font-semibold">
+                                  {Math.abs(portfolio.yearly_performance).toFixed(2)}%
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </Button>
+                    </button>
                   ))
                 ) : (
                   <div className="text-gray-600">
