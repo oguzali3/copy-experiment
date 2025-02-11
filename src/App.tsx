@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +20,8 @@ import Portfolio from "./pages/Portfolio";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import { useState, useEffect } from 'react';
+import PortfolioSubscriptions from "./pages/PortfolioSubscriptions";
+import PortfolioPricing from "./pages/PortfolioPricing";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +67,8 @@ const App = () => {
                     <Route path="/screening" element={<Screening />} />
                     <Route path="/watchlists" element={<Watchlists />} />
                     <Route path="/portfolio" element={<Portfolio />} />
+                    <Route path="/portfolio-subscriptions" element={<PortfolioSubscriptions />} />
+                    <Route path="/portfolio-pricing" element={<PortfolioPricing />} />
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/settings" element={<Settings />} />
                     {/* Catch all route */}
