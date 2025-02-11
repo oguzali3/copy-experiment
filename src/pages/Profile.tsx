@@ -1,11 +1,10 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { toast } from "@/components/ui/use-toast";
 import { useState, useRef, useEffect } from "react";
 import { useUser } from '@supabase/auth-helpers-react';
-import { Camera, Link as LinkIcon, Twitter, Linkedin, Settings, Check, MoreHorizontal } from "lucide-react";
+import { Camera, Link as LinkIcon, Twitter, Linkedin, Settings, MoreHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type ProfileData = {
@@ -176,7 +175,6 @@ const Profile = () => {
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-3xl font-bold text-gray-900">{profileData.full_name || "Add your name"}</h1>
-            <Check className="w-6 h-6 text-orange-500" />
           </div>
           <div className="flex items-center gap-4 text-gray-600">
             <span>@{profileData.username || "username"}</span>
