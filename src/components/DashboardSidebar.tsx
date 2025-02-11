@@ -21,7 +21,10 @@ import {
   SidebarMenuItem,
   useSidebar
 } from "@/components/ui/sidebar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useUser } from '@supabase/auth-helpers-react';
 
 const menuItems = [
   { title: "Dashboard", icon: Home, path: "/dashboard" },
@@ -29,13 +32,49 @@ const menuItems = [
   { title: "Charting", icon: LineChart, path: "/charting" },
   { title: "Screening", icon: Filter, path: "/screening" },
   { title: "Watchlists", icon: List, path: "/watchlists" },
-  { title: "Portfolio", icon: PieChart, path: "/portfolio" },
+  // Portfolio is handled separately now
   { title: "Profile", icon: UserRound, path: "/profile" },
   { title: "Settings", icon: Settings, path: "/settings" },
 ];
 
 export const DashboardSidebar = () => {
   const { toggleSidebar, state } = useSidebar();
+  const user = useUser();
+  const navigate = useNavigate();
+  const [defaultPortfolioId, setDefaultPortfolioId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDefaultPortfolio = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('portfolios')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1)
+          .single();
+
+        if (error) throw error;
+        if (data) {
+          setDefaultPortfolioId(data.id);
+        }
+      } catch (error) {
+        console.error('Error fetching default portfolio:', error);
+      }
+    };
+
+    fetchDefaultPortfolio();
+  }, [user]);
+
+  const handlePortfolioClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (defaultPortfolioId) {
+      navigate('/portfolio', { state: { portfolioId: defaultPortfolioId } });
+    } else {
+      navigate('/profile');
+    }
+  };
 
   return (
     <Sidebar 
@@ -74,6 +113,21 @@ export const DashboardSidebar = () => {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {/* Portfolio menu item */}
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  className="text-white/80 hover:text-white hover:bg-white/10 transition-all duration-300"
+                  tooltip={state === 'collapsed' ? "Portfolio" : undefined}
+                  asChild
+                >
+                  <a href="#" onClick={handlePortfolioClick}>
+                    <PieChart className="h-4 w-4" />
+                    <span className={`transition-opacity duration-300 ${state === 'collapsed' ? 'opacity-0' : 'opacity-100'}`}>
+                      Portfolio
+                    </span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -81,3 +135,4 @@ export const DashboardSidebar = () => {
     </Sidebar>
   );
 };
+
