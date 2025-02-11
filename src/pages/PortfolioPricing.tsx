@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,9 +23,11 @@ const PortfolioPricing = () => {
   const [loading, setLoading] = useState(false);
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
 
-  useState(() => {
-    fetchPaidPortfolios();
-  });
+  useEffect(() => {
+    if (user) {
+      fetchPaidPortfolios();
+    }
+  }, [user]);
 
   const fetchPaidPortfolios = async () => {
     if (!user) return;
