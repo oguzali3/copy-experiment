@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
@@ -21,7 +22,7 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState('activity');
+  const [activeTab, setActiveTab] = useState('portfolios');
   const [profileData, setProfileData] = useState<ProfileData>({
     full_name: "",
     username: "",
@@ -358,51 +359,51 @@ const Profile = () => {
         <div className="border-t">
           <div className="flex gap-8 mt-4 border-b">
             <button
-              onClick={() => setActiveTab('activity')}
+              onClick={() => setActiveTab('portfolios')}
               className={`px-4 py-2 font-medium ${
-                activeTab === 'activity' 
+                activeTab === 'portfolios' 
                   ? 'text-gray-900 border-b-2 border-gray-900' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Activity
+              Portfolios
             </button>
             <button
-              onClick={() => setActiveTab('posts')}
+              onClick={() => setActiveTab('subscribers')}
               className={`px-4 py-2 font-medium ${
-                activeTab === 'posts' 
+                activeTab === 'subscribers' 
                   ? 'text-gray-900 border-b-2 border-gray-900' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Posts
+              Subscribers
             </button>
             <button
-              onClick={() => setActiveTab('likes')}
+              onClick={() => setActiveTab('subscriptions')}
               className={`px-4 py-2 font-medium ${
-                activeTab === 'likes' 
+                activeTab === 'subscriptions' 
                   ? 'text-gray-900 border-b-2 border-gray-900' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Likes
-            </button>
-            <button
-              onClick={() => setActiveTab('reads')}
-              className={`px-4 py-2 font-medium ${
-                activeTab === 'reads' 
-                  ? 'text-gray-900 border-b-2 border-gray-900' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Reads (116)
+              Subscriptions
             </button>
           </div>
 
           <div className="py-8">
-            {activeTab === 'activity' && (
+            {activeTab === 'portfolios' && (
               <div className="text-gray-600">
-                No activity yet
+                No portfolios yet
+              </div>
+            )}
+            {activeTab === 'subscribers' && (
+              <div className="text-gray-600">
+                No subscribers yet
+              </div>
+            )}
+            {activeTab === 'subscriptions' && (
+              <div className="text-gray-600">
+                No subscriptions yet
               </div>
             )}
           </div>
