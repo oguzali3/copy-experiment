@@ -429,6 +429,7 @@ const Profile = () => {
               <div className="space-y-4">
                 <Button 
                   className="w-full bg-gradient-to-r from-[#9b87f5] to-[#8B5CF6] hover:from-[#8B5CF6] hover:to-[#7C3AED] text-white font-medium py-2.5"
+                  onClick={() => navigate('/portfolio-subscriptions')}
                 >
                   Create A Portfolio Subscription Service
                 </Button>
