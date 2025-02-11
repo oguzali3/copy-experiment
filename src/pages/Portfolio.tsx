@@ -21,7 +21,7 @@ const Portfolio = () => {
     return <div>Loading...</div>;
   }
 
-  if (!session) {
+  if (!session || !portfolioId) {
     return null;
   }
 
