@@ -167,7 +167,7 @@ const Profile = () => {
   };
 
   const handlePortfolioClick = (portfolioId: string) => {
-    navigate(`/portfolio/${portfolioId}`);
+    navigate('/portfolio', { state: { selectedPortfolioId: portfolioId } });
   };
 
   const onSubmit = async (data: ProfileData) => {
