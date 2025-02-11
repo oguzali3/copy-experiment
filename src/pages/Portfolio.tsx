@@ -1,5 +1,6 @@
+
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useSessionContext } from '@supabase/auth-helpers-react';
 import PortfolioContent from "@/components/portfolio/PortfolioContent";
 import { toast } from "sonner";
@@ -7,6 +8,7 @@ import { toast } from "sonner";
 const Portfolio = () => {
   const { session, isLoading } = useSessionContext();
   const navigate = useNavigate();
+  const { portfolioId } = useParams();
 
   useEffect(() => {
     if (!isLoading && !session) {
@@ -23,7 +25,7 @@ const Portfolio = () => {
     return null;
   }
 
-  return <PortfolioContent />;
+  return <PortfolioContent portfolioId={portfolioId} />;
 };
 
 export default Portfolio;
