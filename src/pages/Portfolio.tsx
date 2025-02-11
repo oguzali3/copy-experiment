@@ -5,11 +5,15 @@ import { useSessionContext } from '@supabase/auth-helpers-react';
 import PortfolioContent from "@/components/portfolio/PortfolioContent";
 import { toast } from "sonner";
 
+interface LocationState {
+  selectedPortfolioId: string;
+}
+
 const Portfolio = () => {
   const { session, isLoading } = useSessionContext();
   const navigate = useNavigate();
   const location = useLocation();
-  const selectedPortfolioId = location.state?.selectedPortfolioId;
+  const selectedPortfolioId = (location.state as LocationState)?.selectedPortfolioId;
 
   useEffect(() => {
     if (!isLoading && !session) {
@@ -26,7 +30,7 @@ const Portfolio = () => {
     return null;
   }
 
-  return <PortfolioContent selectedPortfolioId={selectedPortfolioId} />;
+  return <PortfolioContent portfolioId={selectedPortfolioId} />;
 };
 
 export default Portfolio;
