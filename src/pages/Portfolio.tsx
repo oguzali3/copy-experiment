@@ -6,14 +6,14 @@ import PortfolioContent from "@/components/portfolio/PortfolioContent";
 import { toast } from "sonner";
 
 interface LocationState {
-  selectedPortfolioId: string;
+  portfolioId: string;
 }
 
 const Portfolio = () => {
   const { session, isLoading } = useSessionContext();
   const navigate = useNavigate();
   const location = useLocation();
-  const selectedPortfolioId = (location.state as LocationState)?.selectedPortfolioId;
+  const { portfolioId } = (location.state as LocationState) || {};
 
   useEffect(() => {
     if (!isLoading && !session) {
@@ -22,15 +22,21 @@ const Portfolio = () => {
     }
   }, [session, isLoading, navigate]);
 
+  useEffect(() => {
+    if (!portfolioId && !isLoading && session) {
+      navigate("/profile");
+    }
+  }, [portfolioId, isLoading, session, navigate]);
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (!session) {
+  if (!session || !portfolioId) {
     return null;
   }
 
-  return selectedPortfolioId ? <PortfolioContent portfolioId={selectedPortfolioId} /> : null;
+  return <PortfolioContent portfolioId={portfolioId} />;
 };
 
 export default Portfolio;

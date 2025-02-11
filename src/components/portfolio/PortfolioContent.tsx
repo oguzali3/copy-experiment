@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { PortfolioEmpty } from "./PortfolioEmpty";
 import { PortfolioCreate } from "./PortfolioCreate";
@@ -16,13 +15,17 @@ interface PortfolioContentProps {
 
 const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
-  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(portfolioId);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     fetchPortfolios();
   }, []);
+
+  useEffect(() => {
+    setSelectedPortfolioId(portfolioId);
+  }, [portfolioId]);
 
   const fetchPortfolios = async () => {
     setLoading(true);
