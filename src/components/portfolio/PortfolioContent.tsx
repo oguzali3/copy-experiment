@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { PortfolioEmpty } from "./PortfolioEmpty";
 import { PortfolioCreate } from "./PortfolioCreate";
@@ -9,7 +10,11 @@ import { Portfolio, Stock } from "./types";
 import { updatePortfolioStock, calculatePortfolioMetrics } from "./utils/portfolioOperations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const PortfolioContent = () => {
+interface PortfolioContentProps {
+  portfolioId: string;
+}
+
+const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
