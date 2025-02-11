@@ -33,7 +33,7 @@ const PortfolioPricing = () => {
     try {
       const { data, error } = await supabase
         .from('portfolios')
-        .select('id, name, monthly_price, annual_price')
+        .select('id, name, is_paid, monthly_price, annual_price')
         .eq('user_id', user.id)
         .eq('is_paid', true);
 
