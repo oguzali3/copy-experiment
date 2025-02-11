@@ -9,10 +9,8 @@ import { useUser } from '@supabase/auth-helpers-react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface Portfolio {
+interface SubscriptionPricing {
   id: string;
-  name: string;
-  is_paid: boolean;
   monthly_price: number;
   annual_price: number;
 }
@@ -21,50 +19,48 @@ const PortfolioPricing = () => {
   const navigate = useNavigate();
   const user = useUser();
   const [loading, setLoading] = useState(false);
-  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [pricing, setPricing] = useState<SubscriptionPricing | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchPaidPortfolios();
-    }
-  }, [user]);
-
-  const fetchPaidPortfolios = async () => {
-    if (!user) return;
-
+  const fetchPricing = async () => {
     try {
       const { data, error } = await supabase
-        .from('portfolios')
-        .select('id, name, is_paid, monthly_price, annual_price')
-        .eq('user_id', user.id)
-        .eq('is_paid', true);
+        .from('subscription_pricing')
+        .select('*')
+        .single();
 
       if (error) throw error;
-      setPortfolios(data || []);
+      setPricing(data);
     } catch (error) {
-      console.error('Error fetching portfolios:', error);
-      toast.error("Failed to load portfolios");
+      console.error('Error fetching pricing:', error);
+      toast.error("Failed to load pricing information");
     }
   };
 
-  const handlePriceChange = async (portfolioId: string, field: 'monthly_price' | 'annual_price', value: string) => {
+  useEffect(() => {
+    fetchPricing();
+  }, []);
+
+  const handlePriceChange = async (field: 'monthly_price' | 'annual_price', value: string) => {
+    if (!pricing) return;
+    
     const numericValue = parseFloat(value) || 0;
 
     try {
       const { error } = await supabase
-        .from('portfolios')
+        .from('subscription_pricing')
         .update({ [field]: numericValue })
-        .eq('id', portfolioId);
+        .eq('id', pricing.id);
 
       if (error) throw error;
 
-      setPortfolios(portfolios.map(p => 
-        p.id === portfolioId 
-          ? { ...p, [field]: numericValue }
-          : p
-      ));
+      setPricing({
+        ...pricing,
+        [field]: numericValue
+      });
+
+      toast.success("Price updated successfully");
     } catch (error) {
-      console.error('Error updating portfolio price:', error);
+      console.error('Error updating price:', error);
       toast.error("Failed to update price");
     }
   };
@@ -75,45 +71,49 @@ const PortfolioPricing = () => {
     navigate('/profile');
   };
 
+  if (!pricing) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Set Subscription Pricing</h1>
       
-      <div className="space-y-6 mb-8">
-        {portfolios.map((portfolio) => (
-          <Card key={portfolio.id} className="p-6">
-            <h2 className="text-xl font-semibold mb-4">{portfolio.name}</h2>
-            
-            <div className="grid gap-6">
-              <div className="space-y-2">
-                <Label htmlFor={`monthly-${portfolio.id}`}>Monthly Price ($)</Label>
-                <Input
-                  id={`monthly-${portfolio.id}`}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={portfolio.monthly_price}
-                  onChange={(e) => handlePriceChange(portfolio.id, 'monthly_price', e.target.value)}
-                  className="max-w-xs"
-                />
-              </div>
+      <Card className="p-6 mb-8">
+        <div className="space-y-6">
+          <div>
+            <Label htmlFor="monthly-price" className="text-base">Monthly Subscription Price ($)</Label>
+            <p className="text-sm text-muted-foreground mb-2">
+              Set the price for monthly access to all paid portfolios
+            </p>
+            <Input
+              id="monthly-price"
+              type="number"
+              min="0"
+              step="0.01"
+              value={pricing.monthly_price}
+              onChange={(e) => handlePriceChange('monthly_price', e.target.value)}
+              className="max-w-xs"
+            />
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor={`annual-${portfolio.id}`}>Annual Price ($)</Label>
-                <Input
-                  id={`annual-${portfolio.id}`}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={portfolio.annual_price}
-                  onChange={(e) => handlePriceChange(portfolio.id, 'annual_price', e.target.value)}
-                  className="max-w-xs"
-                />
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+          <div>
+            <Label htmlFor="annual-price" className="text-base">Annual Subscription Price ($)</Label>
+            <p className="text-sm text-muted-foreground mb-2">
+              Set the price for annual access to all paid portfolios
+            </p>
+            <Input
+              id="annual-price"
+              type="number"
+              min="0"
+              step="0.01"
+              value={pricing.annual_price}
+              onChange={(e) => handlePriceChange('annual_price', e.target.value)}
+              className="max-w-xs"
+            />
+          </div>
+        </div>
+      </Card>
 
       <div className="flex justify-end gap-4">
         <Button

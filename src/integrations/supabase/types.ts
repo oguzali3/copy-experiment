@@ -558,12 +558,10 @@ export type Database = {
       }
       portfolios: {
         Row: {
-          annual_price: number | null
           created_at: string
           id: string
           is_paid: boolean | null
           is_public: boolean | null
-          monthly_price: number | null
           name: string
           total_value: number | null
           updated_at: string
@@ -571,12 +569,10 @@ export type Database = {
           yearly_performance: number | null
         }
         Insert: {
-          annual_price?: number | null
           created_at?: string
           id?: string
           is_paid?: boolean | null
           is_public?: boolean | null
-          monthly_price?: number | null
           name: string
           total_value?: number | null
           updated_at?: string
@@ -584,12 +580,10 @@ export type Database = {
           yearly_performance?: number | null
         }
         Update: {
-          annual_price?: number | null
           created_at?: string
           id?: string
           is_paid?: boolean | null
           is_public?: boolean | null
-          monthly_price?: number | null
           name?: string
           total_value?: number | null
           updated_at?: string
@@ -873,6 +867,30 @@ export type Database = {
           total_assets?: number | null
           total_equity?: number | null
           total_liabilities?: number | null
+        }
+        Relationships: []
+      }
+      subscription_pricing: {
+        Row: {
+          annual_price: number
+          created_at: string
+          id: string
+          monthly_price: number
+          updated_at: string
+        }
+        Insert: {
+          annual_price?: number
+          created_at?: string
+          id?: string
+          monthly_price?: number
+          updated_at?: string
+        }
+        Update: {
+          annual_price?: number
+          created_at?: string
+          id?: string
+          monthly_price?: number
+          updated_at?: string
         }
         Relationships: []
       }
