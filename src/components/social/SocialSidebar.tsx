@@ -30,7 +30,7 @@ export const SocialSidebar = () => {
       <div className="px-4 mb-2">
         <Button 
           variant="ghost" 
-          className="text-xl font-semibold px-4 py-3 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full"
+          className="text-xl font-semibold px-4 py-3 hover:bg-gray-200 dark:hover:bg-gray-800"
           onClick={() => navigate('/')}
         >
           StockStream
@@ -41,7 +41,7 @@ export const SocialSidebar = () => {
           <Button
             key={item.title}
             variant="ghost"
-            className="justify-start gap-4 px-4 py-3 text-xl hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full"
+            className="w-full justify-start gap-4 px-4 py-3 text-xl hover:bg-gray-200 dark:hover:bg-gray-800"
             onClick={() => navigate(item.path)}
           >
             <item.icon className="h-6 w-6" />
@@ -51,7 +51,7 @@ export const SocialSidebar = () => {
       </nav>
       <div className="px-4 mt-4">
         <Button 
-          className="w-56 bg-blue-500 hover:bg-blue-600 text-white rounded-full py-3 text-lg font-semibold"
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white rounded-full py-3 text-lg"
           onClick={() => navigate('/feed/create')}
         >
           Post
@@ -59,10 +59,10 @@ export const SocialSidebar = () => {
       </div>
 
       {user && (
-        <div className="absolute bottom-4 px-4">
+        <div className="absolute bottom-4 px-4 w-full">
           <Button
             variant="ghost"
-            className="justify-start p-3 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-full"
+            className="w-full justify-start p-3 hover:bg-gray-200 dark:hover:bg-gray-800"
             onClick={() => navigate('/profile')}
           >
             <div className="flex items-center gap-3">

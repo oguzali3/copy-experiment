@@ -37,7 +37,7 @@ export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) =>
   };
 
   return (
-    <Card className="p-4 mb-6 border-b border-t-0 border-x-0 rounded-none">
+    <Card className="p-4">
       <div className="flex gap-4">
         <Avatar className="w-10 h-10">
           <AvatarImage src={user?.user_metadata?.avatar_url} />
@@ -50,7 +50,7 @@ export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) =>
             placeholder="What's on your mind?"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="mb-3 min-h-[100px] border-none resize-none p-0 focus-visible:ring-0"
+            className="mb-3 min-h-[100px] border-none resize-none focus-visible:ring-0"
           />
           <div className="flex justify-end">
             <Button 
