@@ -21,6 +21,7 @@ interface PostProps {
   likes_count: number;
   comments_count: number;
   is_liked: boolean;
+  image_url?: string | null;
   onPostUpdated?: () => void;
 }
 
@@ -32,6 +33,7 @@ export const Post = ({
   likes_count,
   comments_count,
   is_liked: initialIsLiked,
+  image_url,
   onPostUpdated
 }: PostProps) => {
   const currentUser = useUser();
@@ -93,6 +95,18 @@ export const Post = ({
             </span>
           </div>
           <p className="mt-2 text-gray-900">{content}</p>
+          
+          {/* Add image display */}
+          {image_url && (
+            <div className="mt-3 rounded-lg overflow-hidden">
+              <img
+                src={image_url}
+                alt="Post image"
+                className="max-h-[400px] w-full object-cover"
+              />
+            </div>
+          )}
+
           <div className="flex gap-6 mt-4">
             <Button
               variant="ghost"

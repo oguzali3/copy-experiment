@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { CreatePost } from "@/components/social/CreatePost";
 import { Post } from "@/components/social/Post";
@@ -10,6 +11,7 @@ interface PostType {
   id: string;
   content: string;
   created_at: string;
+  image_url: string | null;
   user: {
     full_name: string;
     avatar_url: string;
@@ -33,6 +35,7 @@ const Feed = () => {
           id,
           content,
           created_at,
+          image_url,
           user_id,
           profiles (
             full_name,
@@ -54,6 +57,7 @@ const Feed = () => {
         id: post.id,
         content: post.content,
         created_at: post.created_at,
+        image_url: post.image_url,
         user: {
           full_name: post.profiles?.full_name || 'Unknown User',
           avatar_url: post.profiles?.avatar_url || '',
