@@ -33,13 +33,13 @@ const Feed = () => {
           content,
           created_at,
           user_id,
-          profiles!posts_user_id_fkey (
+          profiles (
             full_name,
             avatar_url,
             username
           ),
           post_likes (
-            id
+            user_id
           ),
           post_comments (
             id
