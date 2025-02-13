@@ -84,8 +84,8 @@ const Feed = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 mx-auto container">
-        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] lg:grid-cols-[275px_minmax(600px,_800px)_350px] gap-4">
+      <div className="flex-1 max-w-[1265px] mx-auto">
+        <div className="grid grid-cols-[275px_600px_350px] gap-4">
           <div>
             <SocialSidebar />
           </div>
@@ -106,7 +106,7 @@ const Feed = () => {
               </div>
             </div>
           </main>
-          <div className="hidden lg:block p-4">
+          <div className="p-4">
             <div className="sticky top-4">
               <WhoToFollow />
             </div>
