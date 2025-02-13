@@ -8,23 +8,10 @@ export const SocialHeader = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="h-16 border-b border-gray-200 bg-white dark:bg-gray-900 fixed top-0 left-0 right-0 z-50">
-      <div className="h-full flex items-center px-6 justify-between">
-        <Button 
-          variant="ghost" 
-          className="gap-2"
-          onClick={() => navigate('/')}
-        >
-          <Home className="h-5 w-5" />
-          <span className="font-semibold">StockStream</span>
-        </Button>
-        <div className="flex items-center gap-3">
-          <Button className="bg-blue-500 hover:bg-blue-600 text-white">
-            Upgrade
-          </Button>
-          <ProfileMenu />
-        </div>
+    <div className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200">
+      <div className="px-4 h-14 flex items-center">
+        <h1 className="text-xl font-semibold">Home</h1>
       </div>
-    </header>
+    </div>
   );
 };
