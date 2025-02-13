@@ -22,6 +22,7 @@ import Profile from "./pages/Profile";
 import { useState, useEffect } from 'react';
 import PortfolioSubscriptions from "./pages/PortfolioSubscriptions";
 import PortfolioPricing from "./pages/PortfolioPricing";
+import Feed from "./pages/Feed";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,6 +72,7 @@ const App = () => {
                     <Route path="/portfolio-pricing" element={<PortfolioPricing />} />
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/settings" element={<Settings />} />
+                    <Route path="/feed" element={<Feed />} />
                     {/* Catch all route */}
                     <Route path="*" element={<Navigate to="/dashboard" replace />} />
                   </Route>
