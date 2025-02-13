@@ -85,11 +85,11 @@ const Feed = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="w-[1225px] mx-auto flex">
-        <div className={`transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[275px]'} min-w-fit`}>
+      <div className="flex justify-between max-w-[1225px] mx-auto">
+        <aside className={`fixed top-0 left-1/2 -translate-x-[612.5px] transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[275px]'}`}>
           <SocialSidebar onCollapse={setIsCollapsed} />
-        </div>
-        <main className="w-[600px] border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
+        </aside>
+        <main className="w-[600px] ml-[275px] border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
           <SocialHeader />
           <div className="px-4 py-4">
             <div className="mb-4">
@@ -106,13 +106,13 @@ const Feed = () => {
             </div>
           </div>
         </main>
-        <div className="w-[350px]">
+        <aside className="w-[350px]">
           <div className="p-4">
             <div className="sticky top-4">
               <WhoToFollow />
             </div>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   );
