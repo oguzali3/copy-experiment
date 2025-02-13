@@ -8,7 +8,8 @@ import {
   Home,
   Filter,
   Building,
-  UserRound
+  UserRound,
+  Users
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,6 +33,7 @@ const menuItems = [
   { title: "Charting", icon: LineChart, path: "/charting" },
   { title: "Screening", icon: Filter, path: "/screening" },
   { title: "Watchlists", icon: List, path: "/watchlists" },
+  { title: "Feed", icon: Users, path: "/feed" },
   // Portfolio is handled separately now
   { title: "Profile", icon: UserRound, path: "/profile" },
   { title: "Settings", icon: Settings, path: "/settings" },
@@ -135,4 +137,3 @@ export const DashboardSidebar = () => {
     </Sidebar>
   );
 };
-
