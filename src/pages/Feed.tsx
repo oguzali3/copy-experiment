@@ -12,6 +12,7 @@ interface PostType {
   user: {
     full_name: string;
     avatar_url: string;
+    username: string;
   };
   likes_count: number;
   comments_count: number;
@@ -23,9 +24,10 @@ interface PostData {
   content: string;
   created_at: string;
   user_id: string;
-  profiles: {
+  user: {
     full_name: string | null;
     avatar_url: string | null;
+    username: string | null;
   };
   likes_count: { count: number }[];
   comments_count: { count: number }[];
@@ -46,9 +48,10 @@ const Feed = () => {
           content,
           created_at,
           user_id,
-          profiles (
+          user:profiles!posts_user_id_fkey (
             full_name,
-            avatar_url
+            avatar_url,
+            username
           ),
           likes_count:post_likes(count),
           comments_count:post_comments(count),
@@ -58,13 +61,14 @@ const Feed = () => {
 
       if (postsError) throw postsError;
 
-      setPosts((postsData as PostData[]).map(post => ({
+      setPosts((postsData || []).map(post => ({
         id: post.id,
         content: post.content,
         created_at: post.created_at,
         user: {
-          full_name: post.profiles?.full_name || 'Unknown User',
-          avatar_url: post.profiles?.avatar_url || ''
+          full_name: post.user?.full_name || 'Unknown User',
+          avatar_url: post.user?.avatar_url || '',
+          username: post.user?.username || 'unknown'
         },
         likes_count: post.likes_count[0]?.count || 0,
         comments_count: post.comments_count[0]?.count || 0,

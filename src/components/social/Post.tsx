@@ -16,6 +16,7 @@ interface PostProps {
   user: {
     full_name: string;
     avatar_url: string;
+    username: string;
   };
   likes_count: number;
   comments_count: number;
@@ -82,7 +83,7 @@ export const Post = ({
             <div>
               <h3 className="font-semibold">{user.full_name}</h3>
               <p className="text-sm text-muted-foreground">
-                {formatDistanceToNow(new Date(created_at), { addSuffix: true })}
+                @{user.username} · {formatDistanceToNow(new Date(created_at), { addSuffix: true })}
               </p>
             </div>
           </div>
