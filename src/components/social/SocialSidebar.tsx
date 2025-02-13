@@ -4,6 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "@supabase/auth-helpers-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const menuItems = [{
   title: "Home",
@@ -32,61 +38,80 @@ export const SocialSidebar = () => {
   const user = useUser();
 
   return (
-    <div className="fixed h-screen pt-2 w-[275px]">
-      <div className="px-4 mb-2">
+    <div className="flex flex-col items-center py-4 h-full">
+      <div className="mb-4">
         <Button 
           variant="ghost" 
-          className="text-xl font-semibold px-4 py-3 hover:bg-gray-200 dark:hover:bg-gray-800 w-full"
+          className="w-12 h-12 p-0"
+          onClick={() => navigate('/feed')}
         >
-          StockStream
+          <span className="text-2xl font-bold text-blue-500">S</span>
         </Button>
       </div>
-      <nav className="space-y-1 px-2">
-        {menuItems.map(item => (
-          <Button 
-            key={item.title} 
-            variant="ghost" 
-            onClick={() => navigate(item.path)} 
-            className="w-[250px] justify-start gap-4 px-4 text-xl hover:bg-gray-200 dark:hover:bg-gray-800 py-[1px] rounded-md"
-          >
-            <item.icon className="h-6 w-6" />
-            <span>{item.title}</span>
-          </Button>
-        ))}
-      </nav>
-      <div className="px-4 mt-4">
-        <Button 
-          className="w-[250px] bg-blue-500 hover:bg-blue-600 text-white rounded-full py-3 text-lg" 
-          onClick={() => navigate('/feed/create')}
-        >
-          Post
-        </Button>
+      
+      <TooltipProvider>
+        <nav className="space-y-2">
+          {menuItems.map(item => (
+            <Tooltip key={item.title}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate(item.path)}
+                  className="w-12 h-12 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800"
+                >
+                  <item.icon className="h-6 w-6" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>{item.title}</p>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </nav>
+      </TooltipProvider>
+
+      <div className="mt-4">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600 p-0"
+                onClick={() => navigate('/feed/create')}
+              >
+                <span className="text-white text-2xl">+</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Create Post</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {user && (
-        <div className="absolute bottom-4 px-4">
-          <Button 
-            variant="ghost" 
-            className="w-[250px] justify-start p-3 hover:bg-gray-200 dark:hover:bg-gray-800" 
-            onClick={() => navigate('/profile')}
-          >
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={user.user_metadata?.avatar_url} />
-                <AvatarFallback>
-                  <User className="h-6 w-6" />
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {user.user_metadata?.full_name}
-                </p>
-                <p className="text-sm text-gray-500 truncate">
-                  @{user.user_metadata?.username || user.email?.split('@')[0]}
-                </p>
-              </div>
-            </div>
-          </Button>
+        <div className="mt-auto">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="w-12 h-12 p-0 rounded-full"
+                  onClick={() => navigate('/profile')}
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.user_metadata?.avatar_url} />
+                    <AvatarFallback>
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>{user.user_metadata?.full_name || 'Profile'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       )}
     </div>

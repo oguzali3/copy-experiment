@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { CreatePost } from "@/components/social/CreatePost";
 import { Post } from "@/components/social/Post";
@@ -83,12 +82,12 @@ const Feed = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex mx-auto" style={{ width: '1225px' }}>
-        <div className="w-[275px]">
-          <SocialSidebar />
-        </div>
-        <main className="w-[600px] border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="fixed left-0 top-0 h-full w-[68px] border-r border-gray-200 dark:border-gray-800">
+        <SocialSidebar />
+      </div>
+      <div className="flex justify-center w-full pl-[68px]">
+        <main className="w-[600px] border-x border-gray-200 dark:border-gray-800 min-h-screen bg-white dark:bg-gray-900">
           <SocialHeader />
           <div className="px-4 py-4">
             <div className="mb-4">
@@ -105,11 +104,9 @@ const Feed = () => {
             </div>
           </div>
         </main>
-        <div className="w-[350px]">
-          <div className="p-4">
-            <div className="sticky top-4">
-              <WhoToFollow />
-            </div>
+        <div className="w-[350px] pl-8 pr-4">
+          <div className="sticky top-4">
+            <WhoToFollow />
           </div>
         </div>
       </div>
