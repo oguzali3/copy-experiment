@@ -89,8 +89,8 @@ const Feed = () => {
       <div className="fixed left-0 top-0 h-full w-[68px] border-r border-gray-200 dark:border-gray-800 z-10">
         <SocialSidebar />
       </div>
-      <div className="ml-[68px]">
-        <div className="max-w-[680px] mx-auto">
+      <div className="ml-[68px] flex justify-center">
+        <div className="w-[680px]">
           <div className="border-x border-gray-200 dark:border-gray-800 min-h-screen bg-white dark:bg-gray-900">
             <SocialHeader />
             <div className="px-4 py-4">
