@@ -84,31 +84,33 @@ const Feed = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 max-w-[1265px] mx-auto">
-        <div className="grid grid-cols-[275px_600px_350px] gap-4">
-          <div>
-            <SocialSidebar />
-          </div>
-          <main className="border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
-            <SocialHeader />
-            <div className="px-4 py-4">
-              <div className="mb-4">
-                <CreatePost onPostCreated={fetchPosts} />
-              </div>
-              <div className="space-y-4 pb-4">
-                {posts.map((post) => (
-                  <Post 
-                    key={post.id} 
-                    {...post} 
-                    onPostUpdated={fetchPosts}
-                  />
-                ))}
-              </div>
+      <div className="flex-1 flex justify-center">
+        <div className="w-full max-w-7xl mx-auto flex">
+          <div className="grid grid-cols-[275px_600px_350px] gap-4">
+            <div>
+              <SocialSidebar />
             </div>
-          </main>
-          <div className="p-4">
-            <div className="sticky top-4">
-              <WhoToFollow />
+            <main className="border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
+              <SocialHeader />
+              <div className="px-4 py-4">
+                <div className="mb-4">
+                  <CreatePost onPostCreated={fetchPosts} />
+                </div>
+                <div className="space-y-4 pb-4">
+                  {posts.map((post) => (
+                    <Post 
+                      key={post.id} 
+                      {...post} 
+                      onPostUpdated={fetchPosts}
+                    />
+                  ))}
+                </div>
+              </div>
+            </main>
+            <div className="p-4">
+              <div className="sticky top-4">
+                <WhoToFollow />
+              </div>
             </div>
           </div>
         </div>
