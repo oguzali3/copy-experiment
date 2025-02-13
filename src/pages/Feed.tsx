@@ -25,7 +25,6 @@ interface PostType {
 const Feed = () => {
   const [posts, setPosts] = useState<PostType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const user = useUser();
 
   const fetchPosts = async () => {
@@ -84,12 +83,12 @@ const Feed = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
-      <div className="flex-1 grid grid-cols-[auto_1fr_auto] max-w-full">
-        <div className={`transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[275px]'} min-w-fit`}>
-          <SocialSidebar onCollapse={setIsCollapsed} />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex mx-auto" style={{ width: '1225px' }}>
+        <div className="w-[275px]">
+          <SocialSidebar />
         </div>
-        <main className="border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900 min-w-[600px] max-w-[600px]">
+        <main className="w-[600px] border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
           <SocialHeader />
           <div className="px-4 py-4">
             <div className="mb-4">
@@ -106,7 +105,7 @@ const Feed = () => {
             </div>
           </div>
         </main>
-        <div className="min-w-[350px] max-w-[350px]">
+        <div className="w-[350px]">
           <div className="p-4">
             <div className="sticky top-4">
               <WhoToFollow />
