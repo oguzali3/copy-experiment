@@ -84,8 +84,8 @@ const Feed = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 flex justify-center">
-        <div className="w-full max-w-[1265px] grid grid-cols-1 md:grid-cols-[275px_1fr] lg:grid-cols-[275px_600px_350px] gap-4">
+      <div className="flex-1 flex">
+        <div className="w-full grid grid-cols-1 md:grid-cols-[275px_1fr] lg:grid-cols-[275px_600px_350px]">
           <div className="fixed md:relative w-[275px]">
             <SocialSidebar />
           </div>
