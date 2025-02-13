@@ -5,7 +5,6 @@ import { useUser } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SocialSidebar } from "@/components/social/SocialSidebar";
 import { SocialHeader } from "@/components/social/SocialHeader";
-import { WhoToFollow } from "@/components/social/WhoToFollow";
 
 interface PostType {
   id: string;
@@ -82,12 +81,12 @@ const Feed = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="fixed left-0 top-0 h-full w-[68px] border-r border-gray-200 dark:border-gray-800">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="fixed left-0 top-0 h-full w-[68px] border-r border-gray-200 dark:border-gray-800 z-10">
         <SocialSidebar />
       </div>
-      <div className="flex justify-center w-full pl-[68px]">
-        <main className="w-[600px] border-x border-gray-200 dark:border-gray-800 min-h-screen bg-white dark:bg-gray-900">
+      <div className="w-[680px] mx-auto">
+        <main className="border-x border-gray-200 dark:border-gray-800 min-h-screen bg-white dark:bg-gray-900">
           <SocialHeader />
           <div className="px-4 py-4">
             <div className="mb-4">
@@ -104,11 +103,6 @@ const Feed = () => {
             </div>
           </div>
         </main>
-        <div className="w-[350px] pl-8 pr-4">
-          <div className="sticky top-4">
-            <WhoToFollow />
-          </div>
-        </div>
       </div>
     </div>
   );
