@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
@@ -211,7 +212,7 @@ const Profile = () => {
       <div className="fixed left-0 top-0 h-full w-[68px] border-r border-gray-200 dark:border-gray-800 z-10">
         <SocialSidebar />
       </div>
-      <div className="w-[680px] mx-auto">
+      <div className="fixed left-1/2 transform -translate-x-1/2" style={{ width: '680px', marginLeft: '34px' }}>
         <main className="border-x border-gray-200 dark:border-gray-800 min-h-screen bg-white dark:bg-gray-900">
           <SocialHeader />
           <div className="px-4 py-4">
