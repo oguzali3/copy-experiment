@@ -34,11 +34,10 @@ const menuItems = [
 export const SocialSidebar = () => {
   const navigate = useNavigate();
   const user = useUser();
-  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <Sidebar className="border-r border-gray-200 bg-white dark:bg-gray-900 w-72">
-      <SidebarContent>
+    <Sidebar className="fixed h-screen border-r border-gray-200 bg-white dark:bg-gray-900 w-72">
+      <SidebarContent className="h-full flex flex-col">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>

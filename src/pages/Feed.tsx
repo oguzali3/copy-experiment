@@ -81,20 +81,24 @@ const Feed = () => {
   }
 
   return (
-    <div className="flex">
-      <SocialSidebar />
-      <div className="flex-1 max-w-2xl mx-auto px-4 py-8">
-        <CreatePost onPostCreated={fetchPosts} />
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <Post 
-              key={post.id} 
-              {...post} 
-              onPostUpdated={fetchPosts}
-            />
-          ))}
-        </div>
+    <div className="flex h-screen">
+      <div className="w-72 flex-shrink-0">
+        <SocialSidebar />
       </div>
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <CreatePost onPostCreated={fetchPosts} />
+          <div className="space-y-4">
+            {posts.map((post) => (
+              <Post 
+                key={post.id} 
+                {...post} 
+                onPostUpdated={fetchPosts}
+              />
+            ))}
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
