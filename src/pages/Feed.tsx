@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { CreatePost } from "@/components/social/CreatePost";
 import { Post } from "@/components/social/Post";
@@ -83,12 +84,12 @@ const Feed = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 flex justify-center px-4">
-        <div className="w-full max-w-[1265px] flex flex-col lg:flex-row">
-          <div className="hidden lg:block w-[275px] flex-shrink-0">
+      <div className="flex-1 flex justify-center">
+        <div className="w-full max-w-[1265px] grid grid-cols-1 md:grid-cols-[275px_1fr] lg:grid-cols-[275px_600px_350px] gap-4">
+          <div className="fixed md:relative w-[275px]">
             <SocialSidebar />
           </div>
-          <main className="w-full lg:w-[600px] border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900 flex-shrink-0">
+          <main className="md:ml-[275px] lg:ml-0 w-full max-w-[600px] border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
             <SocialHeader />
             <div className="px-4 py-4">
               <div className="mb-4">
@@ -105,7 +106,7 @@ const Feed = () => {
               </div>
             </div>
           </main>
-          <div className="hidden lg:block w-[350px] flex-shrink-0 pl-4">
+          <div className="hidden lg:block">
             <div className="sticky top-4">
               <WhoToFollow />
             </div>
