@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -29,7 +29,7 @@ export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) =>
     }
   };
 
-  useState(() => {
+  useEffect(() => {
     fetchProfile();
   }, [user]);
 

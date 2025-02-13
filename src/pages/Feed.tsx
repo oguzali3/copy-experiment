@@ -19,21 +19,6 @@ interface PostType {
   is_liked: boolean;
 }
 
-interface PostData {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  profiles: {
-    full_name: string | null;
-    avatar_url: string | null;
-    username: string | null;
-  };
-  likes_count: { count: number }[];
-  comments_count: { count: number }[];
-  is_liked: { user_id: string }[];
-}
-
 const Feed = () => {
   const [posts, setPosts] = useState<PostType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +33,7 @@ const Feed = () => {
           content,
           created_at,
           user_id,
-          profiles!posts_user_id_fkey (
+          profiles (
             full_name,
             avatar_url,
             username
