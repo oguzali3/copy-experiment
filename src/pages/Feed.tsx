@@ -89,24 +89,26 @@ const Feed = () => {
       <div className="fixed left-0 top-0 h-full w-[68px] border-r border-gray-200 dark:border-gray-800 z-10">
         <SocialSidebar />
       </div>
-      <div className="fixed left-1/2 transform -translate-x-1/2" style={{ width: '680px', marginLeft: '34px' }}>
-        <main className="border-x border-gray-200 dark:border-gray-800 min-h-screen bg-white dark:bg-gray-900">
-          <SocialHeader />
-          <div className="px-4 py-4">
-            <div className="mb-4">
-              <CreatePost onPostCreated={fetchPosts} />
-            </div>
-            <div className="space-y-4 pb-4">
-              {posts.map((post) => (
-                <Post 
-                  key={post.id} 
-                  {...post} 
-                  onPostUpdated={fetchPosts}
-                />
-              ))}
+      <div className="ml-[68px]">
+        <div className="max-w-[680px] mx-auto">
+          <div className="border-x border-gray-200 dark:border-gray-800 min-h-screen bg-white dark:bg-gray-900">
+            <SocialHeader />
+            <div className="px-4 py-4">
+              <div className="mb-4">
+                <CreatePost onPostCreated={fetchPosts} />
+              </div>
+              <div className="space-y-4 pb-4">
+                {posts.map((post) => (
+                  <Post 
+                    key={post.id} 
+                    {...post} 
+                    onPostUpdated={fetchPosts}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );
