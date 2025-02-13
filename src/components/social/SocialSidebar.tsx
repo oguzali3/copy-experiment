@@ -35,7 +35,7 @@ export const SocialSidebar = () => {
   const user = useUser();
 
   return (
-    <Sidebar className="fixed h-[calc(100vh-64px)] border-r border-gray-200 bg-white dark:bg-gray-900 w-72">
+    <Sidebar className="fixed top-16 h-[calc(100vh-64px)] border-r border-gray-200 bg-white dark:bg-gray-900 w-72">
       <SidebarContent className="h-full flex flex-col">
         <SidebarGroup>
           <SidebarGroupContent>
