@@ -1,4 +1,3 @@
-
 import { Home, Search, Bell, Mail, UserCircle, PenSquare, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@supabase/auth-helpers-react";
@@ -35,7 +34,7 @@ export const SocialSidebar = () => {
         </Button>
       </div>
       <nav className="space-y-1 px-2">
-        {menuItems.map(item => <Button key={item.title} variant="ghost" onClick={() => navigate(item.path)} className="w-[250px] justify-start gap-4 px-4 text-xl hover:bg-gray-200 dark:hover:bg-gray-800 py-[1px] rounded-md">
+        {menuItems.map(item => <Button key={item.title} variant="ghost" onClick={() => navigate(item.path)} className="w-[250px] justify-start gap-4 px-4 text-xl py-[1px] rounded-md bg-slate-50">
             <item.icon className="h-6 w-6" />
             <span>{item.title}</span>
           </Button>)}
