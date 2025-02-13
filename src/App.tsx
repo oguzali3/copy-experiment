@@ -20,7 +20,6 @@ import Watchlists from "./pages/Watchlists";
 import Portfolio from "./pages/Portfolio";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
-import { useState, useEffect } from 'react';
 import PortfolioSubscriptions from "./pages/PortfolioSubscriptions";
 import PortfolioPricing from "./pages/PortfolioPricing";
 import Feed from "./pages/Feed";
@@ -60,9 +59,10 @@ const App = () => {
                   <Route path="/signin" element={<SignIn />} />
                   <Route path="/signup" element={<SignUp />} />
                   
-                  {/* Social Module Route */}
+                  {/* Social Module Routes */}
                   <Route path="/feed" element={<Feed />} />
                   <Route path="/feed/*" element={<Feed />} />
+                  <Route path="/profile" element={<Profile />} />
 
                   {/* Dashboard Layout Routes */}
                   <Route element={<DashboardLayout />}>
@@ -75,7 +75,6 @@ const App = () => {
                     <Route path="/portfolio" element={<Portfolio />} />
                     <Route path="/portfolio-subscriptions" element={<PortfolioSubscriptions />} />
                     <Route path="/portfolio-pricing" element={<PortfolioPricing />} />
-                    <Route path="/profile" element={<Profile />} />
                     <Route path="/settings" element={<Settings />} />
                     {/* Catch all route */}
                     <Route path="*" element={<Navigate to="/dashboard" replace />} />
