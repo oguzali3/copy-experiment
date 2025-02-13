@@ -51,7 +51,7 @@ const App = () => {
       >
         <TooltipProvider>
           <SidebarProvider>
-            <div className="min-h-screen flex w-full dark:bg-[#1c1c20] dark:text-white">
+            <div className={`min-h-screen flex w-full dark:bg-[#1c1c20] dark:text-white ${window.location.pathname.includes('/feed') ? '' : 'max-w-[1280px] mx-auto p-8'}`}>
               <Toaster />
               <Sonner />
               <BrowserRouter>
