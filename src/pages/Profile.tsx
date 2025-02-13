@@ -208,7 +208,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
-      <div className="flex-1 grid grid-cols-[auto_1fr] max-w-full">
+      <div className="flex-1 grid grid-cols-[auto_1fr_auto] max-w-full">
         <div className="transition-all duration-300 w-[275px] min-w-fit">
           <SocialSidebar />
         </div>
@@ -506,6 +506,13 @@ const Profile = () => {
             )}
           </div>
         </main>
+        <div className="min-w-[350px] max-w-[350px]">
+          <div className="p-4">
+            <div className="sticky top-4">
+              {/* Right sidebar content */}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
