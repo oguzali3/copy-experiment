@@ -84,27 +84,24 @@ const Feed = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <SocialHeader />
-      <div className="pt-16">
-        <div className="max-w-7xl mx-auto flex">
+      <div className="flex pt-16 min-h-screen">
+        <div className="w-72 flex-shrink-0">
           <SocialSidebar />
-          <main className="flex-1 min-w-0 border-x border-gray-200">
-            <div className="max-w-2xl">
-              <CreatePost onPostCreated={fetchPosts} />
-              <div className="space-y-4">
-                {posts.map((post) => (
-                  <Post 
-                    key={post.id} 
-                    {...post} 
-                    onPostUpdated={fetchPosts}
-                  />
-                ))}
-              </div>
-            </div>
-          </main>
-          <div className="w-80 flex-shrink-0">
-            {/* Right sidebar placeholder for future use */}
-          </div>
         </div>
+        <main className="flex-1 ml-72">
+          <div className="max-w-2xl mx-auto px-4 py-8">
+            <CreatePost onPostCreated={fetchPosts} />
+            <div className="space-y-4">
+              {posts.map((post) => (
+                <Post 
+                  key={post.id} 
+                  {...post} 
+                  onPostUpdated={fetchPosts}
+                />
+              ))}
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   );
