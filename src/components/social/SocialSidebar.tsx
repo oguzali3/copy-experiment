@@ -35,38 +35,36 @@ export const SocialSidebar = () => {
   const user = useUser();
 
   return (
-    <Sidebar className="fixed top-16 h-[calc(100vh-64px)] border-r border-gray-200 bg-white dark:bg-gray-900 w-72">
-      <SidebarContent className="h-full flex flex-col">
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    className="flex items-center gap-4 py-3 px-4 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    onClick={() => navigate(item.path)}
-                  >
-                    <item.icon className="h-6 w-6" />
-                    <span className="text-lg">{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-              <SidebarMenuItem>
-                <Button 
-                  className="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white rounded-full py-6"
-                  onClick={() => navigate('/feed/create')}
-                >
-                  <PenSquare className="h-5 w-5 mr-2" />
-                  Post
-                </Button>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+    <div className="w-72 sticky top-16">
+      <div className="px-4">
+        <SidebarMenu>
+          {menuItems.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton 
+                className="flex items-center gap-4 py-3 px-4 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+                onClick={() => navigate(item.path)}
+              >
+                <item.icon className="h-6 w-6" />
+                <span className="text-xl">{item.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+          <SidebarMenuItem>
+            <Button 
+              className="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white rounded-full py-6"
+              onClick={() => navigate('/feed/create')}
+            >
+              <PenSquare className="h-5 w-5 mr-2" />
+              Post
+            </Button>
+          </SidebarMenuItem>
+        </SidebarMenu>
 
         {/* Profile Overview */}
         {user && (
-          <div className="mt-auto p-4 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer" onClick={() => navigate('/profile')}>
+          <div className="mt-auto p-4 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer rounded-full" 
+               onClick={() => navigate('/profile')}
+          >
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={user.user_metadata?.avatar_url} />
@@ -85,7 +83,7 @@ export const SocialSidebar = () => {
             </div>
           </div>
         )}
-      </SidebarContent>
-    </Sidebar>
+      </div>
+    </div>
   );
 };
