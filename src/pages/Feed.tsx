@@ -90,20 +90,24 @@ const Feed = () => {
         <SocialSidebar />
       </div>
       <div className="fixed left-1/2 transform -translate-x-1/2" style={{ width: '680px', marginLeft: '34px' }}>
-        <div className="border-x border-gray-200 dark:border-gray-800 min-h-screen bg-white dark:bg-gray-900">
-          <SocialHeader />
-          <div className="px-4 py-4">
-            <div className="mb-4">
-              <CreatePost onPostCreated={fetchPosts} />
-            </div>
-            <div className="space-y-4 pb-4">
-              {posts.map((post) => (
-                <Post 
-                  key={post.id} 
-                  {...post} 
-                  onPostUpdated={fetchPosts}
-                />
-              ))}
+        <div className="border-x border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 h-screen flex flex-col">
+          <div className="flex-none">
+            <SocialHeader />
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <div className="px-4 py-4">
+              <div className="mb-4">
+                <CreatePost onPostCreated={fetchPosts} />
+              </div>
+              <div className="space-y-4 pb-4">
+                {posts.map((post) => (
+                  <Post 
+                    key={post.id} 
+                    {...post} 
+                    onPostUpdated={fetchPosts}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
