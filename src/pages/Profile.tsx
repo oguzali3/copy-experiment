@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
 import { SocialSidebar } from "@/components/social/SocialSidebar";
 import { SocialHeader } from "@/components/social/SocialHeader";
+
 type ProfileData = {
   full_name: string;
   username: string;
@@ -17,6 +18,7 @@ type ProfileData = {
   twitter: string;
   linkedin: string;
 };
+
 const Profile = () => {
   const navigate = useNavigate();
   const user = useUser();
@@ -47,12 +49,14 @@ const Profile = () => {
   } = useForm<ProfileData>({
     defaultValues: profileData
   });
+
   useEffect(() => {
     if (user) {
       fetchProfileData();
       fetchUserPortfolios();
     }
   }, [user]);
+
   const fetchProfileData = async () => {
     if (!user) return;
     try {
@@ -90,6 +94,7 @@ const Profile = () => {
       });
     }
   };
+
   const fetchUserPortfolios = async () => {
     if (!user) return;
     try {
@@ -108,9 +113,11 @@ const Profile = () => {
       });
     }
   };
+
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
+
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
@@ -151,6 +158,7 @@ const Profile = () => {
       setIsUploading(false);
     }
   };
+
   const handlePortfolioClick = (portfolioId: string) => {
     navigate('/portfolio', {
       state: {
@@ -158,6 +166,7 @@ const Profile = () => {
       }
     });
   };
+
   const onSubmit = async (data: ProfileData) => {
     if (!user) return;
     try {
@@ -187,7 +196,9 @@ const Profile = () => {
       });
     }
   };
-  return <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="fixed left-0 top-0 h-full w-[68px] border-r border-gray-200 dark:border-gray-800 z-10">
         <SocialSidebar />
       </div>
@@ -329,8 +340,12 @@ const Profile = () => {
                 </div>
 
                 <div className="py-6">
-                  {activeTab === 'portfolios' && <div className="space-y-4">
-                      <Button onClick={() => navigate('/portfolio-subscriptions')} className="w-full bg-gradient-to-r from-[#9b87f5] to-[#8B5CF6] hover:from-[#8B5CF6] hover:to-[#7C3AED] text-white font-medium py-2.5 bg-slate-950 hover:bg-slate-800">
+                  {activeTab === 'portfolios' && (
+                    <div className="space-y-4">
+                      <Button 
+                        onClick={() => navigate('/portfolio-subscriptions')} 
+                        className="w-full bg-gradient-to-r from-black to-gray-900 hover:from-gray-900 hover:to-black text-white font-medium py-2.5"
+                      >
                         Create A Portfolio Subscription Service
                       </Button>
                       
@@ -360,7 +375,8 @@ const Profile = () => {
                             No portfolios yet
                           </div>}
                       </div>
-                    </div>}
+                    </div>
+                  )}
                   {activeTab === 'subscribers' && <div className="text-gray-600">
                       No subscribers yet
                     </div>}
@@ -372,6 +388,8 @@ const Profile = () => {
           </div>
         </main>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Profile;
