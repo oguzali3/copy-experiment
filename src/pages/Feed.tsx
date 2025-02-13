@@ -85,34 +85,38 @@ const Feed = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex justify-between max-w-[1225px] mx-auto">
-        <aside className={`fixed top-0 left-1/2 -translate-x-[612.5px] transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[275px]'}`}>
-          <SocialSidebar onCollapse={setIsCollapsed} />
-        </aside>
-        <main className="w-[600px] ml-[275px] border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
-          <SocialHeader />
-          <div className="px-4 py-4">
-            <div className="mb-4">
-              <CreatePost onPostCreated={fetchPosts} />
-            </div>
-            <div className="space-y-4 pb-4">
-              {posts.map((post) => (
-                <Post 
-                  key={post.id} 
-                  {...post} 
-                  onPostUpdated={fetchPosts}
-                />
-              ))}
+      <div className="relative mx-auto" style={{ width: '1225px' }}>
+        <div className="flex">
+          <div className={`fixed top-0 h-screen transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[275px]'}`}>
+            <SocialSidebar onCollapse={setIsCollapsed} />
+          </div>
+          <div className={`flex gap-0 ${isCollapsed ? 'ml-20' : 'ml-[275px]'}`}>
+            <main className="w-[600px] border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
+              <SocialHeader />
+              <div className="px-4 py-4">
+                <div className="mb-4">
+                  <CreatePost onPostCreated={fetchPosts} />
+                </div>
+                <div className="space-y-4 pb-4">
+                  {posts.map((post) => (
+                    <Post 
+                      key={post.id} 
+                      {...post} 
+                      onPostUpdated={fetchPosts}
+                    />
+                  ))}
+                </div>
+              </div>
+            </main>
+            <div className="w-[350px]">
+              <div className="p-4">
+                <div className="sticky top-4">
+                  <WhoToFollow />
+                </div>
+              </div>
             </div>
           </div>
-        </main>
-        <aside className="w-[350px]">
-          <div className="p-4">
-            <div className="sticky top-4">
-              <WhoToFollow />
-            </div>
-          </div>
-        </aside>
+        </div>
       </div>
     </div>
   );
