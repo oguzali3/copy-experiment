@@ -46,7 +46,7 @@ const Feed = () => {
           content,
           created_at,
           user_id,
-          profiles!posts_user_id_fkey (
+          profiles (
             full_name,
             avatar_url
           ),
