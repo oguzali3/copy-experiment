@@ -216,14 +216,14 @@ const Profile = () => {
         <main className="border-x border-gray-200 dark:border-gray-800 min-h-screen bg-white dark:bg-gray-900">
           <SocialHeader />
           <div className="px-4 py-4">
-            <div className="flex items-start justify-between mb-8">
+            <div className="flex items-start justify-between mb-6">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {profileData.full_name || "Add your name"}
                   </h1>
                 </div>
-                <div className="flex items-center gap-4 text-gray-600">
+                <div className="flex items-center gap-3 text-sm text-gray-600">
                   <span>@{profileData.username || "username"}</span>
                   <span>•</span>
                   <button className="hover:text-gray-900">Links</button>
@@ -239,7 +239,7 @@ const Profile = () => {
                   className="hidden"
                 />
                 <div 
-                  className="w-24 h-24 rounded-full overflow-hidden cursor-pointer group relative"
+                  className="w-20 h-20 rounded-full overflow-hidden cursor-pointer group relative"
                   onClick={handleAvatarClick}
                 >
                   {avatarUrl ? (
@@ -250,43 +250,43 @@ const Profile = () => {
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Camera className="w-6 h-6 text-white" />
+                        <Camera className="w-5 h-5 text-white" />
                       </div>
                     </div>
                   ) : (
                     <div className="w-full h-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
-                      <Camera className="w-6 h-6 text-gray-400" />
+                      <Camera className="w-5 h-5 text-gray-400" />
                     </div>
                   )}
                   {isUploading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-500"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-500"></div>
                     </div>
                   )}
                 </div>
               </div>
             </div>
 
-            <div className="mb-8">
-              <p className="text-lg text-gray-700 dark:text-gray-300 mb-4">
+            <div className="mb-6">
+              <p className="text-base text-gray-700 dark:text-gray-300 mb-3">
                 {profileData.bio || "Add a bio to tell people about yourself"}
               </p>
-              <div className="text-gray-600 dark:text-gray-400 mb-4">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
                 {subscriberCount > 0 && (
                   <span className="font-medium">{subscriberCount}K+ subscribers</span>
                 )}
               </div>
             </div>
 
-            <div className="flex gap-4 mb-8">
+            <div className="flex gap-3 mb-6">
               <Button 
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-sm"
               >
                 New post
               </Button>
               <Button 
                 variant="outline" 
-                className="flex-1"
+                className="flex-1 text-sm"
                 onClick={() => setIsEditing(!isEditing)}
               >
                 Edit profile
@@ -294,7 +294,7 @@ const Profile = () => {
               <Button 
                 variant="ghost" 
                 size="icon"
-                className="px-2.5"
+                className="px-2"
               >
                 <MoreHorizontal className="w-5 h-5" />
               </Button>
