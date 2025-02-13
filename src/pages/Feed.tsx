@@ -25,7 +25,6 @@ interface PostType {
 const Feed = () => {
   const [posts, setPosts] = useState<PostType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const user = useUser();
 
   const fetchPosts = async () => {
@@ -83,16 +82,14 @@ const Feed = () => {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
-  const sidebarWidth = isCollapsed ? "w-[80px]" : "w-[275px]";
-
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 max-w-[1265px] mx-auto">
-        <div className={`grid grid-cols-[${sidebarWidth}_600px_350px] gap-4`}>
-          <div className={sidebarWidth}>
-            <SocialSidebar onCollapse={(collapsed) => setIsCollapsed(collapsed)} />
+      <div className="flex-1 flex">
+        <div className="w-full grid grid-cols-1 md:grid-cols-[275px_1fr] lg:grid-cols-[275px_600px_350px]">
+          <div className="fixed md:relative w-[275px]">
+            <SocialSidebar />
           </div>
-          <main className="border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
+          <main className="md:ml-[275px] lg:ml-0 w-full max-w-[600px] border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
             <SocialHeader />
             <div className="px-4 py-4">
               <div className="mb-4">
@@ -109,7 +106,7 @@ const Feed = () => {
               </div>
             </div>
           </main>
-          <div className="p-4">
+          <div className="hidden lg:block">
             <div className="sticky top-4">
               <WhoToFollow />
             </div>
