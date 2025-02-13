@@ -25,6 +25,7 @@ interface PostType {
 const Feed = () => {
   const [posts, setPosts] = useState<PostType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const user = useUser();
 
   const fetchPosts = async () => {
@@ -82,12 +83,14 @@ const Feed = () => {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
+  const sidebarWidth = isCollapsed ? "w-[80px]" : "w-[275px]";
+
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="flex-1 max-w-[1265px] mx-auto">
-        <div className="grid grid-cols-[275px_600px_350px] gap-4">
-          <div>
-            <SocialSidebar />
+        <div className={`grid grid-cols-[${sidebarWidth}_600px_350px] gap-4`}>
+          <div className={sidebarWidth}>
+            <SocialSidebar onCollapse={(collapsed) => setIsCollapsed(collapsed)} />
           </div>
           <main className="border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
             <SocialHeader />
