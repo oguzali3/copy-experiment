@@ -85,7 +85,7 @@ const Feed = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex justify-center">
+      <div className="mx-auto max-w-7xl flex">
         <div className={`transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[275px]'} min-w-fit`}>
           <SocialSidebar onCollapse={setIsCollapsed} />
         </div>
