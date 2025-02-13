@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -59,6 +60,10 @@ const App = () => {
                   <Route path="/signin" element={<SignIn />} />
                   <Route path="/signup" element={<SignUp />} />
                   
+                  {/* Social Module Route */}
+                  <Route path="/feed" element={<Feed />} />
+                  <Route path="/feed/*" element={<Feed />} />
+
                   {/* Dashboard Layout Routes */}
                   <Route element={<DashboardLayout />}>
                     <Route path="/dashboard" element={<Dashboard />} />
@@ -72,7 +77,6 @@ const App = () => {
                     <Route path="/portfolio-pricing" element={<PortfolioPricing />} />
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/settings" element={<Settings />} />
-                    <Route path="/feed" element={<Feed />} />
                     {/* Catch all route */}
                     <Route path="*" element={<Navigate to="/dashboard" replace />} />
                   </Route>
