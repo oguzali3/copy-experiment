@@ -29,7 +29,7 @@ const Feed = () => {
         .from('posts')
         .select(`
           *,
-          user:profiles!posts_user_id_fkey (
+          user:profiles(
             full_name,
             avatar_url
           ),
