@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -12,7 +12,28 @@ import { User } from "lucide-react";
 export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) => {
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [fullName, setFullName] = useState<string | null>(null);
   const user = useUser();
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user?.id) return;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('avatar_url, full_name')
+        .eq('id', user.id)
+        .single();
+      
+      if (data) {
+        setAvatarUrl(data.avatar_url);
+        setFullName(data.full_name);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
 
   const handleSubmit = async () => {
     if (!content.trim() || !user) return;
@@ -41,8 +62,8 @@ export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) =>
       <div className="flex gap-4">
         <Avatar className="w-10 h-10 rounded-full border border-gray-200">
           <AvatarImage 
-            src={user?.user_metadata?.avatar_url} 
-            alt={user?.user_metadata?.full_name || 'User avatar'}
+            src={avatarUrl} 
+            alt={fullName || 'User avatar'}
             className="object-cover"
           />
           <AvatarFallback className="bg-gray-100">
