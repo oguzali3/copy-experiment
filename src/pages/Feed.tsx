@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { CreatePost } from "@/components/social/CreatePost";
 import { Post } from "@/components/social/Post";
@@ -84,33 +83,31 @@ const Feed = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 flex justify-center">
-        <div className="w-full max-w-7xl mx-auto flex">
-          <div className="grid grid-cols-[275px_600px_350px] gap-4">
-            <div>
-              <SocialSidebar />
+      <div className="flex-1 flex justify-center px-4">
+        <div className="w-full max-w-[1265px] flex flex-col lg:flex-row">
+          <div className="hidden lg:block w-[275px] flex-shrink-0">
+            <SocialSidebar />
+          </div>
+          <main className="w-full lg:w-[600px] border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900 flex-shrink-0">
+            <SocialHeader />
+            <div className="px-4 py-4">
+              <div className="mb-4">
+                <CreatePost onPostCreated={fetchPosts} />
+              </div>
+              <div className="space-y-4 pb-4">
+                {posts.map((post) => (
+                  <Post 
+                    key={post.id} 
+                    {...post} 
+                    onPostUpdated={fetchPosts}
+                  />
+                ))}
+              </div>
             </div>
-            <main className="border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
-              <SocialHeader />
-              <div className="px-4 py-4">
-                <div className="mb-4">
-                  <CreatePost onPostCreated={fetchPosts} />
-                </div>
-                <div className="space-y-4 pb-4">
-                  {posts.map((post) => (
-                    <Post 
-                      key={post.id} 
-                      {...post} 
-                      onPostUpdated={fetchPosts}
-                    />
-                  ))}
-                </div>
-              </div>
-            </main>
-            <div className="p-4">
-              <div className="sticky top-4">
-                <WhoToFollow />
-              </div>
+          </main>
+          <div className="hidden lg:block w-[350px] flex-shrink-0 pl-4">
+            <div className="sticky top-4">
+              <WhoToFollow />
             </div>
           </div>
         </div>
