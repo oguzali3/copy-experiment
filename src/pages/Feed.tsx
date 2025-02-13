@@ -6,6 +6,7 @@ import { useUser } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SocialSidebar } from "@/components/social/SocialSidebar";
 import { SocialHeader } from "@/components/social/SocialHeader";
+import { WhoToFollow } from "@/components/social/WhoToFollow";
 
 interface PostType {
   id: string;
@@ -106,7 +107,9 @@ const Feed = () => {
             </div>
           </main>
           <div className="p-4">
-            {/* Right sidebar content will go here */}
+            <div className="sticky top-4">
+              <WhoToFollow />
+            </div>
           </div>
         </div>
       </div>
