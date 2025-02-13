@@ -39,10 +39,14 @@ export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) =>
   return (
     <Card className="p-4">
       <div className="flex gap-4">
-        <Avatar className="w-10 h-10">
-          <AvatarImage src={user?.user_metadata?.avatar_url} />
-          <AvatarFallback>
-            <User className="h-6 w-6" />
+        <Avatar className="w-10 h-10 rounded-full border border-gray-200">
+          <AvatarImage 
+            src={user?.user_metadata?.avatar_url} 
+            alt={user?.user_metadata?.full_name || 'User avatar'}
+            className="object-cover"
+          />
+          <AvatarFallback className="bg-gray-100">
+            <User className="h-5 w-5 text-gray-500" />
           </AvatarFallback>
         </Avatar>
         <div className="flex-1">
