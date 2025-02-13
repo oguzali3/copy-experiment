@@ -14,7 +14,7 @@ export const DashboardHeader = () => {
 
   return (
     <div className="bg-[#191d25] h-16 flex items-center px-6 gap-4 flex-shrink-0">
-      <div className="w-[400px]">
+      <div className="w-[600px]">
         <SearchBar onStockSelect={handleStockSelect} />
       </div>
       <div className="flex items-center gap-3 ml-auto">
