@@ -24,7 +24,7 @@ interface PostData {
   content: string;
   created_at: string;
   user_id: string;
-  user: {
+  profiles: {
     full_name: string | null;
     avatar_url: string | null;
     username: string | null;
@@ -48,7 +48,7 @@ const Feed = () => {
           content,
           created_at,
           user_id,
-          user:profiles!posts_user_id_fkey (
+          profiles!posts_user_id_fkey (
             full_name,
             avatar_url,
             username
@@ -66,9 +66,9 @@ const Feed = () => {
         content: post.content,
         created_at: post.created_at,
         user: {
-          full_name: post.user?.full_name || 'Unknown User',
-          avatar_url: post.user?.avatar_url || '',
-          username: post.user?.username || 'unknown'
+          full_name: post.profiles?.full_name || 'Unknown User',
+          avatar_url: post.profiles?.avatar_url || '',
+          username: post.profiles?.username || 'unknown'
         },
         likes_count: post.likes_count[0]?.count || 0,
         comments_count: post.comments_count[0]?.count || 0,
