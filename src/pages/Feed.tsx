@@ -81,7 +81,7 @@ const Feed = () => {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-[calc(100vh-64px)]">
       <div className="w-72 flex-shrink-0">
         <SocialSidebar />
       </div>
