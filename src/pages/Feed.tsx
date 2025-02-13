@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { CreatePost } from "@/components/social/CreatePost";
 import { Post } from "@/components/social/Post";
@@ -82,30 +81,28 @@ const Feed = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="fixed left-0 top-0 h-full w-[68px] border-r border-gray-200 dark:border-gray-800 z-10">
         <SocialSidebar />
       </div>
-      <div className="flex-1 flex justify-center">
-        <div style={{ marginLeft: '68px' }} className="w-[680px] flex justify-center">
-          <main className="w-full border-x border-gray-200 dark:border-gray-800 min-h-screen bg-white dark:bg-gray-900">
-            <SocialHeader />
-            <div className="px-4 py-4">
-              <div className="mb-4">
-                <CreatePost onPostCreated={fetchPosts} />
-              </div>
-              <div className="space-y-4 pb-4">
-                {posts.map((post) => (
-                  <Post 
-                    key={post.id} 
-                    {...post} 
-                    onPostUpdated={fetchPosts}
-                  />
-                ))}
-              </div>
+      <div className="fixed left-1/2 transform -translate-x-1/2" style={{ width: '680px', marginLeft: '34px' }}>
+        <main className="border-x border-gray-200 dark:border-gray-800 min-h-screen bg-white dark:bg-gray-900">
+          <SocialHeader />
+          <div className="px-4 py-4">
+            <div className="mb-4">
+              <CreatePost onPostCreated={fetchPosts} />
             </div>
-          </main>
-        </div>
+            <div className="space-y-4 pb-4">
+              {posts.map((post) => (
+                <Post 
+                  key={post.id} 
+                  {...post} 
+                  onPostUpdated={fetchPosts}
+                />
+              ))}
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   );
