@@ -4,6 +4,7 @@ import { CreatePost } from "@/components/social/CreatePost";
 import { Post } from "@/components/social/Post";
 import { useUser } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
+import { SocialSidebar } from "@/components/social/SocialSidebar";
 
 interface PostType {
   id: string;
@@ -80,16 +81,19 @@ const Feed = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <CreatePost onPostCreated={fetchPosts} />
-      <div className="space-y-4">
-        {posts.map((post) => (
-          <Post 
-            key={post.id} 
-            {...post} 
-            onPostUpdated={fetchPosts}
-          />
-        ))}
+    <div className="flex">
+      <SocialSidebar />
+      <div className="flex-1 max-w-2xl mx-auto px-4 py-8">
+        <CreatePost onPostCreated={fetchPosts} />
+        <div className="space-y-4">
+          {posts.map((post) => (
+            <Post 
+              key={post.id} 
+              {...post} 
+              onPostUpdated={fetchPosts}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
