@@ -37,10 +37,7 @@ export const SocialSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <Sidebar 
-      className="border-r border-gray-200 bg-white dark:bg-gray-900 w-72" 
-      defaultCollapsed={false}
-    >
+    <Sidebar className="border-r border-gray-200 bg-white dark:bg-gray-900 w-72">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
