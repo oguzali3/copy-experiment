@@ -88,7 +88,7 @@ const Feed = () => {
         <div className={`transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[275px]'} min-w-fit`}>
           <SocialSidebar onCollapse={setIsCollapsed} />
         </div>
-        <main className="flex-1 border-x border-gray-200 bg-white dark:bg-gray-900 max-w-[600px]">
+        <main className="flex-1 border-x border-gray-200 bg-white dark:bg-gray-900">
           <SocialHeader />
           <div className="px-4 py-4">
             <div className="mb-4">
