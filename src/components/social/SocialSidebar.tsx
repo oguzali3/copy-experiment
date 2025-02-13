@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "@supabase/auth-helpers-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const menuItems = [{
   title: "Home",
@@ -28,12 +28,20 @@ const menuItems = [{
   path: "/profile"
 }];
 
-export const SocialSidebar = () => {
+interface SocialSidebarProps {
+  onCollapse?: (collapsed: boolean) => void;
+}
+
+export const SocialSidebar = ({ onCollapse }: SocialSidebarProps) => {
   const navigate = useNavigate();
   const user = useUser();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const sidebarWidth = isCollapsed ? "w-[80px]" : "w-[275px]";
+
+  useEffect(() => {
+    onCollapse?.(isCollapsed);
+  }, [isCollapsed, onCollapse]);
 
   return (
     <div className={`fixed h-screen pt-2 ${sidebarWidth} transition-all duration-300`}>
