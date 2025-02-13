@@ -82,13 +82,13 @@ const Feed = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       <div className="fixed left-0 top-0 h-full w-[68px] border-r border-gray-200 dark:border-gray-800 z-10">
         <SocialSidebar />
       </div>
-      <div className="pl-[68px] flex justify-center">
-        <div className="w-[680px]">
-          <main className="border-x border-gray-200 dark:border-gray-800 min-h-screen bg-white dark:bg-gray-900">
+      <div className="flex-1 flex justify-center">
+        <div style={{ marginLeft: '68px' }} className="w-[680px] flex justify-center">
+          <main className="w-full border-x border-gray-200 dark:border-gray-800 min-h-screen bg-white dark:bg-gray-900">
             <SocialHeader />
             <div className="px-4 py-4">
               <div className="mb-4">
