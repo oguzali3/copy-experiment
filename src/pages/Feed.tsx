@@ -28,8 +28,11 @@ const Feed = () => {
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select(`
-          *,
-          user:profiles(
+          id,
+          content,
+          created_at,
+          user_id,
+          profiles!posts_user_id_fkey (
             full_name,
             avatar_url
           ),
@@ -42,7 +45,13 @@ const Feed = () => {
       if (postsError) throw postsError;
 
       setPosts(postsData.map(post => ({
-        ...post,
+        id: post.id,
+        content: post.content,
+        created_at: post.created_at,
+        user: {
+          full_name: post.profiles.full_name,
+          avatar_url: post.profiles.avatar_url
+        },
         likes_count: post.likes_count[0]?.count || 0,
         comments_count: post.comments_count[0]?.count || 0,
         is_liked: post.is_liked?.length > 0 || false
