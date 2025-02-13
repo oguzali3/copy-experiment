@@ -6,6 +6,7 @@ import { useUser } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SocialSidebar } from "@/components/social/SocialSidebar";
 import { SocialHeader } from "@/components/social/SocialHeader";
+import { WhoToFollow } from "@/components/social/WhoToFollow";
 
 interface PostType {
   id: string;
@@ -83,12 +84,12 @@ const Feed = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
+      <div className="flex-1 grid grid-cols-[auto_1fr_auto] max-w-full">
         <div className={`transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[275px]'} min-w-fit`}>
           <SocialSidebar onCollapse={setIsCollapsed} />
         </div>
-        <main className="flex-1 border-x border-gray-200 bg-white dark:bg-gray-900">
+        <main className="border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900 min-w-[600px] max-w-[600px]">
           <SocialHeader />
           <div className="px-4 py-4">
             <div className="mb-4">
@@ -105,6 +106,13 @@ const Feed = () => {
             </div>
           </div>
         </main>
+        <div className="min-w-[350px] max-w-[350px]">
+          <div className="p-4">
+            <div className="sticky top-4">
+              <WhoToFollow />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
