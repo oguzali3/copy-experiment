@@ -18,6 +18,20 @@ interface PostType {
   is_liked: boolean;
 }
 
+interface PostData {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  profiles: {
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+  likes_count: { count: number }[];
+  comments_count: { count: number }[];
+  is_liked: { user_id: string }[];
+}
+
 const Feed = () => {
   const [posts, setPosts] = useState<PostType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,13 +58,13 @@ const Feed = () => {
 
       if (postsError) throw postsError;
 
-      setPosts(postsData.map(post => ({
+      setPosts((postsData as PostData[]).map(post => ({
         id: post.id,
         content: post.content,
         created_at: post.created_at,
         user: {
-          full_name: post.profiles.full_name,
-          avatar_url: post.profiles.avatar_url
+          full_name: post.profiles?.full_name || 'Unknown User',
+          avatar_url: post.profiles?.avatar_url || ''
         },
         likes_count: post.likes_count[0]?.count || 0,
         comments_count: post.comments_count[0]?.count || 0,
