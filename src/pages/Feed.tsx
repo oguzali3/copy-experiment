@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { CreatePost } from "@/components/social/CreatePost";
 import { Post } from "@/components/social/Post";
@@ -83,39 +82,32 @@ const Feed = () => {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
   }
 
-  const sidebarWidth = isCollapsed ? "80px" : "275px";
-
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 flex justify-center">
-        <div className="grid" style={{ 
-          gridTemplateColumns: `${sidebarWidth} 600px 350px`,
-          gap: '1rem'
-        }}>
-          <div style={{ width: sidebarWidth }} className="transition-all duration-300">
-            <SocialSidebar onCollapse={setIsCollapsed} />
+      <div className="flex-1 grid grid-cols-[auto_minmax(500px,600px)_minmax(300px,350px)]">
+        <div className={`transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-[275px]'}`}>
+          <SocialSidebar onCollapse={setIsCollapsed} />
+        </div>
+        <main className="border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
+          <SocialHeader />
+          <div className="px-4 py-4">
+            <div className="mb-4">
+              <CreatePost onPostCreated={fetchPosts} />
+            </div>
+            <div className="space-y-4 pb-4">
+              {posts.map((post) => (
+                <Post 
+                  key={post.id} 
+                  {...post} 
+                  onPostUpdated={fetchPosts}
+                />
+              ))}
+            </div>
           </div>
-          <main className="border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
-            <SocialHeader />
-            <div className="px-4 py-4">
-              <div className="mb-4">
-                <CreatePost onPostCreated={fetchPosts} />
-              </div>
-              <div className="space-y-4 pb-4">
-                {posts.map((post) => (
-                  <Post 
-                    key={post.id} 
-                    {...post} 
-                    onPostUpdated={fetchPosts}
-                  />
-                ))}
-              </div>
-            </div>
-          </main>
-          <div className="p-4">
-            <div className="sticky top-4">
-              <WhoToFollow />
-            </div>
+        </main>
+        <div className="p-4">
+          <div className="sticky top-4">
+            <WhoToFollow />
           </div>
         </div>
       </div>
