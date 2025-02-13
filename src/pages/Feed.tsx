@@ -90,8 +90,10 @@ const Feed = () => {
           </div>
           <main className="border-x border-gray-200 min-h-screen bg-white dark:bg-gray-900">
             <SocialHeader />
-            <div className="px-4">
-              <CreatePost onPostCreated={fetchPosts} />
+            <div className="px-4 py-4">
+              <div className="mb-4">
+                <CreatePost onPostCreated={fetchPosts} />
+              </div>
               <div className="space-y-4 pb-4">
                 {posts.map((post) => (
                   <Post 
