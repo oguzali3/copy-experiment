@@ -87,7 +87,7 @@ const Feed = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="flex-1 max-w-[1265px] mx-auto">
+      <div className="flex-1 flex justify-center">
         <div className="grid" style={{ 
           gridTemplateColumns: `${sidebarWidth} 600px 350px`,
           gap: '1rem'
