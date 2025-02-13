@@ -29,7 +29,7 @@ const Feed = () => {
         .from('posts')
         .select(`
           *,
-          user:user_id (
+          user:profiles!posts_user_id_fkey (
             full_name,
             avatar_url
           ),
@@ -43,9 +43,9 @@ const Feed = () => {
 
       setPosts(postsData.map(post => ({
         ...post,
-        likes_count: post.likes_count[0].count,
-        comments_count: post.comments_count[0].count,
-        is_liked: post.is_liked.length > 0
+        likes_count: post.likes_count[0]?.count || 0,
+        comments_count: post.comments_count[0]?.count || 0,
+        is_liked: post.is_liked?.length > 0 || false
       })));
     } catch (error) {
       console.error('Error fetching posts:', error);

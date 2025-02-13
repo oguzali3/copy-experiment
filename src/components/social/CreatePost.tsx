@@ -2,11 +2,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { useUser } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { User } from "lucide-react";
 
 export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) => {
   const [content, setContent] = useState("");
@@ -38,7 +39,11 @@ export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) =>
   return (
     <Card className="p-4 mb-6">
       <div className="flex gap-4">
-        <Avatar className="w-10 h-10" />
+        <Avatar className="w-10 h-10">
+          <AvatarFallback>
+            <User className="w-6 h-6" />
+          </AvatarFallback>
+        </Avatar>
         <div className="flex-1">
           <Textarea
             placeholder="What's on your mind?"

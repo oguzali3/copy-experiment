@@ -1,9 +1,9 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, ThumbsUp, Share2 } from "lucide-react";
+import { MessageCircle, ThumbsUp, Share2, User } from "lucide-react";
 import { useUser } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -71,7 +71,12 @@ export const Post = ({
   return (
     <Card className="p-4 mb-4">
       <div className="flex items-start gap-3">
-        <Avatar className="w-10 h-10" src={user.avatar_url} />
+        <Avatar className="w-10 h-10">
+          <AvatarImage src={user.avatar_url} alt={user.full_name} />
+          <AvatarFallback>
+            <User className="w-6 h-6" />
+          </AvatarFallback>
+        </Avatar>
         <div className="flex-1">
           <div className="flex justify-between items-start">
             <div>
