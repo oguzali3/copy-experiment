@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,29 @@ const SignIn = () => {
       });
       
       if (error) {
-        toast.error(error.message);
+        if (error.message === 'Invalid login credentials') {
+          // First check if the user exists
+          const { data: userExists } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              emailRedirectTo: `${window.location.origin}/dashboard`
+            }
+          });
+
+          if (userExists.user) {
+            toast.error("Account not found. Please sign up first.", {
+              action: {
+                label: "Sign Up",
+                onClick: () => navigate("/signup")
+              }
+            });
+          } else {
+            toast.error("Invalid email or password. Please try again.");
+          }
+        } else {
+          toast.error(error.message);
+        }
       } else if (data?.user) {
         toast.success("Signed in successfully");
         navigate("/dashboard");
