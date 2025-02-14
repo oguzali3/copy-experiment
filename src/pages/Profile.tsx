@@ -230,7 +230,7 @@ const Profile = () => {
         .from('user_followers')
         .select(`
           follower_id,
-          follower:profiles(
+          profiles!user_followers_follower_id_fkey (
             id,
             username,
             full_name,
@@ -259,13 +259,13 @@ const Profile = () => {
       }
 
       const processedFollowers = followersData
-        .filter(item => item.follower) // Filter out any null values
+        .filter(item => item.profiles) // Filter out any null values
         .map(item => ({
-          id: item.follower.id,
-          username: item.follower.username || '',
-          full_name: item.follower.full_name || '',
-          avatar_url: item.follower.avatar_url,
-          is_following: !!followBackStatus[item.follower.id]
+          id: item.profiles.id,
+          username: item.profiles.username || '',
+          full_name: item.profiles.full_name || '',
+          avatar_url: item.profiles.avatar_url,
+          is_following: !!followBackStatus[item.profiles.id]
         }));
 
       setFollowers(processedFollowers);
@@ -283,7 +283,7 @@ const Profile = () => {
         .from('user_followers')
         .select(`
           following_id,
-          following:profiles(
+          profiles!user_followers_following_id_fkey (
             id,
             username,
             full_name,
@@ -296,12 +296,12 @@ const Profile = () => {
       if (!followingData) return;
 
       const processedFollowing = followingData
-        .filter(item => item.following) // Filter out any null values
+        .filter(item => item.profiles) // Filter out any null values
         .map(item => ({
-          id: item.following.id,
-          username: item.following.username || '',
-          full_name: item.following.full_name || '',
-          avatar_url: item.following.avatar_url
+          id: item.profiles.id,
+          username: item.profiles.username || '',
+          full_name: item.profiles.full_name || '',
+          avatar_url: item.profiles.avatar_url
         }));
 
       setFollowing(processedFollowing);
