@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,6 +27,42 @@ interface PostProps {
   image_url?: string | null;
   onPostUpdated?: () => void;
 }
+
+const formatContentWithTickers = (content: string) => {
+  // Match $TICKER pattern (2-5 characters after $)
+  const tickerPattern = /\$([A-Z]{2,5})/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = tickerPattern.exec(content)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+    // Add the ticker as a span with special styling
+    const ticker = match[1];
+    parts.push(
+      <button
+        key={match.index}
+        onClick={(e) => {
+          e.stopPropagation();
+          window.location.href = `/analysis?ticker=${ticker}`;
+        }}
+        className="text-blue-500 hover:underline font-medium"
+      >
+        ${ticker}
+      </button>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+  // Add remaining text after last match
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return parts;
+};
 
 export const Post = ({
   id,
@@ -108,7 +145,7 @@ export const Post = ({
         content: comment.content,
         created_at: comment.created_at,
         user: {
-          id: comment.user_id,  // Added this field
+          id: comment.user_id,
           full_name: comment.profiles?.full_name || 'Unknown User',
           avatar_url: comment.profiles?.avatar_url || '',
           username: comment.profiles?.username || 'unknown'
@@ -167,7 +204,9 @@ export const Post = ({
               {formatDistanceToNow(new Date(created_at), { addSuffix: true })}
             </span>
           </div>
-          <p className="mt-2 text-gray-900">{content}</p>
+          <p className="mt-2 text-gray-900">
+            {formatContentWithTickers(content)}
+          </p>
           
           {image_url && (
             <div className="mt-3 rounded-lg overflow-hidden">
