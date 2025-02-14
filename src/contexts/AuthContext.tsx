@@ -1,41 +1,49 @@
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import { Session } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-type AuthContextType = {
+interface AuthState {
   session: Session | null;
   loading: boolean;
+}
+
+const initialState: AuthState = {
+  session: null,
+  loading: true
 };
 
-const AuthContext = createContext<AuthContextType>({ session: null, loading: true });
+const AuthContext = createContext<AuthState>(initialState);
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const [state, setState] = useState<AuthState>(initialState);
 
   useEffect(() => {
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
+      setState(prev => ({ ...prev, session, loading: false }));
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setSession(session);
-      setLoading(false);
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setState(prev => ({ ...prev, session, loading: false }));
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, loading }}>
+    <AuthContext.Provider value={state}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => {
+export const useAuth = (): AuthState => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');

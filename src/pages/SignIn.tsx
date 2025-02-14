@@ -8,12 +8,20 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { AuthError } from "@supabase/supabase-js";
+
+interface SignInFormData {
+  email: string;
+  password: string;
+}
 
 const SignIn = () => {
   const navigate = useNavigate();
   const { session, loading } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState<SignInFormData>({
+    email: "",
+    password: ""
+  });
   const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
@@ -28,31 +36,12 @@ const SignIn = () => {
     
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+        email: formData.email,
+        password: formData.password
       });
       
       if (error) {
-        if (error.message === 'Invalid login credentials') {
-          const { data: userData } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', email)
-            .single();
-
-          if (userData) {
-            toast.error("Invalid password. Please try again.");
-          } else {
-            toast.error("Account not found.", {
-              action: {
-                label: "Sign Up",
-                onClick: () => navigate("/signup")
-              }
-            });
-          }
-        } else {
-          toast.error(error.message);
-        }
+        handleAuthError(error);
       } else {
         toast.success("Signed in successfully");
       }
@@ -61,6 +50,29 @@ const SignIn = () => {
       toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setSigningIn(false);
+    }
+  };
+
+  const handleAuthError = async (error: AuthError) => {
+    if (error.message === 'Invalid login credentials') {
+      const { data: userData } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', formData.email)
+        .single();
+
+      if (userData) {
+        toast.error("Invalid password. Please try again.");
+      } else {
+        toast.error("Account not found.", {
+          action: {
+            label: "Sign Up",
+            onClick: () => navigate("/signup")
+          }
+        });
+      }
+    } else {
+      toast.error(error.message);
     }
   };
 
@@ -110,8 +122,8 @@ const SignIn = () => {
                 <Input
                   id="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                   required
                   placeholder="Enter your email"
                   className="mt-1"
@@ -125,8 +137,8 @@ const SignIn = () => {
                 <Input
                   id="password"
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={formData.password}
+                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                   required
                   placeholder="Enter your password"
                   className="mt-1"
