@@ -335,11 +335,18 @@ const Profile = () => {
       
       if (error) throw error;
       
+      // Update followers list to show following status
       setFollowers(followers.map(follower => 
         follower.id === userId 
           ? { ...follower, is_following: true }
           : follower
       ));
+
+      // Immediately update the following count
+      setProfileData(prev => ({
+        ...prev,
+        following_count: (prev.following_count || 0) + 1
+      }));
       
       toast.success("Following user");
     } catch (error) {
@@ -370,8 +377,11 @@ const Profile = () => {
           : follower
       ));
       
-      // Refresh profile data to update counts
-      await fetchProfileData();
+      // Immediately update the following count
+      setProfileData(prev => ({
+        ...prev,
+        following_count: Math.max(0, (prev.following_count || 0) - 1)
+      }));
       
       toast.success("Unfollowed user");
     } catch (error) {
