@@ -8,7 +8,9 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionContext } from '@supabase/auth-helpers-react';
-import { AuthError, Session } from '@supabase/supabase-js';
+import type { AuthError, AuthResponse, Session, User } from '@supabase/supabase-js';
+
+type AuthStateChangeCallback = (session: Session | null) => void;
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -17,23 +19,29 @@ const SignIn = () => {
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
 
-  // Handle initial session and navigation
+  // Handle initial session
   useEffect(() => {
     if (session) {
       navigate("/dashboard");
     }
   }, [session, navigate]);
 
-  // Handle auth state changes
+  // Handle auth state changes with simplified typing
   useEffect(() => {
-    const subscription = supabase.auth.onAuthStateChange((event, currentSession) => {
+    const handleAuthChange: AuthStateChangeCallback = (currentSession) => {
       if (currentSession) {
         navigate("/dashboard");
       }
+    };
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      handleAuthChange(session);
     });
 
     return () => {
-      subscription.data.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, [navigate]);
 
@@ -42,7 +50,7 @@ const SignIn = () => {
     setSigningIn(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error }: AuthResponse = await supabase.auth.signInWithPassword({
         email,
         password
       });
