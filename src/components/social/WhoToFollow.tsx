@@ -5,14 +5,15 @@ import { Button } from "@/components/ui/button";
 import { User, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from "@supabase/auth-helpers-react";
+import { toast } from "sonner";
 
 interface SuggestedUser {
   id: string;
   username: string;
   full_name: string;
   avatar_url: string;
-  isFollowing?: boolean;
-  follows_you?: boolean;
+  isFollowing: boolean;
+  follows_you: boolean;
 }
 
 export const WhoToFollow = () => {
@@ -21,24 +22,91 @@ export const WhoToFollow = () => {
 
   const fetchSuggestedUsers = async () => {
     try {
-      const { data, error } = await supabase
+      // Get users and their following status
+      const { data: users, error: usersError } = await supabase
         .from('profiles')
         .select('*')
         .neq('id', currentUser?.id)
         .limit(3);
 
-      if (error) throw error;
+      if (usersError) throw usersError;
 
-      setSuggestedUsers(data.map(user => ({
+      if (!users) return;
+
+      // Get following relationships
+      const { data: followingData, error: followingError } = await supabase
+        .from('user_followers')
+        .select('following_id')
+        .eq('follower_id', currentUser?.id);
+
+      if (followingError) throw followingError;
+
+      // Get users who follow the current user
+      const { data: followersData, error: followersError } = await supabase
+        .from('user_followers')
+        .select('follower_id')
+        .eq('following_id', currentUser?.id);
+
+      if (followersError) throw followersError;
+
+      // Create a set of IDs for easier lookup
+      const followingSet = new Set(followingData?.map(f => f.following_id));
+      const followersSet = new Set(followersData?.map(f => f.follower_id));
+
+      const formattedUsers = users.map(user => ({
         id: user.id,
         username: user.username || '',
         full_name: user.full_name || '',
         avatar_url: user.avatar_url || '',
-        isFollowing: false,
-        follows_you: Math.random() > 0.5 // Temporary random value for demo
-      })));
+        isFollowing: followingSet.has(user.id),
+        follows_you: followersSet.has(user.id)
+      }));
+
+      setSuggestedUsers(formattedUsers);
     } catch (error) {
       console.error('Error fetching suggested users:', error);
+      toast.error("Failed to load suggested users");
+    }
+  };
+
+  const handleFollow = async (userId: string) => {
+    try {
+      const isFollowing = suggestedUsers.find(user => user.id === userId)?.isFollowing;
+
+      if (isFollowing) {
+        // Unfollow
+        const { error } = await supabase
+          .from('user_followers')
+          .delete()
+          .eq('follower_id', currentUser?.id)
+          .eq('following_id', userId);
+
+        if (error) throw error;
+      } else {
+        // Follow
+        const { error } = await supabase
+          .from('user_followers')
+          .insert({
+            follower_id: currentUser?.id,
+            following_id: userId
+          });
+
+        if (error) throw error;
+      }
+
+      // Update local state
+      setSuggestedUsers(prev =>
+        prev.map(user =>
+          user.id === userId
+            ? { ...user, isFollowing: !user.isFollowing }
+            : user
+        )
+      );
+
+      toast.success(isFollowing ? "Unfollowed successfully" : "Followed successfully");
+    } catch (error) {
+      console.error('Error updating follow status:', error);
+      toast.error("Failed to update follow status");
     }
   };
 
@@ -47,16 +115,6 @@ export const WhoToFollow = () => {
       fetchSuggestedUsers();
     }
   }, [currentUser]);
-
-  const handleFollow = async (userId: string) => {
-    setSuggestedUsers(prev => 
-      prev.map(user => 
-        user.id === userId 
-          ? { ...user, isFollowing: !user.isFollowing }
-          : user
-      )
-    );
-  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
@@ -87,7 +145,7 @@ export const WhoToFollow = () => {
               className={`${user.isFollowing ? 'hover:bg-red-50 hover:text-red-600' : ''}`}
               onClick={() => handleFollow(user.id)}
             >
-              {user.follows_you ? "Follow back" : user.isFollowing ? "Following" : "Follow"}
+              {user.follows_you && !user.isFollowing ? "Follow back" : user.isFollowing ? "Following" : "Follow"}
             </Button>
           </div>
         ))}
