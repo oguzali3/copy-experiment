@@ -8,6 +8,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionContext } from '@supabase/auth-helpers-react';
+import type { AuthError, Session } from '@supabase/supabase-js';
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -16,24 +17,33 @@ const SignIn = () => {
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
 
+  // Redirect if already logged in
   useEffect(() => {
     if (session) {
       navigate("/dashboard");
     }
   }, [session, navigate]);
 
-  // Fixed auth state change subscription
+  // Simplified auth state change handler
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
+    let unsubscribe: (() => void) | null = null;
+
+    const setupAuthListener = () => {
+      const authListener = supabase.auth.onAuthStateChange((_, currentSession) => {
+        if (currentSession) {
+          navigate("/dashboard");
+        }
+      });
+      
+      unsubscribe = authListener.data.subscription.unsubscribe;
+    };
+
+    setupAuthListener();
 
     return () => {
-      subscription.unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, [navigate]);
 
@@ -42,13 +52,13 @@ const SignIn = () => {
     setSigningIn(true);
     
     try {
-      const result = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
-      if (result.error) {
-        if (result.error.message === 'Invalid login credentials') {
+      if (error) {
+        if (error.message === 'Invalid login credentials') {
           const { data: userData } = await supabase
             .from('profiles')
             .select('id')
@@ -66,9 +76,9 @@ const SignIn = () => {
             });
           }
         } else {
-          toast.error(result.error.message);
+          toast.error(error.message);
         }
-      } else if (result.data?.user) {
+      } else if (data?.user) {
         toast.success("Signed in successfully");
         navigate("/dashboard");
       }
@@ -82,16 +92,16 @@ const SignIn = () => {
 
   const handleGoogleSignIn = async () => {
     try {
-      const result = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/dashboard`
         }
       });
       
-      if (result.error) {
+      if (error) {
         toast.error("Error signing in with Google");
-        console.error("Error:", result.error.message);
+        console.error("Error:", error.message);
       }
     } catch (error) {
       toast.error("An unexpected error occurred");
