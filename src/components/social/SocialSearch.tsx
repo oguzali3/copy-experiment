@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { SearchResults } from "./SearchResults";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useNavigate } from "react-router-dom";
 
 export const SocialSearch = () => {
   const [query, setQuery] = useState("");
@@ -14,6 +15,7 @@ export const SocialSearch = () => {
   const [showResults, setShowResults] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const debouncedQuery = useDebounce(query, 300);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const searchData = async () => {
@@ -47,15 +49,16 @@ export const SocialSearch = () => {
             comments:post_comments (count),
             user_likes:post_likes (id, user_id)
           `)
-          .textSearch('content', debouncedQuery)
-          .order('created_at', { ascending: false });
+          .ilike('content', `%${debouncedQuery}%`)
+          .order('created_at', { ascending: false })
+          .limit(5);
 
         setProfiles(profilesData || []);
         setPosts(postsData ? postsData.map(post => ({
           ...post,
           likes_count: post.likes[0]?.count || 0,
           comments_count: post.comments[0]?.count || 0,
-          is_liked: false // You might want to implement proper like status here
+          is_liked: false
         })) : []);
       } catch (error) {
         console.error('Search error:', error);
@@ -75,24 +78,41 @@ export const SocialSearch = () => {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      setShowResults(false);
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch(e);
+    }
+  };
 
   return (
     <div ref={containerRef} className="relative w-full max-w-xl">
-      <div className="relative">
-        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setShowResults(true)}
-          className="w-full pl-9 pr-4"
-          placeholder="Search profiles and posts..."
-        />
-        {isLoading && (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-500" />
-        )}
-      </div>
+      <form onSubmit={handleSearch}>
+        <div className="relative">
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setShowResults(true)}
+            onKeyDown={handleKeyDown}
+            className="w-full pl-9 pr-4"
+            placeholder="Search profiles, posts, or $symbols..."
+          />
+          {isLoading && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-500" />
+          )}
+        </div>
+      </form>
 
       {showResults && (
         <SearchResults

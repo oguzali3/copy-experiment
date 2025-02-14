@@ -26,6 +26,7 @@ import Profile from "./pages/Profile";
 import PortfolioSubscriptions from "./pages/PortfolioSubscriptions";
 import PortfolioPricing from "./pages/PortfolioPricing";
 import Feed from "./pages/Feed";
+import Search from "./pages/Search";
 
 // Initialize QueryClient with latest recommended settings
 const queryClient = new QueryClient({
@@ -76,6 +77,7 @@ const App = () => {
                   {/* Social Module Routes */}
                   <Route path="/feed" element={<Feed />} />
                   <Route path="/feed/*" element={<Feed />} />
+                  <Route path="/search" element={<Search />} />
                   <Route path="/profile" element={<Profile />} />
 
                   {/* Protected Dashboard Routes */}
