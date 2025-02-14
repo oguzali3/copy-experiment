@@ -55,9 +55,13 @@ export const DashboardSidebar = () => {
           .select('id')
           .eq('user_id', user.id)
           .limit(1)
-          .single();
+          .maybeSingle();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching default portfolio:', error);
+          return;
+        }
+        
         if (data) {
           setDefaultPortfolioId(data.id);
         }
