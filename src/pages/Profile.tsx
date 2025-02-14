@@ -1,7 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
-import { toast } from "@/components/ui/use-toast";
 import { useState, useRef, useEffect } from "react";
 import { useUser } from '@supabase/auth-helpers-react';
 import { Camera, Link as LinkIcon, Twitter, Linkedin, Settings, MoreHorizontal, TrendingUp, TrendingDown, UserPlus, UserMinus } from "lucide-react";
@@ -9,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SocialSidebar } from "@/components/social/SocialSidebar";
 import { SocialHeader } from "@/components/social/SocialHeader";
+import { toast } from "sonner";
 
 type ProfileData = {
   id: string;
@@ -80,9 +80,9 @@ const Profile = () => {
         .select('id')
         .eq('follower_id', user.id)
         .eq('following_id', profileId)
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       setIsFollowing(!!data);
     } catch (error) {
       console.error('Error checking follow status:', error);
@@ -102,7 +102,7 @@ const Profile = () => {
         
         if (error) throw error;
         setIsFollowing(false);
-        toast.success(`Unfollowed ${profileData.full_name}`);
+        toast(`Unfollowed ${profileData.full_name}`);
       } else {
         const { error } = await supabase
           .from('user_followers')
@@ -113,14 +113,14 @@ const Profile = () => {
         
         if (error) throw error;
         setIsFollowing(true);
-        toast.success(`Following ${profileData.full_name}`);
+        toast(`Following ${profileData.full_name}`);
       }
       
       // Refresh profile data to update follower count
       fetchProfileData();
     } catch (error) {
       console.error('Error toggling follow:', error);
-      toast.error("Failed to update follow status");
+      toast("Failed to update follow status");
     }
   };
 
@@ -131,7 +131,7 @@ const Profile = () => {
         .from('profiles')
         .select('*')
         .eq('id', profileId)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       if (data) {
@@ -161,26 +161,23 @@ const Profile = () => {
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      toast.error("Failed to load profile data");
+      toast("Failed to load profile data");
     }
   };
 
   const fetchUserPortfolios = async () => {
-    if (!user) return;
+    if (!profileId) return;
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('portfolios').select('id, name, yearly_performance, total_value').eq('user_id', user.id);
+      const { data, error } = await supabase
+        .from('portfolios')
+        .select('id, name, yearly_performance, total_value')
+        .eq('user_id', profileId);
+      
       if (error) throw error;
       setUserPortfolios(data || []);
     } catch (error) {
       console.error('Error fetching portfolios:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load portfolios",
-        variant: "destructive"
-      });
+      toast("Failed to load portfolios");
     }
   };
 
@@ -195,35 +192,28 @@ const Profile = () => {
       setIsUploading(true);
       const fileExt = file.name.split('.').pop();
       const filePath = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
-      const {
-        error: uploadError
-      } = await supabase.storage.from('avatars').upload(filePath, file, {
-        upsert: true
-      });
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+      
       if (uploadError) throw uploadError;
-      const {
-        data: {
-          publicUrl
-        }
-      } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      const {
-        error: updateError
-      } = await supabase.from('profiles').update({
-        avatar_url: publicUrl
-      }).eq('id', user.id);
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+      
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+      
       if (updateError) throw updateError;
+      
       setAvatarUrl(publicUrl);
-      toast({
-        title: "Success",
-        description: "Profile picture updated successfully"
-      });
+      toast("Profile picture updated successfully");
     } catch (error) {
       console.error('Error uploading avatar:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update profile picture. Please try again.",
-        variant: "destructive"
-      });
+      toast("Failed to update profile picture. Please try again.");
     } finally {
       setIsUploading(false);
     }
@@ -231,39 +221,32 @@ const Profile = () => {
 
   const handlePortfolioClick = (portfolioId: string) => {
     navigate('/portfolio', {
-      state: {
-        portfolioId
-      }
+      state: { portfolioId }
     });
   };
 
   const onSubmit = async (data: ProfileData) => {
     if (!user) return;
     try {
-      const {
-        error
-      } = await supabase.from('profiles').update({
-        full_name: data.full_name,
-        username: data.username,
-        bio: data.bio,
-        website: data.website,
-        social_twitter: data.twitter,
-        social_linkedin: data.linkedin
-      }).eq('id', user.id);
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: data.full_name,
+          username: data.username,
+          bio: data.bio,
+          website: data.website,
+          social_twitter: data.twitter,
+          social_linkedin: data.linkedin
+        })
+        .eq('id', user.id);
+      
       if (error) throw error;
-      setProfileData(data);
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been successfully updated."
-      });
+      setProfileData({ ...profileData, ...data });
+      toast("Profile updated successfully");
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive"
-      });
+      toast("Failed to update profile");
     }
   };
 
