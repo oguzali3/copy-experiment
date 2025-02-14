@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -28,21 +27,19 @@ const SignIn = () => {
     let mounted = true;
 
     const handleAuthChange = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (mounted && data.session) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (mounted && session) {
         navigate("/dashboard");
       }
     };
 
-    handleAuthChange();
-
-    const { subscription } = supabase.auth.onAuthStateChange(() => {
+    const { data } = supabase.auth.onAuthStateChange(() => {
       handleAuthChange();
     });
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      data.subscription.unsubscribe();
     };
   }, [navigate]);
 
