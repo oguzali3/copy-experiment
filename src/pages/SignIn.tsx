@@ -7,22 +7,28 @@ import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import { User, Session } from '@supabase/supabase-js';
 import { useSessionContext } from '@supabase/auth-helpers-react';
+
+type AuthSession = {
+  session: Session | null;
+  user: User | null;
+};
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const { session } = useSessionContext();
+  const sessionContext = useSessionContext();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
-    if (session) {
+    if (sessionContext?.session) {
       navigate("/dashboard");
     }
-  }, [session, navigate]);
+  }, [sessionContext?.session, navigate]);
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleEmailSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSigningIn(true);
     
@@ -83,7 +89,7 @@ const SignIn = () => {
     }
   };
 
-  if (session) {
+  if (sessionContext?.session) {
     return null;
   }
 
