@@ -230,7 +230,7 @@ const Profile = () => {
         .from('user_followers')
         .select(`
           follower_id,
-          followers:profiles!user_followers_follower_id_fkey (
+          follower:profiles(
             id,
             username,
             full_name,
@@ -240,7 +240,6 @@ const Profile = () => {
         .eq('following_id', profileId);
 
       if (followersError) throw followersError;
-
       if (!followersData) return;
 
       let followBackStatus: Record<string, boolean> = {};
@@ -259,13 +258,15 @@ const Profile = () => {
         }
       }
 
-      const processedFollowers = followersData.map(item => ({
-        id: item.followers.id,
-        username: item.followers.username || '',
-        full_name: item.followers.full_name || '',
-        avatar_url: item.followers.avatar_url,
-        is_following: !!followBackStatus[item.followers.id]
-      }));
+      const processedFollowers = followersData
+        .filter(item => item.follower) // Filter out any null values
+        .map(item => ({
+          id: item.follower.id,
+          username: item.follower.username || '',
+          full_name: item.follower.full_name || '',
+          avatar_url: item.follower.avatar_url,
+          is_following: !!followBackStatus[item.follower.id]
+        }));
 
       setFollowers(processedFollowers);
     } catch (error) {
@@ -282,7 +283,7 @@ const Profile = () => {
         .from('user_followers')
         .select(`
           following_id,
-          following:profiles!user_followers_following_id_fkey (
+          following:profiles(
             id,
             username,
             full_name,
@@ -292,15 +293,16 @@ const Profile = () => {
         .eq('follower_id', profileId);
 
       if (followingError) throw followingError;
-
       if (!followingData) return;
 
-      const processedFollowing = followingData.map(item => ({
-        id: item.following.id,
-        username: item.following.username || '',
-        full_name: item.following.full_name || '',
-        avatar_url: item.following.avatar_url
-      }));
+      const processedFollowing = followingData
+        .filter(item => item.following) // Filter out any null values
+        .map(item => ({
+          id: item.following.id,
+          username: item.following.username || '',
+          full_name: item.following.full_name || '',
+          avatar_url: item.following.avatar_url
+        }));
 
       setFollowing(processedFollowing);
     } catch (error) {
