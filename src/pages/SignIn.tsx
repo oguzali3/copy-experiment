@@ -22,15 +22,24 @@ const SignIn = () => {
     }
   }, [session, navigate]);
 
+  // Simplified auth state change subscription
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      if (currentSession) {
-        navigate("/dashboard");
-      }
-    });
+    let subscription = null;
+    
+    async function setupAuthListener() {
+      subscription = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session) {
+          navigate("/dashboard");
+        }
+      }).data.subscription;
+    }
+
+    setupAuthListener();
 
     return () => {
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, [navigate]);
 
@@ -39,13 +48,13 @@ const SignIn = () => {
     setSigningIn(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const result = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
-      if (error) {
-        if (error.message === 'Invalid login credentials') {
+      if (result.error) {
+        if (result.error.message === 'Invalid login credentials') {
           const { data: userData } = await supabase
             .from('profiles')
             .select('id')
@@ -63,9 +72,9 @@ const SignIn = () => {
             });
           }
         } else {
-          toast.error(error.message);
+          toast.error(result.error.message);
         }
-      } else if (data?.user) {
+      } else if (result.data?.user) {
         toast.success("Signed in successfully");
         navigate("/dashboard");
       }
@@ -79,16 +88,16 @@ const SignIn = () => {
 
   const handleGoogleSignIn = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const result = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/dashboard`
         }
       });
       
-      if (error) {
+      if (result.error) {
         toast.error("Error signing in with Google");
-        console.error("Error:", error.message);
+        console.error("Error:", result.error.message);
       }
     } catch (error) {
       toast.error("An unexpected error occurred");
