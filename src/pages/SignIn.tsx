@@ -34,25 +34,21 @@ const SignIn = () => {
       });
       
       if (error) {
-        if (error.message === 'Invalid login credentials') {
-          const { data: userData }: {data:{id:string} | null}= await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', email)
-            .single();
+        const { data: userData } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', email)
+          .single();
 
-          if (userData) {
-            toast.error("Invalid password. Please try again.");
-          } else {
-            toast.error("Account not found.", {
-              action: {
-                label: "Sign Up",
-                onClick: () => navigate("/signup")
-              }
-            });
-          }
+        if (userData) {
+          toast.error("Invalid password. Please try again.");
         } else {
-          toast.error(error.message);
+          toast.error("Account not found.", {
+            action: {
+              label: "Sign Up",
+              onClick: () => navigate("/signup")
+            }
+          });
         }
       } else if (data?.user) {
         toast.success("Signed in successfully");
