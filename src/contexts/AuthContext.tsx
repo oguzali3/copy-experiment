@@ -1,49 +1,48 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Session, User } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-interface AuthState {
+type AuthContextType = {
   session: Session | null;
   loading: boolean;
-}
-
-const initialState: AuthState = {
-  session: null,
-  loading: true
 };
 
-const AuthContext = createContext<AuthState>(initialState);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [state, setState] = useState<AuthState>(initialState);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setState(prev => ({ ...prev, session, loading: false }));
+      setSession(session);
+      setLoading(false);
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState(prev => ({ ...prev, session, loading: false }));
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  return (
-    <AuthContext.Provider value={state}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    session,
+    loading,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = (): AuthState => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');

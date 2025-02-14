@@ -11,18 +11,18 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const { session, loading } = useAuth();
+  const auth = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
-    if (session) {
+    if (auth.session) {
       navigate("/dashboard");
     }
-  }, [session, navigate]);
+  }, [auth.session, navigate]);
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setSigningIn(true);
     
@@ -83,11 +83,11 @@ const SignIn = () => {
     }
   };
 
-  if (loading) {
+  if (auth.loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  if (session) {
+  if (auth.session) {
     return null;
   }
 
@@ -101,7 +101,7 @@ const SignIn = () => {
             <p className="text-gray-600 mt-2">Please sign in to your account</p>
           </div>
           
-          <form onSubmit={handleEmailSignIn} className="mt-8 space-y-6">
+          <form onSubmit={handleSignIn} className="mt-8 space-y-6">
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
