@@ -23,6 +23,9 @@ interface PostData {
   likes: { count: number }[];
   comments: { count: number }[];
   user_likes: { id: string; user_id: string }[];
+  likes_count: number;
+  comments_count: number;
+  is_liked: boolean;
 }
 
 const Feed = () => {
@@ -50,7 +53,7 @@ const Feed = () => {
       if (error) throw error;
 
       if (data) {
-        const formattedPosts = data.map(post => ({
+        const formattedPosts: PostData[] = data.map(post => ({
           ...post,
           likes_count: post.likes[0]?.count || 0,
           comments_count: post.comments[0]?.count || 0,

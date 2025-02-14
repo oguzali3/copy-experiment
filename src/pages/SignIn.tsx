@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,22 +16,19 @@ const SignIn = () => {
   const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
-    // Check for existing session
     if (session) {
       navigate("/dashboard");
       return;
     }
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+    const subscription = supabase.auth.onAuthStateChange((event, currentSession) => {
       if (currentSession) {
         navigate("/dashboard");
       }
     });
 
-    // Cleanup subscription
     return () => {
-      subscription.unsubscribe();
+      subscription.data.subscription.unsubscribe();
     };
   }, [session, navigate]);
 
