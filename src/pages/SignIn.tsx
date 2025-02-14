@@ -9,18 +9,9 @@ import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionContext } from '@supabase/auth-helpers-react';
 
-interface FormElements extends HTMLFormControlsCollection {
-  email: HTMLInputElement;
-  password: HTMLInputElement;
-}
-
-interface SignInFormElement extends HTMLFormElement {
-  readonly elements: FormElements;
-}
-
 const SignIn = () => {
   const navigate = useNavigate();
-  const { session, isLoading } = useSessionContext();
+  const { session } = useSessionContext();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
@@ -31,7 +22,7 @@ const SignIn = () => {
     }
   }, [session, navigate]);
 
-  const handleEmailSignIn = async (e: React.FormEvent<SignInFormElement>) => {
+  const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setSigningIn(true);
     
