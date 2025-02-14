@@ -30,7 +30,7 @@ export const SearchResultsPage = () => {
           .or(`full_name.ilike.%${query}%,username.ilike.%${query}%`)
           .limit(3);
 
-        // Search posts
+        // Search posts - using plainto_tsquery for better text search handling
         const { data: postsData } = await supabase
           .from('posts')
           .select(`
@@ -45,7 +45,7 @@ export const SearchResultsPage = () => {
             comments:post_comments (count),
             user_likes:post_likes (id, user_id)
           `)
-          .textSearch('content', query)
+          .filter('search_text', 'ilike', `%${query}%`)
           .order('created_at', { ascending: false });
 
         setProfiles(profilesData || []);
