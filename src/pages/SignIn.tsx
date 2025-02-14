@@ -24,22 +24,14 @@ const SignIn = () => {
 
   // Handle auth state changes
   useEffect(() => {
-    let mounted = true;
-
-    const handleAuthChange = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (mounted && session) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
         navigate("/dashboard");
       }
-    };
-
-    const { data } = supabase.auth.onAuthStateChange(() => {
-      handleAuthChange();
     });
 
     return () => {
-      mounted = false;
-      data.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, [navigate]);
 
