@@ -10,30 +10,19 @@ import { supabase } from "@/integrations/supabase/client";
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const [session, setSession] = useState<any>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-      if (data.session) {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
         navigate("/dashboard");
       }
     };
     
-    getSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    checkSession();
   }, [navigate]);
 
   const handleEmailSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -96,10 +85,6 @@ const SignIn = () => {
       console.error("Error:", error);
     }
   };
-
-  if (session) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen flex flex-col">
