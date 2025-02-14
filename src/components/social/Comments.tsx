@@ -14,6 +14,7 @@ interface CommentsProps {
     content: string;
     created_at: string;
     user: {
+      id: string;  // Added this field
       full_name: string;
       avatar_url: string;
       username: string;
