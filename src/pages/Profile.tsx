@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { useState, useRef, useEffect } from "react";
 import { useUser } from '@supabase/auth-helpers-react';
-import { Camera, Link as LinkIcon, Twitter, Linkedin, Settings, MoreHorizontal, TrendingUp, TrendingDown, UserPlus, UserMinus } from "lucide-react";
+import { Camera, Link as LinkIcon, Twitter, Linkedin, Settings, MoreHorizontal, TrendingUp, TrendingDown, UserPlus, UserMinus, UserCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { SocialSidebar } from "@/components/social/SocialSidebar";
@@ -51,7 +51,20 @@ const Profile = () => {
     follower_count: 0,
     following_count: 0
   });
-  
+  const [followers, setFollowers] = useState<Array<{
+    id: string;
+    username: string;
+    full_name: string;
+    avatar_url: string | null;
+    is_following: boolean;
+  }>>([]);
+  const [following, setFollowing] = useState<Array<{
+    id: string;
+    username: string;
+    full_name: string;
+    avatar_url: string | null;
+  }>>([]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     register,
@@ -80,6 +93,8 @@ const Profile = () => {
         await checkIfFollowing();
       }
       await fetchUserPortfolios();
+      await fetchFollowers();
+      await fetchFollowing();
       setIsLoading(false);
     };
 
@@ -204,6 +219,150 @@ const Profile = () => {
     } catch (error) {
       console.error('Error fetching portfolios:', error);
       toast("Failed to load portfolios");
+    }
+  };
+
+  const fetchFollowers = async () => {
+    if (!profileId) return;
+    
+    try {
+      const { data: followersData, error: followersError } = await supabase
+        .from('user_followers')
+        .select(`
+          follower_id,
+          followers:profiles!user_followers_follower_id_fkey (
+            id,
+            username,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('following_id', profileId);
+
+      if (followersError) throw followersError;
+
+      if (!followersData) return;
+
+      let followBackStatus: Record<string, boolean> = {};
+      
+      if (user) {
+        const { data: followingData } = await supabase
+          .from('user_followers')
+          .select('following_id')
+          .eq('follower_id', user.id);
+
+        if (followingData) {
+          followBackStatus = followingData.reduce((acc, curr) => ({
+            ...acc,
+            [curr.following_id]: true
+          }), {});
+        }
+      }
+
+      const processedFollowers = followersData.map(item => ({
+        id: item.followers.id,
+        username: item.followers.username || '',
+        full_name: item.followers.full_name || '',
+        avatar_url: item.followers.avatar_url,
+        is_following: !!followBackStatus[item.followers.id]
+      }));
+
+      setFollowers(processedFollowers);
+    } catch (error) {
+      console.error('Error fetching followers:', error);
+      toast.error("Failed to load followers");
+    }
+  };
+
+  const fetchFollowing = async () => {
+    if (!profileId) return;
+    
+    try {
+      const { data: followingData, error: followingError } = await supabase
+        .from('user_followers')
+        .select(`
+          following_id,
+          following:profiles!user_followers_following_id_fkey (
+            id,
+            username,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('follower_id', profileId);
+
+      if (followingError) throw followingError;
+
+      if (!followingData) return;
+
+      const processedFollowing = followingData.map(item => ({
+        id: item.following.id,
+        username: item.following.username || '',
+        full_name: item.following.full_name || '',
+        avatar_url: item.following.avatar_url
+      }));
+
+      setFollowing(processedFollowing);
+    } catch (error) {
+      console.error('Error fetching following:', error);
+      toast.error("Failed to load following");
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'followers') {
+      fetchFollowers();
+    } else if (activeTab === 'following') {
+      fetchFollowing();
+    }
+  }, [activeTab, profileId]);
+
+  const handleFollowBack = async (userId: string) => {
+    if (!user) {
+      toast("Please sign in to follow users");
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('user_followers')
+        .insert([{
+          follower_id: user.id,
+          following_id: userId
+        }]);
+      
+      if (error) throw error;
+      
+      setFollowers(followers.map(follower => 
+        follower.id === userId 
+          ? { ...follower, is_following: true }
+          : follower
+      ));
+      
+      toast.success("Following user");
+    } catch (error) {
+      console.error('Error following user:', error);
+      toast.error("Failed to follow user");
+    }
+  };
+
+  const handleUnfollow = async (userId: string) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('user_followers')
+        .delete()
+        .eq('follower_id', user.id)
+        .eq('following_id', userId);
+      
+      if (error) throw error;
+      
+      setFollowing(following.filter(follow => follow.id !== userId));
+      toast.success("Unfollowed user");
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+      toast.error("Failed to unfollow user");
     }
   };
 
@@ -546,13 +705,101 @@ const Profile = () => {
                       </div>
                     )}
                     {activeTab === 'followers' && (
-                      <div className="text-gray-600">
-                        Followers content coming soon
+                      <div className="space-y-4">
+                        {followers.length > 0 ? (
+                          followers.map(follower => (
+                            <div key={follower.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
+                                  {follower.avatar_url ? (
+                                    <img 
+                                      src={follower.avatar_url} 
+                                      alt={follower.username} 
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                      <UserCircle className="w-6 h-6 text-gray-400" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                                    {follower.full_name}
+                                  </h3>
+                                  <p className="text-sm text-gray-500">@{follower.username}</p>
+                                </div>
+                              </div>
+                              {user && user.id !== follower.id && (
+                                <Button
+                                  variant={follower.is_following ? "outline" : "default"}
+                                  className={follower.is_following ? "hover:bg-red-50 hover:text-red-600" : ""}
+                                  onClick={() => follower.is_following 
+                                    ? handleUnfollow(follower.id)
+                                    : handleFollowBack(follower.id)
+                                  }
+                                >
+                                  {follower.is_following ? (
+                                    "Unfollow"
+                                  ) : (
+                                    <>
+                                      <UserPlus className="w-4 h-4 mr-2" />
+                                      Follow back
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            No followers yet
+                          </div>
+                        )}
                       </div>
                     )}
                     {activeTab === 'following' && (
-                      <div className="text-gray-600">
-                        Following content coming soon
+                      <div className="space-y-4">
+                        {following.length > 0 ? (
+                          following.map(follow => (
+                            <div key={follow.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
+                                  {follow.avatar_url ? (
+                                    <img 
+                                      src={follow.avatar_url} 
+                                      alt={follow.username} 
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                      <UserCircle className="w-6 h-6 text-gray-400" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div>
+                                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                                    {follow.full_name}
+                                  </h3>
+                                  <p className="text-sm text-gray-500">@{follow.username}</p>
+                                </div>
+                              </div>
+                              {user && user.id !== follow.id && (
+                                <Button
+                                  variant="outline"
+                                  className="hover:bg-red-50 hover:text-red-600"
+                                  onClick={() => handleUnfollow(follow.id)}
+                                >
+                                  Unfollow
+                                </Button>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            Not following anyone yet
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
