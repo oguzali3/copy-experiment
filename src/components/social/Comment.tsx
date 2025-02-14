@@ -22,6 +22,19 @@ interface CommentProps {
   onCommentDeleted?: () => void;
 }
 
+interface ReplyData {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  profiles: {
+    id: string;
+    full_name: string;
+    avatar_url: string;
+    username: string;
+  };
+}
+
 export const Comment = ({
   id,
   content,
@@ -98,19 +111,21 @@ export const Comment = ({
       return;
     }
 
-    const transformedReplies = data.map(reply => ({
-      id: reply.id,
-      content: reply.content,
-      created_at: reply.created_at,
-      user: {
-        id: reply.user_id,
-        full_name: reply.profiles.full_name,
-        avatar_url: reply.profiles.avatar_url,
-        username: reply.profiles.username
-      }
-    }));
+    if (data) {
+      const transformedReplies = (data as ReplyData[]).map(reply => ({
+        id: reply.id,
+        content: reply.content,
+        created_at: reply.created_at,
+        user: {
+          id: reply.user_id,
+          full_name: reply.profiles.full_name,
+          avatar_url: reply.profiles.avatar_url,
+          username: reply.profiles.username
+        }
+      }));
 
-    setReplies(transformedReplies);
+      setReplies(transformedReplies);
+    }
   };
 
   const handleLike = async () => {
