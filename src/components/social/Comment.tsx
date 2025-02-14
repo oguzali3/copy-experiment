@@ -23,17 +23,17 @@ interface CommentProps {
   onCommentDeleted?: () => void;
 }
 
-interface ReplyWithProfile {
+interface ReplyWithUser {
   id: string;
   content: string;
   created_at: string;
   user_id: string;
-  profile: {
+  user: {
     id: string;
     full_name: string;
     avatar_url: string;
     username: string;
-  } | null;
+  };
 }
 
 export const Comment = ({
@@ -97,7 +97,7 @@ export const Comment = ({
         content,
         created_at,
         user_id,
-        profile:profiles (
+        user:profiles!comment_replies_user_id_fkey (
           id,
           full_name,
           avatar_url,
@@ -113,15 +113,15 @@ export const Comment = ({
     }
 
     if (data) {
-      const transformedReplies = (data as ReplyWithProfile[]).map(reply => ({
+      const transformedReplies = (data as ReplyWithUser[]).map(reply => ({
         id: reply.id,
         content: reply.content,
         created_at: reply.created_at,
         user: {
           id: reply.user_id,
-          full_name: reply.profile?.full_name ?? '',
-          avatar_url: reply.profile?.avatar_url ?? '',
-          username: reply.profile?.username ?? ''
+          full_name: reply.user.full_name,
+          avatar_url: reply.user.avatar_url,
+          username: reply.user.username
         }
       }));
 
