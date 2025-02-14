@@ -113,6 +113,13 @@ export type Database = {
             referencedRelation: "post_comments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "comment_replies_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       company_profiles: {

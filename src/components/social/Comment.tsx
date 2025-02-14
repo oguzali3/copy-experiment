@@ -97,7 +97,7 @@ export const Comment = ({
         content,
         created_at,
         user_id,
-        user:profiles!comment_replies_user_id_fkey (
+        user:profiles (
           id,
           full_name,
           avatar_url,
