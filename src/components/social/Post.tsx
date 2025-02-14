@@ -8,6 +8,7 @@ import { Heart, MessageCircle, User } from "lucide-react";
 import { useUser } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Comments } from "./Comments";
 
 interface PostProps {
   id: string;
@@ -40,6 +41,9 @@ export const Post = ({
   const [isLiked, setIsLiked] = useState(initialIsLiked);
   const [likesCount, setLikesCount] = useState(likes_count);
   const [isLiking, setIsLiking] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
 
   const handleLike = async () => {
     if (!currentUser || isLiking) return;
@@ -76,6 +80,53 @@ export const Post = ({
     }
   };
 
+  const fetchComments = async () => {
+    setIsLoadingComments(true);
+    try {
+      const { data: commentsData, error: commentsError } = await supabase
+        .from('post_comments')
+        .select(`
+          id,
+          content,
+          created_at,
+          profiles (
+            full_name,
+            avatar_url,
+            username
+          )
+        `)
+        .eq('post_id', id)
+        .order('created_at', { ascending: true });
+
+      if (commentsError) throw commentsError;
+
+      const transformedComments = (commentsData || []).map(comment => ({
+        id: comment.id,
+        content: comment.content,
+        created_at: comment.created_at,
+        user: {
+          full_name: comment.profiles?.full_name || 'Unknown User',
+          avatar_url: comment.profiles?.avatar_url || '',
+          username: comment.profiles?.username || 'unknown'
+        }
+      }));
+
+      setComments(transformedComments);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      toast.error("Failed to load comments");
+    } finally {
+      setIsLoadingComments(false);
+    }
+  };
+
+  const toggleComments = () => {
+    if (!showComments) {
+      fetchComments();
+    }
+    setShowComments(!showComments);
+  };
+
   return (
     <Card className="p-4">
       <div className="flex gap-3">
@@ -96,7 +147,6 @@ export const Post = ({
           </div>
           <p className="mt-2 text-gray-900">{content}</p>
           
-          {/* Add image display */}
           {image_url && (
             <div className="mt-3 rounded-lg overflow-hidden">
               <img
@@ -124,11 +174,29 @@ export const Post = ({
               variant="ghost"
               size="sm"
               className="flex items-center gap-2"
+              onClick={toggleComments}
             >
               <MessageCircle className="w-4 h-4" />
               <span>{comments_count}</span>
             </Button>
           </div>
+
+          {showComments && (
+            <div className="mt-4 border-t border-gray-200 dark:border-gray-800 pt-4">
+              {isLoadingComments ? (
+                <div className="text-center py-4">Loading comments...</div>
+              ) : (
+                <Comments
+                  postId={id}
+                  comments={comments}
+                  onCommentAdded={() => {
+                    fetchComments();
+                    onPostUpdated?.();
+                  }}
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Card>
