@@ -8,7 +8,6 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionContext } from '@supabase/auth-helpers-react';
-import type { AuthError, Session } from '@supabase/supabase-js';
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -23,20 +22,6 @@ const SignIn = () => {
       navigate("/dashboard");
     }
   }, [session, navigate]);
-
-  // Simplified auth state change handler - no type recursion
-  useEffect(() => {
-    const authSubscription = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate("/dashboard");
-      }
-    });
-
-    // Simple cleanup function
-    return () => {
-      authSubscription.data.subscription.unsubscribe();
-    };
-  }, [navigate]);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
