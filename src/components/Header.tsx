@@ -1,33 +1,19 @@
 
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
 
 export const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [session, setSession] = useState<any>(null);
+  const { session } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [show, setShow] = useState(true);
-
-  useEffect(() => {
-    const getSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-    };
-    
-    getSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   useEffect(() => {
     const controlNavbar = () => {
@@ -59,7 +45,6 @@ export const Header = () => {
         toast.error("Error signing out");
         console.error("Error:", error.message);
       } else {
-        localStorage.removeItem('supabase.auth.token');
         toast.success("Signed out successfully");
         navigate("/");
       }
