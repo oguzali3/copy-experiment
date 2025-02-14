@@ -7,40 +7,56 @@ import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useSessionContext } from '@supabase/auth-helpers-react';
+import type { AuthError, Session } from '@supabase/supabase-js';
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const auth = useAuth();
+  const { session, isLoading } = useSessionContext();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
 
+  // Redirect if already logged in
   useEffect(() => {
-    if (auth.session) {
+    if (session) {
       navigate("/dashboard");
     }
-  }, [auth.session, navigate]);
+  }, [session, navigate]);
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  // Simplified auth state change handler - no type recursion
+  useEffect(() => {
+    const authSubscription = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        navigate("/dashboard");
+      }
+    });
+
+    // Simple cleanup function
+    return () => {
+      authSubscription.data.subscription.unsubscribe();
+    };
+  }, [navigate]);
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setSigningIn(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
       if (error) {
         if (error.message === 'Invalid login credentials') {
-          const { data } = await supabase
+          const { data: userData } = await supabase
             .from('profiles')
             .select('id')
             .eq('email', email)
             .single();
 
-          if (data) {
+          if (userData) {
             toast.error("Invalid password. Please try again.");
           } else {
             toast.error("Account not found.", {
@@ -53,8 +69,9 @@ const SignIn = () => {
         } else {
           toast.error(error.message);
         }
-      } else {
+      } else if (data?.user) {
         toast.success("Signed in successfully");
+        navigate("/dashboard");
       }
     } catch (error) {
       console.error("Error:", error);
@@ -83,12 +100,8 @@ const SignIn = () => {
     }
   };
 
-  if (auth.loading) {
+  if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
-
-  if (auth.session) {
-    return null;
   }
 
   return (
@@ -101,7 +114,7 @@ const SignIn = () => {
             <p className="text-gray-600 mt-2">Please sign in to your account</p>
           </div>
           
-          <form onSubmit={handleSignIn} className="mt-8 space-y-6">
+          <form onSubmit={handleEmailSignIn} className="mt-8 space-y-6">
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">

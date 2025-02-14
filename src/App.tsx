@@ -6,7 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { SessionContextProvider } from '@supabase/auth-helpers-react';
+import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
@@ -34,9 +35,20 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
+  const [initialSession, setInitialSession] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setInitialSession(session);
+    });
+  }, []);
+
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <SessionContextProvider 
+        supabaseClient={supabase}
+        initialSession={initialSession}
+      >
         <TooltipProvider>
           <SidebarProvider>
             <div className="min-h-screen flex w-full dark:bg-[#1c1c20] dark:text-white">
@@ -73,8 +85,8 @@ const App = () => {
             </div>
           </SidebarProvider>
         </TooltipProvider>
-      </QueryClientProvider>
-    </AuthProvider>
+      </SessionContextProvider>
+    </QueryClientProvider>
   );
 };
 

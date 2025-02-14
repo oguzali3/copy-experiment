@@ -1,16 +1,15 @@
-
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useSessionContext } from '@supabase/auth-helpers-react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
-import { useState, useEffect } from "react";
 
 export const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { session } = useAuth();
+  const { session, isLoading } = useSessionContext();
   const [isScrolled, setIsScrolled] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [show, setShow] = useState(true);
@@ -38,6 +37,35 @@ export const Header = () => {
     return () => window.removeEventListener("scroll", controlNavbar);
   }, [lastScrollY]);
 
+  useEffect(() => {
+    const checkAndRefreshSession = async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        if (!currentSession && !isLoading) {
+          // Clear any stale session data
+          await supabase.auth.signOut();
+          
+          const protectedRoutes = ['/portfolio', '/dashboard', '/watchlists'];
+          if (protectedRoutes.includes(location.pathname)) {
+            toast.error("Session expired. Please sign in again.");
+            navigate('/signin');
+          }
+        }
+      } catch (error) {
+        console.error("Session check error:", error);
+        // Only show error toast if we're on a protected route
+        const protectedRoutes = ['/portfolio', '/dashboard', '/watchlists'];
+        if (protectedRoutes.includes(location.pathname)) {
+          toast.error("Authentication error. Please sign in again.");
+          navigate('/signin');
+        }
+      }
+    };
+
+    checkAndRefreshSession();
+  }, [session, isLoading, location.pathname, navigate]);
+
   const handleSignOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -45,6 +73,8 @@ export const Header = () => {
         toast.error("Error signing out");
         console.error("Error:", error.message);
       } else {
+        // Clear any stored session data
+        localStorage.removeItem('supabase.auth.token');
         toast.success("Signed out successfully");
         navigate("/");
       }
@@ -64,10 +94,12 @@ export const Header = () => {
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
+          {/* Logo */}
           <Link to="/" className="flex items-center">
             <span className="text-2xl font-bold text-[#077dfa]">Logo</span>
           </Link>
 
+          {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-8">
             <a href="#product" className="text-black hover:text-[#077dfa] transition-colors">
               Product
@@ -80,6 +112,7 @@ export const Header = () => {
             </a>
           </nav>
 
+          {/* Auth Buttons */}
           <div className="flex items-center space-x-4">
             {session ? (
               <>
