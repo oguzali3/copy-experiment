@@ -46,25 +46,23 @@ const SignIn = () => {
       });
       
       if (error) {
+        // Check if error is due to invalid credentials
         if (error.message === 'Invalid login credentials') {
-          // First check if the user exists
-          const { data: userExists } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              emailRedirectTo: `${window.location.origin}/dashboard`
-            }
-          });
+          const { data: userData } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .single();
 
-          if (userExists.user) {
-            toast.error("Account not found. Please sign up first.", {
+          if (userData) {
+            toast.error("Invalid password. Please try again.");
+          } else {
+            toast.error("Account not found.", {
               action: {
                 label: "Sign Up",
                 onClick: () => navigate("/signup")
               }
             });
-          } else {
-            toast.error("Invalid email or password. Please try again.");
           }
         } else {
           toast.error(error.message);
@@ -74,8 +72,8 @@ const SignIn = () => {
         navigate("/dashboard");
       }
     } catch (error) {
-      toast.error("An unexpected error occurred");
       console.error("Error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setSigningIn(false);
     }
