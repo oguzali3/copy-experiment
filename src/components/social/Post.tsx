@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -9,12 +8,14 @@ import { useUser } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Comments } from "./Comments";
+import { useNavigate } from "react-router-dom";
 
 interface PostProps {
   id: string;
   content: string;
   created_at: string;
   user: {
+    id: string;
     full_name: string;
     avatar_url: string;
     username: string;
@@ -38,6 +39,7 @@ export const Post = ({
   onPostUpdated
 }: PostProps) => {
   const currentUser = useUser();
+  const navigate = useNavigate();
   const [isLiked, setIsLiked] = useState(initialIsLiked);
   const [likesCount, setLikesCount] = useState(likes_count);
   const [isLiking, setIsLiking] = useState(false);
@@ -129,6 +131,14 @@ export const Post = ({
     setShowComments(!showComments);
   };
 
+  const handleUserClick = () => {
+    if (user.id === currentUser?.id) {
+      navigate('/profile');
+    } else {
+      navigate(`/profile?id=${user.id}`);
+    }
+  };
+
   return (
     <Card className="p-4">
       <div className="flex gap-3">
@@ -140,8 +150,18 @@ export const Post = ({
         </Avatar>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-semibold">{user.full_name}</span>
-            <span className="text-gray-500">@{user.username}</span>
+            <button 
+              className="hover:underline font-semibold"
+              onClick={handleUserClick}
+            >
+              {user.full_name}
+            </button>
+            <button 
+              className="text-gray-500 hover:underline"
+              onClick={handleUserClick}
+            >
+              @{user.username}
+            </button>
             <span className="text-gray-500">·</span>
             <span className="text-gray-500">
               {formatDistanceToNow(new Date(created_at), { addSuffix: true })}

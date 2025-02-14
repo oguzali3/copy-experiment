@@ -4,28 +4,34 @@ import { useForm } from "react-hook-form";
 import { toast } from "@/components/ui/use-toast";
 import { useState, useRef, useEffect } from "react";
 import { useUser } from '@supabase/auth-helpers-react';
-import { Camera, Link as LinkIcon, Twitter, Linkedin, Settings, MoreHorizontal, TrendingUp, TrendingDown } from "lucide-react";
+import { Camera, Link as LinkIcon, Twitter, Linkedin, Settings, MoreHorizontal, TrendingUp, TrendingDown, UserPlus, UserMinus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { SocialSidebar } from "@/components/social/SocialSidebar";
 import { SocialHeader } from "@/components/social/SocialHeader";
 
 type ProfileData = {
+  id: string;
   full_name: string;
   username: string;
   bio: string;
   website: string;
   twitter: string;
   linkedin: string;
+  avatar_url: string | null;
+  follower_count: number;
+  following_count: number;
 };
 
 const Profile = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useUser();
   const [isEditing, setIsEditing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('portfolios');
+  const [isFollowing, setIsFollowing] = useState(false);
   const [userPortfolios, setUserPortfolios] = useState<Array<{
     id: string;
     name: string;
@@ -33,65 +39,129 @@ const Profile = () => {
     total_value: number | null;
   }>>([]);
   const [profileData, setProfileData] = useState<ProfileData>({
+    id: "",
     full_name: "",
     username: "",
     bio: "",
     website: "",
     twitter: "",
-    linkedin: ""
+    linkedin: "",
+    avatar_url: null,
+    follower_count: 0,
+    following_count: 0
   });
-  const [subscriberCount, setSubscriberCount] = useState<number>(0);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     register,
     handleSubmit,
     setValue
-  } = useForm<ProfileData>({
-    defaultValues: profileData
-  });
+  } = useForm<ProfileData>();
+
+  const profileId = new URLSearchParams(location.search).get('id') || user?.id;
+  const isOwner = user?.id === profileId;
 
   useEffect(() => {
-    if (user) {
+    if (profileId) {
       fetchProfileData();
       fetchUserPortfolios();
+      if (user && !isOwner) {
+        checkIfFollowing();
+      }
     }
-  }, [user]);
+  }, [profileId, user]);
+
+  const checkIfFollowing = async () => {
+    if (!user || !profileId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_followers')
+        .select('id')
+        .eq('follower_id', user.id)
+        .eq('following_id', profileId)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      setIsFollowing(!!data);
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!user || !profileId) return;
+    
+    try {
+      if (isFollowing) {
+        const { error } = await supabase
+          .from('user_followers')
+          .delete()
+          .eq('follower_id', user.id)
+          .eq('following_id', profileId);
+        
+        if (error) throw error;
+        setIsFollowing(false);
+        toast.success(`Unfollowed ${profileData.full_name}`);
+      } else {
+        const { error } = await supabase
+          .from('user_followers')
+          .insert([{
+            follower_id: user.id,
+            following_id: profileId
+          }]);
+        
+        if (error) throw error;
+        setIsFollowing(true);
+        toast.success(`Following ${profileData.full_name}`);
+      }
+      
+      // Refresh profile data to update follower count
+      fetchProfileData();
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+      toast.error("Failed to update follow status");
+    }
+  };
 
   const fetchProfileData = async () => {
-    if (!user) return;
+    if (!profileId) return;
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', profileId)
+        .single();
+      
       if (error) throw error;
       if (data) {
         setProfileData({
+          id: data.id,
           full_name: data.full_name || "",
           username: data.username || "",
           bio: data.bio || "",
           website: data.website || "",
           twitter: data.social_twitter || "",
-          linkedin: data.social_linkedin || ""
+          linkedin: data.social_linkedin || "",
+          avatar_url: data.avatar_url,
+          follower_count: data.follower_count || 0,
+          following_count: data.following_count || 0
         });
         setAvatarUrl(data.avatar_url);
-        setSubscriberCount(data.subscriber_count || 0);
 
-        // Update form values
-        setValue("full_name", data.full_name || "");
-        setValue("username", data.username || "");
-        setValue("bio", data.bio || "");
-        setValue("website", data.website || "");
-        setValue("twitter", data.social_twitter || "");
-        setValue("linkedin", data.social_linkedin || "");
+        // Update form values if owner
+        if (isOwner) {
+          setValue("full_name", data.full_name || "");
+          setValue("username", data.username || "");
+          setValue("bio", data.bio || "");
+          setValue("website", data.website || "");
+          setValue("twitter", data.social_twitter || "");
+          setValue("linkedin", data.social_linkedin || "");
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load profile data",
-        variant: "destructive"
-      });
+      toast.error("Failed to load profile data");
     }
   };
 
@@ -220,50 +290,100 @@ const Profile = () => {
                   <div className="flex items-center gap-3 text-sm text-gray-600">
                     <span>@{profileData.username || "username"}</span>
                     <span>•</span>
-                    <button className="hover:text-gray-900">Links</button>
+                    <span>{profileData.follower_count} followers</span>
+                    <span>•</span>
+                    <span>{profileData.following_count} following</span>
                   </div>
                 </div>
                 
                 <div className="flex-shrink-0">
-                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                  <div className="w-20 h-20 rounded-full overflow-hidden cursor-pointer group relative" onClick={handleAvatarClick}>
-                    {avatarUrl ? <div className="relative w-full h-full">
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                    accept="image/*" 
+                    className="hidden" 
+                  />
+                  <div 
+                    className={`w-20 h-20 rounded-full overflow-hidden ${isOwner ? 'cursor-pointer group' : ''} relative`}
+                    onClick={isOwner ? handleAvatarClick : undefined}
+                  >
+                    {avatarUrl ? (
+                      <div className="relative w-full h-full">
                         <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Camera className="w-5 h-5 text-white" />
-                        </div>
-                      </div> : <div className="w-full h-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                        {isOwner && (
+                          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Camera className="w-5 h-5 text-white" />
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
                         <Camera className="w-5 h-5 text-gray-400" />
-                      </div>}
-                    {isUploading && <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
+                      </div>
+                    )}
+                    {isUploading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-full">
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-500"></div>
-                      </div>}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
               <div className="mb-6">
                 <p className="text-base text-gray-700 dark:text-gray-300 mb-3">
-                  {profileData.bio || "Add a bio to tell people about yourself"}
+                  {profileData.bio || (isOwner ? "Add a bio to tell people about yourself" : "")}
                 </p>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  {subscriberCount > 0 && <span className="font-medium">{subscriberCount}K+ subscribers</span>}
-                </div>
+                {profileData.website && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <LinkIcon className="w-4 h-4" />
+                    <a href={profileData.website} target="_blank" rel="noopener noreferrer" className="hover:text-blue-500">
+                      {profileData.website}
+                    </a>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 mb-6">
-                <Button className="flex-1 text-white text-sm bg-blue-500 hover:bg-blue-400">
-                  New post
-                </Button>
-                <Button variant="outline" className="flex-1 text-sm" onClick={() => setIsEditing(!isEditing)}>
-                  Edit profile
-                </Button>
+                {isOwner ? (
+                  <>
+                    <Button className="flex-1 text-white text-sm bg-blue-500 hover:bg-blue-400">
+                      New post
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 text-sm" 
+                      onClick={() => setIsEditing(!isEditing)}
+                    >
+                      Edit profile
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    className={`flex-1 text-sm ${isFollowing ? 'bg-gray-200 hover:bg-gray-300 text-gray-800' : 'bg-blue-500 hover:bg-blue-400 text-white'}`}
+                    onClick={handleFollow}
+                  >
+                    {isFollowing ? (
+                      <>
+                        <UserMinus className="w-4 h-4 mr-2" />
+                        Unfollow
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Follow
+                      </>
+                    )}
+                  </Button>
+                )}
                 <Button variant="ghost" size="icon" className="px-2">
                   <MoreHorizontal className="w-5 h-5" />
                 </Button>
               </div>
 
-              {isEditing ? <Card className="p-6">
+              {isEditing ? (
+                <Card className="p-6">
                   <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                     <div className="space-y-4">
                       <div className="space-y-2">
@@ -327,65 +447,100 @@ const Profile = () => {
                       </Button>
                     </div>
                   </form>
-                </Card> : <div className="border-t">
+                </Card>
+              ) : (
+                <div className="border-t">
                   <div className="flex gap-8 mt-4 border-b">
-                    <button onClick={() => setActiveTab('portfolios')} className={`px-4 py-2 font-medium ${activeTab === 'portfolios' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900'}`}>
+                    <button 
+                      onClick={() => setActiveTab('portfolios')} 
+                      className={`px-4 py-2 font-medium ${activeTab === 'portfolios' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
+                    >
                       Portfolios
                     </button>
-                    <button onClick={() => setActiveTab('subscribers')} className={`px-4 py-2 font-medium ${activeTab === 'subscribers' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900'}`}>
-                      Subscribers
+                    <button 
+                      onClick={() => setActiveTab('followers')} 
+                      className={`px-4 py-2 font-medium ${activeTab === 'followers' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
+                    >
+                      Followers
                     </button>
-                    <button onClick={() => setActiveTab('subscriptions')} className={`px-4 py-2 font-medium ${activeTab === 'subscriptions' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900'}`}>
-                      Subscriptions
+                    <button 
+                      onClick={() => setActiveTab('following')} 
+                      className={`px-4 py-2 font-medium ${activeTab === 'following' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
+                    >
+                      Following
                     </button>
                   </div>
 
                   <div className="py-6">
                     {activeTab === 'portfolios' && (
                       <div className="space-y-4">
-                        <Button 
-                          onClick={() => navigate('/portfolio-subscriptions')} 
-                          className="w-full bg-gradient-to-r from-black to-gray-900 hover:from-gray-900 hover:to-black text-white font-medium py-2.5"
-                        >
-                          Create A Portfolio Subscription Service
-                        </Button>
+                        {isOwner && (
+                          <Button 
+                            onClick={() => navigate('/portfolio-subscriptions')} 
+                            className="w-full bg-gradient-to-r from-black to-gray-900 hover:from-gray-900 hover:to-black text-white font-medium py-2.5"
+                          >
+                            Create A Portfolio Subscription Service
+                          </Button>
+                        )}
                         
                         <div className="space-y-2">
-                          {userPortfolios.length > 0 ? userPortfolios.map(portfolio => <button key={portfolio.id} className="w-full group transition-all duration-300 hover:scale-[1.01]" onClick={() => handlePortfolioClick(portfolio.id)}>
-                                <div className="py-3 px-4 bg-gradient-to-br from-white to-gray-50/90 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-200">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex flex-col">
-                                      <h3 className="text-base font-semibold text-gray-900 group-hover:text-gray-800">
-                                        {portfolio.name}
-                                      </h3>
-                                      <span className="text-sm text-gray-500 font-medium">
-                                        ${portfolio.total_value?.toLocaleString() || '0'}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      {portfolio.yearly_performance !== null && <div className={`flex items-center px-3 py-1 rounded-md ${portfolio.yearly_performance >= 0 ? 'text-green-600 bg-green-50 group-hover:bg-green-100/80' : 'text-red-600 bg-red-50 group-hover:bg-red-100/80'} transition-colors duration-300`}>
-                                          {portfolio.yearly_performance >= 0 ? <TrendingUp className="w-3.5 h-3.5 mr-1" /> : <TrendingDown className="w-3.5 h-3.5 mr-1" />}
-                                          <span className="text-sm font-semibold">
-                                            {Math.abs(portfolio.yearly_performance).toFixed(2)}%
-                                          </span>
-                                        </div>}
-                                    </div>
+                          {userPortfolios.length > 0 ? userPortfolios.map(portfolio => (
+                            <button 
+                              key={portfolio.id} 
+                              className="w-full group transition-all duration-300 hover:scale-[1.01]" 
+                              onClick={() => handlePortfolioClick(portfolio.id)}
+                            >
+                              <div className="py-3 px-4 bg-gradient-to-br from-white to-gray-50/90 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-200">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex flex-col">
+                                    <h3 className="text-base font-semibold text-gray-900 group-hover:text-gray-800">
+                                      {portfolio.name}
+                                    </h3>
+                                    <span className="text-sm text-gray-500 font-medium">
+                                      ${portfolio.total_value?.toLocaleString() || '0'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {portfolio.yearly_performance !== null && (
+                                      <div className={`flex items-center px-3 py-1 rounded-md ${
+                                        portfolio.yearly_performance >= 0 
+                                          ? 'text-green-600 bg-green-50 group-hover:bg-green-100/80' 
+                                          : 'text-red-600 bg-red-50 group-hover:bg-red-100/80'
+                                      } transition-colors duration-300`}>
+                                        {portfolio.yearly_performance >= 0 
+                                          ? <TrendingUp className="w-3.5 h-3.5 mr-1" /> 
+                                          : <TrendingDown className="w-3.5 h-3.5 mr-1" />
+                                        }
+                                        <span className="text-sm font-semibold">
+                                          {Math.abs(portfolio.yearly_performance).toFixed(2)}%
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
-                              </button>) : <div className="text-gray-600">
-                            No portfolios yet
-                          </div>}
+                              </div>
+                            </button>
+                          )) : (
+                            <div className="text-gray-600">
+                              No portfolios yet
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
-                    {activeTab === 'subscribers' && <div className="text-gray-600">
-                        No subscribers yet
-                      </div>}
-                    {activeTab === 'subscriptions' && <div className="text-gray-600">
-                        No subscriptions yet
-                      </div>}
+                    {activeTab === 'followers' && (
+                      <div className="text-gray-600">
+                        Followers content coming soon
+                      </div>
+                    )}
+                    {activeTab === 'following' && (
+                      <div className="text-gray-600">
+                        Following content coming soon
+                      </div>
+                    )}
                   </div>
-                </div>}
+                </div>
+              )}
             </div>
           </div>
         </div>

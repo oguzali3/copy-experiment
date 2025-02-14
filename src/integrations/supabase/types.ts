@@ -812,6 +812,8 @@ export type Database = {
           banner_url: string | null
           bio: string | null
           created_at: string
+          follower_count: number | null
+          following_count: number | null
           full_name: string | null
           id: string
           social_linkedin: string | null
@@ -827,6 +829,8 @@ export type Database = {
           banner_url?: string | null
           bio?: string | null
           created_at?: string
+          follower_count?: number | null
+          following_count?: number | null
           full_name?: string | null
           id: string
           social_linkedin?: string | null
@@ -842,6 +846,8 @@ export type Database = {
           banner_url?: string | null
           bio?: string | null
           created_at?: string
+          follower_count?: number | null
+          following_count?: number | null
           full_name?: string | null
           id?: string
           social_linkedin?: string | null
@@ -1129,6 +1135,27 @@ export type Database = {
           return_on_equity_ttm?: number | null
           symbol?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_followers: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
         }
         Relationships: []
       }
