@@ -1,18 +1,108 @@
 
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { supabase } from "@/integrations/supabase/client";
+import { useSessionContext } from '@supabase/auth-helpers-react';
+import type { AuthError, Session } from '@supabase/supabase-js';
 
 const SignIn = () => {
   const navigate = useNavigate();
+  const { session, isLoading } = useSessionContext();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [signingIn, setSigningIn] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect if already logged in
+  useEffect(() => {
+    if (session) {
+      navigate("/dashboard");
+    }
+  }, [session, navigate]);
+
+  // Simplified auth state change handler - no type recursion
+  useEffect(() => {
+    const authSubscription = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        navigate("/dashboard");
+      }
+    });
+
+    // Simple cleanup function
+    return () => {
+      authSubscription.data.subscription.unsubscribe();
+    };
+  }, [navigate]);
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Just navigate to dashboard without auth for MVP
-    navigate("/dashboard");
+    setSigningIn(true);
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        if (error.message === 'Invalid login credentials') {
+          const { data: userData } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+          if (userData) {
+            toast.error("Invalid password. Please try again.");
+          } else {
+            toast.error("Account not found.", {
+              action: {
+                label: "Sign Up",
+                onClick: () => navigate("/signup")
+              }
+            });
+          }
+        } else {
+          toast.error(error.message);
+        }
+      } else if (data?.user) {
+        toast.success("Signed in successfully");
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
+    } finally {
+      setSigningIn(false);
+    }
   };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+      
+      if (error) {
+        toast.error("Error signing in with Google");
+        console.error("Error:", error.message);
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+      console.error("Error:", error);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -24,7 +114,7 @@ const SignIn = () => {
             <p className="text-gray-600 mt-2">Please sign in to your account</p>
           </div>
           
-          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+          <form onSubmit={handleEmailSignIn} className="mt-8 space-y-6">
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -33,6 +123,8 @@ const SignIn = () => {
                 <Input
                   id="email"
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="Enter your email"
                   className="mt-1"
@@ -46,6 +138,8 @@ const SignIn = () => {
                 <Input
                   id="password"
                   type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="Enter your password"
                   className="mt-1"
@@ -54,8 +148,12 @@ const SignIn = () => {
             </div>
 
             <div>
-              <Button type="submit" className="w-full">
-                Sign in
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={signingIn}
+              >
+                {signingIn ? "Signing in..." : "Sign in"}
               </Button>
             </div>
           </form>
@@ -73,7 +171,7 @@ const SignIn = () => {
             type="button"
             variant="outline"
             className="w-full"
-            onClick={() => navigate("/dashboard")}
+            onClick={handleGoogleSignIn}
           >
             Google
           </Button>
