@@ -17,17 +17,18 @@ const SignIn = () => {
   const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
+    // Check for existing session
+    if (session) {
+      navigate("/dashboard");
+      return;
+    }
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       if (currentSession) {
         navigate("/dashboard");
       }
     });
-
-    // Check for existing session
-    if (session) {
-      navigate("/dashboard");
-    }
 
     // Cleanup subscription
     return () => {
@@ -46,7 +47,6 @@ const SignIn = () => {
       });
       
       if (error) {
-        // Check if error is due to invalid credentials
         if (error.message === 'Invalid login credentials') {
           const { data: userData } = await supabase
             .from('profiles')

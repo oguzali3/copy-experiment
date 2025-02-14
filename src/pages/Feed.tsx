@@ -9,8 +9,24 @@ import { WhoToFollow } from "@/components/social/WhoToFollow";
 import { useUser } from "@supabase/auth-helpers-react";
 import { toast } from "sonner";
 
+interface PostData {
+  id: string;
+  content: string;
+  created_at: string;
+  image_url: string | null;
+  user: {
+    id: string;
+    full_name: string;
+    avatar_url: string;
+    username: string;
+  };
+  likes: { count: number }[];
+  comments: { count: number }[];
+  user_likes: { id: string; user_id: string }[];
+}
+
 const Feed = () => {
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<PostData[]>([]);
   const user = useUser();
 
   const fetchPosts = async () => {
@@ -25,9 +41,9 @@ const Feed = () => {
             avatar_url,
             username
           ),
-          likes:post_likes(count),
-          user_likes:post_likes(id, user_id)!inner(user_id),
-          comments:post_comments(count)
+          likes:post_likes (count),
+          comments:post_comments (count),
+          user_likes:post_likes (id, user_id)
         `)
         .order('created_at', { ascending: false });
 
@@ -38,7 +54,7 @@ const Feed = () => {
           ...post,
           likes_count: post.likes[0]?.count || 0,
           comments_count: post.comments[0]?.count || 0,
-          is_liked: post.user_likes.some((like: any) => like.user_id === user?.id)
+          is_liked: post.user_likes.some(like => like.user_id === user?.id)
         }));
         setPosts(formattedPosts);
       }
