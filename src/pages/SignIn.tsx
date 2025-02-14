@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionContext } from '@supabase/auth-helpers-react';
+import { AuthError, Session } from '@supabase/supabase-js';
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -24,14 +26,14 @@ const SignIn = () => {
 
   // Handle auth state changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
+    const subscription = supabase.auth.onAuthStateChange((event, currentSession) => {
+      if (currentSession) {
         navigate("/dashboard");
       }
     });
 
     return () => {
-      subscription.unsubscribe();
+      subscription.data.subscription.unsubscribe();
     };
   }, [navigate]);
 
