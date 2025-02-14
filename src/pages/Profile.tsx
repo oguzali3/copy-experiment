@@ -361,6 +361,10 @@ const Profile = () => {
       if (error) throw error;
       
       setFollowing(following.filter(follow => follow.id !== userId));
+      
+      // Refresh profile data to update follower/following counts
+      await fetchProfileData();
+      
       toast.success("Unfollowed user");
     } catch (error) {
       console.error('Error unfollowing user:', error);
