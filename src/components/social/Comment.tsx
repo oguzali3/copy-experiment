@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -22,17 +23,17 @@ interface CommentProps {
   onCommentDeleted?: () => void;
 }
 
-interface ReplyData {
+interface ReplyWithProfile {
   id: string;
   content: string;
   created_at: string;
   user_id: string;
-  profiles: {
+  profile: {
     id: string;
     full_name: string;
     avatar_url: string;
     username: string;
-  };
+  } | null;
 }
 
 export const Comment = ({
@@ -96,7 +97,7 @@ export const Comment = ({
         content,
         created_at,
         user_id,
-        profiles!user_id (
+        profile:profiles (
           id,
           full_name,
           avatar_url,
@@ -112,15 +113,15 @@ export const Comment = ({
     }
 
     if (data) {
-      const transformedReplies = (data as ReplyData[]).map(reply => ({
+      const transformedReplies = (data as ReplyWithProfile[]).map(reply => ({
         id: reply.id,
         content: reply.content,
         created_at: reply.created_at,
         user: {
           id: reply.user_id,
-          full_name: reply.profiles.full_name,
-          avatar_url: reply.profiles.avatar_url,
-          username: reply.profiles.username
+          full_name: reply.profile?.full_name ?? '',
+          avatar_url: reply.profile?.avatar_url ?? '',
+          username: reply.profile?.username ?? ''
         }
       }));
 
