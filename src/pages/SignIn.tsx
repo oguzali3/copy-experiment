@@ -7,21 +7,34 @@ import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
-import { useSessionContext } from '@supabase/auth-helpers-react';
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const context = useSessionContext();
+  const [session, setSession] = useState<any>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
-    if (context.isLoading) return;
-    if (context.session) {
-      navigate("/dashboard");
-    }
-  }, [context.session, context.isLoading, navigate]);
+    const getSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session);
+      if (data.session) {
+        navigate("/dashboard");
+      }
+    };
+    
+    getSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        navigate("/dashboard");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleEmailSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -84,11 +97,7 @@ const SignIn = () => {
     }
   };
 
-  if (context.isLoading) {
-    return null;
-  }
-
-  if (context.session) {
+  if (session) {
     return null;
   }
 
