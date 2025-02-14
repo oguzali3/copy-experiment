@@ -11,24 +11,23 @@ import { useSessionContext } from '@supabase/auth-helpers-react';
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const { session, isLoading } = useSessionContext();
+  const { session } = useSessionContext();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
 
-  // Redirect if already logged in
   useEffect(() => {
     if (session) {
       navigate("/dashboard");
     }
   }, [session, navigate]);
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleEmailSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSigningIn(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
@@ -54,9 +53,8 @@ const SignIn = () => {
         } else {
           toast.error(error.message);
         }
-      } else if (data?.user) {
+      } else {
         toast.success("Signed in successfully");
-        navigate("/dashboard");
       }
     } catch (error) {
       console.error("Error:", error);
@@ -85,8 +83,9 @@ const SignIn = () => {
     }
   };
 
-  if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  // If already logged in, don't show the sign-in form
+  if (session) {
+    return null;
   }
 
   return (
