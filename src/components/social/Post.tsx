@@ -89,6 +89,7 @@ export const Post = ({
           id,
           content,
           created_at,
+          user_id,
           profiles (
             full_name,
             avatar_url,
@@ -105,6 +106,7 @@ export const Post = ({
         content: comment.content,
         created_at: comment.created_at,
         user: {
+          id: comment.user_id,  // Added this field
           full_name: comment.profiles?.full_name || 'Unknown User',
           avatar_url: comment.profiles?.avatar_url || '',
           username: comment.profiles?.username || 'unknown'
