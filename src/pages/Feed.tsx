@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Post } from "@/components/social/Post";
 import { CreatePost } from "@/components/social/CreatePost";
@@ -31,10 +32,14 @@ interface PostData {
 const Feed = () => {
   const [posts, setPosts] = useState<PostData[]>([]);
   const user = useUser();
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("q");
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchPosts = async () => {
     try {
-      const { data, error } = await supabase
+      setIsLoading(true);
+      let query = supabase
         .from('posts')
         .select(`
           *,
@@ -50,6 +55,13 @@ const Feed = () => {
         `)
         .order('created_at', { ascending: false });
 
+      // If there's a search query, filter posts
+      if (searchQuery) {
+        query = query.ilike('content', `%${searchQuery}%`);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
 
       if (data) {
@@ -63,13 +75,17 @@ const Feed = () => {
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
-      toast("Failed to load posts");
+      toast.error("Failed to load posts");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPosts();
-  }, [user]);
+    if (user) {
+      fetchPosts();
+    }
+  }, [user, searchQuery]);
 
   if (!user) {
     return null;
@@ -89,27 +105,45 @@ const Feed = () => {
           <SocialHeader />
           <div className="flex-1 overflow-y-auto">
             <div className="px-4 py-4 space-y-4">
-              <CreatePost onPostCreated={fetchPosts} />
+              {!searchQuery && <CreatePost onPostCreated={fetchPosts} />}
               
-              {posts.map(post => (
-                <Post
-                  key={post.id}
-                  id={post.id}
-                  content={post.content}
-                  created_at={post.created_at}
-                  user={{
-                    id: post.user.id,
-                    full_name: post.user.full_name,
-                    avatar_url: post.user.avatar_url,
-                    username: post.user.username
-                  }}
-                  likes_count={post.likes_count}
-                  comments_count={post.comments_count}
-                  is_liked={post.is_liked}
-                  image_url={post.image_url}
-                  onPostUpdated={fetchPosts}
-                />
-              ))}
+              {searchQuery && (
+                <h2 className="text-xl font-semibold px-4 py-2">
+                  {searchQuery.startsWith('$') 
+                    ? `Posts mentioning ${searchQuery}`
+                    : `Search results for "${searchQuery}"`}
+                </h2>
+              )}
+
+              {isLoading ? (
+                <div className="p-8 text-center text-gray-500">Loading posts...</div>
+              ) : posts.length > 0 ? (
+                posts.map(post => (
+                  <Post
+                    key={post.id}
+                    id={post.id}
+                    content={post.content}
+                    created_at={post.created_at}
+                    user={{
+                      id: post.user.id,
+                      full_name: post.user.full_name,
+                      avatar_url: post.user.avatar_url,
+                      username: post.user.username
+                    }}
+                    likes_count={post.likes_count}
+                    comments_count={post.comments_count}
+                    is_liked={post.is_liked}
+                    image_url={post.image_url}
+                    onPostUpdated={fetchPosts}
+                  />
+                ))
+              ) : (
+                <div className="p-8 text-center text-gray-500 bg-white dark:bg-gray-800 rounded-lg shadow">
+                  {searchQuery 
+                    ? `No posts found for "${searchQuery}"`
+                    : "No posts yet"}
+                </div>
+              )}
             </div>
           </div>
         </div>

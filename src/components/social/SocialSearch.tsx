@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { SearchResults } from "./SearchResults";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 export const SocialSearch = () => {
   const [query, setQuery] = useState("");
@@ -15,7 +15,7 @@ export const SocialSearch = () => {
   const [showResults, setShowResults] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const debouncedQuery = useDebounce(query, 300);
-  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     const searchData = async () => {
@@ -85,7 +85,7 @@ export const SocialSearch = () => {
     e.preventDefault();
     if (query.trim()) {
       setShowResults(false);
-      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      setSearchParams({ q: query.trim() });
     }
   };
 
