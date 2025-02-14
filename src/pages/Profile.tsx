@@ -360,9 +360,17 @@ const Profile = () => {
       
       if (error) throw error;
       
+      // Update following list
       setFollowing(following.filter(follow => follow.id !== userId));
       
-      // Refresh profile data to update follower/following counts
+      // Update followers list if the user is in it to show "Follow back" button
+      setFollowers(prev => prev.map(follower => 
+        follower.id === userId 
+          ? { ...follower, is_following: false }
+          : follower
+      ));
+      
+      // Refresh profile data to update counts
       await fetchProfileData();
       
       toast.success("Unfollowed user");
