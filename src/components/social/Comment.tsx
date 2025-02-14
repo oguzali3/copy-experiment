@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { User, Trash2, Heart, MessageCircle } from "lucide-react";
@@ -49,7 +49,7 @@ export const Comment = ({
       .select('id')
       .eq('comment_id', id)
       .eq('user_id', currentUser.id)
-      .single();
+      .maybeSingle();
 
     if (!likesError) {
       setIsLiked(!!likes);
@@ -84,7 +84,7 @@ export const Comment = ({
         content,
         created_at,
         user_id,
-        profiles (
+        user:user_id (
           id,
           full_name,
           avatar_url,
@@ -103,12 +103,7 @@ export const Comment = ({
       id: reply.id,
       content: reply.content,
       created_at: reply.created_at,
-      user: {
-        id: reply.user_id,
-        full_name: reply.profiles.full_name,
-        avatar_url: reply.profiles.avatar_url,
-        username: reply.profiles.username
-      }
+      user: reply.user
     }));
 
     setReplies(transformedReplies);
@@ -196,10 +191,10 @@ export const Comment = ({
   };
 
   // Fetch initial data
-  useState(() => {
+  useEffect(() => {
     fetchLikeStatus();
     fetchRepliesCount();
-  });
+  }, []);
 
   return (
     <div className="py-3">
