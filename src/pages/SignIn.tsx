@@ -7,11 +7,12 @@ import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import { Session } from '@supabase/supabase-js';
 import { useSessionContext } from '@supabase/auth-helpers-react';
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const { session } = useSessionContext();
+  const { session } = useSessionContext() as { session: Session | null };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
@@ -22,7 +23,7 @@ const SignIn = () => {
     }
   }, [session, navigate]);
 
-  const handleEmailSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEmailSignIn = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setSigningIn(true);
     
@@ -83,7 +84,6 @@ const SignIn = () => {
     }
   };
 
-  // If already logged in, don't show the sign-in form
   if (session) {
     return null;
   }
