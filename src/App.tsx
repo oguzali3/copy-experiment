@@ -9,6 +9,8 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
+
+// Pages
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -25,9 +27,11 @@ import PortfolioSubscriptions from "./pages/PortfolioSubscriptions";
 import PortfolioPricing from "./pages/PortfolioPricing";
 import Feed from "./pages/Feed";
 
+// Initialize QueryClient with latest recommended settings
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
       retry: 1,
       refetchOnWindowFocus: false,
     },
@@ -35,19 +39,27 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  const [initialSession, setInitialSession] = useState(null);
+  const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setInitialSession(session);
+      setSession(session);
     });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <SessionContextProvider 
         supabaseClient={supabase}
-        initialSession={initialSession}
+        initialSession={session}
       >
         <TooltipProvider>
           <SidebarProvider>
@@ -56,6 +68,7 @@ const App = () => {
               <Sonner />
               <BrowserRouter>
                 <Routes>
+                  {/* Public routes */}
                   <Route path="/" element={<Index />} />
                   <Route path="/signin" element={<SignIn />} />
                   <Route path="/signup" element={<SignUp />} />
@@ -65,7 +78,7 @@ const App = () => {
                   <Route path="/feed/*" element={<Feed />} />
                   <Route path="/profile" element={<Profile />} />
 
-                  {/* Dashboard Layout Routes */}
+                  {/* Protected Dashboard Routes */}
                   <Route element={<DashboardLayout />}>
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/analysis" element={<Analysis />} />
