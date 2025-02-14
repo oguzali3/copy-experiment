@@ -1,4 +1,3 @@
-
 import { 
   filterOutTTM, 
   filterByTimeRange, 
@@ -74,9 +73,12 @@ export const transformFinancialData = (
       }))
     : [];
 
+  console.log('Formatted Cash Flow Data:', formattedCashFlowData);
+
   // Handle different data structures based on timeFrame
   let periodData;
   if (timeFrame === 'quarterly') {
+    // Ensure financialData is treated as an array for quarterly data
     periodData = Array.isArray(financialData) 
       ? financialData.map(item => ({
           ...item,
@@ -84,12 +86,8 @@ export const transformFinancialData = (
         }))
       : [];
   } else {
-    periodData = Array.isArray(financialData) 
-      ? financialData.map(item => ({
-          ...item,
-          period: item.period === 'TTM' ? 'TTM' : item.date?.split('-')[0]
-        }))
-      : [];
+    // Handle annual data structure
+    periodData = (financialData[ticker]?.annual?.filter((item: any) => item.period !== 'TTM') || []);
   }
 
   const periodBalanceSheet = (balanceSheetData || []).map((item: any) => ({
@@ -136,10 +134,12 @@ export const transformFinancialData = (
   // Add TTM data if it exists and is selected
   if (endYear === 'TTM') {
     const ttmIncomeStatement = timeFrame === 'quarterly'
-      ? periodData.find((item: any) => item.period === 'TTM')
-      : periodData.find((item: any) => item.period === 'TTM');
+      ? Array.isArray(financialData) 
+        ? financialData.find((item: any) => item.period === 'TTM')
+        : null
+      : financialData[ticker]?.annual?.find((item: any) => item.period === 'TTM');
 
-    const ttmBalanceSheet = periodBalanceSheet?.find((item: any) => item.period === 'TTM');
+    const ttmBalanceSheet = balanceSheetData?.find((item: any) => item.period === 'TTM');
     const ttmCashFlow = formattedCashFlowData?.find((item: any) => item.period === 'TTM');
 
     if (ttmIncomeStatement || ttmBalanceSheet || ttmCashFlow) {
@@ -169,9 +169,12 @@ export const transformFinancialData = (
     }
   }
 
-  // Sort data chronologically and calculate statistics
+  // Filter and sort data
+  transformedData = filterByTimeRange(transformedData, startYear, endYear);
   transformedData = sortChronologically(transformedData);
-  console.log('Transformed Financial Data:', transformedData);
 
+  console.log('Final Transformed Data:', transformedData);
+
+  // Calculate statistics
   return calculateMetricStatistics(transformedData, selectedMetrics);
 };
