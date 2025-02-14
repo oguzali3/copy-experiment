@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -84,7 +83,7 @@ export const Comment = ({
         content,
         created_at,
         user_id,
-        user:user_id (
+        profiles!user_id (
           id,
           full_name,
           avatar_url,
@@ -103,7 +102,12 @@ export const Comment = ({
       id: reply.id,
       content: reply.content,
       created_at: reply.created_at,
-      user: reply.user
+      user: {
+        id: reply.user_id,
+        full_name: reply.profiles.full_name,
+        avatar_url: reply.profiles.avatar_url,
+        username: reply.profiles.username
+      }
     }));
 
     setReplies(transformedReplies);
@@ -190,7 +194,6 @@ export const Comment = ({
     }
   };
 
-  // Fetch initial data
   useEffect(() => {
     fetchLikeStatus();
     fetchRepliesCount();
