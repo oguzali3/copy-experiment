@@ -16,22 +16,32 @@ const SignIn = () => {
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
 
+  // Handle initial session and navigation
   useEffect(() => {
     if (session) {
       navigate("/dashboard");
     }
   }, [session, navigate]);
 
+  // Handle auth state changes
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
+    let mounted = true;
+
+    const handleAuthChange = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (mounted && data.session) {
         navigate("/dashboard");
       }
+    };
+
+    handleAuthChange();
+
+    const { subscription } = supabase.auth.onAuthStateChange(() => {
+      handleAuthChange();
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [navigate]);
