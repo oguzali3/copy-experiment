@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,19 +19,22 @@ const SignIn = () => {
   useEffect(() => {
     if (session) {
       navigate("/dashboard");
-      return;
     }
+  }, [session, navigate]);
 
-    const subscription = supabase.auth.onAuthStateChange((event, currentSession) => {
-      if (currentSession) {
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
         navigate("/dashboard");
       }
     });
 
     return () => {
-      subscription.data.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
-  }, [session, navigate]);
+  }, [navigate]);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
