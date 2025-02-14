@@ -32,6 +32,7 @@ const Profile = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('portfolios');
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [userPortfolios, setUserPortfolios] = useState<Array<{
     id: string;
     name: string;
@@ -58,17 +59,31 @@ const Profile = () => {
     setValue
   } = useForm<ProfileData>();
 
-  const profileId = new URLSearchParams(location.search).get('id') || user?.id;
+  const urlProfileId = new URLSearchParams(location.search).get('id');
+  const profileId = urlProfileId || user?.id;
   const isOwner = user?.id === profileId;
 
   useEffect(() => {
-    if (profileId) {
-      fetchProfileData();
-      fetchUserPortfolios();
-      if (user && !isOwner) {
-        checkIfFollowing();
+    const initializeProfile = async () => {
+      if (!user) {
+        navigate('/signin');
+        return;
       }
-    }
+
+      if (!profileId) {
+        navigate('/');
+        return;
+      }
+
+      await fetchProfileData();
+      if (user && profileId !== user.id) {
+        await checkIfFollowing();
+      }
+      await fetchUserPortfolios();
+      setIsLoading(false);
+    };
+
+    initializeProfile();
   }, [profileId, user]);
 
   const checkIfFollowing = async () => {
@@ -90,7 +105,10 @@ const Profile = () => {
   };
 
   const handleFollow = async () => {
-    if (!user || !profileId) return;
+    if (!user || !profileId) {
+      toast("Please sign in to follow users");
+      return;
+    }
     
     try {
       if (isFollowing) {
@@ -117,7 +135,7 @@ const Profile = () => {
       }
       
       // Refresh profile data to update follower count
-      fetchProfileData();
+      await fetchProfileData();
     } catch (error) {
       console.error('Error toggling follow:', error);
       toast("Failed to update follow status");
@@ -126,6 +144,7 @@ const Profile = () => {
 
   const fetchProfileData = async () => {
     if (!profileId) return;
+    
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -134,39 +153,46 @@ const Profile = () => {
         .maybeSingle();
       
       if (error) throw error;
-      if (data) {
-        setProfileData({
-          id: data.id,
-          full_name: data.full_name || "",
-          username: data.username || "",
-          bio: data.bio || "",
-          website: data.website || "",
-          twitter: data.social_twitter || "",
-          linkedin: data.social_linkedin || "",
-          avatar_url: data.avatar_url,
-          follower_count: data.follower_count || 0,
-          following_count: data.following_count || 0
-        });
-        setAvatarUrl(data.avatar_url);
+      
+      if (!data) {
+        toast("Profile not found");
+        navigate('/');
+        return;
+      }
 
-        // Update form values if owner
-        if (isOwner) {
-          setValue("full_name", data.full_name || "");
-          setValue("username", data.username || "");
-          setValue("bio", data.bio || "");
-          setValue("website", data.website || "");
-          setValue("twitter", data.social_twitter || "");
-          setValue("linkedin", data.social_linkedin || "");
-        }
+      setProfileData({
+        id: data.id,
+        full_name: data.full_name || "",
+        username: data.username || "",
+        bio: data.bio || "",
+        website: data.website || "",
+        twitter: data.social_twitter || "",
+        linkedin: data.social_linkedin || "",
+        avatar_url: data.avatar_url,
+        follower_count: data.follower_count || 0,
+        following_count: data.following_count || 0
+      });
+      setAvatarUrl(data.avatar_url);
+
+      // Update form values if owner
+      if (isOwner) {
+        setValue("full_name", data.full_name || "");
+        setValue("username", data.username || "");
+        setValue("bio", data.bio || "");
+        setValue("website", data.website || "");
+        setValue("twitter", data.social_twitter || "");
+        setValue("linkedin", data.social_linkedin || "");
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast("Failed to load profile data");
+      navigate('/');
     }
   };
 
   const fetchUserPortfolios = async () => {
     if (!profileId) return;
+    
     try {
       const { data, error } = await supabase
         .from('portfolios')
@@ -249,6 +275,14 @@ const Profile = () => {
       toast("Failed to update profile");
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
