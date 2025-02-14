@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import { Session } from '@supabase/supabase-js';
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -16,8 +17,8 @@ const SignIn = () => {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
         navigate("/dashboard");
       }
     };
