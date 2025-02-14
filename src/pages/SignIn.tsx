@@ -24,26 +24,17 @@ const SignIn = () => {
     }
   }, [session, navigate]);
 
-  // Simplified auth state change handler
+  // Simplified auth state change handler - no type recursion
   useEffect(() => {
-    let unsubscribe: (() => void) | null = null;
-
-    const setupAuthListener = () => {
-      const authListener = supabase.auth.onAuthStateChange((_, currentSession) => {
-        if (currentSession) {
-          navigate("/dashboard");
-        }
-      });
-      
-      unsubscribe = authListener.data.subscription.unsubscribe;
-    };
-
-    setupAuthListener();
-
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
+    const authSubscription = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        navigate("/dashboard");
       }
+    });
+
+    // Simple cleanup function
+    return () => {
+      authSubscription.data.subscription.unsubscribe();
     };
   }, [navigate]);
 
