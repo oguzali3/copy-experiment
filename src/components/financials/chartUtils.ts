@@ -1,3 +1,4 @@
+
 export const getMetricColor = (index: number): string => {
   const colors = [
     '#1A237E', // Deep Blue

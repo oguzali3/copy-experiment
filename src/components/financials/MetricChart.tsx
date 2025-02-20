@@ -1,3 +1,4 @@
+
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { getMetricColor, formatYAxis } from './chartUtils';
 import { ChartTooltip } from './ChartTooltip';
@@ -93,7 +94,12 @@ export const MetricChart = ({
             data={sortedData}
             margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="#E5E7EB" 
+              vertical={false}
+              opacity={0.4}
+            />
             <XAxis 
               dataKey="period" 
               tick={{ fontSize: 12, fill: '#6B7280' }}
@@ -110,6 +116,7 @@ export const MetricChart = ({
               tick={{ fontSize: 12, fill: '#6B7280' }}
               axisLine={{ stroke: '#E5E7EB' }}
               tickLine={false}
+              width={80}
             />
             <Tooltip content={<ChartTooltip ticker={ticker} />} />
             
