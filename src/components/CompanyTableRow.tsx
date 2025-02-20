@@ -1,4 +1,7 @@
+
 import { ArrowUpIcon, ArrowDownIcon, XIcon } from "lucide-react";
+import { Area, AreaChart, YAxis } from "recharts";
+import { useEffect, useState } from "react";
 
 interface CompanyTableRowProps {
   company: {
@@ -13,7 +16,27 @@ interface CompanyTableRowProps {
   onRemove: (ticker: string) => void;
 }
 
+const generateMockIntraData = (isPositive: boolean) => {
+  const data = [];
+  let value = 100;
+  
+  for (let i = 0; i < 20; i++) {
+    // Generate slightly biased random walk based on isPositive
+    const change = (Math.random() - (isPositive ? 0.45 : 0.55)) * 2;
+    value = value * (1 + change / 100);
+    data.push({ value });
+  }
+  
+  return data;
+};
+
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
+  const [chartData, setChartData] = useState<{ value: number }[]>([]);
+
+  useEffect(() => {
+    setChartData(generateMockIntraData(company.isPositive));
+  }, [company.isPositive]);
+
   return (
     <tr className="hover:bg-gray-50 group">
       <td className="px-4 py-3 text-sm text-gray-500">
@@ -33,6 +56,39 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       <td className="px-4 py-3 text-sm font-medium text-blue-600">{company.ticker}</td>
       <td className="px-4 py-3 text-sm text-gray-500">${company.marketCap}</td>
       <td className="px-4 py-3 text-sm text-gray-900">${company.price}</td>
+      <td className="px-4 py-3">
+        <div className="w-24 h-12">
+          <AreaChart
+            width={96}
+            height={48}
+            data={chartData}
+            margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+          >
+            <defs>
+              <linearGradient id={`gradient-${company.ticker}`} x1="0" y1="0" x2="0" y2="1">
+                <stop
+                  offset="0%"
+                  stopColor={company.isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
+                  stopOpacity={0.3}
+                />
+                <stop
+                  offset="100%"
+                  stopColor={company.isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
+                  stopOpacity={0}
+                />
+              </linearGradient>
+            </defs>
+            <YAxis hide domain={['dataMin', 'dataMax']} />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke={company.isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
+              fill={`url(#gradient-${company.ticker})`}
+              strokeWidth={1.5}
+            />
+          </AreaChart>
+        </div>
+      </td>
       <td className="px-4 py-3">
         <div className={`flex items-center ${company.isPositive ? 'text-success' : 'text-warning'}`}>
           {company.isPositive ? (
