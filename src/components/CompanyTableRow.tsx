@@ -21,30 +21,25 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
   const [chartData, setChartData] = useState<{ value: number }[]>([]);
 
   useEffect(() => {
-    const fetchIntradayData = async () => {
-      try {
-        const data = await fetchFinancialData('intraday', company.ticker, '10min');
-        
-        if (data && Array.isArray(data) && data.length > 0) {
-          // Get the most recent trading day's data (up to 39 points for a trading day)
-          const points = data
-            .slice(0, 39)
-            .map(item => ({
-              value: Number(item.close)
-            }))
-            .filter(point => !isNaN(point.value));
+    const generateDataPoints = (open: number, current: number, points: number = 10) => {
+      const step = (current - open) / (points - 1);
+      return Array.from({ length: points }, (_, i) => ({
+        value: open + step * i
+      }));
+    };
 
-          if (points.length > 0) {
-            setChartData(points.reverse()); // Reverse to show chronological order
-          } else {
-            throw new Error('No valid data points');
-          }
-        } else {
-          throw new Error('Invalid data format');
+    const updateChartData = async () => {
+      try {
+        const data = await fetchFinancialData('quote', company.ticker);
+        
+        if (data && Array.isArray(data) && data[0]) {
+          const quote = data[0];
+          const points = generateDataPoints(quote.open, quote.price);
+          setChartData(points);
         }
       } catch (error) {
-        console.error('Failed to fetch intraday data for', company.ticker, ':', error);
-        // Fallback to simple chart if intraday data fetch fails
+        console.error('Failed to update chart data for', company.ticker, ':', error);
+        // Fallback to simple 2-point chart
         const currentPrice = parseFloat(company.price);
         if (!isNaN(currentPrice)) {
           setChartData([
@@ -55,7 +50,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       }
     };
 
-    fetchIntradayData();
+    updateChartData();
   }, [company.ticker, company.price]);
 
   return (
