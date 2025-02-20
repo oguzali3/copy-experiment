@@ -4,7 +4,7 @@ import { MetricsSearch } from "./MetricsSearch";
 import { CompanySearch } from "./CompanySearch";
 import { CompanyTableHeader } from "./CompanyTableHeader";
 import { CompanyTableRow } from "./CompanyTableRow";
-import { fetchBatchQuotes } from "@/utils/financialApi";
+import { fetchFinancialData } from "@/utils/financialApi";
 
 type Company = {
   rank: number;
@@ -42,65 +42,42 @@ export const TopCompanies = () => {
     direction: null,
   });
 
+  const fetchPrices = useCallback(async () => {
+    try {
+      const updatedCompanies = await Promise.all(
+        companies.map(async (company) => {
+          try {
+            const quoteData = await fetchFinancialData('quote', company.ticker);
+            const quote = quoteData[0];
+            
+            if (quote) {
+              return {
+                ...company,
+                price: quote.price.toFixed(2),
+                change: `${quote.changesPercentage.toFixed(2)}%`,
+                isPositive: quote.changesPercentage >= 0
+              };
+            }
+            return company;
+          } catch (error) {
+            console.error(`Error fetching quote for ${company.ticker}:`, error);
+            return company;
+          }
+        })
+      );
+
+      setCompanies(updatedCompanies);
+    } catch (error) {
+      console.error('Error fetching prices:', error);
+    }
+  }, [companies]);
+
   useEffect(() => {
-    let isSubscribed = true;
-    const interval = setInterval(async () => {
-      try {
-        const symbols = companies.map(company => company.ticker);
-        const quotes = await fetchBatchQuotes(symbols);
+    fetchPrices();
+    const interval = setInterval(fetchPrices, 10000);
 
-        if (isSubscribed) {
-          setCompanies(prevCompanies => {
-            return prevCompanies.map(company => {
-              const quote = quotes.find(q => q.symbol === company.ticker);
-              if (quote) {
-                return {
-                  ...company,
-                  price: quote.price.toFixed(2),
-                  change: `${quote.changesPercentage.toFixed(2)}%`,
-                  isPositive: quote.changesPercentage >= 0
-                };
-              }
-              return company;
-            });
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching batch quotes:', error);
-      }
-    }, 10000); // Update every 10 seconds
-
-    (async () => {
-      try {
-        const symbols = companies.map(company => company.ticker);
-        const quotes = await fetchBatchQuotes(symbols);
-        
-        if (isSubscribed) {
-          setCompanies(prevCompanies => {
-            return prevCompanies.map(company => {
-              const quote = quotes.find(q => q.symbol === company.ticker);
-              if (quote) {
-                return {
-                  ...company,
-                  price: quote.price.toFixed(2),
-                  change: `${quote.changesPercentage.toFixed(2)}%`,
-                  isPositive: quote.changesPercentage >= 0
-                };
-              }
-              return company;
-            });
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching initial batch quotes:', error);
-      }
-    })();
-
-    return () => {
-      isSubscribed = false;
-      clearInterval(interval);
-    };
-  }, [companies.map(c => c.ticker).join(',')]);
+    return () => clearInterval(interval);
+  }, [fetchPrices]);
 
   const handleSort = (field: SortField) => {
     let direction: SortDirection = "desc";
@@ -130,16 +107,32 @@ export const TopCompanies = () => {
     setCompanies(sortedCompanies);
   };
 
-  const handleCompanySelect = (newCompany: any) => {
+  const handleCompanySelect = async (newCompany: any) => {
     if (!companies.find(c => c.ticker === newCompany.ticker)) {
-      const formattedCompany: Company = {
-        ...newCompany,
-        rank: companies.length + 1,
-        price: "0",
-        change: "0%",
-        isPositive: true
-      };
-      setCompanies(prev => [...prev, formattedCompany]);
+      try {
+        const quoteData = await fetchFinancialData('quote', newCompany.ticker);
+        const quote = quoteData[0];
+        
+        const formattedCompany: Company = {
+          ...newCompany,
+          rank: companies.length + 1,
+          price: quote ? quote.price.toFixed(2) : "0",
+          change: quote ? `${quote.changesPercentage.toFixed(2)}%` : "0%",
+          isPositive: quote ? quote.changesPercentage >= 0 : true
+        };
+        
+        setCompanies(prev => [...prev, formattedCompany]);
+      } catch (error) {
+        console.error(`Error fetching quote for new company ${newCompany.ticker}:`, error);
+        const formattedCompany: Company = {
+          ...newCompany,
+          rank: companies.length + 1,
+          price: "0",
+          change: "0%",
+          isPositive: true
+        };
+        setCompanies(prev => [...prev, formattedCompany]);
+      }
     }
   };
 
