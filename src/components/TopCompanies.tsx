@@ -13,7 +13,7 @@ type Company = {
   name: string;
   ticker: string;
   marketCap: string;
-  price: string;  // Changed to only string
+  price: string;
   change: string;
   isPositive: boolean;
 };
@@ -44,34 +44,39 @@ export const TopCompanies = () => {
     direction: null,
   });
 
-  // Initialize WebSocket connections for each company
-  companies.forEach(company => {
-    const { price: latestPrice } = useStockWebSocket(company.ticker);
-    
-    useEffect(() => {
-      if (latestPrice) {
-        setCompanies(prevCompanies => {
-          return prevCompanies.map(prevCompany => {
-            if (prevCompany.ticker === company.ticker) {
-              // Calculate change percentage based on previous price
-              const prevPrice = parseFloat(prevCompany.price);
-              const changePercent = prevPrice > 0 
-                ? ((latestPrice - prevPrice) / prevPrice) * 100 
-                : 0;
-              
-              return {
-                ...prevCompany,
-                price: latestPrice.toFixed(2), // Ensure price is string
-                change: `${changePercent.toFixed(2)}%`,
-                isPositive: changePercent >= 0
-              };
-            }
-            return prevCompany;
-          });
-        });
-      }
-    }, [latestPrice]);
-  });
+  // Create a WebSocket connection for each company's ticker
+  const webSocketUpdates = companies.reduce((acc, company) => {
+    const { price } = useStockWebSocket(company.ticker);
+    acc[company.ticker] = price;
+    return acc;
+  }, {} as Record<string, number | null>);
+
+  // Handle WebSocket price updates
+  useEffect(() => {
+    setCompanies(prevCompanies => {
+      let hasUpdates = false;
+      const updatedCompanies = prevCompanies.map(company => {
+        const latestPrice = webSocketUpdates[company.ticker];
+        if (latestPrice) {
+          const prevPrice = parseFloat(company.price);
+          const changePercent = prevPrice > 0 
+            ? ((latestPrice - prevPrice) / prevPrice) * 100 
+            : 0;
+          
+          hasUpdates = true;
+          return {
+            ...company,
+            price: latestPrice.toFixed(2),
+            change: `${changePercent.toFixed(2)}%`,
+            isPositive: changePercent >= 0
+          };
+        }
+        return company;
+      });
+      
+      return hasUpdates ? updatedCompanies : prevCompanies;
+    });
+  }, [webSocketUpdates]);
 
   // Fetch initial quotes for all companies
   useEffect(() => {
@@ -89,7 +94,7 @@ export const TopCompanies = () => {
             if (quote) {
               return {
                 ...company,
-                price: quote.price.toFixed(2), // Ensure price is string
+                price: quote.price.toFixed(2),
                 change: `${quote.changesPercentage.toFixed(2)}%`,
                 isPositive: quote.changesPercentage >= 0
               };
