@@ -1,13 +1,21 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export type FinancialEndpoint = 'quote' | 'profile' | 'income-statement' | 'balance-sheet-statement' | 'cash-flow-statement';
+export type FinancialEndpoint = 'quote' | 'profile' | 'income-statement' | 'balance-sheet-statement' | 'cash-flow-statement' | 'intraday';
 
 export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: string, period: 'annual' | 'quarter' = 'annual') {
   try {
     console.log(`Fetching ${endpoint} data for ${symbol} with period ${period}`);
     const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-      body: { endpoint, symbol, period }
+      body: { 
+        endpoint, 
+        symbol, 
+        period,
+        ...(endpoint === 'intraday' && {
+          from: new Date().toISOString().split('T')[0],
+          to: new Date().toISOString().split('T')[0]
+        })
+      }
     });
 
     if (error) {

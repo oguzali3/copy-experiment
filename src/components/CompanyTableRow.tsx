@@ -21,36 +21,40 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
   const [chartData, setChartData] = useState<{ value: number }[]>([]);
 
   useEffect(() => {
-    const generateDataPoints = (open: number, current: number, points: number = 10) => {
-      const step = (current - open) / (points - 1);
-      return Array.from({ length: points }, (_, i) => ({
-        value: open + step * i
-      }));
-    };
-
-    const updateChartData = async () => {
+    const fetchIntradayData = async () => {
       try {
-        const data = await fetchFinancialData('quote', company.ticker);
+        // Fetch intraday data specifically
+        const data = await fetchFinancialData('intraday', company.ticker);
         
-        if (data && Array.isArray(data) && data[0]) {
-          const quote = data[0];
-          const points = generateDataPoints(quote.open, quote.price);
-          setChartData(points);
+        if (data && Array.isArray(data)) {
+          // Process the intraday data - take up to 39 points (full trading day)
+          const points = data
+            .slice(0, 39)
+            .map(point => ({
+              value: Number(point.close)
+            }))
+            .filter(point => !isNaN(point.value));
+
+          if (points.length > 0) {
+            setChartData(points.reverse());
+          } else {
+            throw new Error('No valid intraday data points');
+          }
         }
       } catch (error) {
-        console.error('Failed to update chart data for', company.ticker, ':', error);
-        // Fallback to simple 2-point chart
+        console.error('Failed to fetch intraday data for', company.ticker, ':', error);
+        // Fallback to simple chart if intraday fetch fails
         const currentPrice = parseFloat(company.price);
         if (!isNaN(currentPrice)) {
           setChartData([
-            { value: currentPrice * 0.99 },
+            { value: currentPrice * 0.995 },
             { value: currentPrice }
           ]);
         }
       }
     };
 
-    updateChartData();
+    fetchIntradayData();
   }, [company.ticker, company.price]);
 
   return (
