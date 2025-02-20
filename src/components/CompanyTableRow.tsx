@@ -1,7 +1,7 @@
 
 import { ArrowUpIcon, ArrowDownIcon, XIcon } from "lucide-react";
 import { Area, AreaChart, YAxis } from "recharts";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { fetchFinancialData } from "@/utils/financialApi";
 
 interface CompanyTableRowProps {
@@ -21,38 +21,36 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
   const [chartData, setChartData] = useState<{ value: number }[]>([]);
 
   useEffect(() => {
-    const fetchHistoricalData = async () => {
-      try {
-        const data = await fetchFinancialData('historical', company.ticker);
-        
-        if (data && Array.isArray(data)) {
-          // Transform the historical data into chart points
-          const points = data
-            .map(point => ({
-              value: Number(point.close || point.price)
-            }))
-            .filter(point => !isNaN(point.value));
+    const generateDataPoints = (open: number, current: number, points: number = 10) => {
+      const step = (current - open) / (points - 1);
+      return Array.from({ length: points }, (_, i) => ({
+        value: open + step * i
+      }));
+    };
 
-          if (points.length > 0) {
-            setChartData(points.slice(-50)); // Keep last 50 points for smoother chart
-          } else {
-            throw new Error('No valid historical data points');
-          }
+    const updateChartData = async () => {
+      try {
+        const data = await fetchFinancialData('quote', company.ticker);
+        
+        if (data && Array.isArray(data) && data[0]) {
+          const quote = data[0];
+          const points = generateDataPoints(quote.open, quote.price);
+          setChartData(points);
         }
       } catch (error) {
-        console.error('Failed to fetch historical data for', company.ticker, ':', error);
-        // Fallback to simple chart
+        console.error('Failed to update chart data for', company.ticker, ':', error);
+        // Fallback to simple 2-point chart
         const currentPrice = parseFloat(company.price);
         if (!isNaN(currentPrice)) {
           setChartData([
-            { value: currentPrice * 0.995 },
+            { value: currentPrice * 0.99 },
             { value: currentPrice }
           ]);
         }
       }
     };
 
-    fetchHistoricalData();
+    updateChartData();
   }, [company.ticker, company.price]);
 
   return (

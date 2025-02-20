@@ -1,27 +1,13 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export type FinancialEndpoint = 'quote' | 'profile' | 'income-statement' | 'balance-sheet-statement' | 'cash-flow-statement' | 'historical';
+export type FinancialEndpoint = 'quote' | 'profile' | 'income-statement' | 'balance-sheet-statement' | 'cash-flow-statement';
 
 export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: string, period: 'annual' | 'quarter' = 'annual') {
   try {
     console.log(`Fetching ${endpoint} data for ${symbol} with period ${period}`);
-    
-    // For historical data, get yesterday's date if it's outside market hours
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
     const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-      body: { 
-        endpoint, 
-        symbol, 
-        period,
-        ...(endpoint === 'historical' && {
-          from: yesterday.toISOString().split('T')[0],
-          to: today.toISOString().split('T')[0]
-        })
-      }
+      body: { endpoint, symbol, period }
     });
 
     if (error) {
