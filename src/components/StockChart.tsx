@@ -1,9 +1,11 @@
+
 import { useState } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Area, AreaChart, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { useStockWebSocket } from "@/hooks/useStockWebSocket";
 
 interface StockChartProps {
   ticker?: string;
@@ -11,6 +13,7 @@ interface StockChartProps {
 
 export const StockChart = ({ ticker }: StockChartProps) => {
   const [timeframe, setTimeframe] = useState("1D");
+  const { price: livePrice } = useStockWebSocket(ticker);
 
   const { data: chartData, isLoading, error } = useQuery({
     queryKey: ['stock-chart', ticker, timeframe],
@@ -31,7 +34,25 @@ export const StockChart = ({ ticker }: StockChartProps) => {
     refetchInterval: timeframe === "1D" ? 60000 : false,
   });
 
-  const timeframes = ["1D", "5D", "1M", "3M", "6M", "YTD", "1Y", "3Y", "5Y", "MAX"];
+  const timeframes = [
+    { label: "1D", value: "1D" },
+    { label: "1W", value: "1W" },
+    { label: "1M", value: "1M" },
+    { label: "3M", value: "3M" },
+    { label: "6M", value: "6M" },
+    { label: "YTD", value: "YTD" },
+    { label: "1Y", value: "1Y" },
+    { label: "5Y", value: "5Y" },
+    { label: "MAX", value: "MAX" }
+  ];
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(price);
+  };
 
   const formatXAxisTick = (time: string) => {
     const date = new Date(time);
@@ -44,42 +65,18 @@ export const StockChart = ({ ticker }: StockChartProps) => {
           hour12: true 
         });
       case "1Y":
-        // Show quarterly intervals (Mar, Jul, Nov)
         return date.toLocaleDateString('en-US', { 
           month: 'short',
           year: 'numeric'
         });
-      case "3Y":
       case "5Y":
-        // Show yearly intervals
-        return date.getFullYear().toString();
       case "MAX":
-        // Show decade intervals
         return date.getFullYear().toString();
       default:
         return date.toLocaleDateString('en-US', { 
           month: 'short',
           day: 'numeric'
         });
-    }
-  };
-
-  const getXAxisTickInterval = () => {
-    if (!chartData?.length) return 0;
-    
-    switch (timeframe) {
-      case "1Y":
-        // Show 4 ticks for 1Y (quarterly)
-        return Math.floor(chartData.length / 4);
-      case "3Y":
-      case "5Y":
-        // Show yearly ticks
-        return Math.floor(chartData.length / (timeframe === "3Y" ? 3 : 5));
-      case "MAX":
-        // Show approximately 10 ticks
-        return Math.floor(chartData.length / 10);
-      default:
-        return undefined;
     }
   };
 
@@ -112,78 +109,92 @@ export const StockChart = ({ ticker }: StockChartProps) => {
     );
   }
 
+  const latestPrice = livePrice || (chartData && chartData.length > 0 ? chartData[chartData.length - 1].price : 0);
+  const firstPrice = chartData && chartData.length > 0 ? chartData[0].price : 0;
+  const priceChange = latestPrice - firstPrice;
+  const priceChangePercent = (priceChange / firstPrice) * 100;
+  const isPositive = priceChange >= 0;
+
   return (
     <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm">
-      <div className="flex gap-2 mb-4 flex-wrap px-2">
-        {timeframes.map((tf) => (
+      <div className="mb-6">
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-semibold">
+            {formatPrice(latestPrice)}
+          </span>
+          <span className={`text-sm font-medium ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+            {isPositive ? '+' : ''}{priceChange.toFixed(2)} ({priceChangePercent.toFixed(2)}%)
+          </span>
+        </div>
+        <div className="text-sm text-gray-500 mt-1">
+          Updated: {new Date().toLocaleString()}
+        </div>
+      </div>
+
+      <div className="flex gap-2 mb-6">
+        {timeframes.map(({ label, value }) => (
           <button
-            key={tf}
+            key={value}
             className={`px-3 py-1 text-sm rounded-md transition-colors ${
-              timeframe === tf 
+              timeframe === value 
                 ? "bg-blue-100 text-blue-700" 
                 : "hover:bg-gray-100"
             }`}
-            onClick={() => setTimeframe(tf)}
+            onClick={() => setTimeframe(value)}
           >
-            {tf}
+            {label}
           </button>
         ))}
       </div>
-      <div className="h-[calc(100%-60px)]">
+
+      <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
+          <AreaChart
             data={chartData}
-            margin={{ top: 5, right: 5, left: 5, bottom: 20 }}
+            margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
           >
+            <defs>
+              <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2}/>
+                <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
             <XAxis 
               dataKey="time" 
-              stroke="#888888"
-              fontSize={12}
-              tickLine={false}
-              dy={10}
-              interval={getXAxisTickInterval()}
               tickFormatter={formatXAxisTick}
+              tickLine={false}
+              axisLine={false}
+              tick={{ fill: '#888888', fontSize: 12 }}
+              minTickGap={30}
             />
             <YAxis 
-              stroke="#888888"
-              fontSize={12}
-              tickLine={false}
               domain={['auto', 'auto']}
-              tickFormatter={(value) => `$${value.toFixed(2)}`}
+              tickFormatter={(value) => formatPrice(value)}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#888888', fontSize: 12 }}
+              width={80}
             />
             <Tooltip
               contentStyle={{
                 backgroundColor: "white",
-                border: "1px solid #e5e7eb",
+                border: "none",
                 borderRadius: "8px",
                 boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                padding: "8px 12px"
               }}
-              formatter={(value: number) => [`$${value.toFixed(2)}`, "Price"]}
-              labelFormatter={(label) => {
-                const date = new Date(label);
-                if (timeframe === "1D") {
-                  return date.toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                  });
-                }
-                return date.toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric'
-                });
-              }}
+              formatter={(value: number) => [formatPrice(value), "Price"]}
+              labelFormatter={(label) => new Date(label).toLocaleString()}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="price"
-              stroke="#0EA5E9"
+              stroke="#22c55e"
+              fillOpacity={1}
+              fill="url(#colorPrice)"
               strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4 }}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>
