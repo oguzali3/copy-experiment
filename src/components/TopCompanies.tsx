@@ -13,7 +13,7 @@ type Company = {
   name: string;
   ticker: string;
   marketCap: string;
-  price: string | number;
+  price: string;  // Changed to only string
   change: string;
   isPositive: boolean;
 };
@@ -54,14 +54,14 @@ export const TopCompanies = () => {
           return prevCompanies.map(prevCompany => {
             if (prevCompany.ticker === company.ticker) {
               // Calculate change percentage based on previous price
-              const prevPrice = parseFloat(String(prevCompany.price));
+              const prevPrice = parseFloat(prevCompany.price);
               const changePercent = prevPrice > 0 
                 ? ((latestPrice - prevPrice) / prevPrice) * 100 
                 : 0;
               
               return {
                 ...prevCompany,
-                price: latestPrice.toFixed(2),
+                price: latestPrice.toFixed(2), // Ensure price is string
                 change: `${changePercent.toFixed(2)}%`,
                 isPositive: changePercent >= 0
               };
@@ -89,7 +89,7 @@ export const TopCompanies = () => {
             if (quote) {
               return {
                 ...company,
-                price: quote.price.toFixed(2),
+                price: quote.price.toFixed(2), // Ensure price is string
                 change: `${quote.changesPercentage.toFixed(2)}%`,
                 isPositive: quote.changesPercentage >= 0
               };
@@ -118,8 +118,8 @@ export const TopCompanies = () => {
         const valueB = parseFloat(b[field].replace("T", "000").replace("B", ""));
         return direction === "asc" ? valueA - valueB : valueB - valueA;
       } else if (field === "price") {
-        const valueA = parseFloat(String(a[field]).replace(",", ""));
-        const valueB = parseFloat(String(b[field]).replace(",", ""));
+        const valueA = parseFloat(a[field]);
+        const valueB = parseFloat(b[field]);
         return direction === "asc" ? valueA - valueB : valueB - valueA;
       } else if (field === "change") {
         const valueA = parseFloat(a[field].replace("%", ""));
@@ -135,7 +135,14 @@ export const TopCompanies = () => {
 
   const handleCompanySelect = (newCompany: any) => {
     if (!companies.find(c => c.ticker === newCompany.ticker)) {
-      setCompanies(prev => [...prev, { ...newCompany, rank: prev.length + 1 }]);
+      const formattedCompany: Company = {
+        ...newCompany,
+        rank: companies.length + 1,
+        price: "0",
+        change: "0%",
+        isPositive: true
+      };
+      setCompanies(prev => [...prev, formattedCompany]);
     }
   };
 
