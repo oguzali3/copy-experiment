@@ -51,40 +51,47 @@ export const MetricChart = ({
     return parseInt(a.period) - parseInt(b.period);
   });
 
-  console.log('Sorted chart data:', sortedData);
-
   return (
     <div className="w-full bg-white p-4 rounded-lg space-y-4">
-      <div className="flex flex-wrap gap-4 items-center justify-between">
-        <div className="flex gap-2 items-center">
-          {metrics.map((metric) => (
+      <div className="w-full bg-gray-50 p-3 rounded-lg flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {metrics.map((metric, index) => (
             <div key={metric} className="flex items-center gap-2">
               <div 
-                className="flex items-center gap-2 px-3 py-1.5 rounded-md" 
-                style={{ backgroundColor: `${getMetricColor(metrics.indexOf(metric))}15` }}
-              >
-                <span className="font-medium">{getMetricDisplayName(metric)}</span>
-                <div className="flex gap-1">
-                  <Button
-                    variant={metricTypes[metric] === 'bar' ? 'default' : 'outline'}
-                    size="icon"
-                    onClick={() => onMetricTypeChange(metric, 'bar')}
-                    className="h-8 w-8"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={metricTypes[metric] === 'line' ? 'default' : 'outline'}
-                    size="icon"
-                    onClick={() => onMetricTypeChange(metric, 'line')}
-                    className="h-8 w-8"
-                  >
-                    <LineChart className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: getMetricColor(index) }}
+              />
+              <span className="text-sm font-medium text-gray-700">
+                {getMetricDisplayName(metric)}
+              </span>
             </div>
           ))}
+        </div>
+        <div className="flex items-center border rounded-md divide-x overflow-hidden">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onMetricTypeChange(metrics[0], 'bar')}
+            className={`h-8 px-3 rounded-none ${
+              metricTypes[metrics[0]] === 'bar' 
+                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                : 'hover:bg-gray-100'
+            }`}
+          >
+            <BarChart3 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onMetricTypeChange(metrics[0], 'line')}
+            className={`h-8 px-3 rounded-none ${
+              metricTypes[metrics[0]] === 'line'
+                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                : 'hover:bg-gray-100'
+            }`}
+          >
+            <LineChart className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
