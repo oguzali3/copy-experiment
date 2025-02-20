@@ -53,10 +53,10 @@ export const MetricChart = ({
 
   return (
     <div className="w-full bg-white p-4 rounded-lg space-y-4">
-      <div className="w-full bg-gray-50 p-3 rounded-lg flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {metrics.map((metric, index) => (
-            <div key={metric} className="flex items-center gap-2">
+      <div className="w-full bg-gray-50 p-3 rounded-lg flex flex-col divide-y divide-gray-200">
+        {metrics.map((metric, index) => (
+          <div key={metric} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
+            <div className="flex items-center gap-2">
               <div 
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: getMetricColor(index) }}
@@ -65,34 +65,34 @@ export const MetricChart = ({
                 {getMetricDisplayName(metric)}
               </span>
             </div>
-          ))}
-        </div>
-        <div className="flex items-center border rounded-md divide-x overflow-hidden">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onMetricTypeChange(metrics[0], 'bar')}
-            className={`h-8 px-3 rounded-none ${
-              metricTypes[metrics[0]] === 'bar' 
-                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                : 'hover:bg-gray-100'
-            }`}
-          >
-            <BarChart3 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onMetricTypeChange(metrics[0], 'line')}
-            className={`h-8 px-3 rounded-none ${
-              metricTypes[metrics[0]] === 'line'
-                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                : 'hover:bg-gray-100'
-            }`}
-          >
-            <LineChart className="h-4 w-4" />
-          </Button>
-        </div>
+            <div className="flex items-center border rounded-md divide-x overflow-hidden">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onMetricTypeChange(metric, 'bar')}
+                className={`h-8 px-3 rounded-none ${
+                  metricTypes[metric] === 'bar' 
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    : 'hover:bg-gray-100'
+                }`}
+              >
+                <BarChart3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onMetricTypeChange(metric, 'line')}
+                className={`h-8 px-3 rounded-none ${
+                  metricTypes[metric] === 'line'
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    : 'hover:bg-gray-100'
+                }`}
+              >
+                <LineChart className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="h-[300px]">
