@@ -19,32 +19,52 @@ interface CompanyTableRowProps {
 
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
   const [chartData, setChartData] = useState<{ value: number }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchIntraday = async () => {
+      setIsLoading(true);
       try {
+        // Initialize with current price to avoid empty chart
+        const currentPrice = parseFloat(company.price);
+        setChartData([{ value: currentPrice }]);
+
         const data = await fetchFinancialData('quote', company.ticker);
+        console.log('Fetched data for', company.ticker, ':', data);
+        
         if (data && Array.isArray(data)) {
-          // Convert the intraday data to the format we need
           const prices = data.map((quote: any) => ({
-            value: parseFloat(quote.price || quote.c || quote.close || '0')
+            value: parseFloat(quote.price || quote.c || quote.close || company.price)
           })).filter(item => !isNaN(item.value) && item.value > 0);
           
-          // Use the last 50 data points for a smoother chart
-          setChartData(prices.slice(-50));
+          if (prices.length > 0) {
+            setChartData(prices.slice(-50));
+          }
         }
       } catch (error) {
-        console.error('Failed to fetch intraday data:', error);
-        // Fallback to current price if fetch fails
+        console.error('Failed to fetch intraday data for', company.ticker, ':', error);
+        // Fallback to current price
         const currentPrice = parseFloat(company.price);
         if (!isNaN(currentPrice)) {
           setChartData([{ value: currentPrice }]);
         }
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchIntraday();
-  }, [company.ticker]);
+  }, [company.ticker, company.price]);
+
+  // If we have no data, show at least one point with current price
+  useEffect(() => {
+    if (!isLoading && chartData.length === 0) {
+      const currentPrice = parseFloat(company.price);
+      if (!isNaN(currentPrice)) {
+        setChartData([{ value: currentPrice }]);
+      }
+    }
+  }, [isLoading, chartData.length, company.price]);
 
   return (
     <tr className="hover:bg-gray-50 group">
@@ -66,42 +86,44 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       <td className="px-4 py-3 text-sm text-gray-500">${company.marketCap}</td>
       <td className="px-4 py-3">
         <div className="w-24 h-12">
-          <AreaChart
-            width={96}
-            height={48}
-            data={chartData}
-            margin={{ top: 4, right: 0, left: 0, bottom: 4 }}
-          >
-            <defs>
-              <linearGradient id={`gradient-${company.ticker}`} x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="0%"
-                  stopColor={company.isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
-                  stopOpacity={0.2}
-                />
-                <stop
-                  offset="100%"
-                  stopColor={company.isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
-                  stopOpacity={0}
-                />
-              </linearGradient>
-            </defs>
-            <YAxis 
-              hide 
-              domain={['dataMin', 'dataMax']}
-              padding={{ top: 10, bottom: 10 }}
-            />
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke={company.isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
-              fill={`url(#gradient-${company.ticker})`}
-              strokeWidth={1.5}
-              dot={false}
-              isAnimationActive={false}
-              connectNulls
-            />
-          </AreaChart>
+          {chartData.length > 0 && (
+            <AreaChart
+              width={96}
+              height={48}
+              data={chartData}
+              margin={{ top: 4, right: 0, left: 0, bottom: 4 }}
+            >
+              <defs>
+                <linearGradient id={`gradient-${company.ticker}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="0%"
+                    stopColor={company.isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
+                    stopOpacity={0.2}
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor={company.isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
+                    stopOpacity={0}
+                  />
+                </linearGradient>
+              </defs>
+              <YAxis 
+                hide 
+                domain={['dataMin', 'dataMax']}
+                padding={{ top: 10, bottom: 10 }}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke={company.isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
+                fill={`url(#gradient-${company.ticker})`}
+                strokeWidth={1.5}
+                dot={false}
+                isAnimationActive={false}
+                connectNulls
+              />
+            </AreaChart>
+          )}
         </div>
       </td>
       <td className="px-4 py-3">
