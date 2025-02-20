@@ -88,7 +88,13 @@ export const TopCompanies = () => {
         })
       );
 
-      setCompanies(updatedCompanies);
+      setCompanies(prevCompanies => {
+        // Only update if the number of companies hasn't changed
+        if (prevCompanies.length === companies.length) {
+          return updatedCompanies;
+        }
+        return prevCompanies;
+      });
     } catch (error) {
       console.error('Error fetching prices:', error);
     }
@@ -151,7 +157,16 @@ export const TopCompanies = () => {
             currency: profile.currency || 'USD'
           };
           
-          setCompanies(prev => [...prev, formattedCompany]);
+          // Update companies state with the new company
+          setCompanies(prev => {
+            const newCompanies = [...prev, formattedCompany];
+            // Sort immediately if there's an active sort
+            if (sortConfig.field) {
+              return handleSort(sortConfig.field);
+            }
+            return newCompanies;
+          });
+          
           toast.success(`Added ${newCompany.name} to featured companies`);
         }
       } catch (error) {
