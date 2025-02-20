@@ -2,7 +2,7 @@
 import { ArrowUpIcon, ArrowDownIcon, XIcon } from "lucide-react";
 import { Area, AreaChart, YAxis } from "recharts";
 import { useState, useEffect } from "react";
-import { useStockWebSocket } from "@/hooks/useStockWebSocket";
+import { fetchFinancialData } from "@/utils/financialApi";
 
 interface CompanyTableRowProps {
   company: {
@@ -19,25 +19,26 @@ interface CompanyTableRowProps {
 
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
   const [chartData, setChartData] = useState<{ value: number }[]>([]);
-  const { price } = useStockWebSocket(company.ticker);
 
   useEffect(() => {
-    if (price) {
-      setChartData(prev => {
-        const newData = [...prev, { value: price }];
-        if (newData.length > 20) {
-          return newData.slice(-20);
+    const fetchIntraday = async () => {
+      try {
+        const data = await fetchFinancialData('quote', company.ticker);
+        if (data && Array.isArray(data)) {
+          const prices = data.map((quote: any) => ({
+            value: parseFloat(quote.price || quote.c || quote.close || company.price)
+          }));
+          setChartData(prices);
         }
-        return newData;
-      });
-    }
-  }, [price]);
+      } catch (error) {
+        console.error('Failed to fetch intraday data:', error);
+        // Fallback to current price if fetch fails
+        setChartData([{ value: parseFloat(company.price) }]);
+      }
+    };
 
-  // Initialize with current price
-  useEffect(() => {
-    const currentPrice = parseFloat(company.price);
-    setChartData([{ value: currentPrice }]);
-  }, [company.price]);
+    fetchIntraday();
+  }, [company.ticker, company.price]);
 
   return (
     <tr className="hover:bg-gray-50 group">
