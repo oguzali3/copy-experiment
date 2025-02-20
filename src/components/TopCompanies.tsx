@@ -1,6 +1,6 @@
 
 import { Card } from "@/components/ui/card";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { MetricsSearch } from "./MetricsSearch";
 import { CompanySearch } from "./CompanySearch";
 import { CompanyTableHeader } from "./CompanyTableHeader";
@@ -44,20 +44,25 @@ export const TopCompanies = () => {
     direction: null,
   });
 
-  // Create a WebSocket connection for each company's ticker
-  const webSocketUpdates = companies.reduce((acc, company) => {
-    const { price } = useStockWebSocket(company.ticker);
-    acc[company.ticker] = price;
-    return acc;
-  }, {} as Record<string, number | null>);
+  // Create WebSocket connections using useMemo to prevent unnecessary recreations
+  const webSocketUpdates = useMemo(() => {
+    return companies.reduce((acc, company) => {
+      const { price } = useStockWebSocket(company.ticker);
+      acc[company.ticker] = price;
+      return acc;
+    }, {} as Record<string, number | null>);
+  }, [companies.map(c => c.ticker).join(',')]); // Only recreate when tickers change
 
   // Handle WebSocket price updates
   useEffect(() => {
+    const hasNewPrices = Object.values(webSocketUpdates).some(price => price !== null);
+    if (!hasNewPrices) return;
+
     setCompanies(prevCompanies => {
       let hasUpdates = false;
       const updatedCompanies = prevCompanies.map(company => {
         const latestPrice = webSocketUpdates[company.ticker];
-        if (latestPrice) {
+        if (latestPrice !== null && latestPrice !== undefined) {
           const prevPrice = parseFloat(company.price);
           const changePercent = prevPrice > 0 
             ? ((latestPrice - prevPrice) / prevPrice) * 100 
@@ -80,6 +85,8 @@ export const TopCompanies = () => {
 
   // Fetch initial quotes for all companies
   useEffect(() => {
+    let isSubscribed = true;
+
     const fetchInitialQuotes = async () => {
       try {
         const quotesPromises = companies.map(company => 
@@ -88,26 +95,32 @@ export const TopCompanies = () => {
         
         const quotes = await Promise.all(quotesPromises);
         
-        setCompanies(prevCompanies => {
-          return prevCompanies.map((company, index) => {
-            const quote = quotes[index]?.[0];
-            if (quote) {
-              return {
-                ...company,
-                price: quote.price.toFixed(2),
-                change: `${quote.changesPercentage.toFixed(2)}%`,
-                isPositive: quote.changesPercentage >= 0
-              };
-            }
-            return company;
+        if (isSubscribed) {
+          setCompanies(prevCompanies => {
+            return prevCompanies.map((company, index) => {
+              const quote = quotes[index]?.[0];
+              if (quote) {
+                return {
+                  ...company,
+                  price: quote.price.toFixed(2),
+                  change: `${quote.changesPercentage.toFixed(2)}%`,
+                  isPositive: quote.changesPercentage >= 0
+                };
+              }
+              return company;
+            });
           });
-        });
+        }
       } catch (error) {
         console.error('Error fetching initial quotes:', error);
       }
     };
 
     fetchInitialQuotes();
+
+    return () => {
+      isSubscribed = false;
+    };
   }, []);
 
   const handleSort = (field: SortField) => {
