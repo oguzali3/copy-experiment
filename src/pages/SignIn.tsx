@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,6 @@ const SignIn = () => {
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
 
-  // Redirect if already logged in
   useEffect(() => {
     if (session) {
       navigate("/dashboard");
@@ -35,12 +33,11 @@ const SignIn = () => {
       
       if (error) {
         if (error.message === 'Invalid login credentials') {
-          type ProfileResponse = { id: string } | null;
           const { data: userData } = await supabase
             .from('profiles')
             .select('id')
             .eq('email', email)
-            .single() as { data: ProfileResponse };
+            .single();
 
           if (userData) {
             toast.error("Invalid password. Please try again.");

@@ -2,6 +2,7 @@
 import { ArrowUpIcon, ArrowDownIcon, XIcon } from "lucide-react";
 import { Area, AreaChart, YAxis } from "recharts";
 import { useEffect, useState } from "react";
+import { useStockWebSocket } from "@/hooks/useStockWebSocket";
 
 interface CompanyTableRowProps {
   company: {
@@ -16,26 +17,21 @@ interface CompanyTableRowProps {
   onRemove: (ticker: string) => void;
 }
 
-const generateMockIntraData = (isPositive: boolean) => {
-  const data = [];
-  let value = 100;
-  
-  for (let i = 0; i < 20; i++) {
-    // Generate slightly biased random walk based on isPositive
-    const change = (Math.random() - (isPositive ? 0.45 : 0.55)) * 2;
-    value = value * (1 + change / 100);
-    data.push({ value });
-  }
-  
-  return data;
-};
-
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
   const [chartData, setChartData] = useState<{ value: number }[]>([]);
+  const { price } = useStockWebSocket(company.ticker);
 
   useEffect(() => {
-    setChartData(generateMockIntraData(company.isPositive));
-  }, [company.isPositive]);
+    if (price) {
+      setChartData(prev => {
+        const newData = [...prev, { value: price }];
+        if (newData.length > 20) {
+          return newData.slice(-20);
+        }
+        return newData;
+      });
+    }
+  }, [price]);
 
   return (
     <tr className="hover:bg-gray-50 group">
