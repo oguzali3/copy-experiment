@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useCallback } from "react";
 import { MetricsSearch } from "./MetricsSearch";
@@ -5,6 +6,7 @@ import { CompanySearch } from "./CompanySearch";
 import { CompanyTableHeader } from "./CompanyTableHeader";
 import { CompanyTableRow } from "./CompanyTableRow";
 import { fetchFinancialData } from "@/utils/financialApi";
+import { toast } from "sonner";
 
 type Company = {
   rank: number;
@@ -31,6 +33,17 @@ const initialCompanies: Company[] = [
 
 type SortDirection = "asc" | "desc" | null;
 type SortField = "marketCap" | "price" | "change";
+
+const formatMarketCap = (marketCap: number): string => {
+  if (marketCap >= 1e12) {
+    return `${(marketCap / 1e12).toFixed(2)}T`;
+  } else if (marketCap >= 1e9) {
+    return `${(marketCap / 1e9).toFixed(0)}B`;
+  } else if (marketCap >= 1e6) {
+    return `${(marketCap / 1e6).toFixed(0)}M`;
+  }
+  return `${marketCap.toFixed(0)}`;
+};
 
 export const TopCompanies = () => {
   const [companies, setCompanies] = useState<Company[]>(initialCompanies);
@@ -110,28 +123,30 @@ export const TopCompanies = () => {
   const handleCompanySelect = async (newCompany: any) => {
     if (!companies.find(c => c.ticker === newCompany.ticker)) {
       try {
-        const quoteData = await fetchFinancialData('quote', newCompany.ticker);
+        const [quoteData, profileData] = await Promise.all([
+          fetchFinancialData('quote', newCompany.ticker),
+          fetchFinancialData('profile', newCompany.ticker)
+        ]);
+
         const quote = quoteData[0];
+        const profile = profileData[0];
         
-        const formattedCompany: Company = {
-          ...newCompany,
-          rank: companies.length + 1,
-          price: quote ? quote.price.toFixed(2) : "0",
-          change: quote ? `${quote.changesPercentage.toFixed(2)}%` : "0%",
-          isPositive: quote ? quote.changesPercentage >= 0 : true
-        };
-        
-        setCompanies(prev => [...prev, formattedCompany]);
+        if (quote && profile) {
+          const formattedCompany: Company = {
+            ...newCompany,
+            rank: companies.length + 1,
+            price: quote.price.toFixed(2),
+            change: `${quote.changesPercentage.toFixed(2)}%`,
+            isPositive: quote.changesPercentage >= 0,
+            marketCap: formatMarketCap(profile.mktCap)
+          };
+          
+          setCompanies(prev => [...prev, formattedCompany]);
+          toast.success(`Added ${newCompany.name} to featured companies`);
+        }
       } catch (error) {
-        console.error(`Error fetching quote for new company ${newCompany.ticker}:`, error);
-        const formattedCompany: Company = {
-          ...newCompany,
-          rank: companies.length + 1,
-          price: "0",
-          change: "0%",
-          isPositive: true
-        };
-        setCompanies(prev => [...prev, formattedCompany]);
+        console.error(`Error fetching data for new company ${newCompany.ticker}:`, error);
+        toast.error(`Failed to fetch data for ${newCompany.name}`);
       }
     }
   };
