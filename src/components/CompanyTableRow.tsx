@@ -25,20 +25,26 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       try {
         const data = await fetchFinancialData('quote', company.ticker);
         if (data && Array.isArray(data)) {
+          // Convert the intraday data to the format we need
           const prices = data.map((quote: any) => ({
-            value: parseFloat(quote.price || quote.c || quote.close || company.price)
-          }));
-          setChartData(prices);
+            value: parseFloat(quote.price || quote.c || quote.close || '0')
+          })).filter(item => !isNaN(item.value) && item.value > 0);
+          
+          // Use the last 50 data points for a smoother chart
+          setChartData(prices.slice(-50));
         }
       } catch (error) {
         console.error('Failed to fetch intraday data:', error);
         // Fallback to current price if fetch fails
-        setChartData([{ value: parseFloat(company.price) }]);
+        const currentPrice = parseFloat(company.price);
+        if (!isNaN(currentPrice)) {
+          setChartData([{ value: currentPrice }]);
+        }
       }
     };
 
     fetchIntraday();
-  }, [company.ticker, company.price]);
+  }, [company.ticker]);
 
   return (
     <tr className="hover:bg-gray-50 group">
@@ -64,14 +70,14 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
             width={96}
             height={48}
             data={chartData}
-            margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+            margin={{ top: 4, right: 0, left: 0, bottom: 4 }}
           >
             <defs>
               <linearGradient id={`gradient-${company.ticker}`} x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="0%"
                   stopColor={company.isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
-                  stopOpacity={0.3}
+                  stopOpacity={0.2}
                 />
                 <stop
                   offset="100%"
@@ -80,13 +86,20 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
                 />
               </linearGradient>
             </defs>
-            <YAxis hide domain={['dataMin', 'dataMax']} />
+            <YAxis 
+              hide 
+              domain={['dataMin', 'dataMax']}
+              padding={{ top: 10, bottom: 10 }}
+            />
             <Area
               type="monotone"
               dataKey="value"
               stroke={company.isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
               fill={`url(#gradient-${company.ticker})`}
               strokeWidth={1.5}
+              dot={false}
+              isAnimationActive={false}
+              connectNulls
             />
           </AreaChart>
         </div>
