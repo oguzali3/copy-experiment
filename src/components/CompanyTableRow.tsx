@@ -2,7 +2,7 @@
 import { ArrowUpIcon, ArrowDownIcon, XIcon } from "lucide-react";
 import { Area, AreaChart, YAxis } from "recharts";
 import { useState, useEffect } from "react";
-import { fetchFinancialData } from "@/utils/financialApi";
+import { useStockWebSocket } from "@/hooks/useStockWebSocket";
 
 interface CompanyTableRowProps {
   company: {
@@ -19,31 +19,25 @@ interface CompanyTableRowProps {
 
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
   const [chartData, setChartData] = useState<{ value: number }[]>([]);
+  const { price } = useStockWebSocket(company.ticker);
 
   useEffect(() => {
-    const fetchHistoricalData = async () => {
-      try {
-        // Create a stable dataset based on current price with slight variations
-        const currentPrice = parseFloat(company.price);
-        const variation = currentPrice * 0.02; // 2% variation
-        const basePrice = currentPrice - variation;
-        
-        // Generate 20 points that form a realistic looking chart
-        const points = Array.from({ length: 20 }, (_, i) => {
-          const offset = Math.sin(i / 3) * variation;
-          return {
-            value: basePrice + offset + (company.isPositive ? i * variation / 20 : -i * variation / 20)
-          };
-        });
+    if (price) {
+      setChartData(prev => {
+        const newData = [...prev, { value: price }];
+        if (newData.length > 20) {
+          return newData.slice(-20);
+        }
+        return newData;
+      });
+    }
+  }, [price]);
 
-        setChartData(points);
-      } catch (error) {
-        console.error('Error setting chart data:', error);
-      }
-    };
-
-    fetchHistoricalData();
-  }, [company.ticker, company.price, company.isPositive]);
+  // Initialize with current price
+  useEffect(() => {
+    const currentPrice = parseFloat(company.price);
+    setChartData([{ value: currentPrice }]);
+  }, [company.price]);
 
   return (
     <tr className="hover:bg-gray-50 group">
