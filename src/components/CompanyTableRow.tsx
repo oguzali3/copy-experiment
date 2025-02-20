@@ -21,25 +21,30 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
   const [chartData, setChartData] = useState<{ value: number }[]>([]);
 
   useEffect(() => {
-    const generateDataPoints = (open: number, current: number, points: number = 10) => {
-      const step = (current - open) / (points - 1);
-      return Array.from({ length: points }, (_, i) => ({
-        value: open + step * i
-      }));
-    };
-
-    const updateChartData = async () => {
+    const fetchIntradayData = async () => {
       try {
-        const data = await fetchFinancialData('quote', company.ticker);
+        const data = await fetchFinancialData('intraday', company.ticker, '10min');
         
-        if (data && Array.isArray(data) && data[0]) {
-          const quote = data[0];
-          const points = generateDataPoints(quote.open, quote.price);
-          setChartData(points);
+        if (data && Array.isArray(data) && data.length > 0) {
+          // Get the most recent trading day's data (up to 39 points for a trading day)
+          const points = data
+            .slice(0, 39)
+            .map(item => ({
+              value: Number(item.close)
+            }))
+            .filter(point => !isNaN(point.value));
+
+          if (points.length > 0) {
+            setChartData(points.reverse()); // Reverse to show chronological order
+          } else {
+            throw new Error('No valid data points');
+          }
+        } else {
+          throw new Error('Invalid data format');
         }
       } catch (error) {
-        console.error('Failed to update chart data for', company.ticker, ':', error);
-        // Fallback to simple 2-point chart
+        console.error('Failed to fetch intraday data for', company.ticker, ':', error);
+        // Fallback to simple chart if intraday data fetch fails
         const currentPrice = parseFloat(company.price);
         if (!isNaN(currentPrice)) {
           setChartData([
@@ -50,7 +55,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       }
     };
 
-    updateChartData();
+    fetchIntradayData();
   }, [company.ticker, company.price]);
 
   return (
