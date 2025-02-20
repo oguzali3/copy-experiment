@@ -1,8 +1,5 @@
 
 import { ArrowUpIcon, ArrowDownIcon, XIcon } from "lucide-react";
-import { Area, AreaChart, YAxis } from "recharts";
-import { useState, useEffect } from "react";
-import { fetchFinancialData } from "@/utils/financialApi";
 
 interface CompanyTableRowProps {
   company: {
@@ -18,43 +15,6 @@ interface CompanyTableRowProps {
 }
 
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
-  const [chartData, setChartData] = useState<{ value: number }[]>([]);
-
-  useEffect(() => {
-    const updateChartData = async () => {
-      try {
-        // Fetch historical data for the last trading day
-        const data = await fetchFinancialData('historical', company.ticker);
-        
-        if (data && Array.isArray(data) && data.length > 0) {
-          // Process the data points for the chart
-          const lastDayData = data.slice(-1)[0]?.intraDay || [];
-          const points = lastDayData.map((point: any) => ({
-            value: parseFloat(point.close || point.price)
-          })).filter((point: { value: number }) => !isNaN(point.value));
-
-          if (points.length > 0) {
-            setChartData(points);
-          } else {
-            throw new Error('No valid price points found');
-          }
-        }
-      } catch (error) {
-        console.error('Failed to update chart data for', company.ticker, ':', error);
-        // Fallback to simple 2-point chart if data fetch fails
-        const currentPrice = parseFloat(company.price);
-        if (!isNaN(currentPrice)) {
-          setChartData([
-            { value: currentPrice * 0.99 },
-            { value: currentPrice }
-          ]);
-        }
-      }
-    };
-
-    updateChartData();
-  }, [company.ticker, company.price]);
-
   return (
     <tr className="hover:bg-gray-50 group">
       <td className="px-4 py-3 text-sm text-gray-500">
@@ -73,48 +33,6 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       </td>
       <td className="px-4 py-3 text-sm font-medium text-blue-600">{company.ticker}</td>
       <td className="px-4 py-3 text-sm text-gray-500">${company.marketCap}</td>
-      <td className="px-4 py-3">
-        <div className="w-24 h-12">
-          {chartData.length > 0 && (
-            <AreaChart
-              width={96}
-              height={48}
-              data={chartData}
-              margin={{ top: 4, right: 0, left: 0, bottom: 4 }}
-            >
-              <defs>
-                <linearGradient id={`gradient-${company.ticker}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="0%"
-                    stopColor={company.isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
-                    stopOpacity={0.2}
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor={company.isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-              </defs>
-              <YAxis 
-                hide 
-                domain={['dataMin', 'dataMax']}
-                padding={{ top: 10, bottom: 10 }}
-              />
-              <Area
-                type="monotone"
-                dataKey="value"
-                stroke={company.isPositive ? "rgb(34, 197, 94)" : "rgb(239, 68, 68)"}
-                fill={`url(#gradient-${company.ticker})`}
-                strokeWidth={1.5}
-                dot={false}
-                isAnimationActive={false}
-                connectNulls
-              />
-            </AreaChart>
-          )}
-        </div>
-      </td>
       <td className="px-4 py-3">
         <div className="flex flex-col">
           <span className="text-sm font-medium text-gray-900">${company.price}</span>
