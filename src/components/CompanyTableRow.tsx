@@ -21,25 +21,26 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
   const [chartData, setChartData] = useState<{ value: number }[]>([]);
 
   useEffect(() => {
-    const generateDataPoints = (open: number, current: number, points: number = 10) => {
-      const step = (current - open) / (points - 1);
-      return Array.from({ length: points }, (_, i) => ({
-        value: open + step * i
-      }));
-    };
-
-    const updateChartData = async () => {
+    const fetchHistoricalData = async () => {
       try {
-        const data = await fetchFinancialData('quote', company.ticker);
+        const data = await fetchFinancialData('historical-chart', company.ticker);
         
-        if (data && Array.isArray(data) && data[0]) {
-          const quote = data[0];
-          const points = generateDataPoints(quote.open, quote.price);
-          setChartData(points);
+        if (data && Array.isArray(data)) {
+          // Get the last 30 data points (5 hours of 10-min intervals)
+          const points = data
+            .slice(0, 30)
+            .map(point => ({
+              value: Number(point.close)
+            }))
+            .filter(point => !isNaN(point.value));
+
+          if (points.length > 0) {
+            setChartData(points.reverse()); // Reverse to show oldest to newest
+          }
         }
       } catch (error) {
-        console.error('Failed to update chart data for', company.ticker, ':', error);
-        // Fallback to simple 2-point chart
+        console.error('Failed to fetch historical data for', company.ticker, ':', error);
+        // Fallback to current price if fetch fails
         const currentPrice = parseFloat(company.price);
         if (!isNaN(currentPrice)) {
           setChartData([
@@ -50,7 +51,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       }
     };
 
-    updateChartData();
+    fetchHistoricalData();
   }, [company.ticker, company.price]);
 
   return (
