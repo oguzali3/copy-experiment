@@ -1,5 +1,5 @@
 
-import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { getMetricColor, formatYAxis } from './chartUtils';
 import { ChartTooltip } from './ChartTooltip';
 import { Button } from "@/components/ui/button";
@@ -51,45 +51,41 @@ export const MetricChart = ({
     return parseInt(a.period) - parseInt(b.period);
   });
 
+  console.log('Sorted chart data:', sortedData);
+
   return (
     <div className="w-full bg-white p-4 rounded-lg space-y-4">
-      <div className="flex flex-wrap gap-4 items-center">
-        {metrics.map((metric) => (
-          <div 
-            key={metric} 
-            className="flex items-center gap-2 bg-gray-50 rounded-lg p-2"
-          >
-            <span className="font-medium text-sm text-gray-900 px-2">
-              {getMetricDisplayName(metric)}
-            </span>
-            <div className="flex border divide-x rounded-md overflow-hidden">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onMetricTypeChange(metric, 'bar')}
-                className={`h-8 px-2.5 rounded-none ${
-                  metricTypes[metric] === 'bar' 
-                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                    : 'hover:bg-gray-50'
-                }`}
+      <div className="flex flex-wrap gap-4 items-center justify-between">
+        <div className="flex gap-2 items-center">
+          {metrics.map((metric) => (
+            <div key={metric} className="flex items-center gap-2">
+              <div 
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md" 
+                style={{ backgroundColor: `${getMetricColor(metrics.indexOf(metric))}15` }}
               >
-                <BarChart3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onMetricTypeChange(metric, 'line')}
-                className={`h-8 px-2.5 rounded-none ${
-                  metricTypes[metric] === 'line'
-                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                    : 'hover:bg-gray-50'
-                }`}
-              >
-                <LineChart className="h-4 w-4" />
-              </Button>
+                <span className="font-medium">{getMetricDisplayName(metric)}</span>
+                <div className="flex gap-1">
+                  <Button
+                    variant={metricTypes[metric] === 'bar' ? 'default' : 'outline'}
+                    size="icon"
+                    onClick={() => onMetricTypeChange(metric, 'bar')}
+                    className="h-8 w-8"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={metricTypes[metric] === 'line' ? 'default' : 'outline'}
+                    size="icon"
+                    onClick={() => onMetricTypeChange(metric, 'line')}
+                    className="h-8 w-8"
+                  >
+                    <LineChart className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <div className="h-[300px]">
