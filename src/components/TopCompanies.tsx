@@ -5,7 +5,7 @@ import { MetricsSearch } from "./MetricsSearch";
 import { CompanySearch } from "./CompanySearch";
 import { CompanyTableHeader } from "./CompanyTableHeader";
 import { CompanyTableRow } from "./CompanyTableRow";
-import { fetchFinancialData } from "@/utils/financialApi";
+import { fetchFinancialData, formatMarketCap } from "@/utils/financialApi";
 import { toast } from "sonner";
 
 type Company = {
@@ -19,31 +19,20 @@ type Company = {
 };
 
 const initialCompanies: Company[] = [
-  { rank: 1, name: "Apple Inc.", ticker: "AAPL", marketCap: "3.02T", price: "0", change: "0%", isPositive: true },
-  { rank: 2, name: "Microsoft", ticker: "MSFT", marketCap: "2.89T", price: "0", change: "0%", isPositive: true },
-  { rank: 3, name: "Alphabet", ticker: "GOOGL", marketCap: "1.89T", price: "0", change: "0%", isPositive: true },
-  { rank: 4, name: "Amazon", ticker: "AMZN", marketCap: "1.78T", price: "0", change: "0%", isPositive: true },
-  { rank: 5, name: "NVIDIA", ticker: "NVDA", marketCap: "1.22T", price: "0", change: "0%", isPositive: true },
-  { rank: 6, name: "Meta", ticker: "META", marketCap: "905B", price: "0", change: "0%", isPositive: true },
-  { rank: 7, name: "Tesla", ticker: "TSLA", marketCap: "857B", price: "0", change: "0%", isPositive: true },
-  { rank: 8, name: "Berkshire", ticker: "BRK.A", marketCap: "785B", price: "0", change: "0%", isPositive: true },
-  { rank: 9, name: "Eli Lilly", ticker: "LLY", marketCap: "674B", price: "0", change: "0%", isPositive: true },
-  { rank: 10, name: "JPMorgan", ticker: "JPM", marketCap: "498B", price: "0", change: "0%", isPositive: true },
+  { rank: 1, name: "Apple Inc.", ticker: "AAPL", marketCap: "0", price: "0", change: "0%", isPositive: true },
+  { rank: 2, name: "Microsoft", ticker: "MSFT", marketCap: "0", price: "0", change: "0%", isPositive: true },
+  { rank: 3, name: "Alphabet", ticker: "GOOGL", marketCap: "0", price: "0", change: "0%", isPositive: true },
+  { rank: 4, name: "Amazon", ticker: "AMZN", marketCap: "0", price: "0", change: "0%", isPositive: true },
+  { rank: 5, name: "NVIDIA", ticker: "NVDA", marketCap: "0", price: "0", change: "0%", isPositive: true },
+  { rank: 6, name: "Meta", ticker: "META", marketCap: "0", price: "0", change: "0%", isPositive: true },
+  { rank: 7, name: "Tesla", ticker: "TSLA", marketCap: "0", price: "0", change: "0%", isPositive: true },
+  { rank: 8, name: "Berkshire", ticker: "BRK.A", marketCap: "0", price: "0", change: "0%", isPositive: true },
+  { rank: 9, name: "Eli Lilly", ticker: "LLY", marketCap: "0", price: "0", change: "0%", isPositive: true },
+  { rank: 10, name: "JPMorgan", ticker: "JPM", marketCap: "0", price: "0", change: "0%", isPositive: true },
 ];
 
 type SortDirection = "asc" | "desc" | null;
 type SortField = "marketCap" | "price" | "change";
-
-const formatMarketCap = (marketCap: number): string => {
-  if (marketCap >= 1e12) {
-    return `${(marketCap / 1e12).toFixed(2)}T`;
-  } else if (marketCap >= 1e9) {
-    return `${(marketCap / 1e9).toFixed(0)}B`;
-  } else if (marketCap >= 1e6) {
-    return `${(marketCap / 1e6).toFixed(0)}M`;
-  }
-  return `${marketCap.toFixed(0)}`;
-};
 
 export const TopCompanies = () => {
   const [companies, setCompanies] = useState<Company[]>(initialCompanies);
@@ -68,7 +57,8 @@ export const TopCompanies = () => {
                 ...company,
                 price: quote.price.toFixed(2),
                 change: `${quote.changesPercentage.toFixed(2)}%`,
-                isPositive: quote.changesPercentage >= 0
+                isPositive: quote.changesPercentage >= 0,
+                marketCap: formatMarketCap(quote.marketCap)
               };
             }
             return company;
@@ -123,22 +113,17 @@ export const TopCompanies = () => {
   const handleCompanySelect = async (newCompany: any) => {
     if (!companies.find(c => c.ticker === newCompany.ticker)) {
       try {
-        const [quoteData, profileData] = await Promise.all([
-          fetchFinancialData('quote', newCompany.ticker),
-          fetchFinancialData('profile', newCompany.ticker)
-        ]);
-
+        const quoteData = await fetchFinancialData('quote', newCompany.ticker);
         const quote = quoteData[0];
-        const profile = profileData[0];
         
-        if (quote && profile) {
+        if (quote) {
           const formattedCompany: Company = {
             ...newCompany,
             rank: companies.length + 1,
             price: quote.price.toFixed(2),
             change: `${quote.changesPercentage.toFixed(2)}%`,
             isPositive: quote.changesPercentage >= 0,
-            marketCap: formatMarketCap(profile.mktCap)
+            marketCap: formatMarketCap(quote.marketCap)
           };
           
           setCompanies(prev => [...prev, formattedCompany]);
