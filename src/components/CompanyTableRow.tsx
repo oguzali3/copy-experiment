@@ -27,16 +27,15 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
         const data = await fetchFinancialData('intraday', company.ticker);
         
         if (data && Array.isArray(data)) {
-          // Process the intraday data - take up to 39 points (full trading day)
+          // Process the intraday data points for the day
           const points = data
-            .slice(0, 39)
             .map(point => ({
-              value: Number(point.close)
+              value: Number(point.price || point.close)
             }))
             .filter(point => !isNaN(point.value));
 
           if (points.length > 0) {
-            setChartData(points.reverse());
+            setChartData(points);
           } else {
             throw new Error('No valid intraday data points');
           }

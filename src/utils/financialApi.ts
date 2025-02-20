@@ -12,6 +12,7 @@ export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: st
         symbol, 
         period,
         ...(endpoint === 'intraday' && {
+          interval: '10min',
           from: new Date().toISOString().split('T')[0],
           to: new Date().toISOString().split('T')[0]
         })
