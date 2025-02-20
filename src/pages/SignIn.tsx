@@ -35,7 +35,7 @@ const SignIn = () => {
       
       if (error) {
         if (error.message === 'Invalid login credentials') {
-          const { data: userData }: {data:{id:string} | null}= await supabase
+          const { data: userData } = await supabase
             .from('profiles')
             .select('id')
             .eq('email', email)
