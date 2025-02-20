@@ -1,7 +1,6 @@
 
 import { ArrowUpIcon, ArrowDownIcon, XIcon } from "lucide-react";
 import { Area, AreaChart, YAxis } from "recharts";
-import { useEffect, useState } from "react";
 import { useStockWebSocket } from "@/hooks/useStockWebSocket";
 
 interface CompanyTableRowProps {
@@ -18,20 +17,10 @@ interface CompanyTableRowProps {
 }
 
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
-  const [chartData, setChartData] = useState<{ value: number }[]>([]);
-  const { price } = useStockWebSocket(company.ticker);
-
-  useEffect(() => {
-    if (price) {
-      setChartData(prev => {
-        const newData = [...prev, { value: price }];
-        if (newData.length > 20) {
-          return newData.slice(-20);
-        }
-        return newData;
-      });
-    }
-  }, [price]);
+  // Generate some mock data for the mini chart that won't update in real-time
+  const mockChartData = Array.from({ length: 20 }, (_, i) => ({
+    value: 100 + Math.random() * 10 * (company.isPositive ? 1 : -1)
+  }));
 
   return (
     <tr className="hover:bg-gray-50 group">
@@ -56,7 +45,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
           <AreaChart
             width={96}
             height={48}
-            data={chartData}
+            data={mockChartData}
             margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
           >
             <defs>
