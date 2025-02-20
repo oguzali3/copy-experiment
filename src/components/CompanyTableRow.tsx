@@ -1,7 +1,8 @@
 
 import { ArrowUpIcon, ArrowDownIcon, XIcon } from "lucide-react";
 import { Area, AreaChart, YAxis } from "recharts";
-import { useStockWebSocket } from "@/hooks/useStockWebSocket";
+import { useState, useEffect } from "react";
+import { fetchFinancialData } from "@/utils/financialApi";
 
 interface CompanyTableRowProps {
   company: {
@@ -17,10 +18,29 @@ interface CompanyTableRowProps {
 }
 
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
-  // Generate some mock data for the mini chart that won't update in real-time
-  const mockChartData = Array.from({ length: 20 }, (_, i) => ({
-    value: 100 + Math.random() * 10 * (company.isPositive ? 1 : -1)
-  }));
+  const [chartData, setChartData] = useState<{ value: number }[]>([]);
+
+  useEffect(() => {
+    const fetchIntradayData = async () => {
+      try {
+        const data = await fetchFinancialData('quote', company.ticker);
+        if (data && data[0] && data[0].intradayPrices) {
+          const prices = data[0].intradayPrices.slice(-20).map((price: number) => ({
+            value: price
+          }));
+          setChartData(prices);
+        }
+      } catch (error) {
+        console.error('Error fetching intraday data:', error);
+        // Fallback to using the current price for the chart
+        setChartData(Array.from({ length: 20 }, (_, i) => ({
+          value: parseFloat(company.price) + (i * 0.1 * (company.isPositive ? 1 : -1))
+        })));
+      }
+    };
+
+    fetchIntradayData();
+  }, [company.ticker, company.price, company.isPositive]);
 
   return (
     <tr className="hover:bg-gray-50 group">
@@ -45,7 +65,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
           <AreaChart
             width={96}
             height={48}
-            data={mockChartData}
+            data={chartData}
             margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
           >
             <defs>
