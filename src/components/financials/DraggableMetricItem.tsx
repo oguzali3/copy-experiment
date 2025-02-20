@@ -37,18 +37,18 @@ export const DraggableMetricItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center bg-white border border-gray-200 px-3 py-2 rounded-md mb-2 ${
+      className={`flex items-center bg-white border border-gray-200 px-2 py-1.5 rounded-md mb-1.5 ${
         isDragging ? "opacity-50" : ""
       }`}
     >
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab p-1 hover:bg-gray-50 rounded mr-2"
+        className="cursor-grab p-0.5 hover:bg-gray-50 rounded mr-2"
       >
-        <GripVertical className="h-4 w-4 text-gray-400" />
+        <GripVertical className="h-3.5 w-3.5 text-gray-400" />
       </button>
-      <span className="text-sm font-medium text-gray-700 flex-1">
+      <span className="text-xs font-medium text-gray-700 flex-1">
         {getMetricDisplayName(metric)}
       </span>
       <div className="flex items-center border border-gray-200 rounded-md divide-x divide-gray-200 overflow-hidden bg-white">
@@ -56,25 +56,25 @@ export const DraggableMetricItem = ({
           variant="ghost"
           size="sm"
           onClick={() => onTypeChange('bar')}
-          className={`h-8 px-3 rounded-none ${
+          className={`h-6 px-2 rounded-none ${
             type === 'bar'
               ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
               : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
           }`}
         >
-          <BarChart3 className="h-4 w-4" />
+          <BarChart3 className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onTypeChange('line')}
-          className={`h-8 px-3 rounded-none ${
+          className={`h-6 px-2 rounded-none ${
             type === 'line'
               ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
               : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
           }`}
         >
-          <LineChart className="h-4 w-4" />
+          <LineChart className="h-3.5 w-3.5" />
         </Button>
       </div>
     </div>
