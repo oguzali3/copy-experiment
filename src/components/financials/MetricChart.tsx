@@ -61,7 +61,7 @@ export const MetricChart = ({
             <div key={metric} className="flex items-center gap-2">
               <div 
                 className="flex items-center gap-2 px-3 py-1.5 rounded-md" 
-                style={{ backgroundColor: `${getMetricColor(metrics.indexOf(metric))}20` }}
+                style={{ backgroundColor: `${getMetricColor(metrics.indexOf(metric))}15` }}
               >
                 <span className="font-medium">{getMetricDisplayName(metric)}</span>
                 <div className="flex gap-1">
@@ -98,7 +98,7 @@ export const MetricChart = ({
               strokeDasharray="3 3" 
               stroke="#E5E7EB" 
               vertical={false}
-              opacity={0.4}
+              opacity={0.3}
             />
             <XAxis 
               dataKey="period" 
@@ -118,7 +118,10 @@ export const MetricChart = ({
               tickLine={false}
               width={80}
             />
-            <Tooltip content={<ChartTooltip ticker={ticker} />} />
+            <Tooltip 
+              content={<ChartTooltip ticker={ticker} />}
+              cursor={{ fill: '#F3F4F6' }}
+            />
             
             {metrics.map((metric, index) => {
               const color = getMetricColor(index);
@@ -128,7 +131,7 @@ export const MetricChart = ({
                 return (
                   <Line
                     key={metric}
-                    type="monotone"
+                    type="linear"
                     dataKey={metric}
                     stroke={color}
                     name={displayName}
@@ -143,8 +146,8 @@ export const MetricChart = ({
                   dataKey={metric}
                   fill={color}
                   name={displayName}
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={50}
+                  radius={[0, 0, 0, 0]}
+                  maxBarSize={40}
                 />
               );
             })}
