@@ -51,6 +51,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       </td>
       <td className="px-4 py-3 text-sm font-medium text-blue-600">{company.ticker}</td>
       <td className="px-4 py-3 text-sm text-gray-500">${company.marketCap}</td>
+      <td className="px-4 py-3 text-sm text-gray-900">${company.price}</td>
       <td className="px-4 py-3">
         <div className="w-24 h-12">
           <AreaChart
@@ -85,16 +86,13 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
         </div>
       </td>
       <td className="px-4 py-3">
-        <div className="flex flex-col">
-          <span className="text-sm font-medium text-gray-900">${company.price}</span>
-          <div className={`flex items-center text-sm ${company.isPositive ? 'text-success' : 'text-warning'}`}>
-            {company.isPositive ? (
-              <ArrowUpIcon className="h-3 w-3 mr-1" />
-            ) : (
-              <ArrowDownIcon className="h-3 w-3 mr-1" />
-            )}
-            <span>{company.change}</span>
-          </div>
+        <div className={`flex items-center ${company.isPositive ? 'text-success' : 'text-warning'}`}>
+          {company.isPositive ? (
+            <ArrowUpIcon className="h-4 w-4 mr-1" />
+          ) : (
+            <ArrowDownIcon className="h-4 w-4 mr-1" />
+          )}
+          <span>{company.change}</span>
         </div>
       </td>
     </tr>
