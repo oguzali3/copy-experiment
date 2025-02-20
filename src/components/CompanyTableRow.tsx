@@ -19,52 +19,39 @@ interface CompanyTableRowProps {
 
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
   const [chartData, setChartData] = useState<{ value: number }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchIntraday = async () => {
-      setIsLoading(true);
-      try {
-        // Initialize with current price to avoid empty chart
-        const currentPrice = parseFloat(company.price);
-        setChartData([{ value: currentPrice }]);
+    const generateDataPoints = (open: number, current: number, points: number = 10) => {
+      const step = (current - open) / (points - 1);
+      return Array.from({ length: points }, (_, i) => ({
+        value: open + step * i
+      }));
+    };
 
+    const updateChartData = async () => {
+      try {
         const data = await fetchFinancialData('quote', company.ticker);
-        console.log('Fetched data for', company.ticker, ':', data);
         
-        if (data && Array.isArray(data)) {
-          const prices = data.map((quote: any) => ({
-            value: parseFloat(quote.price || quote.c || quote.close || company.price)
-          })).filter(item => !isNaN(item.value) && item.value > 0);
-          
-          if (prices.length > 0) {
-            setChartData(prices.slice(-50));
-          }
+        if (data && Array.isArray(data) && data[0]) {
+          const quote = data[0];
+          const points = generateDataPoints(quote.open, quote.price);
+          setChartData(points);
         }
       } catch (error) {
-        console.error('Failed to fetch intraday data for', company.ticker, ':', error);
-        // Fallback to current price
+        console.error('Failed to update chart data for', company.ticker, ':', error);
+        // Fallback to simple 2-point chart
         const currentPrice = parseFloat(company.price);
         if (!isNaN(currentPrice)) {
-          setChartData([{ value: currentPrice }]);
+          setChartData([
+            { value: currentPrice * 0.99 },
+            { value: currentPrice }
+          ]);
         }
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    fetchIntraday();
+    updateChartData();
   }, [company.ticker, company.price]);
-
-  // If we have no data, show at least one point with current price
-  useEffect(() => {
-    if (!isLoading && chartData.length === 0) {
-      const currentPrice = parseFloat(company.price);
-      if (!isNaN(currentPrice)) {
-        setChartData([{ value: currentPrice }]);
-      }
-    }
-  }, [isLoading, chartData.length, company.price]);
 
   return (
     <tr className="hover:bg-gray-50 group">
