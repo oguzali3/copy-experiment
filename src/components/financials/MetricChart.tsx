@@ -67,6 +67,38 @@ export const MetricChart = ({
     return parseInt(a.period) - parseInt(b.period);
   });
 
+  // Create sorted chart elements based on metrics order
+  const chartElements = metrics.map((metric, index) => {
+    const color = getMetricColor(index);
+    const displayName = getMetricDisplayName(metric);
+    
+    if (metricTypes[metric] === 'line') {
+      return (
+        <Line
+          key={metric}
+          type="linear"
+          dataKey={metric}
+          stroke={color}
+          name={displayName}
+          dot={false}
+          strokeWidth={2}
+          zIndex={metrics.length - index} // Higher z-index for elements that appear later in the list
+        />
+      );
+    }
+    return (
+      <Bar
+        key={metric}
+        dataKey={metric}
+        fill={color}
+        name={displayName}
+        radius={[0, 0, 0, 0]}
+        maxBarSize={40}
+        zIndex={metrics.length - index} // Higher z-index for elements that appear later in the list
+      />
+    );
+  }).reverse(); // Reverse to maintain visual order in the stacked chart
+
   return (
     <div className="space-y-4">
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -120,35 +152,7 @@ export const MetricChart = ({
                 content={<ChartTooltip ticker={ticker} />}
                 cursor={{ fill: 'rgba(243, 244, 246, 0.8)' }}
               />
-              
-              {metrics.map((metric, index) => {
-                const color = getMetricColor(index);
-                const displayName = getMetricDisplayName(metric);
-                
-                if (metricTypes[metric] === 'line') {
-                  return (
-                    <Line
-                      key={metric}
-                      type="linear"
-                      dataKey={metric}
-                      stroke={color}
-                      name={displayName}
-                      dot={false}
-                      strokeWidth={2}
-                    />
-                  );
-                }
-                return (
-                  <Bar
-                    key={metric}
-                    dataKey={metric}
-                    fill={color}
-                    name={displayName}
-                    radius={[0, 0, 0, 0]}
-                    maxBarSize={40}
-                  />
-                );
-              })}
+              {chartElements}
             </ComposedChart>
           </ResponsiveContainer>
         </div>
