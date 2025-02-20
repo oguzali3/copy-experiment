@@ -20,16 +20,33 @@ export const StockChart = ({ ticker }: StockChartProps) => {
     queryFn: async () => {
       if (!ticker) return [];
       
+      console.log('Fetching chart data for:', ticker, 'timeframe:', timeframe);
+      
       const { data, error } = await supabase.functions.invoke('fetch-stock-chart', {
-        body: { symbol: ticker, timeframe }
+        body: { 
+          symbol: ticker, 
+          timeframe,
+          // Add timestamp to avoid caching issues
+          timestamp: new Date().getTime()
+        }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching chart data:', error);
+        throw error;
+      }
+
+      if (!data || !Array.isArray(data)) {
+        console.error('Invalid chart data received:', data);
+        throw new Error('Invalid data format received');
+      }
+
       console.log('Chart data received:', data?.length, 'data points');
       return data;
     },
     enabled: !!ticker,
-    retry: 1,
+    retry: 2,
+    retryDelay: 1000,
     // Refresh every minute for intraday data
     refetchInterval: timeframe === "1D" ? 60000 : false,
   });
@@ -55,28 +72,48 @@ export const StockChart = ({ ticker }: StockChartProps) => {
   };
 
   const formatXAxisTick = (time: string) => {
-    const date = new Date(time);
+    if (!time) return '';
     
-    switch (timeframe) {
-      case "1D":
-        return date.toLocaleTimeString('en-US', { 
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true 
-        });
-      case "1Y":
-        return date.toLocaleDateString('en-US', { 
-          month: 'short',
-          year: 'numeric'
-        });
-      case "5Y":
-      case "MAX":
-        return date.getFullYear().toString();
-      default:
-        return date.toLocaleDateString('en-US', { 
-          month: 'short',
-          day: 'numeric'
-        });
+    const date = new Date(time);
+    if (isNaN(date.getTime())) return '';
+    
+    try {
+      switch (timeframe) {
+        case "1D":
+          return date.toLocaleTimeString('en-US', { 
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true 
+          });
+        case "1W":
+        case "1M":
+          return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+          });
+        case "3M":
+        case "6M":
+        case "YTD":
+          return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+          });
+        case "1Y":
+          return date.toLocaleDateString('en-US', { 
+            month: 'short'
+          });
+        case "5Y":
+        case "MAX":
+          return date.getFullYear().toString();
+        default:
+          return date.toLocaleDateString('en-US', { 
+            month: 'short',
+            day: 'numeric'
+          });
+      }
+    } catch (e) {
+      console.error('Error formatting date:', e);
+      return '';
     }
   };
 
@@ -96,7 +133,7 @@ export const StockChart = ({ ticker }: StockChartProps) => {
     );
   }
 
-  if (error) {
+  if (error || !chartData) {
     return (
       <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm">
         <Alert variant="destructive">
@@ -114,6 +151,7 @@ export const StockChart = ({ ticker }: StockChartProps) => {
   const priceChange = latestPrice - firstPrice;
   const priceChangePercent = (priceChange / firstPrice) * 100;
   const isPositive = priceChange >= 0;
+  const chartColor = isPositive ? '#22c55e' : '#ef4444';
 
   return (
     <div className="h-full w-full bg-white p-4 rounded-xl shadow-sm">
@@ -131,14 +169,14 @@ export const StockChart = ({ ticker }: StockChartProps) => {
         </div>
       </div>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         {timeframes.map(({ label, value }) => (
           <button
             key={value}
-            className={`px-3 py-1 text-sm rounded-md transition-colors ${
+            className={`px-3 py-1 text-sm rounded-full transition-colors ${
               timeframe === value 
-                ? "bg-blue-100 text-blue-700" 
-                : "hover:bg-gray-100"
+                ? "bg-blue-100 text-blue-700 font-medium" 
+                : "hover:bg-gray-100 text-gray-600"
             }`}
             onClick={() => setTimeframe(value)}
           >
@@ -155,8 +193,8 @@ export const StockChart = ({ ticker }: StockChartProps) => {
           >
             <defs>
               <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2}/>
-                <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                <stop offset="5%" stopColor={chartColor} stopOpacity={0.2}/>
+                <stop offset="95%" stopColor={chartColor} stopOpacity={0}/>
               </linearGradient>
             </defs>
             <XAxis 
@@ -189,7 +227,7 @@ export const StockChart = ({ ticker }: StockChartProps) => {
             <Area
               type="monotone"
               dataKey="price"
-              stroke="#22c55e"
+              stroke={chartColor}
               fillOpacity={1}
               fill="url(#colorPrice)"
               strokeWidth={2}
