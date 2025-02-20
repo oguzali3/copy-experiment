@@ -37,29 +37,29 @@ export const DraggableMetricItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center bg-zinc-900 px-3 py-2 rounded-md mb-2 ${
+      className={`flex items-center bg-white border border-gray-200 px-3 py-2 rounded-md mb-2 ${
         isDragging ? "opacity-50" : ""
       }`}
     >
       <button
         {...attributes}
         {...listeners}
-        className="cursor-grab p-1 hover:bg-zinc-800 rounded mr-2"
+        className="cursor-grab p-1 hover:bg-gray-50 rounded mr-2"
       >
-        <GripVertical className="h-4 w-4 text-zinc-400" />
+        <GripVertical className="h-4 w-4 text-gray-400" />
       </button>
-      <span className="text-sm font-medium text-white flex-1">
+      <span className="text-sm font-medium text-gray-700 flex-1">
         {getMetricDisplayName(metric)}
       </span>
-      <div className="flex items-center border border-zinc-700 rounded-md divide-x divide-zinc-700 overflow-hidden bg-zinc-800">
+      <div className="flex items-center border border-gray-200 rounded-md divide-x divide-gray-200 overflow-hidden bg-white">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onTypeChange('bar')}
           className={`h-8 px-3 rounded-none ${
             type === 'bar'
-              ? 'bg-zinc-700 text-white hover:bg-zinc-700/90'
-              : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+              ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
           }`}
         >
           <BarChart3 className="h-4 w-4" />
@@ -70,8 +70,8 @@ export const DraggableMetricItem = ({
           onClick={() => onTypeChange('line')}
           className={`h-8 px-3 rounded-none ${
             type === 'line'
-              ? 'bg-zinc-700 text-white hover:bg-zinc-700/90'
-              : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
+              ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
           }`}
         >
           <LineChart className="h-4 w-4" />

@@ -1,3 +1,4 @@
+
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { getMetricColor, formatYAxis } from './chartUtils';
 import { ChartTooltip } from './ChartTooltip';
@@ -25,8 +26,8 @@ export const MetricChart = ({
 }: MetricChartProps) => {
   if (!data?.length || !metrics?.length) {
     return (
-      <div className="w-full bg-zinc-900 p-4 rounded-lg flex items-center justify-center h-[300px]">
-        <p className="text-zinc-400">
+      <div className="w-full bg-white p-4 rounded-lg flex items-center justify-center h-[300px] border border-gray-200">
+        <p className="text-gray-500">
           {!metrics?.length ? 'Select metrics to visualize' : 'No data available'}
         </p>
       </div>
@@ -84,7 +85,7 @@ export const MetricChart = ({
         </SortableContext>
       </DndContext>
 
-      <div className="bg-zinc-900 p-4 rounded-lg">
+      <div className="bg-white p-4 rounded-lg border border-gray-200">
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
@@ -93,14 +94,14 @@ export const MetricChart = ({
             >
               <CartesianGrid 
                 strokeDasharray="3 3" 
-                stroke="#3f3f46"
+                stroke="#E5E7EB"
                 vertical={false}
                 opacity={0.3}
               />
               <XAxis 
                 dataKey="period" 
-                tick={{ fontSize: 12, fill: '#71717a' }}
-                axisLine={{ stroke: '#3f3f46' }}
+                tick={{ fontSize: 12, fill: '#6B7280' }}
+                axisLine={{ stroke: '#E5E7EB' }}
                 tickLine={false}
                 interval={0}
                 angle={-45}
@@ -110,14 +111,14 @@ export const MetricChart = ({
               />
               <YAxis 
                 tickFormatter={formatYAxis}
-                tick={{ fontSize: 12, fill: '#71717a' }}
-                axisLine={{ stroke: '#3f3f46' }}
+                tick={{ fontSize: 12, fill: '#6B7280' }}
+                axisLine={{ stroke: '#E5E7EB' }}
                 tickLine={false}
                 width={80}
               />
               <Tooltip 
                 content={<ChartTooltip ticker={ticker} />}
-                cursor={{ fill: 'rgba(63, 63, 70, 0.3)' }}
+                cursor={{ fill: 'rgba(243, 244, 246, 0.8)' }}
               />
               
               {metrics.map((metric, index) => {
@@ -152,7 +153,7 @@ export const MetricChart = ({
           </ResponsiveContainer>
         </div>
 
-        <div className="mt-4 border-t border-zinc-800 pt-4">
+        <div className="mt-4 border-t border-gray-200 pt-4">
           <div className="flex flex-col gap-2">
             {metrics.map((metric, index) => {
               const firstValue = sortedData[sortedData.length - 1][metric];
@@ -169,7 +170,7 @@ export const MetricChart = ({
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: getMetricColor(index) }}
                   />
-                  <span className="text-zinc-200 font-medium">
+                  <span className="text-gray-900 font-medium">
                     {ticker} - {getMetricDisplayName(metric)} {' '}
                     (Total Change: {totalChange.toFixed(2)}%) {' '}
                     {periods > 0 && `(CAGR: ${cagr.toFixed(2)}%)`}
