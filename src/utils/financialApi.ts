@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export type FinancialEndpoint = 'quote' | 'profile' | 'income-statement' | 'balance-sheet-statement' | 'cash-flow-statement';
@@ -23,6 +24,31 @@ export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: st
     return data;
   } catch (error) {
     console.error(`Error fetching ${endpoint} data for ${symbol}:`, error);
+    throw error;
+  }
+}
+
+export async function fetchBatchQuotes(symbols: string[]) {
+  try {
+    console.log('Fetching batch quotes for:', symbols);
+    const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
+      body: { endpoint: 'batch-quote', symbols }
+    });
+
+    if (error) {
+      console.error('Error fetching batch quotes:', error);
+      throw error;
+    }
+
+    if (!data) {
+      console.error('No batch quote data received');
+      throw new Error('No batch quote data received');
+    }
+
+    console.log('Received batch quote data:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching batch quotes:', error);
     throw error;
   }
 }

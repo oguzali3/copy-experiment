@@ -4,8 +4,7 @@ import { MetricsSearch } from "./MetricsSearch";
 import { CompanySearch } from "./CompanySearch";
 import { CompanyTableHeader } from "./CompanyTableHeader";
 import { CompanyTableRow } from "./CompanyTableRow";
-import { useStockWebSocket } from "@/hooks/useStockWebSocket";
-import { fetchFinancialData } from "@/utils/financialApi";
+import { fetchBatchQuotes } from "@/utils/financialApi";
 
 type Company = {
   rank: number;
@@ -43,54 +42,17 @@ export const TopCompanies = () => {
     direction: null,
   });
 
-  const webSocketConnections = companies.map(company => ({
-    ticker: company.ticker,
-    ...useStockWebSocket(company.ticker)
-  }));
-
-  useEffect(() => {
-    setCompanies(prevCompanies => {
-      let hasUpdates = false;
-      const updatedCompanies = prevCompanies.map(company => {
-        const connection = webSocketConnections.find(ws => ws.ticker === company.ticker);
-        const latestPrice = connection?.price;
-        
-        if (latestPrice !== null && latestPrice !== undefined) {
-          const prevPrice = parseFloat(company.price) || 0;
-          const changePercent = prevPrice > 0 
-            ? ((latestPrice - prevPrice) / prevPrice) * 100 
-            : 0;
-          
-          hasUpdates = true;
-          return {
-            ...company,
-            price: latestPrice.toFixed(2),
-            change: `${changePercent.toFixed(2)}%`,
-            isPositive: changePercent >= 0
-          };
-        }
-        return company;
-      });
-      
-      return hasUpdates ? updatedCompanies : prevCompanies;
-    });
-  }, [webSocketConnections]);
-
   useEffect(() => {
     let isSubscribed = true;
-
-    const fetchInitialQuotes = async () => {
+    const interval = setInterval(async () => {
       try {
-        const quotesPromises = companies.map(company => 
-          fetchFinancialData('quote', company.ticker)
-        );
-        
-        const quotes = await Promise.all(quotesPromises);
-        
+        const symbols = companies.map(company => company.ticker);
+        const quotes = await fetchBatchQuotes(symbols);
+
         if (isSubscribed) {
           setCompanies(prevCompanies => {
-            return prevCompanies.map((company, index) => {
-              const quote = quotes[index]?.[0];
+            return prevCompanies.map(company => {
+              const quote = quotes.find(q => q.symbol === company.ticker);
               if (quote) {
                 return {
                   ...company,
@@ -104,16 +66,41 @@ export const TopCompanies = () => {
           });
         }
       } catch (error) {
-        console.error('Error fetching initial quotes:', error);
+        console.error('Error fetching batch quotes:', error);
       }
-    };
+    }, 10000); // Update every 10 seconds
 
-    fetchInitialQuotes();
+    (async () => {
+      try {
+        const symbols = companies.map(company => company.ticker);
+        const quotes = await fetchBatchQuotes(symbols);
+        
+        if (isSubscribed) {
+          setCompanies(prevCompanies => {
+            return prevCompanies.map(company => {
+              const quote = quotes.find(q => q.symbol === company.ticker);
+              if (quote) {
+                return {
+                  ...company,
+                  price: quote.price.toFixed(2),
+                  change: `${quote.changesPercentage.toFixed(2)}%`,
+                  isPositive: quote.changesPercentage >= 0
+                };
+              }
+              return company;
+            });
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching initial batch quotes:', error);
+      }
+    })();
 
     return () => {
       isSubscribed = false;
+      clearInterval(interval);
     };
-  }, []);
+  }, [companies.map(c => c.ticker).join(',')]);
 
   const handleSort = (field: SortField) => {
     let direction: SortDirection = "desc";
