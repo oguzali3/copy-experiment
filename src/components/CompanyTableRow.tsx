@@ -35,7 +35,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       <td className="px-4 py-3 text-sm text-gray-500">{company.marketCap}</td>
       <td className="px-4 py-3">
         <div className="flex flex-col">
-          <span className="text-sm font-medium text-gray-900">${company.price}</span>
+          <span className="text-sm font-medium text-gray-900">{company.price}</span>
           <div className={`flex items-center text-sm ${company.isPositive ? 'text-success' : 'text-warning'}`}>
             {company.isPositive ? (
               <ArrowUpIcon className="h-3 w-3 mr-1" />
