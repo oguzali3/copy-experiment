@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -33,13 +34,13 @@ const SignIn = () => {
       
       if (error) {
         if (error.message === 'Invalid login credentials') {
-          const { data: userData } = await supabase
+          const result = await supabase
             .from('profiles')
             .select('id')
             .eq('email', email)
             .single();
 
-          if (userData) {
+          if (result.data) {
             toast.error("Invalid password. Please try again.");
           } else {
             toast.error("Account not found.", {
