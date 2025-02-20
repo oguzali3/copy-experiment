@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type FinancialEndpoint = 'quote' | 'profile' | 'income-statement' | 'balance-sheet-statement' | 'cash-flow-statement' | 'historical-chart';
 
-export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: string, period: 'annual' | 'quarter' | '10min' = 'annual') {
+export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: string, period: 'annual' | 'quarter' = 'annual') {
   try {
     console.log(`Fetching ${endpoint} data for ${symbol} with period ${period}`);
     const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
