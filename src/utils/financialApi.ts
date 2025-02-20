@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export type FinancialEndpoint = 'quote' | 'profile' | 'income-statement' | 'balance-sheet-statement' | 'cash-flow-statement';
+export type FinancialEndpoint = 'quote' | 'profile' | 'income-statement' | 'balance-sheet-statement' | 'cash-flow-statement' | 'batch-quote';
 
 export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: string, period: 'annual' | 'quarter' = 'annual') {
   try {
@@ -52,3 +52,15 @@ export async function fetchBatchQuotes(symbols: string[]) {
     throw error;
   }
 }
+
+export const formatMarketCap = (marketCap: number): string => {
+  if (marketCap >= 1e12) {
+    return `${(marketCap / 1e12).toFixed(2)}T`;
+  } else if (marketCap >= 1e9) {
+    return `${(marketCap / 1e9).toFixed(2)}B`;
+  } else if (marketCap >= 1e6) {
+    return `${(marketCap / 1e6).toFixed(2)}M`;
+  } else {
+    return `${(marketCap).toFixed(2)}`;
+  }
+};

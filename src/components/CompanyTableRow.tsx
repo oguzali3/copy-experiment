@@ -32,7 +32,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
         <div className="font-medium text-gray-900">{company.name}</div>
       </td>
       <td className="px-4 py-3 text-sm font-medium text-blue-600">{company.ticker}</td>
-      <td className="px-4 py-3 text-sm text-gray-500">${company.marketCap}</td>
+      <td className="px-4 py-3 text-sm text-gray-500">{company.marketCap}</td>
       <td className="px-4 py-3">
         <div className="flex flex-col">
           <span className="text-sm font-medium text-gray-900">${company.price}</span>
