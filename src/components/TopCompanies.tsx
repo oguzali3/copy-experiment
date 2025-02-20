@@ -1,6 +1,6 @@
 
 import { Card } from "@/components/ui/card";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { MetricsSearch } from "./MetricsSearch";
 import { CompanySearch } from "./CompanySearch";
 import { CompanyTableHeader } from "./CompanyTableHeader";
@@ -44,24 +44,22 @@ export const TopCompanies = () => {
     direction: null,
   });
 
-  // Create WebSocket connections using useMemo to prevent unnecessary recreations
-  const webSocketUpdates = useMemo(() => {
-    return companies.reduce((acc, company) => {
-      const { price } = useStockWebSocket(company.ticker);
-      acc[company.ticker] = price;
-      return acc;
-    }, {} as Record<string, number | null>);
-  }, [companies.map(c => c.ticker).join(',')]); // Only recreate when tickers change
+  // Create individual WebSocket connections for each company
+  const webSocketData = companies.map(company => {
+    const { price } = useStockWebSocket(company.ticker);
+    return { ticker: company.ticker, price };
+  });
 
   // Handle WebSocket price updates
   useEffect(() => {
-    const hasNewPrices = Object.values(webSocketUpdates).some(price => price !== null);
-    if (!hasNewPrices) return;
+    if (webSocketData.length === 0) return;
 
     setCompanies(prevCompanies => {
       let hasUpdates = false;
       const updatedCompanies = prevCompanies.map(company => {
-        const latestPrice = webSocketUpdates[company.ticker];
+        const wsData = webSocketData.find(ws => ws.ticker === company.ticker);
+        const latestPrice = wsData?.price;
+        
         if (latestPrice !== null && latestPrice !== undefined) {
           const prevPrice = parseFloat(company.price);
           const changePercent = prevPrice > 0 
@@ -81,7 +79,7 @@ export const TopCompanies = () => {
       
       return hasUpdates ? updatedCompanies : prevCompanies;
     });
-  }, [webSocketUpdates]);
+  }, [webSocketData]);
 
   // Fetch initial quotes for all companies
   useEffect(() => {
@@ -164,9 +162,16 @@ export const TopCompanies = () => {
     }
   };
 
-  const handleRemoveCompany = (tickerToRemove: string) => {
-    setCompanies(prev => prev.filter(company => company.ticker !== tickerToRemove));
-  };
+  const handleRemoveCompany = useCallback((tickerToRemove: string) => {
+    setCompanies(prev => {
+      const updatedCompanies = prev.filter(company => company.ticker !== tickerToRemove);
+      // Update ranks after removal
+      return updatedCompanies.map((company, index) => ({
+        ...company,
+        rank: index + 1
+      }));
+    });
+  }, []);
 
   const handleMetricSelect = (metricId: string) => {
     console.log("Metric selected:", metricId);
