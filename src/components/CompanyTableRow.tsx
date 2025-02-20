@@ -21,25 +21,27 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
   const [chartData, setChartData] = useState<{ value: number }[]>([]);
 
   useEffect(() => {
-    const generateDataPoints = (open: number, current: number, points: number = 10) => {
-      const step = (current - open) / (points - 1);
-      return Array.from({ length: points }, (_, i) => ({
-        value: open + step * i
-      }));
-    };
-
     const updateChartData = async () => {
       try {
-        const data = await fetchFinancialData('quote', company.ticker);
+        // Fetch historical data for the last trading day
+        const data = await fetchFinancialData('historical', company.ticker);
         
-        if (data && Array.isArray(data) && data[0]) {
-          const quote = data[0];
-          const points = generateDataPoints(quote.open, quote.price);
-          setChartData(points);
+        if (data && Array.isArray(data) && data.length > 0) {
+          // Process the data points for the chart
+          const lastDayData = data.slice(-1)[0]?.intraDay || [];
+          const points = lastDayData.map((point: any) => ({
+            value: parseFloat(point.close || point.price)
+          })).filter((point: { value: number }) => !isNaN(point.value));
+
+          if (points.length > 0) {
+            setChartData(points);
+          } else {
+            throw new Error('No valid price points found');
+          }
         }
       } catch (error) {
         console.error('Failed to update chart data for', company.ticker, ':', error);
-        // Fallback to simple 2-point chart
+        // Fallback to simple 2-point chart if data fetch fails
         const currentPrice = parseFloat(company.price);
         if (!isNaN(currentPrice)) {
           setChartData([
