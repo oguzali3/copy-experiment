@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useCallback } from "react";
 import { MetricsSearch } from "./MetricsSearch";
@@ -44,24 +43,20 @@ export const TopCompanies = () => {
     direction: null,
   });
 
-  // Create individual WebSocket connections for each company
-  const webSocketData = companies.map(company => {
-    const { price } = useStockWebSocket(company.ticker);
-    return { ticker: company.ticker, price };
-  });
+  const webSocketConnections = companies.map(company => ({
+    ticker: company.ticker,
+    ...useStockWebSocket(company.ticker)
+  }));
 
-  // Handle WebSocket price updates
   useEffect(() => {
-    if (webSocketData.length === 0) return;
-
     setCompanies(prevCompanies => {
       let hasUpdates = false;
       const updatedCompanies = prevCompanies.map(company => {
-        const wsData = webSocketData.find(ws => ws.ticker === company.ticker);
-        const latestPrice = wsData?.price;
+        const connection = webSocketConnections.find(ws => ws.ticker === company.ticker);
+        const latestPrice = connection?.price;
         
         if (latestPrice !== null && latestPrice !== undefined) {
-          const prevPrice = parseFloat(company.price);
+          const prevPrice = parseFloat(company.price) || 0;
           const changePercent = prevPrice > 0 
             ? ((latestPrice - prevPrice) / prevPrice) * 100 
             : 0;
@@ -79,9 +74,8 @@ export const TopCompanies = () => {
       
       return hasUpdates ? updatedCompanies : prevCompanies;
     });
-  }, [webSocketData]);
+  }, [webSocketConnections]);
 
-  // Fetch initial quotes for all companies
   useEffect(() => {
     let isSubscribed = true;
 
@@ -164,12 +158,13 @@ export const TopCompanies = () => {
 
   const handleRemoveCompany = useCallback((tickerToRemove: string) => {
     setCompanies(prev => {
-      const updatedCompanies = prev.filter(company => company.ticker !== tickerToRemove);
-      // Update ranks after removal
-      return updatedCompanies.map((company, index) => ({
-        ...company,
-        rank: index + 1
-      }));
+      const updatedCompanies = prev
+        .filter(company => company.ticker !== tickerToRemove)
+        .map((company, index) => ({
+          ...company,
+          rank: index + 1
+        }));
+      return updatedCompanies;
     });
   }, []);
 

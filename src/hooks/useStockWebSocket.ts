@@ -7,13 +7,17 @@ export const useStockWebSocket = (ticker?: string) => {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    let isSubscribed = true;
+
     if (!ticker) return;
 
     console.log(`Setting up WebSocket for ${ticker}`);
 
     const handleUpdate = (data: any) => {
+      if (!isSubscribed) return;
+      
       console.log(`Received WebSocket data for ${ticker}:`, data);
-      // Update price based on last trade price or latest quote
       const newPrice = data.lp || data.ap;
       if (newPrice) {
         console.log(`Updating price for ${ticker} from ${price} to ${newPrice}`);
@@ -22,27 +26,30 @@ export const useStockWebSocket = (ticker?: string) => {
       }
     };
 
-    let isSubscribed = true;
+    const setupWebSocket = async () => {
+      try {
+        const ws = await getWebSocket();
+        if (!isSubscribed) return;
 
-    getWebSocket()
-      .then(ws => {
-        if (isSubscribed) {
-          console.log(`Subscribing to ${ticker} WebSocket updates`);
-          ws.subscribe(ticker, handleUpdate);
-        }
-        return () => {
-          if (isSubscribed) {
-            console.log(`Unsubscribing from ${ticker} WebSocket updates`);
-            ws.unsubscribe(ticker, handleUpdate);
-          }
+        console.log(`Subscribing to ${ticker} WebSocket updates`);
+        ws.subscribe(ticker, handleUpdate);
+        cleanup = () => {
+          console.log(`Cleaning up WebSocket for ${ticker}`);
+          ws.unsubscribe(ticker, handleUpdate);
         };
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('Failed to initialize WebSocket:', error);
-      });
+      }
+    };
+
+    setupWebSocket();
 
     return () => {
+      console.log(`Unmounting WebSocket hook for ${ticker}`);
       isSubscribed = false;
+      if (cleanup) {
+        cleanup();
+      }
     };
   }, [ticker]);
 
