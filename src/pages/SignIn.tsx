@@ -34,13 +34,14 @@ const SignIn = () => {
       
       if (error) {
         if (error.message === 'Invalid login credentials') {
-          const { data: profileData, error: profileError } = await supabase
+          // Simplified profile check to avoid deep type nesting
+          const profileResult = await supabase
             .from('profiles')
             .select('id')
             .eq('email', email)
             .single();
 
-          if (profileData) {
+          if (profileResult.data) {
             toast.error("Invalid password. Please try again.");
           } else {
             toast.error("Account not found.", {
