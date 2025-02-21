@@ -192,7 +192,8 @@ export const TopCompanies = () => {
             change: `${quote.changesPercentage.toFixed(2)}%`,
             isPositive: quote.changesPercentage >= 0,
             marketCap: formatMarketCap(quote.marketCap),
-            currency: profile.currency || 'USD'
+            currency: profile.currency || 'USD',
+            logoUrl: profile.image || undefined
           };
           
           setCompanies(prev => {
