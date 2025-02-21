@@ -21,11 +21,13 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
     const logoMap: { [key: string]: string } = {
       'AAPL': 'https://companieslogo.com/img/orig/AAPL-157ca9ec.png',
       'MSFT': 'https://companieslogo.com/img/orig/MSFT-6e6017c6.png',
+      'GOOG': 'https://companieslogo.com/img/orig/GOOGL-0ed88f7c.png',
       'GOOGL': 'https://companieslogo.com/img/orig/GOOGL-0ed88f7c.png',
       'AMZN': 'https://companieslogo.com/img/orig/AMZN-e9f942e4.png',
       'NVDA': 'https://companieslogo.com/img/orig/NVDA-8fb4460e.png',
       'META': 'https://companieslogo.com/img/orig/META-4767da84.png',
       'TSLA': 'https://companieslogo.com/img/orig/TSLA-3f31a2d9.png',
+      'BRK-A': 'https://companieslogo.com/img/orig/BRK.A-f060a0b0.png',
       'BRK.A': 'https://companieslogo.com/img/orig/BRK.A-f060a0b0.png',
       'LLY': 'https://companieslogo.com/img/orig/LLY-9a757623.png',
       'JPM': 'https://companieslogo.com/img/orig/JPM-b585cef2.png',
