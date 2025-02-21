@@ -16,7 +16,7 @@ interface CompanyTableRowProps {
 
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
   return (
-    <tr className="hover:bg-gray-50 group">
+    <tr className="hover:bg-gray-100 transition-colors even:bg-white odd:bg-gray-50 group">
       <td className="px-4 py-3 text-sm text-gray-500">
         <div className="flex items-center">
           {index + 1}
