@@ -48,15 +48,19 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       </td>
       <td className="px-2 py-1.5">
         <div className="flex items-center gap-2">
-          <img 
-            src={company.logoUrl} 
-            alt={`${company.name} logo`}
-            className="w-6 h-6 rounded object-contain"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = `https://ui-avatars.com/api/?name=${company.ticker}&background=random`;
-            }}
-          />
+          <div className="w-6 h-6 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+            <img 
+              src={company.logoUrl} 
+              alt={`${company.name} logo`}
+              className="w-full h-full object-contain"
+              loading="lazy"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.onerror = null; // Prevent infinite loop
+                target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(company.ticker)}&background=random&color=fff&size=32`;
+              }}
+            />
+          </div>
           <div className="font-medium text-sm text-gray-900">{company.name}</div>
         </div>
       </td>
