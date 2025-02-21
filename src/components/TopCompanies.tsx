@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useCallback } from "react";
 import { MetricsSearch } from "./MetricsSearch";
@@ -16,6 +17,7 @@ type Company = {
   change: string;
   isPositive: boolean;
   currency: string;
+  logoUrl?: string;
 };
 
 const initialCompanies: Company[] = [
@@ -76,7 +78,8 @@ export const TopCompanies = () => {
                 change: `${quote.changesPercentage.toFixed(2)}%`,
                 isPositive: quote.changesPercentage >= 0,
                 marketCap: formatMarketCap(quote.marketCap),
-                currency: profile.currency || 'USD'
+                currency: profile.currency || 'USD',
+                logoUrl: profile.image || undefined
               };
             }
             return company;
