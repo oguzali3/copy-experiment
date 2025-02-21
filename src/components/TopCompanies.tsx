@@ -195,7 +195,7 @@ export const TopCompanies = () => {
         <MetricsSearch onMetricSelect={handleMetricSelect} />
         <CompanySearch onCompanySelect={handleCompanySelect} />
       </div>
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden rounded-none">
         <div className="overflow-x-auto">
           <table className="w-full">
             <CompanyTableHeader sortConfig={sortConfig} onSort={handleSort} />
