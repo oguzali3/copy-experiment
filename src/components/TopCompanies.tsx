@@ -28,7 +28,7 @@ const initialCompanies: Company[] = [
   { rank: 5, name: "NVIDIA", ticker: "NVDA", marketCap: "0", price: "0", change: "0%", isPositive: true, currency: "USD" },
   { rank: 6, name: "Meta", ticker: "META", marketCap: "0", price: "0", change: "0%", isPositive: true, currency: "USD" },
   { rank: 7, name: "Tesla", ticker: "TSLA", marketCap: "0", price: "0", change: "0%", isPositive: true, currency: "USD" },
-  { rank: 8, name: "Berkshire", ticker: "BRK.A", marketCap: "0", price: "0", change: "0%", isPositive: true, currency: "USD" },
+  { rank: 8, name: "Berkshire Hathaway", ticker: "BRK-B", marketCap: "0", price: "0", change: "0%", isPositive: true, currency: "USD" },
   { rank: 9, name: "Eli Lilly", ticker: "LLY", marketCap: "0", price: "0", change: "0%", isPositive: true, currency: "USD" },
   { rank: 10, name: "JPMorgan", ticker: "JPM", marketCap: "0", price: "0", change: "0%", isPositive: true, currency: "USD" },
 ];
