@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useCallback } from "react";
 import { MetricsSearch } from "./MetricsSearch";
@@ -89,7 +88,6 @@ export const TopCompanies = () => {
       );
 
       setCompanies(prevCompanies => {
-        // Only update if the number of companies hasn't changed
         if (prevCompanies.length === companies.length) {
           return updatedCompanies;
         }
@@ -107,7 +105,7 @@ export const TopCompanies = () => {
     return () => clearInterval(interval);
   }, [fetchPrices]);
 
-  const handleSort = (field: SortField) => {
+  const handleSort = useCallback((field: SortField) => {
     let direction: SortDirection = "desc";
     
     if (sortConfig.field === field && sortConfig.direction === "desc") {
@@ -132,8 +130,8 @@ export const TopCompanies = () => {
     });
 
     setSortConfig({ field, direction });
-    setCompanies(sortedCompanies);
-  };
+    return sortedCompanies;
+  }, [companies, sortConfig]);
 
   const handleCompanySelect = async (newCompany: any) => {
     if (!companies.find(c => c.ticker === newCompany.ticker)) {
@@ -157,10 +155,8 @@ export const TopCompanies = () => {
             currency: profile.currency || 'USD'
           };
           
-          // Update companies state with the new company
           setCompanies(prev => {
             const newCompanies = [...prev, formattedCompany];
-            // Sort immediately if there's an active sort
             if (sortConfig.field) {
               return handleSort(sortConfig.field);
             }
