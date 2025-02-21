@@ -4,7 +4,7 @@ import { MetricsSearch } from "./MetricsSearch";
 import { CompanySearch } from "./CompanySearch";
 import { CompanyTableHeader } from "./CompanyTableHeader";
 import { CompanyTableRow } from "./CompanyTableRow";
-import { fetchFinancialData, formatMarketCap } from "@/utils/financialApi";
+import { fetchFinancialData, fetchBatchQuotes, formatMarketCap } from "@/utils/financialApi";
 import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
 import { Button } from "./ui/button";
@@ -61,6 +61,44 @@ export const TopCompanies = () => {
   });
 
   const fetchPrices = useCallback(async () => {
+    if (isRefreshing) return; // Prevent concurrent refreshes
+    
+    try {
+      setIsRefreshing(true);
+      const tickers = companies.map(company => company.ticker);
+      
+      // Fetch all quotes in a single API call
+      const quotes = await fetchBatchQuotes(tickers);
+      
+      if (!quotes) {
+        throw new Error('Failed to fetch quotes');
+      }
+
+      const updatedCompanies = companies.map(company => {
+        const quote = quotes.find(q => q.symbol === company.ticker);
+        if (!quote) return company;
+
+        return {
+          ...company,
+          price: quote.price.toFixed(2),
+          change: `${quote.changesPercentage.toFixed(2)}%`,
+          isPositive: quote.changesPercentage >= 0,
+          marketCap: formatMarketCap(quote.marketCap),
+          // Keep existing currency and logo as they don't change frequently
+        };
+      });
+
+      setCompanies(updatedCompanies);
+    } catch (error) {
+      console.error('Error fetching prices:', error);
+      toast.error("Failed to refresh prices");
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [companies, isRefreshing]); // Only depend on companies and isRefreshing
+
+  // Initial data fetch - including profile data
+  const fetchInitialData = useCallback(async () => {
     try {
       setIsRefreshing(true);
       const updatedCompanies = await Promise.all(
@@ -87,30 +125,25 @@ export const TopCompanies = () => {
             }
             return company;
           } catch (error) {
-            console.error(`Error fetching quote for ${company.ticker}:`, error);
+            console.error(`Error fetching data for ${company.ticker}:`, error);
             return company;
           }
         })
       );
 
-      setCompanies(prevCompanies => {
-        if (prevCompanies.length === companies.length) {
-          return updatedCompanies;
-        }
-        return prevCompanies;
-      });
+      setCompanies(updatedCompanies);
     } catch (error) {
-      console.error('Error fetching prices:', error);
-      toast.error("Failed to refresh prices");
+      console.error('Error fetching initial data:', error);
+      toast.error("Failed to load company data");
     } finally {
       setIsRefreshing(false);
     }
-  }, [companies]);
+  }, []); // No dependencies since this is only for initial load
 
-  // Only fetch on mount and when companies list changes
+  // Only fetch initial data (including profiles) on mount
   useEffect(() => {
-    fetchPrices();
-  }, [fetchPrices]);
+    fetchInitialData();
+  }, [fetchInitialData]);
 
   const handleSort = useCallback((field: SortField) => {
     let direction: SortDirection = "desc";
