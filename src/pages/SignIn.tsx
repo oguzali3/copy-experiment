@@ -27,34 +27,14 @@ const SignIn = () => {
     setSigningIn(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
       if (error) {
-        if (error.message === 'Invalid login credentials') {
-          // Simplified profile check to avoid deep type nesting
-          const profileResult = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', email)
-            .single();
-
-          if (profileResult.data) {
-            toast.error("Invalid password. Please try again.");
-          } else {
-            toast.error("Account not found.", {
-              action: {
-                label: "Sign Up",
-                onClick: () => navigate("/signup")
-              }
-            });
-          }
-        } else {
-          toast.error(error.message);
-        }
-      } else if (data?.user) {
+        toast.error(error.message);
+      } else {
         toast.success("Signed in successfully");
         navigate("/dashboard");
       }
@@ -77,7 +57,6 @@ const SignIn = () => {
       
       if (error) {
         toast.error("Error signing in with Google");
-        console.error("Error:", error.message);
       }
     } catch (error) {
       toast.error("An unexpected error occurred");
@@ -132,15 +111,13 @@ const SignIn = () => {
               </div>
             </div>
 
-            <div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={signingIn}
-              >
-                {signingIn ? "Signing in..." : "Sign in"}
-              </Button>
-            </div>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={signingIn}
+            >
+              {signingIn ? "Signing in..." : "Sign in"}
+            </Button>
           </form>
 
           <div className="relative my-6">
