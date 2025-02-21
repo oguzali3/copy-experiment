@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useCallback } from "react";
 import { MetricsSearch } from "./MetricsSearch";
@@ -7,6 +6,8 @@ import { CompanyTableHeader } from "./CompanyTableHeader";
 import { CompanyTableRow } from "./CompanyTableRow";
 import { fetchFinancialData, formatMarketCap } from "@/utils/financialApi";
 import { toast } from "sonner";
+import { RefreshCw } from "lucide-react";
+import { Button } from "./ui/button";
 
 type Company = {
   rank: number;
@@ -50,6 +51,7 @@ const getCurrencySymbol = (currency: string): string => {
 
 export const TopCompanies = () => {
   const [companies, setCompanies] = useState<Company[]>(initialCompanies);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [sortConfig, setSortConfig] = useState<{
     field: SortField | null;
     direction: SortDirection;
@@ -60,6 +62,7 @@ export const TopCompanies = () => {
 
   const fetchPrices = useCallback(async () => {
     try {
+      setIsRefreshing(true);
       const updatedCompanies = await Promise.all(
         companies.map(async (company) => {
           try {
@@ -98,14 +101,15 @@ export const TopCompanies = () => {
       });
     } catch (error) {
       console.error('Error fetching prices:', error);
+      toast.error("Failed to refresh prices");
+    } finally {
+      setIsRefreshing(false);
     }
   }, [companies]);
 
+  // Only fetch on mount and when companies list changes
   useEffect(() => {
     fetchPrices();
-    const interval = setInterval(fetchPrices, 10000);
-
-    return () => clearInterval(interval);
   }, [fetchPrices]);
 
   const handleSort = useCallback((field: SortField) => {
@@ -191,9 +195,24 @@ export const TopCompanies = () => {
     console.log("Metric selected:", metricId);
   };
 
+  const handleRefresh = () => {
+    fetchPrices();
+  };
+
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-[#111827]">Featured Companies</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-[#111827]">Featured Companies</h2>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <MetricsSearch onMetricSelect={handleMetricSelect} />
         <CompanySearch onCompanySelect={handleCompanySelect} />
