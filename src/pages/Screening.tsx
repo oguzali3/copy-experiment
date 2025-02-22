@@ -7,11 +7,9 @@ import { Button } from "@/components/ui/button";
 
 const Screening = () => {
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
-  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   const [selectedExchanges, setSelectedExchanges] = useState<string[]>([]);
   const [selectedMetrics, setSelectedMetrics] = useState<ScreeningMetric[]>([]);
   const [excludeCountries, setExcludeCountries] = useState(false);
-  const [excludeIndustries, setExcludeIndustries] = useState(false);
   const [excludeExchanges, setExcludeExchanges] = useState(false);
 
   const handleMetricAdd = (metric: ScreeningMetric) => {
@@ -30,11 +28,9 @@ const Screening = () => {
 
   const handleReset = () => {
     setSelectedCountries([]);
-    setSelectedIndustries([]);
     setSelectedExchanges([]);
     setSelectedMetrics([]);
     setExcludeCountries(false);
-    setExcludeIndustries(false);
     setExcludeExchanges(false);
   };
 
@@ -62,15 +58,6 @@ const Screening = () => {
         />
 
         <FilterSection
-          title="Industries"
-          selected={selectedIndustries}
-          onSelect={setSelectedIndustries}
-          excludeEnabled={excludeIndustries}
-          onExcludeChange={setExcludeIndustries}
-          type="industries"
-        />
-
-        <FilterSection
           title="Exchanges"
           selected={selectedExchanges}
           onSelect={setSelectedExchanges}
@@ -89,10 +76,8 @@ const Screening = () => {
         <ScreenerResults 
           metrics={selectedMetrics}
           selectedCountries={selectedCountries}
-          selectedIndustries={selectedIndustries}
           selectedExchanges={selectedExchanges}
           excludeCountries={excludeCountries}
-          excludeIndustries={excludeIndustries}
           excludeExchanges={excludeExchanges}
         />
       </div>

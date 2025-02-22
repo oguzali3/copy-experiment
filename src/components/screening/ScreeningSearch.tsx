@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Command,
   CommandDialog,
@@ -9,30 +9,19 @@ import {
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { ScreeningMetric } from "@/types/screening";
-import { SearchItem, SearchItemSchema } from "./types";
+import { SearchItem } from "./types";
 import { SearchResult } from "./SearchResult";
 import { filterSearchItems, getPlaceholderText } from "./searchUtils";
-import { toast } from "sonner";
 import { METRICS_CONFIG } from "@/constants/metrics";
+import { COUNTRIES, EXCHANGES } from "@/constants/marketFilters";
 
 interface ScreeningSearchProps {
-  type: "countries" | "industries" | "exchanges" | "metrics";
+  type: "countries" | "exchanges" | "metrics";
   selected?: string[];
   onSelect?: (selected: string[]) => void;
   onMetricSelect?: (metric: ScreeningMetric) => void;
 }
-
-const searchItems = (items: any[], query: string) => {
-  const lowerQuery = query.toLowerCase();
-  return items.filter(
-    item => 
-      item.name.toLowerCase().includes(lowerQuery) ||
-      item.description.toLowerCase().includes(lowerQuery) ||
-      item.field.toLowerCase().includes(lowerQuery)
-  );
-};
 
 export const ScreeningSearch = ({
   type,
@@ -42,77 +31,40 @@ export const ScreeningSearch = ({
 }: ScreeningSearchProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [items, setItems] = useState<SearchItem[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        console.log('Fetching data for type:', type);
-        const { data, error } = await supabase.functions.invoke('fetch-screening-filters');
-        
-        if (error) {
-          console.error('Error fetching data:', error);
-          toast.error(`Failed to fetch ${type}: ${error.message}`);
-          setItems([]);
-          return;
-        }
-        
-        if (!data) {
-          console.error('No data received from API');
-          toast.error(`No ${type} data available`);
-          setItems([]);
-          return;
-        }
+  // Get the appropriate items based on type
+  const getItems = () => {
+    switch (type) {
+      case "countries":
+        return COUNTRIES.map(country => ({
+          name: country.code,
+          fullName: country.name,
+          description: country.region,
+          category: country.region
+        }));
+      case "exchanges":
+        return EXCHANGES.map(exchange => ({
+          name: exchange.code,
+          fullName: exchange.name,
+          description: exchange.region,
+          category: exchange.region
+        }));
+      case "metrics":
+        return METRICS_CONFIG.flatMap(category => 
+          category.metrics.map(metric => ({
+            ...metric,
+            category: category.category
+          }))
+        );
+      default:
+        return [];
+    }
+  };
 
-        console.log('Received data:', data);
-        
-        let filteredItems: SearchItem[] = [];
-        
-        switch (type) {
-          case "countries":
-            filteredItems = data.countries || [];
-            break;
-          case "industries":
-            filteredItems = data.industries || [];
-            break;
-          case "exchanges":
-            filteredItems = data.exchanges || [];
-            break;
-          case "metrics":
-            filteredItems = data.metrics || [];
-            break;
-          default:
-            filteredItems = [];
-        }
-
-        // Validate items
-        const validatedItems = filteredItems.filter(item => {
-          try {
-            SearchItemSchema.parse(item);
-            return true;
-          } catch (error) {
-            console.error('Invalid item:', item, error);
-            return false;
-          }
-        });
-
-        setItems(validatedItems);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast.error(`Failed to load ${type}`);
-        setItems([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [type]);
-
+  const items = getItems();
   const filteredItems = filterSearchItems(items, searchQuery, type);
 
-  const handleSelect = (item: SearchItem & { table?: string }) => {
+  const handleSelect = (item: SearchItem) => {
     try {
       if (!item?.name) {
         console.error('Invalid item selected:', item);
@@ -125,12 +77,12 @@ export const ScreeningSearch = ({
           name: item.name,
           category: item.category || '',
           field: item.field || item.id || '',
-          table: item.table,  // Pass the table from the metric
+          table: item.table,
           min: "",
           max: ""
         });
       } else if (onSelect) {
-        const value = item.name;
+        const value = item.name; // Use code for countries/exchanges
         if (selected.includes(value)) {
           onSelect(selected.filter(i => i !== value));
         } else {
@@ -140,9 +92,34 @@ export const ScreeningSearch = ({
       setOpen(false);
     } catch (error) {
       console.error('Error handling selection:', error);
-      toast.error('Failed to select item');
     }
   };
+
+  // Get placeholder text based on type
+  const placeholder = type === "countries" 
+    ? "Search by country name or code..." 
+    : type === "exchanges"
+    ? "Search by exchange name or code..."
+    : "Search metrics...";
+
+  // Group items by region for countries and exchanges
+  const groupedItems = React.useMemo(() => {
+    if (type === "metrics") {
+      return METRICS_CONFIG;
+    }
+
+    const groups = filteredItems.reduce((acc, item) => {
+      const region = item.category || 'Other';
+      if (!acc[region]) acc[region] = [];
+      acc[region].push(item);
+      return acc;
+    }, {} as Record<string, SearchItem[]>);
+
+    return Object.entries(groups).map(([category, items]) => ({
+      category,
+      items
+    }));
+  }, [filteredItems, type]);
 
   return (
     <div className="relative w-full">
@@ -152,38 +129,29 @@ export const ScreeningSearch = ({
         onClick={() => setOpen(true)}
       >
         <Search className="mr-2 h-4 w-4" />
-        <span>Search metrics...</span>
+        <span>{placeholder}</span>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <Command className="rounded-lg border shadow-md">
           <CommandInput
-            placeholder="Search metrics..."
+            placeholder={placeholder}
             value={searchQuery}
             onValueChange={setSearchQuery}
           />
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
-            {METRICS_CONFIG.map((category) => {
-              const filteredMetrics = searchItems(category.metrics, searchQuery);
-              if (filteredMetrics.length === 0) return null;
-              
-              return (
-                <CommandGroup key={category.category} heading={category.category}>
-                  {filteredMetrics.map((metric) => (
-                    <SearchResult
-                      key={metric.id}
-                      item={{
-                        ...metric,
-                        category: category.category,
-                        table: metric.table  // Include the table in the passed item
-                      }}
-                      type="metrics"
-                      onSelect={handleSelect}
-                    />
-                  ))}
-                </CommandGroup>
-              );
-            })}
+            {groupedItems.map((group) => (
+              <CommandGroup key={group.category} heading={group.category}>
+                {(type === "metrics" ? group.metrics : group.items).map((item) => (
+                  <SearchResult
+                    key={item.id || item.name}
+                    item={item}
+                    type={type}
+                    onSelect={handleSelect}
+                  />
+                ))}
+              </CommandGroup>
+            ))}
           </CommandList>
         </Command>
       </CommandDialog>

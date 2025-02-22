@@ -8,6 +8,8 @@ const fieldNameCasing: Record<string, string> = {
   beta: "beta",
   volume: "volume",
   averageVolume: "averageVolume",
+  country: "country",
+  exchange: "exchange",
 
   // Income Statement Fields (exact casing from DB schema)
   revenue: "revenue",
@@ -48,6 +50,8 @@ const fieldToTableMapping: Record<string, string> = {
   beta: "COMPANY_PROFILES_DYNAMIC",
   volume: "COMPANY_PROFILES_DYNAMIC",
   averageVolume: "COMPANY_PROFILES_DYNAMIC",
+  country: "COMPANY_PROFILES_STATIC",
+  exchange: "COMPANY_PROFILES_STATIC",
 
   // Income Statement fields
   revenue: "INCOME_STATEMENTS_ANNUAL",
@@ -94,15 +98,19 @@ const getFieldWithCorrectCasing = (field: string): string => {
 
 export const buildScreeningQuery = (
   metrics: ScreeningMetric[],
-  pagination: PaginationOptions = {}
+  pagination: PaginationOptions = {},
+  selectedCountries: string[] = [],
+  excludeCountries: boolean = false,
+  selectedExchanges: string[] = [],
+  excludeExchanges: boolean = false
 ) => {
   const { cursor = '', limit = 25 } = pagination;
 
-  const filters = metrics
+  // Build metric filters
+  const metricFilters = metrics
     .map(metric => {
       const filters = [];
       const fieldName = getFieldWithCorrectCasing(metric.field);
-      // Get the table name from the mapping or use the provided table name
       const table = fieldToTableMapping[fieldName] || metric.table;
 
       if (!table) {
@@ -112,7 +120,7 @@ export const buildScreeningQuery = (
 
       if (metric.min) {
         filters.push({
-          table: table.toUpperCase(), // Ensure table name is uppercase
+          table: table.toUpperCase(),
           field: fieldName,
           operator: "GREATER_THAN",
           value: metric.min
@@ -120,7 +128,7 @@ export const buildScreeningQuery = (
       }
       if (metric.max) {
         filters.push({
-          table: table.toUpperCase(), // Ensure table name is uppercase
+          table: table.toUpperCase(),
           field: fieldName,
           operator: "LESS_THAN",
           value: metric.max
@@ -131,12 +139,46 @@ export const buildScreeningQuery = (
     .flat()
     .filter(filter => filter);
 
-  const filterInputs = filters.map(filter => `{
-    table: ${filter.table}
-    field: "${filter.field}"
-    operator: ${filter.operator}
-    value: "${filter.value}"
-  }`).join(',');
+  // Add country filters
+  const filters = [...metricFilters];
+  if (selectedCountries.length > 0) {
+    filters.push({
+      table: 'COMPANY_PROFILES_STATIC',
+      field: 'country',
+      operator: excludeCountries ? 'NOT_IN' : 'IN',
+      values: selectedCountries
+    });
+  }
+
+  // Add exchange filters
+  if (selectedExchanges.length > 0) {
+    filters.push({
+      table: 'COMPANY_PROFILES_STATIC',
+      field: 'exchange',
+      operator: excludeExchanges ? 'NOT_IN' : 'IN',
+      values: selectedExchanges
+    });
+  }
+
+  // Build filter inputs for the query
+  const filterInputs = filters.map(filter => {
+    if ('values' in filter) {
+      // For array-based filters (IN, NOT_IN)
+      return `{
+        table: ${filter.table}
+        field: "${filter.field}"
+        operator: ${filter.operator}
+        values: ${JSON.stringify(filter.values)}
+      }`;
+    }
+    // For numeric comparison filters
+    return `{
+      table: ${filter.table}
+      field: "${filter.field}"
+      operator: ${filter.operator}
+      value: "${filter.value}"
+    }`;
+  }).join(',');
 
   const query = `
     query ScreenCompanies {
@@ -163,7 +205,6 @@ export const buildScreeningQuery = (
     }
   `;
 
-  console.log('Generated GraphQL Query:', query);
   return { query };
 };
 

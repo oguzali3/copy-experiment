@@ -10,10 +10,8 @@ import PaginationControls from "./PaginationControls";
 interface ScreenerResultsProps {
   metrics: ScreeningMetric[];
   selectedCountries: string[];
-  selectedIndustries: string[];
   selectedExchanges: string[];
   excludeCountries: boolean;
-  excludeIndustries: boolean;
   excludeExchanges: boolean;
 }
 
@@ -22,10 +20,8 @@ const RESULTS_PER_PAGE = 25;
 export const ScreenerResults = ({ 
   metrics,
   selectedCountries,
-  selectedIndustries,
   selectedExchanges,
   excludeCountries,
-  excludeIndustries,
   excludeExchanges
 }: ScreenerResultsProps) => {
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -41,10 +37,9 @@ export const ScreenerResults = ({
   const handleScreenerRun = async (resetPagination = true, cursor: string | null = null) => {
     const hasMetrics = metrics.length > 0;
     const hasCountries = selectedCountries.length > 0;
-    const hasIndustries = selectedIndustries.length > 0;
     const hasExchanges = selectedExchanges.length > 0;
 
-    if (!hasMetrics && !hasCountries && !hasIndustries && !hasExchanges) {
+    if (!hasMetrics && !hasCountries && !hasExchanges) {
       toast({
         title: "No criteria selected",
         description: "Please select at least one filtering criteria",
@@ -55,10 +50,17 @@ export const ScreenerResults = ({
 
     setIsLoading(true);
     try {
-      const { query } = buildScreeningQuery(metrics, {
-        cursor: cursor || '',
-        limit: RESULTS_PER_PAGE
-      });
+      const { query } = buildScreeningQuery(
+        metrics, 
+        {
+          cursor: cursor || '',
+          limit: RESULTS_PER_PAGE
+        },
+        selectedCountries,
+        excludeCountries,
+        selectedExchanges,
+        excludeExchanges
+      );
 
       const response = await fetch('http://localhost:4000/graphql', {
         method: 'POST',
@@ -85,12 +87,9 @@ export const ScreenerResults = ({
         setCurrentPage(1);
         setCursorHistory(['']);
       } else {
-        // Update cursor history based on navigation direction
         if (cursor === cursorHistory[currentPage - 2]) {
-          // Going backward - remove the last cursor
           setCursorHistory(prev => prev.slice(0, currentPage - 1));
         } else {
-          // Going forward - add the new cursor
           setCursorHistory(prev => [...prev, cursor || '']);
         }
       }

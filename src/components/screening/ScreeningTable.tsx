@@ -1,15 +1,9 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { ScreeningMetric } from "@/types/screening";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { TickerCell } from "./TickerCell";
+import CompanyInfoCell from "./CompanyInfoCell";
 
 interface ScreeningTableProps {
   metrics: ScreeningMetric[];
@@ -21,10 +15,17 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 } | null;
 
+interface BaseMetric {
+  id: string;
+  field: string;
+  name: string;
+  align?: 'left' | 'right';
+}
+
 // Define base metrics that should always be shown
-const BASE_METRICS = [
-  { id: 'price', field: 'price', name: 'Price' },
-  { id: 'marketCap', field: 'marketCap', name: 'Market Cap' }
+const BASE_METRICS: BaseMetric[] = [
+  { id: 'price', field: 'price', name: 'Price', align: 'right' },
+  { id: 'marketCap', field: 'marketCap', name: 'Market Cap', align: 'right' }
 ];
 
 const formatCurrency = (value: number, compact: boolean = false) => {
@@ -50,10 +51,10 @@ const formatPercentage = (value: number) => {
   return `${value.toFixed(2)}%`;
 };
 
-const formatValue = (value: any, metricField: string) => {
+const formatValue = (value: any, metric: BaseMetric) => {
   if (value === null || value === undefined) return '-';
-  
-  const fieldLower = metricField.toLowerCase();
+
+  const fieldLower = metric.field.toLowerCase();
   
   // Handle percentage metrics
   if (fieldLower.includes('margin') || 
@@ -118,8 +119,9 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
     );
   }, [filteredMetrics, results]);
 
-  const handleTickerClick = (ticker: string) => {
-    navigate(`/analysis?ticker=${ticker}`);
+   // Handle ticker click navigation using window.location
+   const handleTickerClick = (ticker) => {
+    window.location.href = `/analysis?ticker=${ticker}`;
   };
 
   const handleSort = (key: string) => {
@@ -171,88 +173,96 @@ export const ScreeningTable = ({ metrics, results }: ScreeningTableProps) => {
       </div>
     );
   }
+  
 
   return (
-    <div className="border rounded-lg overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead 
-              className="cursor-pointer hover:bg-gray-50 text-left"
+    <div className="border rounded-lg overflow-x-auto bg-white">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 w-32"
               onClick={() => handleSort('symbol')}
             >
               <div className="flex items-center whitespace-nowrap">
                 Ticker
                 {getSortIcon('symbol')}
               </div>
-            </TableHead>
-            <TableHead 
-              className="cursor-pointer hover:bg-gray-50 text-left"
+            </th>
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 min-w-[300px]"
               onClick={() => handleSort('companyName')}
             >
               <div className="flex items-center whitespace-nowrap">
-                Company
+                Company Info
                 {getSortIcon('companyName')}
               </div>
-            </TableHead>
-            {/* Always show base metrics */}
+            </th>
             {BASE_METRICS.map((metric) => (
-              <TableHead 
+              <th 
                 key={metric.id}
-                className="cursor-pointer hover:bg-gray-50 text-right"
+                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort(metric.field)}
               >
                 <div className="flex items-center justify-end whitespace-nowrap">
                   {metric.name}
                   {getSortIcon(metric.field)}
                 </div>
-              </TableHead>
+              </th>
             ))}
-            {/* Show additional selected metrics */}
-            {availableMetrics.map((metric) => (
-              <TableHead 
+            {filteredMetrics.map((metric) => (
+              <th 
                 key={metric.id}
-                className="cursor-pointer hover:bg-gray-50 text-right"
+                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort(metric.field)}
               >
                 <div className="flex items-center justify-end whitespace-nowrap">
                   {metric.name}
                   {getSortIcon(metric.field)}
                 </div>
-              </TableHead>
+              </th>
             ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
           {sortedResults.map((company) => (
-            <TableRow key={company.symbol}>
-              <TableCell className="text-left">
-                <button
-                  onClick={() => handleTickerClick(company.symbol)}
-                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  {company.symbol}
-                </button>
-              </TableCell>
-              <TableCell className="whitespace-nowrap text-left">
-                {company.companyName || '-'}
-              </TableCell>
-              {/* Always show base metrics values */}
+            <tr 
+              key={company.symbol} 
+              className="hover:bg-gray-50 transition-colors"
+            >
+              <td className="px-6 py-4 whitespace-nowrap text-left">
+                <TickerCell 
+                  symbol={company.symbol} 
+                  onClick={handleTickerClick}
+                />
+              </td>
+              <td className="px-6 py-4">
+                <CompanyInfoCell
+                  companyName={company.companyName}
+                  exchange={company.exchange}
+                  country={company.country}
+                />
+              </td>
               {BASE_METRICS.map((metric) => (
-                <TableCell key={metric.id} className="text-right">
-                  {formatValue(company[metric.field], metric.field)}
-                </TableCell>
+                <td 
+                  key={metric.id} 
+                  className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900"
+                >
+                  {formatValue(company[metric.field], metric)}
+                </td>
               ))}
-              {/* Show additional selected metrics values */}
-              {availableMetrics.map((metric) => (
-                <TableCell key={metric.id} className="text-right">
-                  {formatValue(company[metric.field], metric.field)}
-                </TableCell>
+              {filteredMetrics.map((metric) => (
+                <td 
+                  key={metric.id} 
+                  className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900"
+                >
+                  {formatValue(company[metric.field], metric)}
+                </td>
               ))}
-            </TableRow>
+            </tr>
           ))}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 };
