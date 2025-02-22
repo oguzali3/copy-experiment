@@ -11,11 +11,11 @@ export const useStockWebSocket = (ticker?: string) => {
     console.log(`Setting up WebSocket for ${ticker}`);
 
     const handleUpdate = (data: any) => {
-      console.log(`Received WebSocket data for ${ticker}:`, data);
+      //console.log(`Received WebSocket data for ${ticker}:`, data);
       // Update price based on last trade price or latest quote
       const newPrice = data.lp || data.ap;
       if (newPrice) {
-        console.log(`Updating price for ${ticker} from ${price} to ${newPrice}`);
+        //console.log(`Updating price for ${ticker} from ${price} to ${newPrice}`);
         setPrice(newPrice);
         setLastUpdate(new Date(data.t));
       }

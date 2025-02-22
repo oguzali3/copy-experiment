@@ -25,11 +25,11 @@ export const useBalanceSheetData = (ticker: string, period: 'annual' | 'quarter'
     // Get data sorted by date
     const sortedBalanceSheet = balanceSheetData
       .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, period === 'quarter' ? 20 : 10);
+      .slice(0, period === 'quarter' ? 60 : 15);
 
     const sortedIncomeStatement = incomeStatementData
       ?.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, period === 'quarter' ? 20 : 10);
+      .slice(0, period === 'quarter' ? 60 : 15);
 
     // Combine balance sheet and income statement data by date
     const combinedData = sortedBalanceSheet.map((balanceSheet: any) => {

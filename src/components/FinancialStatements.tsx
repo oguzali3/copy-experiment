@@ -20,7 +20,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const { financialData, isLoading: isIncomeStatementLoading } = useFinancialData(ticker, period);
   const { filteredData: balanceSheetData, isLoading: isBalanceSheetLoading } = useBalanceSheetData(ticker, period);
   const { data: cashFlowData, isLoading: isCashFlowLoading } = useCashFlowData(ticker, period);
-  
+
+
   const {
     startDate,
     endDate,
@@ -50,7 +51,9 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       </div>
     );
   }
-
+  console.log(`metricdata income `, financialData);
+  console.log(`metricdata balance `, balanceSheetData);
+  console.log(`metricdata cashflow `, cashFlowData);
   // Ensure cashFlowData is properly formatted before transformation
   const formattedCashFlowData = Array.isArray(cashFlowData) ? cashFlowData : [];
 
