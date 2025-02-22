@@ -56,15 +56,6 @@ const formatValue = (value: any, metric: BaseMetric) => {
 
   const fieldLower = metric.field.toLowerCase();
   
-  // Handle percentage metrics
-  if (fieldLower.includes('margin') || 
-      fieldLower.includes('ratio') || 
-      fieldLower.includes('growth') ||
-      fieldLower.includes('return') ||
-      fieldLower.includes('yield')) {
-    return formatPercentage(value);
-  }
-  
   // Handle price
   if (fieldLower === 'price') {
     return formatCurrency(value, false);

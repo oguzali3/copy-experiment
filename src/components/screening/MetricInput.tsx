@@ -12,7 +12,9 @@ interface MetricInputProps {
   onChange: (id: string, min: string, max: string) => void;
 }
 
-type FieldType = 'financial' | 'percentage' | 'price' | 'other';
+// In MetricInput.tsx
+
+type FieldType = 'financial' | 'price' | 'other';
 
 export const MetricInput = ({ metric, onRemove, onChange }: MetricInputProps) => {
   // Determine field type and appropriate unit
@@ -20,16 +22,6 @@ export const MetricInput = ({ metric, onRemove, onChange }: MetricInputProps) =>
     const name = fieldName.toLowerCase();
     
     if (name === 'price') return 'price';
-    
-    if (name.includes('margin') ||
-        name.includes('ratio') ||
-        name.includes('growth') ||
-        name.includes('return') ||
-        name.includes('yield') ||
-        name.includes('percentage') ||
-        name.includes('percent')) {
-      return 'percentage';
-    }
     
     if (name.includes('revenue') ||
         name.includes('income') ||
@@ -58,11 +50,8 @@ export const MetricInput = ({ metric, onRemove, onChange }: MetricInputProps) =>
   };
 
   const fieldType = useMemo(() => getFieldType(metric.name), [metric.name]);
-  
   const [unit, setUnit] = useState(() => getDefaultUnit(fieldType));
-
   const shouldShowUnits = fieldType === 'financial';
-  const isPercentage = fieldType === 'percentage';
   const isPrice = fieldType === 'price';
 
   const formatValue = (value: string, unit: string): string => {
@@ -77,11 +66,7 @@ export const MetricInput = ({ metric, onRemove, onChange }: MetricInputProps) =>
     if (value !== '') {
       const baseValue = Number(value);
       if (!isNaN(baseValue)) {
-        if (isPercentage) {
-          numericValue = String(baseValue);
-        } else {
-          numericValue = String(baseValue * Number(unit));
-        }
+        numericValue = String(baseValue * Number(unit));
       }
     }
     onChange(metric.id, numericValue, metric.max || '');
@@ -92,11 +77,7 @@ export const MetricInput = ({ metric, onRemove, onChange }: MetricInputProps) =>
     if (value !== '') {
       const baseValue = Number(value);
       if (!isNaN(baseValue)) {
-        if (isPercentage) {
-          numericValue = String(baseValue);
-        } else {
-          numericValue = String(baseValue * Number(unit));
-        }
+        numericValue = String(baseValue * Number(unit));
       }
     }
     onChange(metric.id, metric.min || '', numericValue);
@@ -121,13 +102,8 @@ export const MetricInput = ({ metric, onRemove, onChange }: MetricInputProps) =>
                 placeholder="Min value"
                 value={formatValue(metric.min, unit)}
                 onChange={(e) => handleMinChange(e.target.value)}
-                className={`${(shouldShowUnits || isPrice) ? "pl-8" : ""} ${isPercentage ? "pr-8" : ""}`}
+                className={isPrice || shouldShowUnits ? "pl-8" : ""}
               />
-              {isPercentage && (
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500">%</span>
-                </div>
-              )}
               {(shouldShowUnits || isPrice) && (
                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                   <span className="text-gray-500">$</span>
@@ -145,13 +121,8 @@ export const MetricInput = ({ metric, onRemove, onChange }: MetricInputProps) =>
                 placeholder="Max value"
                 value={formatValue(metric.max, unit)}
                 onChange={(e) => handleMaxChange(e.target.value)}
-                className={`${(shouldShowUnits || isPrice) ? "pl-8" : ""} ${isPercentage ? "pr-8" : ""}`}
+                className={isPrice || shouldShowUnits ? "pl-8" : ""}
               />
-              {isPercentage && (
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500">%</span>
-                </div>
-              )}
               {(shouldShowUnits || isPrice) && (
                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                   <span className="text-gray-500">$</span>
