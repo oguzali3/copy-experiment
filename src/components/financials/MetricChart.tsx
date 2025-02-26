@@ -35,23 +35,31 @@ export const MetricChart = ({
       const tempDiv = document.createElement('div');
       tempDiv.style.position = 'absolute';
       tempDiv.style.left = '-9999px';
-      tempDiv.style.top = '-9999px';
+      tempDiv.style.width = `${options.width}px`;
+      tempDiv.style.height = `${options.height}px`;
       document.body.appendChild(tempDiv);
 
       const clone = chartContainerRef.current.cloneNode(true) as HTMLDivElement;
-      clone.style.width = `${options.width}px`;
-      clone.style.height = `${options.height}px`;
+      
+      clone.style.width = '100%';
+      clone.style.height = '100%';
       clone.style.backgroundColor = options.transparentBackground ? 'transparent' : options.backgroundColor;
+      
+      const chartDiv = clone.querySelector('.recharts-wrapper');
+      if (chartDiv) {
+        chartDiv.setAttribute('style', 'width: 100% !important; height: 100% !important;');
+      }
+
       tempDiv.appendChild(clone);
 
       const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(clone, {
+      const canvas = await html2canvas(tempDiv, {
         backgroundColor: options.transparentBackground ? null : options.backgroundColor,
         scale: 2,
         logging: true,
+        width: options.width,
+        height: options.height,
         removeContainer: true,
-        allowTaint: true,
-        useCORS: true
       });
 
       document.body.removeChild(tempDiv);

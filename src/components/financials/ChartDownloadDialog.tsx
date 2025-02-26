@@ -40,18 +40,32 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
     onDownload(options);
   };
 
-  const getSvgPreview = () => {
+  const renderPreview = () => {
     if (!previewRef.current) return null;
-    const svg = previewRef.current.querySelector('svg');
-    if (!svg) return null;
+    
+    const content = previewRef.current.innerHTML;
+    if (!content) return null;
 
-    // Create a div element and set the innerHTML to the SVG string
-    const container = document.createElement('div');
-    container.innerHTML = svg.outerHTML;
-
-    // Return the SVG element as a string that can be safely rendered
     return (
-      <div dangerouslySetInnerHTML={{ __html: container.innerHTML }} />
+      <div 
+        style={{ 
+          width: '100%',
+          height: '100%',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            position: 'relative'
+          }}
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+      </div>
     );
   };
 
@@ -68,13 +82,16 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
           <DialogTitle>Download Chart</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="relative aspect-video w-full bg-gray-100 rounded-lg overflow-hidden">
+          <div 
+            className="relative aspect-video w-full bg-gray-100 rounded-lg overflow-hidden"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
             <div className="w-full h-full p-4">
-              <div className="w-full h-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  {getSvgPreview()}
-                </ResponsiveContainer>
-              </div>
+              {renderPreview()}
             </div>
           </div>
 
