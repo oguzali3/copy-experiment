@@ -155,32 +155,41 @@ export const TopCompanies = () => {
   }, [fetchInitialData]);
 
   const handleSort = useCallback((field: SortField) => {
-    let direction: SortDirection = "desc";
-    
-    if (sortConfig.field === field && sortConfig.direction === "desc") {
-      direction = "asc";
-    }
+    setSortConfig(prevConfig => {
+      const newDirection: SortDirection = 
+        prevConfig.field === field && prevConfig.direction === "desc" ? "asc" : "desc";
 
-    const sortedCompanies = [...companies].sort((a, b) => {
-      if (field === "marketCap") {
-        const valueA = parseFloat(a[field].replace("T", "000").replace("B", ""));
-        const valueB = parseFloat(b[field].replace("T", "000").replace("B", ""));
-        return direction === "asc" ? valueA - valueB : valueB - valueA;
-      } else if (field === "price") {
-        const valueA = parseFloat(a[field]);
-        const valueB = parseFloat(b[field]);
-        return direction === "asc" ? valueA - valueB : valueB - valueA;
-      } else if (field === "change") {
-        const valueA = parseFloat(a[field].replace("%", ""));
-        const valueB = parseFloat(b[field].replace("%", ""));
-        return direction === "asc" ? valueA - valueB : valueB - valueA;
-      }
-      return 0;
+      const sortedCompanies = [...companies].sort((a, b) => {
+        let valueA: number;
+        let valueB: number;
+
+        if (field === "marketCap") {
+          // Convert market cap strings (e.g., "2.5T", "900B") to numbers for comparison
+          valueA = parseFloat(a.marketCap.replace(/[TB]/g, '')) * 
+            (a.marketCap.includes('T') ? 1000 : a.marketCap.includes('B') ? 1 : 0.001);
+          valueB = parseFloat(b.marketCap.replace(/[TB]/g, '')) * 
+            (b.marketCap.includes('T') ? 1000 : b.marketCap.includes('B') ? 1 : 0.001);
+        } else if (field === "price") {
+          valueA = parseFloat(a.price);
+          valueB = parseFloat(b.price);
+        } else {
+          return 0;
+        }
+
+        if (newDirection === "asc") {
+          return valueA - valueB;
+        }
+        return valueB - valueA;
+      });
+
+      setCompanies(sortedCompanies);
+
+      return {
+        field,
+        direction: newDirection,
+      };
     });
-
-    setSortConfig({ field, direction });
-    return sortedCompanies;
-  }, [companies, sortConfig]);
+  }, [companies]);
 
   const handleCompanySelect = async (newCompany: any) => {
     if (!companies.find(c => c.ticker === newCompany.ticker)) {
