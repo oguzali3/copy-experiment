@@ -1,20 +1,32 @@
+
 export const getMetricColor = (index: number): string => {
-  // We'll use the bright blue from the image as the primary color
-  return '#1EAEDB';
+  const colors = [
+    '#1A237E', // Deep Blue
+    '#FB8C00', // Orange
+    '#7E57C2', // Purple
+    '#2E7D32', // Green
+    '#C62828', // Red
+    '#00838F', // Cyan
+    '#EF6C00', // Dark Orange
+    '#4527A0', // Deep Purple
+    '#1565C0', // Blue
+    '#2E7D32'  // Green
+  ];
+  return colors[index % colors.length];
 };
 
 export const formatYAxis = (value: number) => {
-  if (value === 0) return '0';
+  if (value === 0) return '$0';
   if (Math.abs(value) >= 1e9) {
-    return `${(value / 1e9).toFixed(1)}B`;
+    return `$${(value / 1e9).toFixed(1)}B`;
   }
   if (Math.abs(value) >= 1e6) {
-    return `${(value / 1e6).toFixed(1)}M`;
+    return `$${(value / 1e6).toFixed(1)}M`;
   }
   if (Math.abs(value) >= 1e3) {
-    return `${(value / 1e3).toFixed(1)}K`;
+    return `$${(value / 1e3).toFixed(1)}K`;
   }
-  return value.toString();
+  return `$${value}`;
 };
 
 export const calculateCAGR = (startValue: number, endValue: number, years: number) => {

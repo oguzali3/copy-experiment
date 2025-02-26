@@ -1,16 +1,15 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Download } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ResponsiveContainer } from "recharts";
 
 interface ChartDownloadDialogProps {
   onDownload: (options: DownloadOptions) => void;
-  previewRef: React.RefObject<HTMLDivElement>;
 }
 
 export interface DownloadOptions {
@@ -23,7 +22,7 @@ export interface DownloadOptions {
   transparentBackground: boolean;
 }
 
-export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDialogProps) => {
+export const ChartDownloadDialog = ({ onDownload }: ChartDownloadDialogProps) => {
   const [options, setOptions] = useState<DownloadOptions>({
     width: 800,
     height: 567,
@@ -39,43 +38,6 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
     onDownload(options);
   };
 
-  const renderPreview = () => {
-    if (!previewRef.current) return null;
-    
-    const chartContent = previewRef.current.querySelector('.recharts-wrapper');
-    if (!chartContent) return null;
-
-    // Clone the chart content for preview
-    const previewContent = chartContent.cloneNode(true) as HTMLElement;
-    const svg = previewContent.querySelector('svg');
-    if (svg) {
-      svg.setAttribute('preserveAspectRatio', 'none');
-    }
-
-    return (
-      <div 
-        style={{ 
-          width: '100%',
-          height: '100%',
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1rem'
-          }}
-          dangerouslySetInnerHTML={{ __html: previewContent.outerHTML }}
-        />
-      </div>
-    );
-  };
-
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -89,18 +51,6 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
           <DialogTitle>Download Chart</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div 
-            className="relative aspect-video w-full bg-gray-100 rounded-lg overflow-hidden"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '1rem'
-            }}
-          >
-            {renderPreview()}
-          </div>
-
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
