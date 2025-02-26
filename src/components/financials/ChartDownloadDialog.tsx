@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,8 +42,15 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
   const renderPreview = () => {
     if (!previewRef.current) return null;
     
-    const content = previewRef.current.innerHTML;
-    if (!content) return null;
+    const chartContent = previewRef.current.querySelector('.recharts-wrapper');
+    if (!chartContent) return null;
+
+    // Clone the chart content for preview
+    const previewContent = chartContent.cloneNode(true) as HTMLElement;
+    const svg = previewContent.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('preserveAspectRatio', 'none');
+    }
 
     return (
       <div 
@@ -52,18 +58,19 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
           width: '100%',
           height: '100%',
           overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
         }}
       >
         <div
           style={{
             width: '100%',
             height: '100%',
-            position: 'relative'
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
           }}
-          dangerouslySetInnerHTML={{ __html: content }}
+          dangerouslySetInnerHTML={{ __html: previewContent.outerHTML }}
         />
       </div>
     );
@@ -87,12 +94,11 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              padding: '1rem'
             }}
           >
-            <div className="w-full h-full p-4">
-              {renderPreview()}
-            </div>
+            {renderPreview()}
           </div>
 
           <div className="space-y-4">

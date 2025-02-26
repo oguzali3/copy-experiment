@@ -33,21 +33,28 @@ export const MetricChart = ({
 
     try {
       const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'absolute';
+      tempDiv.style.position = 'fixed';
       tempDiv.style.left = '-9999px';
       tempDiv.style.width = `${options.width}px`;
       tempDiv.style.height = `${options.height}px`;
+      tempDiv.style.backgroundColor = options.transparentBackground ? 'transparent' : options.backgroundColor;
       document.body.appendChild(tempDiv);
 
-      const clone = chartContainerRef.current.cloneNode(true) as HTMLDivElement;
-      
+      const chartContent = chartRef.current?.querySelector('.recharts-wrapper');
+      if (!chartContent) return;
+
+      const clone = chartContent.cloneNode(true) as HTMLElement;
       clone.style.width = '100%';
       clone.style.height = '100%';
-      clone.style.backgroundColor = options.transparentBackground ? 'transparent' : options.backgroundColor;
       
-      const chartDiv = clone.querySelector('.recharts-wrapper');
-      if (chartDiv) {
-        chartDiv.setAttribute('style', 'width: 100% !important; height: 100% !important;');
+      clone.style.transform = 'none';
+      clone.style.transition = 'none';
+      
+      const svg = clone.querySelector('svg');
+      if (svg) {
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+        svg.setAttribute('preserveAspectRatio', 'none');
       }
 
       tempDiv.appendChild(clone);
