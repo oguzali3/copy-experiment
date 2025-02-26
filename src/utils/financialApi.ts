@@ -31,22 +31,28 @@ export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: st
 export async function fetchBatchQuotes(symbols: string[]) {
   try {
     console.log('Fetching batch quotes for:', symbols);
-    const { data, error } = await supabase.functions.invoke('fetch-financial-data', {
-      body: { endpoint: 'batch-quote', symbols }
-    });
+    
+    // Fetch quotes individually and combine results
+    const quotes = await Promise.all(
+      symbols.map(symbol => 
+        fetchFinancialData('quote', symbol)
+          .then(data => data[0])
+          .catch(error => {
+            console.error(`Error fetching quote for ${symbol}:`, error);
+            return null;
+          })
+      )
+    );
 
-    if (error) {
-      console.error('Error fetching batch quotes:', error);
-      throw error;
+    // Filter out any failed requests
+    const validQuotes = quotes.filter(quote => quote !== null);
+
+    if (validQuotes.length === 0) {
+      throw new Error('Failed to fetch any quotes');
     }
 
-    if (!data) {
-      console.error('No batch quote data received');
-      throw new Error('No batch quote data received');
-    }
-
-    console.log('Received batch quote data:', data);
-    return data;
+    console.log('Received quotes data:', validQuotes);
+    return validQuotes;
   } catch (error) {
     console.error('Error fetching batch quotes:', error);
     throw error;
