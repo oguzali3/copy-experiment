@@ -6,8 +6,14 @@ import { CompanyTableHeader } from "./CompanyTableHeader";
 import { CompanyTableRow } from "./CompanyTableRow";
 import { fetchFinancialData, fetchBatchQuotes, formatMarketCap } from "@/utils/financialApi";
 import { toast } from "sonner";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Info } from "lucide-react";
 import { Button } from "./ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type Company = {
   rank: number;
@@ -234,24 +240,44 @@ export const TopCompanies = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-[#111827]">Featured Companies</h2>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-[#111827]">Featured Companies</h2>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Track and analyze top companies in real-time</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="transition-all duration-300 hover:shadow-md"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 transition-all duration-700 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Monitor market performance and key metrics for leading companies
+        </p>
       </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <MetricsSearch onMetricSelect={handleMetricSelect} />
         <CompanySearch onCompanySelect={handleCompanySelect} />
       </div>
-      <Card className="overflow-hidden rounded-none">
+
+      <Card className="overflow-hidden rounded-lg border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md">
         <div className="overflow-x-auto">
           <table className="w-full">
             <CompanyTableHeader sortConfig={sortConfig} onSort={handleSort} />
@@ -272,6 +298,15 @@ export const TopCompanies = () => {
           </table>
         </div>
       </Card>
+
+      {companies.length === 0 && (
+        <div className="flex flex-col items-center justify-center p-8 text-center">
+          <p className="text-lg font-medium text-gray-900">No companies added yet</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Use the search above to add companies to your watchlist
+          </p>
+        </div>
+      )}
     </div>
   );
 };
