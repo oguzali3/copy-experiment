@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "./ui/card";
 import { TimeRangePanel } from "./financials/TimeRangePanel";
 import { TimeFrameSelector } from "./financials/TimeFrameSelector";
@@ -19,8 +19,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   
   const { financialData, isLoading: isIncomeStatementLoading } = useFinancialData(ticker, period);
   const { filteredData: balanceSheetData, isLoading: isBalanceSheetLoading } = useBalanceSheetData(ticker, period);
-  const { cashFlowData: cashFlowData, isLoading: isCashFlowLoading } = useCashFlowData(ticker, period);
-
+  const { cashFlowData, isLoading: isCashFlowLoading } = useCashFlowData(ticker, period);
 
   const {
     startDate,
@@ -39,6 +38,43 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
   const isLoading = isIncomeStatementLoading || isBalanceSheetLoading || isCashFlowLoading;
 
+  // Store transformed data
+  const [metricData, setMetricData] = useState<any[]>([]);
+  
+  // Transform data when inputs change
+  useEffect(() => {
+    if (isLoading) return;
+    
+    // Log the raw data for debugging
+    console.log(`Income Statement Data:`, financialData);
+    console.log(`Balance Sheet Data:`, balanceSheetData);
+    console.log(`Cash Flow Data:`, cashFlowData);
+    
+    // Transform the data using our updated function
+    const transformedData = transformFinancialData(
+      financialData,
+      balanceSheetData,
+      cashFlowData,
+      selectedMetrics,
+      timePeriods,
+      sliderValue,
+      ticker,
+      timeFrame
+    );
+    
+    setMetricData(transformedData);
+  }, [
+    financialData, 
+    balanceSheetData, 
+    cashFlowData, 
+    selectedMetrics, 
+    timePeriods, 
+    sliderValue, 
+    ticker, 
+    timeFrame,
+    isLoading
+  ]);
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -51,22 +87,6 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       </div>
     );
   }
-  console.log(`metricdata income `, financialData);
-  console.log(`metricdata balance `, balanceSheetData);
-  console.log(`metricdata cashflow `, cashFlowData);
-  // Ensure cashFlowData is properly formatted before transformation
-  const formattedCashFlowData = Array.isArray(cashFlowData) ? cashFlowData : [];
-
-  const metricData = transformFinancialData(
-    financialData,
-    balanceSheetData,
-    cashFlowData,
-    selectedMetrics,
-    timePeriods,
-    sliderValue,
-    ticker,
-    timeFrame
-  );
 
   return (
     <div className="space-y-6">
@@ -82,7 +102,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       
       <Card className="p-6">
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center flex-wrap gap-2">
             <h2 className="text-lg font-semibold">Financial Statements</h2>
             <TimeFrameSelector 
               timeFrame={timeFrame}

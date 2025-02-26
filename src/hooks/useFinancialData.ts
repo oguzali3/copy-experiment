@@ -20,25 +20,29 @@ export const useFinancialData = (ticker: string, period: 'annual' | 'quarter' = 
         const data = await response.json();
         console.log(`Received ${period} income statement data from local API:`, data);
 
-        // Transform the data to match the expected format
-        const transformedData = data.map((item: any) => ({
-          period: item.period === 'TTM' ? 'TTM' : new Date(item.date).getFullYear().toString(),
-          revenue: item.revenue?.toString() || "0",
-          revenueGrowth: (((item.revenue - item.previousRevenue) / Math.abs(item.previousRevenue)) * 100)?.toString() || "0",
-          costOfRevenue: item.costOfRevenue?.toString() || "0",
-          grossProfit: item.grossProfit?.toString() || "0",
-          operatingExpenses: item.operatingExpenses?.toString() || "0",
-          operatingIncome: item.operatingIncome?.toString() || "0",
-          netIncome: item.netIncome?.toString() || "0",
-          ebitda: item.EBITDA?.toString() || "0",  // Note the capitalization from your DB
-        }));
-
-        // Return in the same structure as before
-        return {
-          [ticker]: {
-            [period]: transformedData,
+        // Check if data is already an array
+        if (Array.isArray(data)) {
+          return data;
+        }
+        
+        // If it has a nested structure, extract the array
+        if (typeof data === 'object' && data !== null) {
+          // Check if it has ticker.period structure
+          if (data[ticker] && data[ticker][mappedPeriod] && Array.isArray(data[ticker][mappedPeriod])) {
+            console.log(`Normalizing nested income statement data for ${ticker}`);
+            return data[ticker][mappedPeriod];
           }
-        };
+          
+          // If it has just period structure
+          const periods = Object.keys(data).filter(key => ['annual', 'quarter', 'ttm'].includes(key));
+          if (periods.length > 0 && Array.isArray(data[periods[0]])) {
+            console.log(`Normalizing income statement data by period key: ${periods[0]}`);
+            return data[periods[0]];
+          }
+        }
+        
+        console.warn("Unknown income statement data format:", data);
+        return [];
       } catch (error) {
         console.error('Error fetching from local API:', error);
         throw error;
@@ -47,5 +51,5 @@ export const useFinancialData = (ticker: string, period: 'annual' | 'quarter' = 
     enabled: !!ticker,
   });
 
-  return { financialData, isLoading };
+  return { financialData: financialData || [], isLoading };
 };

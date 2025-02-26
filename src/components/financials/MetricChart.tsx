@@ -1,9 +1,9 @@
+import React from 'react';
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { getMetricColor, formatYAxis } from './chartUtils';
 import { ChartTooltip } from './ChartTooltip';
 import { Button } from "@/components/ui/button";
 import { BarChart3, LineChart } from "lucide-react";
-import { getMetricDisplayName } from '@/utils/metricDefinitions';
 
 interface MetricChartProps {
   data: any[];
@@ -30,32 +30,137 @@ export const MetricChart = ({
     );
   }
 
-  // Sort data chronologically, handling both quarterly and annual formats
-  const sortedData = [...data].sort((a, b) => {
-    if (a.period === 'TTM') return 1;
-    if (b.period === 'TTM') return -1;
-    
-    // Handle quarterly format (Q1 2023, Q2 2023, etc.)
-    if (a.period.includes('Q') && b.period.includes('Q')) {
-      const [aQ, aYear] = a.period.split(' ');
-      const [bQ, bYear] = b.period.split(' ');
-      
-      if (aYear !== bYear) {
-        return parseInt(aYear) - parseInt(bYear);
-      }
-      return parseInt(aQ.slice(1)) - parseInt(bQ.slice(1));
-    }
-    
-    // Handle annual format
-    return parseInt(a.period) - parseInt(b.period);
+  // Filter out data points that don't have any values for the selected metrics
+  const filteredData = data.filter(item => {
+    return metrics.some(metric => {
+      return item[metric] !== undefined && item[metric] !== null;
+    });
   });
 
-  console.log('Sorted chart data:', sortedData);
+  if (filteredData.length === 0) {
+    return (
+      <div className="w-full bg-white p-4 rounded-lg flex items-center justify-center h-[300px]">
+        <p className="text-gray-500">No data available for the selected metrics</p>
+      </div>
+    );
+  }
+
+  console.log('Chart data after filtering:', filteredData);
+  console.log('Selected metrics:', metrics);
+  console.log('Metric types:', metricTypes);
+
+  // Helper function to get display name for a metric
+  const getMetricDisplayName = (metricId: string): string => {
+    // Map of common metric IDs to display names
+    const metricNames: Record<string, string> = {
+      'revenue': 'Revenue',
+      'netIncome': 'Net Income',
+      'grossProfit': 'Gross Profit',
+      'operatingIncome': 'Operating Income',
+      'ebitda': 'EBITDA',
+      'eps': 'EPS',
+      'totalAssets': 'Total Assets',
+      'totalLiabilities': 'Total Liabilities',
+      'totalEquity': 'Total Equity',
+      'cashAndCashEquivalents': 'Cash & Equivalents',
+      'totalDebt': 'Total Debt',
+      'netDebt': 'Net Debt',
+      'operatingCashFlow': 'Operating Cash Flow',
+      'freeCashFlow': 'Free Cash Flow',
+      'capitalExpenditure': 'Capital Expenditure',
+      'returnOnAssets': 'Return on Assets (ROA)',
+      'returnOnEquity': 'Return on Equity (ROE)',
+      'profitMargin': 'Profit Margin',
+      'operatingMargin': 'Operating Margin',
+      'currentRatio': 'Current Ratio',
+      'debtToEquity': 'Debt to Equity',
+      'debtToAssets': 'Debt to Assets'
+    };
+    
+    // Return mapped name if exists, otherwise format the ID
+    return metricNames[metricId] || formatMetricId(metricId);
+  };
+  
+  // Helper function to format metric ID into a display name
+  const formatMetricId = (id: string): string => {
+    // Replace camelCase with spaces
+    let label = id.replace(/([A-Z])/g, ' $1').trim();
+    
+    // Capitalize first letter of each word
+    label = label.split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+    
+    // Handle common acronyms
+    return label
+      .replace(/Ebit/g, 'EBIT')
+      .replace(/Ebitda/g, 'EBITDA')
+      .replace(/Eps/g, 'EPS')
+      .replace(/Roa/g, 'ROA')
+      .replace(/Roe/g, 'ROE');
+  };
+
+  // Calculate growth rates and CAGR for each metric
+  const calculateGrowthRates = (metricName: string) => {
+    // Filter out data points where this metric has a value
+    const metricData = filteredData
+      .filter(item => item[metricName] !== undefined && item[metricName] !== null)
+      .sort((a, b) => {
+        // Sort by period (newest last for calculation)
+        if (a.period === 'TTM') return -1;
+        if (b.period === 'TTM') return 1;
+        
+        // Handle quarterly format
+        if (a.period?.includes('Q') && b.period?.includes('Q')) {
+          const [aQ, aYear] = a.period.split(' ');
+          const [bQ, bYear] = b.period.split(' ');
+          
+          if (aYear !== bYear) {
+            return parseInt(aYear) - parseInt(bYear);
+          }
+          return parseInt(aQ.slice(1)) - parseInt(bQ.slice(1));
+        }
+        
+        // Handle annual format
+        return parseInt(a.period) - parseInt(b.period);
+      });
+    
+    if (metricData.length < 2) {
+      return { totalChange: 'N/A', cagr: 'N/A' };
+    }
+    
+    try {
+      const firstValue = metricData[0][metricName];
+      const lastValue = metricData[metricData.length - 1][metricName];
+      
+      if (firstValue === 0 || !firstValue || !lastValue) {
+        return { totalChange: 'N/A', cagr: 'N/A' };
+      }
+      
+      // Calculate total change
+      const totalChange = ((lastValue - firstValue) / Math.abs(firstValue)) * 100;
+      
+      // Calculate CAGR
+      const periods = metricData.length - 1;
+      const years = periods; // Adjust based on period type if needed
+      const cagr = years > 0 && firstValue > 0 && lastValue > 0
+        ? (Math.pow(lastValue / firstValue, 1 / years) - 1) * 100
+        : null;
+      
+      return {
+        totalChange: isNaN(totalChange) ? 'N/A' : `${totalChange.toFixed(2)}%`,
+        cagr: cagr === null || isNaN(cagr) ? 'N/A' : `${cagr.toFixed(2)}%`
+      };
+    } catch (error) {
+      console.error(`Error calculating growth rates for ${metricName}:`, error);
+      return { totalChange: 'N/A', cagr: 'N/A' };
+    }
+  };
 
   return (
     <div className="w-full bg-white p-4 rounded-lg space-y-4">
       <div className="flex flex-wrap gap-4 items-center justify-between">
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           {metrics.map((metric) => (
             <div key={metric} className="flex items-center gap-2">
               <div 
@@ -90,7 +195,7 @@ export const MetricChart = ({
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
-            data={sortedData}
+            data={filteredData}
             margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
@@ -102,8 +207,8 @@ export const MetricChart = ({
               interval={0}
               angle={-45}
               textAnchor="end"
-              height={20}
-              dy={5}
+              height={50}
+              dy={20}
             />
             <YAxis 
               tickFormatter={formatYAxis}
@@ -125,8 +230,9 @@ export const MetricChart = ({
                     dataKey={metric}
                     stroke={color}
                     name={displayName}
-                    dot={false}
+                    dot={{ fill: color, r: 4 }}
                     strokeWidth={2}
+                    connectNulls={true}
                   />
                 );
               }
@@ -148,15 +254,8 @@ export const MetricChart = ({
       <div className="mt-4 border-t pt-4">
         <div className="flex flex-col gap-2">
           {metrics.map((metric, index) => {
-            // Calculate growth rates
-            const firstValue = sortedData[sortedData.length - 1][metric];
-            const lastValue = sortedData[0][metric];
-            const totalChange = ((lastValue - firstValue) / Math.abs(firstValue)) * 100;
-            const periods = sortedData.length - 1;
-            const cagr = periods > 0 ? 
-              (Math.pow(lastValue / firstValue, 1 / periods) - 1) * 100 : 
-              0;
-
+            const { totalChange, cagr } = calculateGrowthRates(metric);
+            
             return (
               <div key={metric} className="flex items-center gap-3">
                 <div 
@@ -165,8 +264,8 @@ export const MetricChart = ({
                 />
                 <span className="text-gray-900 font-medium">
                   {ticker} - {getMetricDisplayName(metric)} {' '}
-                  (Total Change: {totalChange.toFixed(2)}%) {' '}
-                  {periods > 0 && `(CAGR: ${cagr.toFixed(2)}%)`}
+                  (Total Change: {totalChange}) {' '}
+                  (CAGR: {cagr})
                 </span>
               </div>
             );
