@@ -208,7 +208,24 @@ export const TopCompanies = () => {
           setCompanies(prev => {
             const newCompanies = [...prev, formattedCompany];
             if (sortConfig.field) {
-              return handleSort(sortConfig.field);
+              return newCompanies.sort((a, b) => {
+                let valueA: number;
+                let valueB: number;
+
+                if (sortConfig.field === "marketCap") {
+                  valueA = parseFloat(a.marketCap.replace(/[TB]/g, '')) * 
+                    (a.marketCap.includes('T') ? 1000 : a.marketCap.includes('B') ? 1 : 0.001);
+                  valueB = parseFloat(b.marketCap.replace(/[TB]/g, '')) * 
+                    (b.marketCap.includes('T') ? 1000 : b.marketCap.includes('B') ? 1 : 0.001);
+                } else if (sortConfig.field === "price") {
+                  valueA = parseFloat(a.price);
+                  valueB = parseFloat(b.price);
+                } else {
+                  return 0;
+                }
+
+                return sortConfig.direction === "asc" ? valueA - valueB : valueB - valueA;
+              });
             }
             return newCompanies;
           });
