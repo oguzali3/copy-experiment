@@ -1,3 +1,4 @@
+// src/pages/SignIn.tsx
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -5,54 +6,39 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { supabase } from "@/integrations/supabase/client";
-import { useSessionContext } from '@supabase/auth-helpers-react';
+import { useAuth } from "@/contexts/AuthContext";
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const { session, isLoading } = useSessionContext();
+  const { isAuthenticated, isLoading, signInWithEmail, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
-      if (currentSession) {
-        navigate("/dashboard");
-      }
-    });
-
-    // Check for existing session
-    if (session) {
+    // Redirect if already authenticated
+    if (isAuthenticated) {
       navigate("/dashboard");
     }
-
-    // Cleanup subscription
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [session, navigate]);
+  }, [isAuthenticated, navigate]);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast.error("Please enter both email and password");
+      return;
+    }
+    
     setSigningIn(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (error) {
-        toast.error(error.message);
-      } else if (data?.user) {
-        toast.success("Signed in successfully");
-        navigate("/dashboard");
-      }
-    } catch (error) {
-      toast.error("An unexpected error occurred");
-      console.error("Error:", error);
+      await signInWithEmail(email, password);
+      toast.success("Signed in successfully");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      toast.error(error.message || "Failed to sign in");
+      console.error("Sign in error:", error);
     } finally {
       setSigningIn(false);
     }
@@ -60,25 +46,21 @@ const SignIn = () => {
 
   const handleGoogleSignIn = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`
-        }
-      });
-      
-      if (error) {
-        toast.error("Error signing in with Google");
-        console.error("Error:", error.message);
-      }
-    } catch (error) {
-      toast.error("An unexpected error occurred");
-      console.error("Error:", error);
+      await signInWithGoogle();
+      // The redirect will be handled by the provider
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      toast.error(error.message || "Error signing in with Google");
+      console.error("Google sign in error:", error);
     }
   };
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return (

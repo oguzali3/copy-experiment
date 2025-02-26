@@ -7,10 +7,14 @@ import { VisibilitySettings } from "@/components/settings/VisibilitySettings";
 import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
 import { BillingSettings } from "@/components/settings/BillingSettings";
 import { HelpSettings } from "@/components/settings/HelpSettings";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Initialize dark mode state based on system preference or previous setting
   useEffect(() => {
@@ -27,31 +31,42 @@ const Settings = () => {
     }
   };
   
-  const handleLogout = () => {
-    navigate("/");
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await signOut();
+      toast.success("You have been logged out successfully");
+      // The navigation to home page will be handled in the AuthContext's signOut method
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      console.error("Logout error:", error);
+      toast.error(error.message || "There was a problem logging out");
+      setIsLoggingOut(false);
+    }
   };
 
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Account Settings</h1>
-
+      
       <div className="space-y-8">
         <UserSettings />
         <AppearanceSettings 
-          darkMode={darkMode} 
-          onDarkModeToggle={handleDarkModeToggle} 
+          darkMode={darkMode}
+          onDarkModeToggle={handleDarkModeToggle}
         />
         <VisibilitySettings />
         <SubscriptionSettings />
         <BillingSettings />
         <HelpSettings />
-
-        <Button 
-          variant="destructive" 
-          className="w-full" 
+        
+        <Button
+          variant="destructive"
+          className="w-full"
           onClick={handleLogout}
+          disabled={isLoggingOut}
         >
-          LOGOUT
+          {isLoggingOut ? "LOGGING OUT..." : "LOGOUT"}
         </Button>
       </div>
     </div>

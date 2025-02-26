@@ -1,18 +1,22 @@
+// src/components/auth/SignUpForm.tsx
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { validateEmail, validatePassword } from "@/utils/validation";
+import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "react-router-dom";
 
 interface SignUpFormProps {
   onGoogleSignUp: () => Promise<void>;
 }
 
 export const SignUpForm = ({ onGoogleSignUp }: SignUpFormProps) => {
+  const { signUpWithEmail } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [signingUp, setSigningUp] = useState(false);
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
@@ -37,21 +41,19 @@ export const SignUpForm = ({ onGoogleSignUp }: SignUpFormProps) => {
       return;
     }
 
+    if (!displayName.trim()) {
+      toast.error("Please enter a display name");
+      return;
+    }
+
     setSigningUp(true);
     
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Sign up successful! Please check your email to verify your account.");
-      }
-    } catch (error) {
-      toast.error("An unexpected error occurred");
+      await signUpWithEmail(email, password, displayName);
+      toast.success("Sign up successful!");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      toast.error(error.message || "An unexpected error occurred");
       console.error("Error:", error);
     } finally {
       setSigningUp(false);
@@ -120,6 +122,21 @@ export const SignUpForm = ({ onGoogleSignUp }: SignUpFormProps) => {
           </div>
 
           <div>
+            <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
+              Display Name
+            </label>
+            <Input
+              id="displayName"
+              type="text"
+              required
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="mt-1"
+              placeholder="Enter your display name"
+            />
+          </div>
+
+          <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password
             </label>
@@ -157,6 +174,13 @@ export const SignUpForm = ({ onGoogleSignUp }: SignUpFormProps) => {
         >
           {signingUp ? "Signing up..." : "Sign up with Email"}
         </Button>
+
+        <p className="text-center text-sm text-gray-600">
+          Already have an account?{" "}
+          <Link to="/signin" className="text-[#077dfa] hover:underline">
+            Sign in
+          </Link>
+        </p>
       </form>
     </div>
   );

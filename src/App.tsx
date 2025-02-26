@@ -1,12 +1,14 @@
+// src/App.tsx
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { SessionContextProvider } from '@supabase/auth-helpers-react';
-import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ApolloProvider } from "@apollo/client";
+import apolloClient from "./integrations/apollo/apolloClient";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -18,9 +20,8 @@ import Screening from "./pages/Screening";
 import Watchlists from "./pages/Watchlists";
 import Portfolio from "./pages/Portfolio";
 import Settings from "./pages/Settings";
-import { useState, useEffect } from 'react';
-import { ApolloProvider } from "@apollo/client";
-import client from "./integrations/apollo/apolloClient";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import SsoCallback from "./pages/SsoCallback";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,57 +33,42 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  const [initialSession, setInitialSession] = useState(null);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setInitialSession(session);
-    });
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
-      <SessionContextProvider 
-        supabaseClient={supabase}
-        initialSession={initialSession}
-      >
-        <TooltipProvider>
-          <SidebarProvider>
-            <div className="min-h-screen flex w-full dark:bg-[#1c1c20] dark:text-white">
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/signin" element={<SignIn />} />
-                  <Route path="/signup" element={<SignUp />} />
-                  
-                  {/* Dashboard Layout Routes */}
-                  <Route element={<DashboardLayout />}>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/analysis" element={<Analysis />} />
-                    <Route path="/company/:ticker/news" element={<CompanyNews />} />
-                    <Route path="/charting" element={<Charting />} />
-                    {/* ApolloProvider for Screening */}
-                    <Route
-                      path="/screening"
-                      element={
-                        <ApolloProvider client={client}>
-                          <Screening />
-                        </ApolloProvider>
-                      }
-                    />                    <Route path="/watchlists" element={<Watchlists />} />
-                    <Route path="/portfolio" element={<Portfolio />} />
-                    <Route path="/settings" element={<Settings />} />
-                    {/* Catch all route */}
-                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                  </Route>
-                </Routes>
-              </BrowserRouter>
-            </div>
-          </SidebarProvider>
-        </TooltipProvider>
-      </SessionContextProvider>
+      <ApolloProvider client={apolloClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <TooltipProvider>
+              <SidebarProvider>
+                <div className="min-h-screen flex w-full dark:bg-[#1c1c20] dark:text-white">
+                  <Toaster />
+                  <Sonner />
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/signin" element={<SignIn />} />
+                    <Route path="/signup" element={<SignUp />} />
+                    <Route path="/auth/sso/callback" element={<SsoCallback />} />
+                    
+                    {/* Protected Dashboard Layout Routes */}
+                    <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/analysis" element={<Analysis />} />
+                      <Route path="/company/:ticker/news" element={<CompanyNews />} />
+                      <Route path="/charting" element={<Charting />} />
+                      <Route path="/screening" element={<Screening />} />
+                      <Route path="/watchlists" element={<Watchlists />} />
+                      <Route path="/portfolio" element={<Portfolio />} />
+                      <Route path="/settings" element={<Settings />} />
+                      {/* Catch all route */}
+                      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                    </Route>
+                  </Routes>
+                </div>
+              </SidebarProvider>
+            </TooltipProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </ApolloProvider>
     </QueryClientProvider>
   );
 };

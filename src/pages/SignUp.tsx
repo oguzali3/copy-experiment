@@ -1,43 +1,40 @@
+// src/pages/SignUp.tsx
 import { useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { supabase } from "@/integrations/supabase/client";
-import { useSessionContext } from '@supabase/auth-helpers-react';
+import { useAuth } from "@/contexts/AuthContext";
 import { SignUpForm } from "@/components/auth/SignUpForm";
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const { session, isLoading } = useSessionContext();
+  const { isAuthenticated, isLoading, signInWithGoogle } = useAuth();
 
   useEffect(() => {
-    if (session) {
+    // Redirect if already authenticated
+    if (isAuthenticated) {
       navigate("/dashboard");
     }
-  }, [session, navigate]);
+  }, [isAuthenticated, navigate]);
 
   const handleGoogleSignUp = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/dashboard`
-        }
-      });
-      
-      if (error) {
-        toast.error("Error signing up with Google");
-        console.error("Error:", error.message);
-      }
-    } catch (error) {
-      toast.error("An unexpected error occurred");
-      console.error("Error:", error);
+      await signInWithGoogle();
+      // The redirect will be handled by the provider
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      toast.error(error.message || "Error signing up with Google");
+      console.error("Google sign up error:", error);
     }
   };
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return (
