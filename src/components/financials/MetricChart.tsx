@@ -1,4 +1,3 @@
-
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { getMetricColor, formatYAxis } from './chartUtils';
 import { ChartTooltip } from './ChartTooltip';
@@ -6,6 +5,8 @@ import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { DraggableMetricItem } from './DraggableMetricItem';
 import { getMetricDisplayName } from '@/utils/metricDefinitions';
+import { ChartDownloadDialog, DownloadOptions } from './ChartDownloadDialog';
+import { RefObject, useRef } from 'react';
 
 interface MetricChartProps {
   data: any[];
@@ -24,6 +25,62 @@ export const MetricChart = ({
   onMetricTypeChange,
   onMetricsReorder
 }: MetricChartProps) => {
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  const handleDownload = async (options: DownloadOptions) => {
+    if (!chartRef.current) return;
+
+    try {
+      const chartSvg = chartRef.current.querySelector('svg');
+      if (!chartSvg) return;
+
+      const svgCopy = chartSvg.cloneNode(true) as SVGElement;
+      
+      svgCopy.setAttribute('width', options.width.toString());
+      svgCopy.setAttribute('height', options.height.toString());
+      
+      if (!options.transparentBackground) {
+        svgCopy.style.backgroundColor = options.backgroundColor;
+      }
+
+      const svgString = new XMLSerializer().serializeToString(svgCopy);
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
+      const svgUrl = URL.createObjectURL(svgBlob);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = options.width;
+      canvas.height = options.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const img = new Image();
+      img.onload = async () => {
+        if (!options.transparentBackground) {
+          ctx.fillStyle = options.backgroundColor;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        ctx.drawImage(img, 0, 0, options.width, options.height);
+
+        const mimeType = options.format === 'PNG' ? 'image/png' : 'image/jpeg';
+        const blob = await new Promise<Blob>((resolve) => canvas.toBlob((blob) => resolve(blob!), mimeType));
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${ticker}-chart.${options.format.toLowerCase()}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(svgUrl);
+      };
+      img.src = svgUrl;
+    } catch (error) {
+      console.error('Error downloading chart:', error);
+    }
+  };
+
   if (!data?.length || !metrics?.length) {
     return (
       <div className="w-full bg-white p-4 rounded-lg flex items-center justify-center h-[300px] border border-gray-200">
@@ -49,7 +106,6 @@ export const MetricChart = ({
     }
   };
 
-  // Sort data chronologically
   const sortedData = [...data].sort((a, b) => {
     if (a.period === 'TTM') return 1;
     if (b.period === 'TTM') return -1;
@@ -70,23 +126,26 @@ export const MetricChart = ({
   return (
     <div className="space-y-4">
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={metrics} strategy={verticalListSortingStrategy}>
-          <div className="space-y-1">
-            {metrics.map((metric, index) => (
-              <DraggableMetricItem
-                key={metric}
-                metric={metric}
-                index={index}
-                type={metricTypes[metric]}
-                onTypeChange={(type) => onMetricTypeChange(metric, type)}
-              />
-            ))}
-          </div>
-        </SortableContext>
+        <div className="flex justify-between items-start">
+          <SortableContext items={metrics} strategy={verticalListSortingStrategy}>
+            <div className="space-y-1">
+              {metrics.map((metric, index) => (
+                <DraggableMetricItem
+                  key={metric}
+                  metric={metric}
+                  index={index}
+                  type={metricTypes[metric]}
+                  onTypeChange={(type) => onMetricTypeChange(metric, type)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+          <ChartDownloadDialog onDownload={handleDownload} />
+        </div>
       </DndContext>
 
       <div className="bg-white p-4 rounded-lg border border-gray-200">
-        <div className="h-[300px]">
+        <div className="h-[300px]" ref={chartRef}>
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={sortedData}
