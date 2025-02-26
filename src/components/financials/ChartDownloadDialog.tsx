@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,21 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
     onDownload(options);
   };
 
+  const getSvgPreview = () => {
+    if (!previewRef.current) return null;
+    const svg = previewRef.current.querySelector('svg');
+    if (!svg) return null;
+
+    // Create a div element and set the innerHTML to the SVG string
+    const container = document.createElement('div');
+    container.innerHTML = svg.outerHTML;
+
+    // Return the SVG element as a string that can be safely rendered
+    return (
+      <div dangerouslySetInnerHTML={{ __html: container.innerHTML }} />
+    );
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -54,13 +70,11 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="relative aspect-video w-full bg-gray-100 rounded-lg overflow-hidden">
             <div className="w-full h-full p-4">
-              {previewRef.current && (
-                <div className="w-full h-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    {previewRef.current.querySelector('svg')?.cloneNode(true)}
-                  </ResponsiveContainer>
-                </div>
-              )}
+              <div className="w-full h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  {getSvgPreview()}
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
 
