@@ -90,7 +90,7 @@ export const MetricChart = ({
 
   if (!data?.length || !metrics?.length) {
     return (
-      <div className="w-full bg-white p-4 rounded-lg flex items-center justify-center h-[300px]">
+      <div className="w-full bg-white flex items-center justify-center h-[300px]">
         <p className="text-gray-500">
           {!metrics?.length ? 'Select metrics to visualize' : 'No data available'}
         </p>
@@ -131,7 +131,7 @@ export const MetricChart = ({
   });
 
   return (
-    <div className="space-y-4 bg-white p-6 rounded-lg shadow-sm">
+    <div className="bg-white">
       <div className="h-[500px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
@@ -199,7 +199,7 @@ export const MetricChart = ({
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-4 border-t border-gray-200 pt-4">
+      <div className="mt-4 border-t border-gray-200 pt-4 px-4 sm:px-6 md:px-8 lg:px-12">
         <div className="flex flex-col gap-2">
           {metrics.map((metric, index) => {
             const firstValue = sortedData[sortedData.length - 1][metric];

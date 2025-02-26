@@ -43,9 +43,9 @@ export const MetricsChartSection = ({
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 md:px-8 lg:px-12">
+    <div className="w-full">
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <div className="flex justify-between items-start mb-4">
+        <div className="flex justify-between items-start mb-4 px-4 sm:px-6 md:px-8 lg:px-12">
           <SortableContext items={selectedMetrics} strategy={verticalListSortingStrategy}>
             <div className="space-y-1">
               {selectedMetrics.map((metric, index) => (
