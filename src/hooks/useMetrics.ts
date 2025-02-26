@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { INCOME_STATEMENT_METRICS, calculateMetricValue } from "@/utils/metricDefinitions";
 
@@ -15,6 +16,10 @@ export const useMetrics = (ticker: string) => {
       ...prev,
       [metric]: type
     }));
+  };
+
+  const handleMetricsReorder = (newOrder: string[]) => {
+    setSelectedMetrics(newOrder);
   };
 
   const getMetricData = (combinedData: any[], timePeriods: string[], sliderValue: number[]) => {
@@ -56,6 +61,7 @@ export const useMetrics = (ticker: string) => {
     setSelectedMetrics,
     metricTypes,
     handleMetricTypeChange,
+    handleMetricsReorder,
     getMetricData
   };
 };

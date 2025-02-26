@@ -1,6 +1,7 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
-export type FinancialEndpoint = 'quote' | 'profile' | 'income-statement' | 'balance-sheet-statement' | 'cash-flow-statement';
+export type FinancialEndpoint = 'quote' | 'profile' | 'income-statement' | 'balance-sheet-statement' | 'cash-flow-statement' | 'batch-quote';
 
 export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: string, period: 'annual' | 'quarter' = 'annual') {
   try {
@@ -26,3 +27,46 @@ export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: st
     throw error;
   }
 }
+
+export async function fetchBatchQuotes(symbols: string[]) {
+  try {
+    console.log('Fetching batch quotes for:', symbols);
+    
+    // Fetch quotes individually and combine results
+    const quotes = await Promise.all(
+      symbols.map(symbol => 
+        fetchFinancialData('quote', symbol)
+          .then(data => data[0])
+          .catch(error => {
+            console.error(`Error fetching quote for ${symbol}:`, error);
+            return null;
+          })
+      )
+    );
+
+    // Filter out any failed requests
+    const validQuotes = quotes.filter(quote => quote !== null);
+
+    if (validQuotes.length === 0) {
+      throw new Error('Failed to fetch any quotes');
+    }
+
+    console.log('Received quotes data:', validQuotes);
+    return validQuotes;
+  } catch (error) {
+    console.error('Error fetching batch quotes:', error);
+    throw error;
+  }
+}
+
+export const formatMarketCap = (marketCap: number): string => {
+  if (marketCap >= 1e12) {
+    return `${(marketCap / 1e12).toFixed(2)}T`;
+  } else if (marketCap >= 1e9) {
+    return `${(marketCap / 1e9).toFixed(2)}B`;
+  } else if (marketCap >= 1e6) {
+    return `${(marketCap / 1e6).toFixed(2)}M`;
+  } else {
+    return `${(marketCap).toFixed(2)}`;
+  }
+};

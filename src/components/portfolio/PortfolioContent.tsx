@@ -9,15 +9,23 @@ import { Portfolio, Stock } from "./types";
 import { updatePortfolioStock, calculatePortfolioMetrics } from "./utils/portfolioOperations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const PortfolioContent = () => {
+interface PortfolioContentProps {
+  portfolioId: string;
+}
+
+const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
-  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(portfolioId);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     fetchPortfolios();
   }, []);
+
+  useEffect(() => {
+    setSelectedPortfolioId(portfolioId);
+  }, [portfolioId]);
 
   const fetchPortfolios = async () => {
     setLoading(true);

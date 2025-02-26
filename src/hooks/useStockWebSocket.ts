@@ -1,49 +1,44 @@
+
 import { useState, useEffect } from 'react';
 import { getWebSocket } from '@/services/websocket';
 
-export const useStockWebSocket = (ticker?: string) => {
+export const useStockWebSocket = (symbol?: string) => {
   const [price, setPrice] = useState<number | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   useEffect(() => {
-    if (!ticker) return;
+    if (!symbol) return;
 
-    console.log(`Setting up WebSocket for ${ticker}`);
+    let isSubscribed = true;
+    let cleanup: (() => void) | undefined;
 
-    const handleUpdate = (data: any) => {
-      console.log(`Received WebSocket data for ${ticker}:`, data);
-      // Update price based on last trade price or latest quote
-      const newPrice = data.lp || data.ap;
-      if (newPrice) {
-        console.log(`Updating price for ${ticker} from ${price} to ${newPrice}`);
-        setPrice(newPrice);
-        setLastUpdate(new Date(data.t));
+    const handlePrice = (data: any) => {
+      if (!isSubscribed) return;
+      if (data.lp) {
+        setPrice(data.lp);
       }
     };
 
-    let isSubscribed = true;
+    const setup = async () => {
+      try {
+        const ws = await getWebSocket();
+        if (!isSubscribed) return;
 
-    getWebSocket()
-      .then(ws => {
-        if (isSubscribed) {
-          console.log(`Subscribing to ${ticker} WebSocket updates`);
-          ws.subscribe(ticker, handleUpdate);
-        }
-        return () => {
-          if (isSubscribed) {
-            console.log(`Unsubscribing from ${ticker} WebSocket updates`);
-            ws.unsubscribe(ticker, handleUpdate);
-          }
+        ws.subscribe(symbol, handlePrice);
+        cleanup = () => {
+          ws.unsubscribe(symbol, handlePrice);
         };
-      })
-      .catch(error => {
-        console.error('Failed to initialize WebSocket:', error);
-      });
+      } catch (error) {
+        console.error('WebSocket setup failed:', error);
+      }
+    };
+
+    setup();
 
     return () => {
       isSubscribed = false;
+      if (cleanup) cleanup();
     };
-  }, [ticker]);
+  }, [symbol]);
 
-  return { price, lastUpdate };
+  return { price };
 };

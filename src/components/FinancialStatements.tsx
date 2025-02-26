@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card } from "./ui/card";
 import { TimeRangePanel } from "./financials/TimeRangePanel";
@@ -34,6 +35,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     setSelectedMetrics,
     metricTypes,
     handleMetricTypeChange,
+    handleMetricsReorder,
   } = useMetrics(ticker);
 
   const isLoading = isIncomeStatementLoading || isBalanceSheetLoading || isCashFlowLoading;
@@ -74,6 +76,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
           ticker={ticker}
           metricTypes={metricTypes}
           onMetricTypeChange={handleMetricTypeChange}
+          onMetricsReorder={handleMetricsReorder}
         />
       )}
       

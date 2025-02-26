@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { MetricChart } from "./MetricChart";
 
@@ -7,6 +8,7 @@ interface MetricsChartSectionProps {
   ticker: string;
   metricTypes: Record<string, 'bar' | 'line'>;
   onMetricTypeChange: (metric: string, type: 'bar' | 'line') => void;
+  onMetricsReorder?: (metrics: string[]) => void;
 }
 
 export const MetricsChartSection = ({
@@ -15,12 +17,11 @@ export const MetricsChartSection = ({
   ticker,
   metricTypes,
   onMetricTypeChange,
+  onMetricsReorder,
 }: MetricsChartSectionProps) => {
   if (selectedMetrics.length === 0) {
     return null;
   }
-
-  console.log('MetricsChartSection data:', data);
 
   return (
     <Card className="p-6">
@@ -33,6 +34,7 @@ export const MetricsChartSection = ({
         ticker={ticker}
         metricTypes={metricTypes}
         onMetricTypeChange={onMetricTypeChange}
+        onMetricsReorder={onMetricsReorder}
       />
     </Card>
   );

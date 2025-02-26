@@ -51,6 +51,77 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_likes: {
+        Row: {
+          comment_id: string | null
+          created_at: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_replies: {
+        Row: {
+          comment_id: string | null
+          content: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          comment_id?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          comment_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_replies_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_replies_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_profiles: {
         Row: {
           ceo: string | null
@@ -512,32 +583,201 @@ export type Database = {
           },
         ]
       }
+      portfolio_subscriptions: {
+        Row: {
+          created_at: string | null
+          end_date: string
+          id: string
+          portfolio_id: string | null
+          price_paid: number
+          start_date: string | null
+          subscriber_id: string | null
+          subscription_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_date: string
+          id?: string
+          portfolio_id?: string | null
+          price_paid: number
+          start_date?: string | null
+          subscriber_id?: string | null
+          subscription_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          portfolio_id?: string | null
+          price_paid?: number
+          start_date?: string | null
+          subscriber_id?: string | null
+          subscription_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_subscriptions_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       portfolios: {
         Row: {
           created_at: string
           id: string
+          is_paid: boolean | null
+          is_public: boolean | null
           name: string
           total_value: number | null
           updated_at: string
           user_id: string | null
+          yearly_performance: number | null
         }
         Insert: {
           created_at?: string
           id?: string
+          is_paid?: boolean | null
+          is_public?: boolean | null
           name: string
           total_value?: number | null
           updated_at?: string
           user_id?: string | null
+          yearly_performance?: number | null
         }
         Update: {
           created_at?: string
           id?: string
+          is_paid?: boolean | null
+          is_public?: boolean | null
           name?: string
           total_value?: number | null
           updated_at?: string
           user_id?: string | null
+          yearly_performance?: number | null
         }
         Relationships: []
+      }
+      post_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          search_text: unknown | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          search_text?: unknown | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          search_text?: unknown | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       price_targets: {
         Row: {
@@ -572,27 +812,54 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          banner_url: string | null
+          bio: string | null
           created_at: string
+          follower_count: number | null
+          following_count: number | null
           full_name: string | null
           id: string
+          social_linkedin: string | null
+          social_twitter: string | null
+          subscriber_count: number | null
+          subscribers: number | null
           updated_at: string
           username: string | null
+          website: string | null
         }
         Insert: {
           avatar_url?: string | null
+          banner_url?: string | null
+          bio?: string | null
           created_at?: string
+          follower_count?: number | null
+          following_count?: number | null
           full_name?: string | null
           id: string
+          social_linkedin?: string | null
+          social_twitter?: string | null
+          subscriber_count?: number | null
+          subscribers?: number | null
           updated_at?: string
           username?: string | null
+          website?: string | null
         }
         Update: {
           avatar_url?: string | null
+          banner_url?: string | null
+          bio?: string | null
           created_at?: string
+          follower_count?: number | null
+          following_count?: number | null
           full_name?: string | null
           id?: string
+          social_linkedin?: string | null
+          social_twitter?: string | null
+          subscriber_count?: number | null
+          subscribers?: number | null
           updated_at?: string
           username?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -796,6 +1063,30 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_pricing: {
+        Row: {
+          annual_price: number
+          created_at: string
+          id: string
+          monthly_price: number
+          updated_at: string
+        }
+        Insert: {
+          annual_price?: number
+          created_at?: string
+          id?: string
+          monthly_price?: number
+          updated_at?: string
+        }
+        Update: {
+          annual_price?: number
+          created_at?: string
+          id?: string
+          monthly_price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ttm_ratios: {
         Row: {
           asset_turnover_ttm: number | null
@@ -849,6 +1140,42 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      user_followers: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_followers_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_followers_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       watchlist_stocks: {
         Row: {

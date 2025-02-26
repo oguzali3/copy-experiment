@@ -1,3 +1,4 @@
+
 import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 
 type SortDirection = "asc" | "desc" | null;
@@ -42,13 +43,6 @@ export const CompanyTableHeader = ({ sortConfig, onSort }: CompanyTableHeaderPro
         >
           Price
           {getSortIcon("price")}
-        </th>
-        <th 
-          className="px-4 py-3 text-left text-sm font-semibold text-gray-600 cursor-pointer hover:text-blue-600"
-          onClick={() => onSort("change")}
-        >
-          Change
-          {getSortIcon("change")}
         </th>
       </tr>
     </thead>
