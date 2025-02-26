@@ -34,6 +34,10 @@ export const transformFinancialData = (
       balanceSheetMap.set(year, item);
     });
   }
+  console.log(`metricdata income `, financialData);
+  console.log(`metricdata balance `, balanceSheetData);
+  console.log(`metricdata formatted and used cashflow `, formattedCashFlowData);
+  console.log(`metricdata cashflow `, cashFlowData);
 
   // Get period data from income statement
   let periodData;

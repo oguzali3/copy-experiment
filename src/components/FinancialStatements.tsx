@@ -19,7 +19,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   
   const { financialData, isLoading: isIncomeStatementLoading } = useFinancialData(ticker, period);
   const { filteredData: balanceSheetData, isLoading: isBalanceSheetLoading } = useBalanceSheetData(ticker, period);
-  const { data: cashFlowData, isLoading: isCashFlowLoading } = useCashFlowData(ticker, period);
+  const { cashFlowData: cashFlowData, isLoading: isCashFlowLoading } = useCashFlowData(ticker, period);
 
 
   const {
@@ -60,7 +60,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const metricData = transformFinancialData(
     financialData,
     balanceSheetData,
-    formattedCashFlowData,
+    cashFlowData,
     selectedMetrics,
     timePeriods,
     sliderValue,
