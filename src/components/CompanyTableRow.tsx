@@ -25,8 +25,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
   const { data: chartData } = useQuery({
     queryKey: ['stock-chart', company.ticker, '1D'],
     queryFn: async () => {
-      const response = await fetchFinancialData('quote', company.ticker);
-      // Mock data for demo - replace with actual API data when available
+      // Generate mock data for the chart
       const basePrice = parseFloat(company.price);
       const points = 20;
       return Array.from({ length: points }, (_, i) => ({
