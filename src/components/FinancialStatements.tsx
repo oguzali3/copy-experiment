@@ -68,19 +68,21 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       {selectedMetrics.length > 0 && (
-        <MetricsChartSection 
-          selectedMetrics={selectedMetrics}
-          data={metricData}
-          ticker={ticker}
-          metricTypes={metricTypes}
-          onMetricTypeChange={handleMetricTypeChange}
-          onMetricsReorder={handleMetricsReorder}
-        />
+        <div className="-mx-4 sm:-mx-6 md:-mx-8 lg:-mx-12">
+          <MetricsChartSection 
+            selectedMetrics={selectedMetrics}
+            data={metricData}
+            ticker={ticker}
+            metricTypes={metricTypes}
+            onMetricTypeChange={handleMetricTypeChange}
+            onMetricsReorder={handleMetricsReorder}
+          />
+        </div>
       )}
       
-      <Card className="p-6">
+      <div className="px-4 sm:px-6 md:px-8 lg:px-12">
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold">Financial Statements</h2>
@@ -105,7 +107,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
             ticker={ticker}
           />
         </div>
-      </Card>
+      </div>
     </div>
   );
 };
