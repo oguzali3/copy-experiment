@@ -1,3 +1,4 @@
+
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { getMetricColor, formatYAxis } from './chartUtils';
 import { ChartTooltip } from './ChartTooltip';
@@ -168,7 +169,7 @@ export const MetricChart = ({
             />
             
             {metrics.map((metric, index) => {
-              const color = getMetricColor(index);
+              const color = '#1EAEDB'; // Using the bright blue color from the image
               const displayName = getMetricDisplayName(metric);
               
               if (metricTypes[metric] === 'line') {
@@ -214,7 +215,7 @@ export const MetricChart = ({
               <div key={metric} className="flex items-center gap-3">
                 <div 
                   className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: getMetricColor(index) }}
+                  style={{ backgroundColor: '#1EAEDB' }}
                 />
                 <span className="text-gray-900 font-medium">
                   {ticker} - {getMetricDisplayName(metric)} {' '}
