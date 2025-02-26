@@ -173,13 +173,11 @@ export const TopCompanies = () => {
           valueA = parseFloat(a.price);
           valueB = parseFloat(b.price);
         } else {
-          return 0;
+          valueA = 0;
+          valueB = 0;
         }
 
-        if (newDirection === "asc") {
-          return valueA - valueB;
-        }
-        return valueB - valueA;
+        return newDirection === "asc" ? valueA - valueB : valueB - valueA;
       });
 
       setCompanies(sortedCompanies);
