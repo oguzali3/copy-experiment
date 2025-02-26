@@ -1,9 +1,6 @@
 
 import { ArrowUpIcon, ArrowDownIcon, XIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { fetchFinancialData } from "@/utils/financialApi";
-import { MiniChart } from "./MiniChart";
 
 interface CompanyTableRowProps {
   company: {
@@ -21,20 +18,6 @@ interface CompanyTableRowProps {
 
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
   const navigate = useNavigate();
-
-  const { data: chartData } = useQuery({
-    queryKey: ['stock-chart', company.ticker, '1D'],
-    queryFn: async () => {
-      // Generate mock data for the chart
-      const basePrice = parseFloat(company.price);
-      const points = 20;
-      return Array.from({ length: points }, (_, i) => ({
-        time: new Date(Date.now() - (points - i) * 1000 * 60 * 30).toISOString(),
-        price: basePrice * (1 + (Math.random() - 0.5) * 0.02)
-      }));
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
 
   const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
     if ((e.target as HTMLElement).closest('button')) {
@@ -84,9 +67,6 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       </td>
       <td className="px-3 py-2 text-sm font-medium text-gray-900">{company.ticker}</td>
       <td className="px-3 py-2 text-sm text-gray-500">{company.marketCap}</td>
-      <td className="px-3 py-2">
-        {chartData && <MiniChart data={chartData} isPositive={company.isPositive} />}
-      </td>
       <td className="px-3 py-2">
         <div className="flex flex-col gap-0.5">
           <span className="text-sm font-medium text-gray-900">{company.price}</span>
