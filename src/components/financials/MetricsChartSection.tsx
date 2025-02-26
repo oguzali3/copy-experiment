@@ -1,6 +1,10 @@
 
-import { Card } from "@/components/ui/card";
-import { MetricChart } from "./MetricChart";
+import React from 'react';
+import { MetricChart } from './MetricChart';
+import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DraggableMetricItem } from './DraggableMetricItem';
+import { ChartDownloadDialog } from './ChartDownloadDialog';
 
 interface MetricsChartSectionProps {
   selectedMetrics: string[];
@@ -23,19 +27,51 @@ export const MetricsChartSection = ({
     return null;
   }
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = selectedMetrics.indexOf(active.id as string);
+      const newIndex = selectedMetrics.indexOf(over.id as string);
+      
+      const newMetrics = [...selectedMetrics];
+      newMetrics.splice(oldIndex, 1);
+      newMetrics.splice(newIndex, 0, active.id as string);
+      
+      onMetricsReorder?.(newMetrics);
+    }
+  };
+
   return (
-    <Card className="p-6">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold">Selected Metrics</h2>
+    <div className="w-full">
+      <div className="max-w-[2000px] mx-auto px-4">
+        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <div className="flex justify-between items-start mb-4">
+            <SortableContext items={selectedMetrics} strategy={verticalListSortingStrategy}>
+              <div className="space-y-1">
+                {selectedMetrics.map((metric, index) => (
+                  <DraggableMetricItem
+                    key={metric}
+                    metric={metric}
+                    index={index}
+                    type={metricTypes[metric]}
+                    onTypeChange={(type) => onMetricTypeChange(metric, type)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+            <ChartDownloadDialog onDownload={() => {}} previewRef={{ current: null }} />
+          </div>
+          <MetricChart 
+            data={data}
+            metrics={selectedMetrics}
+            ticker={ticker}
+            metricTypes={metricTypes}
+            onMetricTypeChange={onMetricTypeChange}
+            onMetricsReorder={onMetricsReorder}
+          />
+        </DndContext>
       </div>
-      <MetricChart 
-        data={data}
-        metrics={selectedMetrics}
-        ticker={ticker}
-        metricTypes={metricTypes}
-        onMetricTypeChange={onMetricTypeChange}
-        onMetricsReorder={onMetricsReorder}
-      />
-    </Card>
+    </div>
   );
 };

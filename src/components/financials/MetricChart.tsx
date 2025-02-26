@@ -90,7 +90,7 @@ export const MetricChart = ({
 
   if (!data?.length || !metrics?.length) {
     return (
-      <div className="w-full bg-white p-4 rounded-lg flex items-center justify-center h-[300px] border border-gray-200">
+      <div className="w-full bg-white p-4 rounded-lg flex items-center justify-center h-[300px]">
         <p className="text-gray-500">
           {!metrics?.length ? 'Select metrics to visualize' : 'No data available'}
         </p>
@@ -131,120 +131,99 @@ export const MetricChart = ({
   });
 
   return (
-    <div className="space-y-4">
-      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <div className="flex justify-between items-start">
-          <SortableContext items={metrics} strategy={verticalListSortingStrategy}>
-            <div className="space-y-1">
-              {metrics.map((metric, index) => (
-                <DraggableMetricItem
-                  key={metric}
-                  metric={metric}
-                  index={index}
-                  type={metricTypes[metric]}
-                  onTypeChange={(type) => onMetricTypeChange(metric, type)}
-                />
-              ))}
-            </div>
-          </SortableContext>
-          <ChartDownloadDialog onDownload={handleDownload} previewRef={chartRef} />
-        </div>
-      </DndContext>
-
-      <div className="bg-white p-4 rounded-lg border border-gray-200" ref={chartContainerRef}>
-        <div className="h-[300px]" ref={chartRef}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart
-              data={sortedData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-            >
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="#E5E7EB"
-                vertical={false}
-                opacity={0.3}
-              />
-              <XAxis 
-                dataKey="period" 
-                tick={{ fontSize: 12, fill: '#6B7280' }}
-                axisLine={{ stroke: '#E5E7EB' }}
-                tickLine={false}
-                interval={0}
-                angle={-45}
-                textAnchor="end"
-                height={20}
-                dy={5}
-              />
-              <YAxis 
-                tickFormatter={formatYAxis}
-                tick={{ fontSize: 12, fill: '#6B7280' }}
-                axisLine={{ stroke: '#E5E7EB' }}
-                tickLine={false}
-                width={80}
-              />
-              <Tooltip 
-                content={<ChartTooltip ticker={ticker} />}
-                cursor={{ fill: 'rgba(243, 244, 246, 0.8)' }}
-              />
+    <div className="space-y-4 bg-white p-6 rounded-lg shadow-sm">
+      <div className="h-[500px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart
+            data={sortedData}
+            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+          >
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="#E5E7EB"
+              vertical={false}
+              opacity={0.3}
+            />
+            <XAxis 
+              dataKey="period" 
+              tick={{ fontSize: 12, fill: '#6B7280' }}
+              axisLine={{ stroke: '#E5E7EB' }}
+              tickLine={false}
+              interval={0}
+              angle={-45}
+              textAnchor="end"
+              height={20}
+              dy={5}
+            />
+            <YAxis 
+              tickFormatter={formatYAxis}
+              tick={{ fontSize: 12, fill: '#6B7280' }}
+              axisLine={{ stroke: '#E5E7EB' }}
+              tickLine={false}
+              width={80}
+            />
+            <Tooltip 
+              content={<ChartTooltip ticker={ticker} />}
+              cursor={{ fill: 'rgba(243, 244, 246, 0.8)' }}
+            />
+            
+            {metrics.map((metric, index) => {
+              const color = getMetricColor(index);
+              const displayName = getMetricDisplayName(metric);
               
-              {metrics.map((metric, index) => {
-                const color = getMetricColor(index);
-                const displayName = getMetricDisplayName(metric);
-                
-                if (metricTypes[metric] === 'line') {
-                  return (
-                    <Line
-                      key={metric}
-                      type="linear"
-                      dataKey={metric}
-                      stroke={color}
-                      name={displayName}
-                      dot={false}
-                      strokeWidth={2}
-                    />
-                  );
-                }
+              if (metricTypes[metric] === 'line') {
                 return (
-                  <Bar
+                  <Line
                     key={metric}
+                    type="linear"
                     dataKey={metric}
-                    fill={color}
+                    stroke={color}
                     name={displayName}
-                    radius={[0, 0, 0, 0]}
-                    maxBarSize={40}
+                    dot={false}
+                    strokeWidth={2}
                   />
                 );
-              })}
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="mt-4 border-t border-gray-200 pt-4">
-          <div className="flex flex-col gap-2">
-            {metrics.map((metric, index) => {
-              const firstValue = sortedData[sortedData.length - 1][metric];
-              const lastValue = sortedData[0][metric];
-              const totalChange = ((lastValue - firstValue) / Math.abs(firstValue)) * 100;
-              const periods = sortedData.length - 1;
-              const cagr = periods > 0 ? 
-                (Math.pow(lastValue / firstValue, 1 / periods) - 1) * 100 : 
-                0;
-
+              }
               return (
-                <div key={metric} className="flex items-center gap-3">
-                  <div 
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: getMetricColor(index) }}
-                  />
-                  <span className="text-gray-900 font-medium">
-                    {ticker} - {getMetricDisplayName(metric)} {' '}
-                    (Total Change: {totalChange.toFixed(2)}%) {' '}
-                    {periods > 0 && `(CAGR: ${cagr.toFixed(2)}%)`}
-                  </span>
-                </div>
+                <Bar
+                  key={metric}
+                  dataKey={metric}
+                  fill={color}
+                  name={displayName}
+                  radius={[0, 0, 0, 0]}
+                  maxBarSize={40}
+                />
               );
             })}
-          </div>
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="mt-4 border-t border-gray-200 pt-4">
+        <div className="flex flex-col gap-2">
+          {metrics.map((metric, index) => {
+            const firstValue = sortedData[sortedData.length - 1][metric];
+            const lastValue = sortedData[0][metric];
+            const totalChange = ((lastValue - firstValue) / Math.abs(firstValue)) * 100;
+            const periods = sortedData.length - 1;
+            const cagr = periods > 0 ? 
+              (Math.pow(lastValue / firstValue, 1 / periods) - 1) * 100 : 
+              0;
+
+            return (
+              <div key={metric} className="flex items-center gap-3">
+                <div 
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: getMetricColor(index) }}
+                />
+                <span className="text-gray-900 font-medium">
+                  {ticker} - {getMetricDisplayName(metric)} {' '}
+                  (Total Change: {totalChange.toFixed(2)}%) {' '}
+                  {periods > 0 && `(CAGR: ${cagr.toFixed(2)}%)`}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
