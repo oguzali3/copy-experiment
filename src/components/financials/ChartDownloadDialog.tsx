@@ -55,11 +55,9 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
       const svgClone = chartSvg.cloneNode(true) as SVGElement;
       const legendClone = legendDiv.cloneNode(true) as HTMLDivElement;
       
-      // Set dimensions for the SVG
       svgClone.setAttribute('width', options.width.toString());
-      svgClone.setAttribute('height', (options.height * 0.8).toString()); // Reserve 20% for legend
+      svgClone.setAttribute('height', (options.height * 0.8).toString());
       
-      // Append clones to container
       container.appendChild(svgClone);
       container.appendChild(legendClone);
 
