@@ -49,21 +49,38 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
       // Create a container div for the combined content
       const container = document.createElement('div');
       container.style.backgroundColor = options.transparentBackground ? 'transparent' : options.backgroundColor;
+      container.style.width = `${options.width}px`;
+      container.style.height = `${options.height}px`;
+      container.style.position = 'relative';
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column';
       container.style.padding = '16px';
       
       // Clone the SVG and legend
       const svgClone = chartSvg.cloneNode(true) as SVGElement;
       const legendClone = legendDiv.cloneNode(true) as HTMLDivElement;
       
-      svgClone.setAttribute('width', options.width.toString());
-      svgClone.setAttribute('height', (options.height * 0.8).toString());
+      // Set the SVG to take up 80% of the container height
+      svgClone.setAttribute('width', '100%');
+      svgClone.setAttribute('height', '80%');
+      svgClone.style.display = 'block';
+      
+      // Style the legend to take up 20% of the container height
+      legendClone.style.height = '20%';
+      legendClone.style.marginTop = '8px';
       
       container.appendChild(svgClone);
       container.appendChild(legendClone);
 
-      // Convert to SVG string
-      const svgString = new XMLSerializer().serializeToString(container);
-      const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
+      // Convert to SVG string with proper dimensions
+      const svgData = `<svg xmlns="http://www.w3.org/2000/svg" width="${options.width}" height="${options.height}">
+        <foreignObject width="100%" height="100%">
+          ${container.outerHTML}
+        </foreignObject>
+      </svg>`;
+
+      // Create a Blob from the SVG string
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
       const svgUrl = URL.createObjectURL(svgBlob);
 
       // Create preview image
@@ -75,16 +92,21 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
 
         // Scale canvas for better preview quality
         const scale = 2;
-        previewCanvasRef.current.width = 300 * scale;
-        previewCanvasRef.current.height = 200 * scale;
+        const previewWidth = 300;
+        const previewHeight = 200;
+        previewCanvasRef.current.width = previewWidth * scale;
+        previewCanvasRef.current.height = previewHeight * scale;
+        previewCanvasRef.current.style.width = `${previewWidth}px`;
+        previewCanvasRef.current.style.height = `${previewHeight}px`;
+        
         ctx.scale(scale, scale);
 
         if (!options.transparentBackground) {
           ctx.fillStyle = options.backgroundColor;
-          ctx.fillRect(0, 0, 300, 200);
+          ctx.fillRect(0, 0, previewWidth, previewHeight);
         }
 
-        ctx.drawImage(img, 0, 0, 300, 200);
+        ctx.drawImage(img, 0, 0, previewWidth, previewHeight);
         setPreviewSrc(previewCanvasRef.current.toDataURL());
         URL.revokeObjectURL(svgUrl);
       };
@@ -119,13 +141,13 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
           <div className="relative aspect-video w-full bg-gray-100 rounded-lg overflow-hidden">
             <canvas
               ref={previewCanvasRef}
-              className="hidden"
+              className="w-full h-full object-contain"
             />
             {previewSrc && (
               <img
                 src={previewSrc}
                 alt="Chart preview"
-                className="w-full h-full object-contain"
+                className="absolute inset-0 w-full h-full object-contain"
               />
             )}
           </div>

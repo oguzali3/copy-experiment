@@ -39,23 +39,33 @@ export const MetricChart = ({
 
       const container = document.createElement('div');
       container.style.backgroundColor = options.transparentBackground ? 'transparent' : options.backgroundColor;
+      container.style.width = `${options.width}px`;
+      container.style.height = `${options.height}px`;
+      container.style.position = 'relative';
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column';
       container.style.padding = '16px';
       
       const svgClone = chartSvg.cloneNode(true) as SVGElement;
       const legendClone = legendDiv.cloneNode(true) as HTMLDivElement;
       
-      svgClone.setAttribute('width', options.width.toString());
-      svgClone.setAttribute('height', (options.height * 0.8).toString());
+      svgClone.setAttribute('width', '100%');
+      svgClone.setAttribute('height', '80%');
+      svgClone.style.display = 'block';
       
-      if (!options.transparentBackground) {
-        svgClone.style.backgroundColor = options.backgroundColor;
-      }
-
+      legendClone.style.height = '20%';
+      legendClone.style.marginTop = '8px';
+      
       container.appendChild(svgClone);
       container.appendChild(legendClone);
 
-      const svgString = new XMLSerializer().serializeToString(container);
-      const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
+      const svgData = `<svg xmlns="http://www.w3.org/2000/svg" width="${options.width}" height="${options.height}">
+        <foreignObject width="100%" height="100%">
+          ${container.outerHTML}
+        </foreignObject>
+      </svg>`;
+
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
       const svgUrl = URL.createObjectURL(svgBlob);
 
       const canvas = document.createElement('canvas');
