@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Download } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -33,92 +33,6 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
     backgroundColor: '#FFFFFF',
     transparentBackground: false,
   });
-  const [previewSrc, setPreviewSrc] = useState<string>('');
-  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
-
-  const updatePreview = async () => {
-    if (!previewRef.current || !previewCanvasRef.current) return;
-
-    try {
-      const chartDiv = previewRef.current;
-      const chartSvg = chartDiv.querySelector('svg');
-      const legendDiv = chartDiv.nextElementSibling as HTMLDivElement;
-      
-      if (!chartSvg || !legendDiv) return;
-
-      // Create a container div for the combined content
-      const container = document.createElement('div');
-      container.style.backgroundColor = options.transparentBackground ? 'transparent' : options.backgroundColor;
-      container.style.width = `${options.width}px`;
-      container.style.height = `${options.height}px`;
-      container.style.position = 'relative';
-      container.style.display = 'flex';
-      container.style.flexDirection = 'column';
-      container.style.padding = '16px';
-      
-      // Clone the SVG and legend
-      const svgClone = chartSvg.cloneNode(true) as SVGElement;
-      const legendClone = legendDiv.cloneNode(true) as HTMLDivElement;
-      
-      // Set the SVG to take up 80% of the container height
-      svgClone.setAttribute('width', '100%');
-      svgClone.setAttribute('height', '80%');
-      svgClone.style.display = 'block';
-      
-      // Style the legend to take up 20% of the container height
-      legendClone.style.height = '20%';
-      legendClone.style.marginTop = '8px';
-      
-      container.appendChild(svgClone);
-      container.appendChild(legendClone);
-
-      // Convert to SVG string with proper dimensions
-      const svgData = `<svg xmlns="http://www.w3.org/2000/svg" width="${options.width}" height="${options.height}">
-        <foreignObject width="100%" height="100%">
-          ${container.outerHTML}
-        </foreignObject>
-      </svg>`;
-
-      // Create a Blob from the SVG string
-      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-      const svgUrl = URL.createObjectURL(svgBlob);
-
-      // Create preview image
-      const img = new Image();
-      img.onload = () => {
-        if (!previewCanvasRef.current) return;
-        const ctx = previewCanvasRef.current.getContext('2d');
-        if (!ctx) return;
-
-        // Scale canvas for better preview quality
-        const scale = 2;
-        const previewWidth = 300;
-        const previewHeight = 200;
-        previewCanvasRef.current.width = previewWidth * scale;
-        previewCanvasRef.current.height = previewHeight * scale;
-        previewCanvasRef.current.style.width = `${previewWidth}px`;
-        previewCanvasRef.current.style.height = `${previewHeight}px`;
-        
-        ctx.scale(scale, scale);
-
-        if (!options.transparentBackground) {
-          ctx.fillStyle = options.backgroundColor;
-          ctx.fillRect(0, 0, previewWidth, previewHeight);
-        }
-
-        ctx.drawImage(img, 0, 0, previewWidth, previewHeight);
-        setPreviewSrc(previewCanvasRef.current.toDataURL());
-        URL.revokeObjectURL(svgUrl);
-      };
-      img.src = svgUrl;
-    } catch (error) {
-      console.error('Error generating preview:', error);
-    }
-  };
-
-  useEffect(() => {
-    updatePreview();
-  }, [options, previewRef.current]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,16 +52,13 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
           <DialogTitle>Download Chart</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="relative aspect-video w-full bg-gray-100 rounded-lg overflow-hidden">
-            <canvas
-              ref={previewCanvasRef}
-              className="w-full h-full object-contain"
-            />
-            {previewSrc && (
-              <img
-                src={previewSrc}
-                alt="Chart preview"
-                className="absolute inset-0 w-full h-full object-contain"
+          <div className="relative aspect-video w-full bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center p-4">
+            {previewRef.current && (
+              <div 
+                className="w-full h-full" 
+                dangerouslySetInnerHTML={{ 
+                  __html: previewRef.current.innerHTML 
+                }} 
               />
             )}
           </div>

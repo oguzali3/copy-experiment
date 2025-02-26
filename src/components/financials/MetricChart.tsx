@@ -41,62 +41,43 @@ export const MetricChart = ({
       container.style.backgroundColor = options.transparentBackground ? 'transparent' : options.backgroundColor;
       container.style.width = `${options.width}px`;
       container.style.height = `${options.height}px`;
-      container.style.position = 'relative';
       container.style.display = 'flex';
       container.style.flexDirection = 'column';
       container.style.padding = '16px';
-      
-      const svgClone = chartSvg.cloneNode(true) as SVGElement;
-      const legendClone = legendDiv.cloneNode(true) as HTMLDivElement;
-      
-      svgClone.setAttribute('width', '100%');
-      svgClone.setAttribute('height', '80%');
-      svgClone.style.display = 'block';
-      
-      legendClone.style.height = '20%';
-      legendClone.style.marginTop = '8px';
-      
-      container.appendChild(svgClone);
-      container.appendChild(legendClone);
 
-      const svgData = `<svg xmlns="http://www.w3.org/2000/svg" width="${options.width}" height="${options.height}">
-        <foreignObject width="100%" height="100%">
-          ${container.outerHTML}
-        </foreignObject>
-      </svg>`;
+      const chartContainer = document.createElement('div');
+      chartContainer.style.flex = '1';
+      chartContainer.style.minHeight = '0';
+      const chartClone = chartSvg.cloneNode(true) as SVGElement;
+      chartClone.style.width = '100%';
+      chartClone.style.height = '100%';
+      chartContainer.appendChild(chartClone);
 
-      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-      const svgUrl = URL.createObjectURL(svgBlob);
+      const legendContainer = document.createElement('div');
+      legendContainer.style.marginTop = '16px';
+      legendContainer.innerHTML = legendDiv.innerHTML;
 
-      const canvas = document.createElement('canvas');
-      canvas.width = options.width;
-      canvas.height = options.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      container.appendChild(chartContainer);
+      container.appendChild(legendContainer);
 
-      const img = new Image();
-      img.onload = async () => {
-        if (!options.transparentBackground) {
-          ctx.fillStyle = options.backgroundColor;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-        ctx.drawImage(img, 0, 0, options.width, options.height);
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(container, {
+        backgroundColor: options.transparentBackground ? null : options.backgroundColor,
+        scale: 2,
+      });
 
-        const mimeType = options.format === 'PNG' ? 'image/png' : 'image/jpeg';
-        const blob = await new Promise<Blob>((resolve) => canvas.toBlob((blob) => resolve(blob!), mimeType));
-        const url = URL.createObjectURL(blob);
+      canvas.toBlob((blob) => {
+        if (!blob) return;
         
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `${ticker}-chart.${options.format.toLowerCase()}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        
         URL.revokeObjectURL(url);
-        URL.revokeObjectURL(svgUrl);
-      };
-      img.src = svgUrl;
+      }, options.format === 'PNG' ? 'image/png' : 'image/jpeg');
     } catch (error) {
       console.error('Error downloading chart:', error);
     }
