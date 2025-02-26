@@ -47,11 +47,11 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       </td>
       <td className="px-3 py-2">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center shadow-sm">
+          <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#333333] flex items-center justify-center shadow-sm">
             <img 
               src={company.logoUrl} 
               alt={`${company.name} logo`}
-              className="w-full h-full object-contain p-1"
+              className="w-full h-full object-contain p-1.5"
               loading="lazy"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
