@@ -47,7 +47,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       </td>
       <td className="px-3 py-2">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#333333] flex items-center justify-center shadow-sm">
+          <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#4A4A4A] flex items-center justify-center shadow-sm">
             <img 
               src={company.logoUrl} 
               alt={`${company.name} logo`}
