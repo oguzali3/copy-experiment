@@ -26,45 +26,35 @@ export const MetricChart = ({
   onMetricsReorder
 }: MetricChartProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
 
   const handleDownload = async (options: DownloadOptions) => {
-    if (!chartRef.current) return;
+    if (!chartContainerRef.current) return;
 
     try {
-      const chartDiv = chartRef.current;
-      const chartSvg = chartDiv.querySelector('svg');
-      const legendDiv = chartDiv.nextElementSibling as HTMLDivElement;
-      
-      if (!chartSvg || !legendDiv) return;
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '-9999px';
+      document.body.appendChild(tempDiv);
 
-      const container = document.createElement('div');
-      container.style.backgroundColor = options.transparentBackground ? 'transparent' : options.backgroundColor;
-      container.style.width = `${options.width}px`;
-      container.style.height = `${options.height}px`;
-      container.style.display = 'flex';
-      container.style.flexDirection = 'column';
-      container.style.padding = '16px';
-
-      const chartContainer = document.createElement('div');
-      chartContainer.style.flex = '1';
-      chartContainer.style.minHeight = '0';
-      const chartClone = chartSvg.cloneNode(true) as SVGElement;
-      chartClone.style.width = '100%';
-      chartClone.style.height = '100%';
-      chartContainer.appendChild(chartClone);
-
-      const legendContainer = document.createElement('div');
-      legendContainer.style.marginTop = '16px';
-      legendContainer.innerHTML = legendDiv.innerHTML;
-
-      container.appendChild(chartContainer);
-      container.appendChild(legendContainer);
+      const clone = chartContainerRef.current.cloneNode(true) as HTMLDivElement;
+      clone.style.width = `${options.width}px`;
+      clone.style.height = `${options.height}px`;
+      clone.style.backgroundColor = options.transparentBackground ? 'transparent' : options.backgroundColor;
+      tempDiv.appendChild(clone);
 
       const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(container, {
+      const canvas = await html2canvas(clone, {
         backgroundColor: options.transparentBackground ? null : options.backgroundColor,
         scale: 2,
+        logging: true,
+        removeContainer: true,
+        allowTaint: true,
+        useCORS: true
       });
+
+      document.body.removeChild(tempDiv);
 
       canvas.toBlob((blob) => {
         if (!blob) return;
@@ -146,7 +136,7 @@ export const MetricChart = ({
         </div>
       </DndContext>
 
-      <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <div className="bg-white p-4 rounded-lg border border-gray-200" ref={chartContainerRef}>
         <div className="h-[300px]" ref={chartRef}>
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart

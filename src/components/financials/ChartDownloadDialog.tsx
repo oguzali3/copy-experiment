@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +6,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useState, useEffect } from "react";
 import { Download } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ResponsiveContainer } from "recharts";
 
 interface ChartDownloadDialogProps {
   onDownload: (options: DownloadOptions) => void;
@@ -52,15 +52,16 @@ export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDia
           <DialogTitle>Download Chart</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="relative aspect-video w-full bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center p-4">
-            {previewRef.current && (
-              <div 
-                className="w-full h-full" 
-                dangerouslySetInnerHTML={{ 
-                  __html: previewRef.current.innerHTML 
-                }} 
-              />
-            )}
+          <div className="relative aspect-video w-full bg-gray-100 rounded-lg overflow-hidden">
+            <div className="w-full h-full p-4">
+              {previewRef.current && (
+                <div className="w-full h-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    {previewRef.current.querySelector('svg')?.cloneNode(true)}
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-4">
