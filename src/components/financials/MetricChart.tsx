@@ -31,19 +31,30 @@ export const MetricChart = ({
     if (!chartRef.current) return;
 
     try {
-      const chartSvg = chartRef.current.querySelector('svg');
-      if (!chartSvg) return;
-
-      const svgCopy = chartSvg.cloneNode(true) as SVGElement;
+      const chartDiv = chartRef.current;
+      const chartSvg = chartDiv.querySelector('svg');
+      const legendDiv = chartDiv.nextElementSibling as HTMLDivElement;
       
-      svgCopy.setAttribute('width', options.width.toString());
-      svgCopy.setAttribute('height', options.height.toString());
+      if (!chartSvg || !legendDiv) return;
+
+      const container = document.createElement('div');
+      container.style.backgroundColor = options.transparentBackground ? 'transparent' : options.backgroundColor;
+      container.style.padding = '16px';
+      
+      const svgClone = chartSvg.cloneNode(true) as SVGElement;
+      const legendClone = legendDiv.cloneNode(true) as HTMLDivElement;
+      
+      svgClone.setAttribute('width', options.width.toString());
+      svgClone.setAttribute('height', (options.height * 0.8).toString());
       
       if (!options.transparentBackground) {
-        svgCopy.style.backgroundColor = options.backgroundColor;
+        svgClone.style.backgroundColor = options.backgroundColor;
       }
 
-      const svgString = new XMLSerializer().serializeToString(svgCopy);
+      container.appendChild(svgClone);
+      container.appendChild(legendClone);
+
+      const svgString = new XMLSerializer().serializeToString(container);
       const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
       const svgUrl = URL.createObjectURL(svgBlob);
 
@@ -140,7 +151,7 @@ export const MetricChart = ({
               ))}
             </div>
           </SortableContext>
-          <ChartDownloadDialog onDownload={handleDownload} />
+          <ChartDownloadDialog onDownload={handleDownload} previewRef={chartRef} />
         </div>
       </DndContext>
 

@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Download } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface ChartDownloadDialogProps {
   onDownload: (options: DownloadOptions) => void;
+  previewRef: React.RefObject<HTMLDivElement>;
 }
 
 export interface DownloadOptions {
@@ -22,7 +23,7 @@ export interface DownloadOptions {
   transparentBackground: boolean;
 }
 
-export const ChartDownloadDialog = ({ onDownload }: ChartDownloadDialogProps) => {
+export const ChartDownloadDialog = ({ onDownload, previewRef }: ChartDownloadDialogProps) => {
   const [options, setOptions] = useState<DownloadOptions>({
     width: 800,
     height: 567,
@@ -32,6 +33,72 @@ export const ChartDownloadDialog = ({ onDownload }: ChartDownloadDialogProps) =>
     backgroundColor: '#FFFFFF',
     transparentBackground: false,
   });
+  const [previewSrc, setPreviewSrc] = useState<string>('');
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  const updatePreview = async () => {
+    if (!previewRef.current || !previewCanvasRef.current) return;
+
+    try {
+      const chartDiv = previewRef.current;
+      const chartSvg = chartDiv.querySelector('svg');
+      const legendDiv = chartDiv.nextElementSibling as HTMLDivElement;
+      
+      if (!chartSvg || !legendDiv) return;
+
+      // Create a container div for the combined content
+      const container = document.createElement('div');
+      container.style.backgroundColor = options.transparentBackground ? 'transparent' : options.backgroundColor;
+      container.style.padding = '16px';
+      
+      // Clone the SVG and legend
+      const svgClone = chartSvg.cloneNode(true) as SVGElement;
+      const legendClone = legendDiv.cloneNode(true) as HTMLDivElement;
+      
+      // Set dimensions for the SVG
+      svgClone.setAttribute('width', options.width.toString());
+      svgClone.setAttribute('height', (options.height * 0.8).toString()); // Reserve 20% for legend
+      
+      // Append clones to container
+      container.appendChild(svgClone);
+      container.appendChild(legendClone);
+
+      // Convert to SVG string
+      const svgString = new XMLSerializer().serializeToString(container);
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
+      const svgUrl = URL.createObjectURL(svgBlob);
+
+      // Create preview image
+      const img = new Image();
+      img.onload = () => {
+        if (!previewCanvasRef.current) return;
+        const ctx = previewCanvasRef.current.getContext('2d');
+        if (!ctx) return;
+
+        // Scale canvas for better preview quality
+        const scale = 2;
+        previewCanvasRef.current.width = 300 * scale;
+        previewCanvasRef.current.height = 200 * scale;
+        ctx.scale(scale, scale);
+
+        if (!options.transparentBackground) {
+          ctx.fillStyle = options.backgroundColor;
+          ctx.fillRect(0, 0, 300, 200);
+        }
+
+        ctx.drawImage(img, 0, 0, 300, 200);
+        setPreviewSrc(previewCanvasRef.current.toDataURL());
+        URL.revokeObjectURL(svgUrl);
+      };
+      img.src = svgUrl;
+    } catch (error) {
+      console.error('Error generating preview:', error);
+    }
+  };
+
+  useEffect(() => {
+    updatePreview();
+  }, [options, previewRef.current]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +118,20 @@ export const ChartDownloadDialog = ({ onDownload }: ChartDownloadDialogProps) =>
           <DialogTitle>Download Chart</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="relative aspect-video w-full bg-gray-100 rounded-lg overflow-hidden">
+            <canvas
+              ref={previewCanvasRef}
+              className="hidden"
+            />
+            {previewSrc && (
+              <img
+                src={previewSrc}
+                alt="Chart preview"
+                className="w-full h-full object-contain"
+              />
+            )}
+          </div>
+
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
