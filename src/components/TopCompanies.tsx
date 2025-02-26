@@ -73,11 +73,15 @@ export const TopCompanies = () => {
       setIsRefreshing(true);
       const tickers = companies.map(company => company.ticker);
       
+      if (tickers.length === 0) {
+        return; // Don't make API call if there are no companies
+      }
+
       // Fetch all quotes in a single API call
       const quotes = await fetchBatchQuotes(tickers);
       
-      if (!quotes) {
-        throw new Error('Failed to fetch quotes');
+      if (!quotes || quotes.length === 0) {
+        throw new Error('No quote data received');
       }
 
       const updatedCompanies = companies.map(company => {
@@ -95,15 +99,15 @@ export const TopCompanies = () => {
       });
 
       setCompanies(updatedCompanies);
+      toast.success('Prices updated successfully');
     } catch (error) {
       console.error('Error fetching prices:', error);
-      toast.error("Failed to refresh prices");
+      toast.error('Failed to refresh prices. Please try again later.');
     } finally {
       setIsRefreshing(false);
     }
-  }, [companies, isRefreshing]); // Only depend on companies and isRefreshing
+  }, [companies, isRefreshing]);
 
-  // Initial data fetch - including profile data
   const fetchInitialData = useCallback(async () => {
     try {
       setIsRefreshing(true);
@@ -146,7 +150,6 @@ export const TopCompanies = () => {
     }
   }, []); // No dependencies since this is only for initial load
 
-  // Only fetch initial data (including profiles) on mount
   useEffect(() => {
     fetchInitialData();
   }, [fetchInitialData]);
