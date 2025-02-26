@@ -25,7 +25,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
         <div className="flex items-center gap-3">
           <div className="flex-shrink-0">
             {company.logoUrl ? (
-              <div className="w-10 h-10 rounded-full bg-[#F1F0FB] p-2 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-[#E6E4F4] p-2 flex items-center justify-center">
                 <img
                   src={company.logoUrl}
                   alt={`${company.name} logo`}
@@ -38,7 +38,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
               </div>
             ) : (
               <Avatar>
-                <AvatarFallback className="bg-[#F1F0FB] text-gray-600">
+                <AvatarFallback className="bg-[#E6E4F4] text-gray-600 rounded-lg">
                   {company.name.substring(0, 2)}
                 </AvatarFallback>
               </Avatar>
