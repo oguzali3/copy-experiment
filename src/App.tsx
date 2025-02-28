@@ -22,6 +22,9 @@ import Portfolio from "./pages/Portfolio";
 import Settings from "./pages/Settings";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import SsoCallback from "./pages/SsoCallback";
+import Feed from "./pages/Feed";
+import Search from "./pages/Search";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +63,11 @@ const App = () => {
                       <Route path="/watchlists" element={<Watchlists />} />
                       <Route path="/portfolio" element={<Portfolio />} />
                       <Route path="/settings" element={<Settings />} />
+                      <Route path="/feed" element={<Feed />} />
+                      <Route path="/feed/*" element={<Feed />} />
+                      <Route path="/search" element={<Search />} />
+                      <Route path="/profile" element={<Profile />} />
+
                       {/* Catch all route */}
                       <Route path="*" element={<Navigate to="/dashboard" replace />} />
                     </Route>

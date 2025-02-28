@@ -1,5 +1,4 @@
-
-import { Home, Search, Bell, Mail, UserCircle, User } from "lucide-react";
+import { Home, Search, Bell, Mail, UserCircle, User, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@supabase/auth-helpers-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,6 +14,10 @@ const menuItems = [{
   title: "Home",
   icon: Home,
   path: "/feed"
+}, {
+  title: "Activity",  // New item
+  icon: Activity,     // Use Activity icon
+  path: "/activity"   // New route
 }, {
   title: "Explore",
   icon: Search,

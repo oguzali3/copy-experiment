@@ -11,7 +11,9 @@ import { SocialHeader } from "@/components/social/SocialHeader";
 const Search = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [profiles, setProfiles] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [posts, setPosts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -30,7 +32,6 @@ const Search = () => {
               id,
               full_name,
               avatar_url,
-              username
             ),
             likes:post_likes (count),
             comments:post_comments (count),

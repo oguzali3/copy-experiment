@@ -6,7 +6,9 @@ import { Post } from "./Post";
 
 interface SearchResultsProps {
   query: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   profiles: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   posts: any[];
   onClose: () => void;
 }
@@ -41,7 +43,7 @@ export const SearchResults = ({ query, profiles, posts, onClose }: SearchResults
                 </Avatar>
                 <div>
                   <div className="font-semibold">{profile.full_name}</div>
-                  <div className="text-sm text-gray-500">@{profile.username}</div>
+                  <div className="text-sm text-gray-500">@{profile.displayName}</div>
                 </div>
               </button>
             ))}

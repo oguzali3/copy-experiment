@@ -1,159 +1,216 @@
-
-import { useEffect, useState } from "react";
+// src/pages/Feed.tsx
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import { Post } from "@/components/social/Post";
 import { CreatePost } from "@/components/social/CreatePost";
 import { SocialSidebar } from "@/components/social/SocialSidebar";
 import { SocialHeader } from "@/components/social/SocialHeader";
 import { WhoToFollow } from "@/components/social/WhoToFollow";
-import { useUser } from "@supabase/auth-helpers-react";
-import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "lucide-react";
+import { usePostsApi } from "@/hooks/usePostsApi";
+import { Post as PostType, User as UserType } from "@/lib/graphql/types";
+import { useQuery } from "@apollo/client";
+import { SEARCH_USERS, SEARCH_POSTS } from "@/lib/graphql/operations/search";
+import { useImagePreloader } from '@/hooks/useImagePreloader';
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
+import { Button } from "@/components/ui/button";
+import { Spinner, Skeleton, LoadingState, RetryMessage } from "@/components/ui/loaders";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
-interface PostData {
-  id: string;
-  content: string;
-  created_at: string;
-  image_url: string | null;
-  user: {
-    id: string;
-    full_name: string;
-    avatar_url: string;
-    username: string;
+// Extended PostType interface to include imageVariants
+interface ExtendedPostType extends PostType {
+  imageVariants?: {
+    original: string;
+    thumbnail: string;
+    medium: string;
+    optimized: string;
   };
-  likes: { count: number }[];
-  comments: { count: number }[];
-  user_likes: { id: string; user_id: string }[];
-  likes_count: number;
-  comments_count: number;
-  is_liked: boolean;
-}
-
-interface ProfileData {
-  id: string;
-  full_name: string;
-  avatar_url: string;
-  username: string;
-  bio?: string;
 }
 
 const Feed = () => {
-  const [posts, setPosts] = useState<PostData[]>([]);
-  const [profiles, setProfiles] = useState<ProfileData[]>([]);
-  const user = useUser();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("q");
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const [isSearching, setIsSearching] = useState(false);
+  const [posts, setPosts] = useState<ExtendedPostType[]>([]);
+  const [profiles, setProfiles] = useState<UserType[]>([]);
+  const { handleError } = useErrorHandler();
 
-  const fetchSearchResults = async () => {
-    if (!searchQuery) return;
+  // Use GraphQL hooks for feed data
+  const { useFeed } = usePostsApi();
+  
+  // Default pagination for feed
+  const [pagination, setPagination] = useState({ first: 10 });
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [feedError, setFeedError] = useState<Error | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
+  
+  // Ref for infinite scrolling
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  
+  // Create intersection observer for infinite scrolling
+  const { isVisible } = useIntersectionObserver(
+    loadMoreRef,
+    {
+      root: null,
+      rootMargin: '200px',
+      threshold: 0.1
+    }
+  );
+  
+  // Preload images for better UX
+  useImagePreloader(posts, 5);
+  
+  // Load feed posts using GraphQL with proper policy
+  const { 
+    loading: feedLoading, 
+    error: feedQueryError,
+    data: feedData, 
+    fetchMore,
+    refetch: refetchFeed 
+  } = useFeed(pagination);
+
+  // Update error state when feed query fails
+  useEffect(() => {
+    if (feedQueryError) {
+      setFeedError(feedQueryError);
+      handleError(feedQueryError, 'data', {
+        context: 'loading feed',
+        silent: true // We'll handle UI display ourselves
+      });
+    } else {
+      setFeedError(null);
+    }
+  }, [feedQueryError, handleError]);
+
+  // Search queries using GraphQL
+  const { loading: profileSearchLoading, data: profileSearchData } = useQuery(SEARCH_USERS, {
+    variables: { query: searchQuery || "" },
+    skip: !searchQuery,
+    fetchPolicy: 'network-only',
+    onError: (error) => handleError(error, 'data', {
+      context: 'searching users',
+    })
+  });
+
+  const { loading: postSearchLoading, data: postSearchData } = useQuery(SEARCH_POSTS, {
+    variables: { query: searchQuery || "" },
+    skip: !searchQuery,
+    fetchPolicy: 'network-only',
+    onError: (error) => handleError(error, 'data', {
+      context: 'searching posts',
+    })
+  });
+
+  // Handle infinite scrolling
+  useEffect(() => {
+    if (isVisible && hasMore && !isLoadingMore && !feedLoading && !searchQuery && !feedError) {
+      loadMorePosts();
+    }
+  }, [isVisible, hasMore, isLoadingMore, feedLoading, searchQuery, feedError]);
+
+  // Load more posts function
+  const loadMorePosts = async () => {
+    if (!feedData?.feed || feedData.feed.length === 0) return;
     
-    setIsLoading(true);
+    setIsLoadingMore(true);
+    
     try {
-      // First fetch profiles
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .or(`full_name.ilike.%${searchQuery}%,username.ilike.%${searchQuery}%`);
-
-      if (profilesError) throw profilesError;
-      setProfiles(profilesData || []);
-
-      // Then fetch posts
-      const { data: postsData, error: postsError } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          user:user_id (
-            id,
-            full_name,
-            avatar_url,
-            username
-          ),
-          likes:post_likes (count),
-          comments:post_comments (count),
-          user_likes:post_likes (id, user_id)
-        `)
-        .ilike('content', `%${searchQuery}%`)
-        .order('created_at', { ascending: false });
-
-      if (postsError) throw postsError;
-
-      if (postsData) {
-        const formattedPosts: PostData[] = postsData.map(post => ({
-          ...post,
-          likes_count: post.likes[0]?.count || 0,
-          comments_count: post.comments[0]?.count || 0,
-          is_liked: post.user_likes.some(like => like.user_id === user?.id)
-        }));
-        setPosts(formattedPosts);
+      const lastPost = feedData.feed[feedData.feed.length - 1];
+      const result = await fetchMore({
+        variables: {
+          pagination: {
+            first: pagination.first,
+            after: lastPost.id
+          }
+        }
+      });
+      
+      // Check if we have more posts to load
+      if (result.data.feed.length < pagination.first) {
+        setHasMore(false);
       }
     } catch (error) {
-      console.error('Error fetching search results:', error);
-      toast.error("Failed to load search results");
+      handleError(error, 'data', {
+        context: 'loading more posts',
+      });
     } finally {
-      setIsLoading(false);
+      setIsLoadingMore(false);
     }
   };
 
-  const fetchFeed = async () => {
+  // Handle retry for feed loading
+  const handleRetryFeed = async () => {
+    setIsRetrying(true);
     try {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          user:user_id (
-            id,
-            full_name,
-            avatar_url,
-            username
-          ),
-          likes:post_likes (count),
-          comments:post_comments (count),
-          user_likes:post_likes (id, user_id)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (data) {
-        const formattedPosts: PostData[] = data.map(post => ({
-          ...post,
-          likes_count: post.likes[0]?.count || 0,
-          comments_count: post.comments[0]?.count || 0,
-          is_liked: post.user_likes.some(like => like.user_id === user?.id)
-        }));
-        setPosts(formattedPosts);
-      }
+      await refetchFeed();
+      setFeedError(null);
     } catch (error) {
-      console.error('Error fetching posts:', error);
-      toast.error("Failed to load posts");
+      handleError(error, 'data', {
+        context: 'retrying feed load',
+      });
     } finally {
-      setIsLoading(false);
+      setIsRetrying(false);
     }
   };
 
   useEffect(() => {
-    if (user) {
-      if (searchQuery) {
-        fetchSearchResults();
-      } else {
-        setProfiles([]);
-        fetchFeed();
-      }
+    if (searchQuery) {
+      setIsSearching(true);
+      // Reset pagination when searching
+      setHasMore(true);
+    } else {
+      setIsSearching(false);
+      // Reset profiles when not searching
+      setProfiles([]);
     }
-  }, [user, searchQuery]);
+  }, [searchQuery]);
+
+  // Update profiles data when search results change
+  useEffect(() => {
+    if (profileSearchData?.searchUsers) {
+      setProfiles(profileSearchData.searchUsers);
+    }
+  }, [profileSearchData]);
+
+  // Update posts when feed or search results change
+  useEffect(() => {
+    if (searchQuery && postSearchData?.searchPosts) {
+      setPosts(postSearchData.searchPosts as ExtendedPostType[]);
+    } else if (!searchQuery && feedData?.feed) {
+      setPosts(feedData.feed as ExtendedPostType[]);
+    }
+  }, [feedData, postSearchData, searchQuery]);
 
   const handleProfileClick = (userId: string) => {
     navigate(`/profile?id=${userId}`);
   };
 
-  if (!user) {
+  const handlePostUpdated = () => {
+    // Make sure the feed gets the latest data with network policy
+    refetchFeed({
+      fetchPolicy: 'network-only'
+    });
+  };
+
+  // Redirect to sign in if not authenticated
+  if (!authLoading && !isAuthenticated) {
+    navigate('/signin');
     return null;
+  }
+
+  // Show loading state while auth is being checked
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Spinner size="lg" label="Loading your account..." />
+      </div>
+    );
   }
 
   return (
@@ -170,7 +227,7 @@ const Feed = () => {
           <SocialHeader />
           <div className="flex-1 overflow-y-auto">
             <div className="px-4 py-4 space-y-4">
-              {!searchQuery && <CreatePost onPostCreated={fetchFeed} />}
+              {!searchQuery && <CreatePost onPostCreated={handlePostUpdated} />}
               
               {searchQuery && (
                 <h2 className="text-xl font-semibold px-4 py-2">
@@ -180,9 +237,27 @@ const Feed = () => {
                 </h2>
               )}
 
-              {isLoading ? (
-                <div className="p-8 text-center text-gray-500">Loading...</div>
-              ) : (
+              {/* Feed Error State */}
+              {feedError && !isSearching && (
+                <RetryMessage
+                  message="Couldn't load your feed"
+                  description="There was a problem loading the latest posts."
+                  onRetry={handleRetryFeed}
+                  retrying={isRetrying}
+                  className="mb-4"
+                />
+              )}
+
+              {/* Main Loading State */}
+              <LoadingState
+                loading={(feedLoading || profileSearchLoading || postSearchLoading) && posts.length === 0}
+                spinnerLabel={isSearching ? "Searching..." : "Loading your feed..."}
+                fallback={
+                  <div className="space-y-4">
+                    <Skeleton variant="feed-post" count={3} />
+                  </div>
+                }
+              >
                 <div className="space-y-6">
                   {/* Show profiles section if there are matching profiles */}
                   {searchQuery && profiles.length > 0 && (
@@ -198,14 +273,14 @@ const Feed = () => {
                             onClick={() => handleProfileClick(profile.id)}
                           >
                             <Avatar className="w-12 h-12">
-                              <AvatarImage src={profile.avatar_url} />
+                              <AvatarImage src={profile.avatarUrl || undefined} />
                               <AvatarFallback>
                                 <User className="w-6 h-6" />
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-semibold">{profile.full_name}</div>
-                              <div className="text-sm text-gray-500">@{profile.username}</div>
+                              <div className="font-semibold">{profile.displayName}</div>
+                              <div className="text-sm text-gray-500">@{profile.displayName}</div>
                               {profile.bio && (
                                 <div className="text-sm text-gray-600 mt-1">{profile.bio}</div>
                               )}
@@ -223,15 +298,9 @@ const Feed = () => {
                       {posts.map(post => (
                         <Post
                           key={post.id}
-                          id={post.id}
-                          content={post.content}
-                          created_at={post.created_at}
-                          user={post.user}
-                          likes_count={post.likes_count}
-                          comments_count={post.comments_count}
-                          is_liked={post.is_liked}
-                          image_url={post.image_url}
-                          onPostUpdated={searchQuery ? fetchSearchResults : fetchFeed}
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          post={post as any}
+                          onPostUpdated={handlePostUpdated}
                         />
                       ))}
                     </div>
@@ -241,26 +310,41 @@ const Feed = () => {
                   {!searchQuery && posts.map(post => (
                     <Post
                       key={post.id}
-                      id={post.id}
-                      content={post.content}
-                      created_at={post.created_at}
-                      user={post.user}
-                      likes_count={post.likes_count}
-                      comments_count={post.comments_count}
-                      is_liked={post.is_liked}
-                      image_url={post.image_url}
-                      onPostUpdated={fetchFeed}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      post={post as any}
+                      onPostUpdated={handlePostUpdated}
                     />
                   ))}
 
+                  {/* "Load more" button or indicator */}
+                  {!searchQuery && hasMore && (
+                    <div 
+                      ref={loadMoreRef} 
+                      className="py-4 text-center"
+                    >
+                      {isLoadingMore ? (
+                        <Spinner size="sm" label="Loading more posts..." />
+                      ) : (
+                        <Button
+                          variant="outline"
+                          onClick={loadMorePosts}
+                          disabled={isLoadingMore}
+                        >
+                          Load more
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
                   {/* No results message */}
-                  {searchQuery && profiles.length === 0 && posts.length === 0 && (
+                  {searchQuery && profiles.length === 0 && posts.length === 0 && 
+                   !profileSearchLoading && !postSearchLoading && (
                     <div className="p-8 text-center text-gray-500 bg-white dark:bg-gray-800 rounded-lg shadow">
                       No results found for "{searchQuery}"
                     </div>
                   )}
                 </div>
-              )}
+              </LoadingState>
             </div>
           </div>
         </div>

@@ -1,42 +1,46 @@
-
-import { useState, useEffect, useRef } from "react";
+// src/components/social/CreatePost.tsx
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
-import { useUser } from "@supabase/auth-helpers-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { User, ImagePlus, X } from "lucide-react";
+import { usePostsApi } from "@/hooks/usePostsApi";
+import { useMutation } from "@apollo/client";
+import { UPLOAD_IMAGE } from "@/lib/graphql/operations/upload";
+
+// Define the input type to match your GraphQL schema
+interface CreatePostVariables {
+  input: {
+    content: string;
+    imageUrl?: string | null;
+    imageVariants?: {
+      original: string;
+      thumbnail: string;
+      medium: string;
+      optimized: string;
+    } | null;
+  }
+}
 
 export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) => {
   const [content, setContent] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [fullName, setFullName] = useState<string | null>(null);
+  const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const user = useUser();
-
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user?.id) return;
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('avatar_url, full_name')
-        .eq('id', user.id)
-        .single();
-      
-      if (data) {
-        setAvatarUrl(data.avatar_url);
-        setFullName(data.full_name);
-      }
-    };
-
-    fetchUserProfile();
-  }, [user]);
+  
+  // Use GraphQL hooks
+  const { useCreatePost } = usePostsApi();
+  const { createPost, loading: createPostLoading } = useCreatePost();
+  
+  // Image upload mutation
+  const [uploadImage, { loading: uploadLoading }] = useMutation(UPLOAD_IMAGE);
+  
+  // Combined loading state
+  const isSubmitting = createPostLoading || uploadLoading;
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,52 +63,73 @@ export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) =>
   };
 
   const handleSubmit = async () => {
-    if (!content.trim() || !user) return;
-
-    setIsSubmitting(true);
+    if (!content.trim() || !user || isSubmitting) return;
+  
     try {
       let imageUrl = null;
-
+      let imageVariants = null;
+  
       if (selectedImage) {
-        const fileExt = selectedImage.name.split('.').pop();
-        const filePath = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('post_images')
-          .upload(filePath, selectedImage);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('post_images')
-          .getPublicUrl(filePath);
-
-        imageUrl = publicUrl;
+        // Convert file to base64 for GraphQL upload
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve) => {
+          reader.onloadend = () => {
+            const base64String = reader.result as string;
+            resolve(base64String);
+          };
+        });
+        reader.readAsDataURL(selectedImage);
+        
+        const base64String = await base64Promise;
+        
+        // Upload image via GraphQL
+        const { data } = await uploadImage({ 
+          variables: { 
+            image: {
+              base64: base64String,
+              filename: selectedImage.name,
+              contentType: selectedImage.type
+            }
+          } 
+        });
+        
+        imageUrl = data.uploadImage.url;
+        
+        // Capture variants
+        if (data.uploadImage.variants) {
+          imageVariants = {
+            original: data.uploadImage.variants.original,
+            thumbnail: data.uploadImage.variants.thumbnail,
+            medium: data.uploadImage.variants.medium,
+            optimized: data.uploadImage.variants.optimized,
+          };
+        }
       }
-
-      const { error } = await supabase
-        .from('posts')
-        .insert([{ 
-          content: content.trim(), 
-          user_id: user.id,
-          image_url: imageUrl
-        }]);
-
-      if (error) throw error;
-
+  
+      // Create post with GraphQL mutation
+      await createPost({ 
+        variables: { 
+          input: { 
+            content: content.trim(), 
+            imageUrl,
+            imageVariants // Include the variants
+          }
+        } as CreatePostVariables
+      });
+  
+      // Reset form
       setContent("");
       setSelectedImage(null);
       setPreviewUrl(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      toast.success("Post created successfully!");
+      
+      // Notify parent component
       onPostCreated?.();
     } catch (error) {
       console.error('Error creating post:', error);
       toast.error("Failed to create post");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -113,8 +138,8 @@ export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) =>
       <div className="flex gap-4">
         <Avatar className="w-10 h-10 rounded-full border border-gray-200">
           <AvatarImage 
-            src={avatarUrl} 
-            alt={fullName || 'User avatar'}
+            src={user?.avatarUrl} 
+            alt={user?.displayName || 'User avatar'}
             className="object-cover"
           />
           <AvatarFallback className="bg-gray-100">
@@ -169,7 +194,7 @@ export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) =>
               disabled={!content.trim() || isSubmitting}
               className="rounded-full px-6 bg-blue-500 hover:bg-blue-600 text-white"
             >
-              Post
+              {isSubmitting ? "Posting..." : "Post"}
             </Button>
           </div>
         </div>

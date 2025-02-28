@@ -1,31 +1,31 @@
-
-import { useState } from "react";
+// src/components/social/Post.tsx
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Heart, MessageCircle, User } from "lucide-react";
-import { useUser } from "@supabase/auth-helpers-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Comments } from "./Comments";
-import { useNavigate } from "react-router-dom";
+import { usePostsApi } from "@/hooks/usePostsApi";
+import { Post as PostType } from "@/lib/graphql/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { PostImage } from "./PostImage";
+
+// Extended interface to include imageVariants
+interface ExtendedPostType extends PostType {
+  imageVariants?: {
+    original: string;
+    thumbnail: string;
+    medium: string;
+    optimized: string;
+  };
+}
 
 interface PostProps {
-  id: string;
-  content: string;
-  created_at: string;
-  user: {
-    id: string;
-    full_name: string;
-    avatar_url: string;
-    username: string;
-  };
-  likes_count: number;
-  comments_count: number;
-  is_liked: boolean;
-  image_url?: string | null;
+  post: ExtendedPostType;
   onPostUpdated?: () => void;
+  alwaysShowComments?: boolean;
 }
 
 const formatContentWithTickers = (content: string) => {
@@ -64,158 +64,171 @@ const formatContentWithTickers = (content: string) => {
   return parts;
 };
 
-export const Post = ({
-  id,
-  content,
-  created_at,
-  user,
-  likes_count,
-  comments_count,
-  is_liked: initialIsLiked,
-  image_url,
-  onPostUpdated
-}: PostProps) => {
-  const currentUser = useUser();
+export const Post = ({ post, onPostUpdated, alwaysShowComments }: PostProps) => {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [isLiked, setIsLiked] = useState(initialIsLiked);
-  const [likesCount, setLikesCount] = useState(likes_count);
+  const location = useLocation();
+  
+  // Local state to control UI independently of API calls
+  const [isLiked, setIsLiked] = useState(post.isLikedByMe);
+  const [likesCount, setLikesCount] = useState(post.likesCount);
   const [isLiking, setIsLiking] = useState(false);
-  const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState<any[]>([]);
-  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [localCommentsCount, setLocalCommentsCount] = useState(post.commentsCount);
+
+  // Show comments by default if on activity page or alwaysShowComments is true
+  const [showComments, setShowComments] = useState(
+    alwaysShowComments || 
+    location.pathname === '/activity' ||
+    // Check if there are comments to show
+    (post.comments && post.comments.length > 0)
+  );
+  
+  // Use GraphQL hooks
+  const { useLikePost } = usePostsApi();
+  const { toggleLike } = useLikePost();
+
+  // Keep local state in sync with props (important for when the parent updates)
+  useEffect(() => {
+    setIsLiked(post.isLikedByMe);
+    setLikesCount(post.likesCount);
+  }, [post.isLikedByMe, post.likesCount]);
+
+  // Handle comment display based on different properties/paths
+  useEffect(() => {
+    if (alwaysShowComments || location.pathname === '/activity' || 
+        (post.comments && post.comments.length > 0)) {
+      setShowComments(true);
+    }
+  }, [alwaysShowComments, location.pathname, post.comments]);
 
   const handleLike = async () => {
-    if (!currentUser || isLiking) return;
-
+    if (!user || isLiking) return;
+    
+    // Set local state IMMEDIATELY for instant UI update
     setIsLiking(true);
+    setIsLiked(!isLiked); 
+    setLikesCount(prev => isLiked ? Math.max(0, prev - 1) : prev + 1);
+    
     try {
-      if (!isLiked) {
-        const { error } = await supabase
-          .from('post_likes')
-          .insert([{ post_id: id, user_id: currentUser.id }]);
-
-        if (error) throw error;
-
-        setIsLiked(true);
-        setLikesCount(prev => prev + 1);
-      } else {
-        const { error } = await supabase
-          .from('post_likes')
-          .delete()
-          .eq('post_id', id)
-          .eq('user_id', currentUser.id);
-
-        if (error) throw error;
-
-        setIsLiked(false);
-        setLikesCount(prev => prev - 1);
+      // Use GraphQL hook to update the backend
+      await toggleLike(post.id, isLiked);
+      
+      // No need to update local state again as we've already done it optimistically
+      
+      // Only call onPostUpdated if explicitly needed
+      if (onPostUpdated && location.pathname === '/activity') {
+        onPostUpdated();
       }
-      onPostUpdated?.();
     } catch (error) {
       console.error('Error toggling like:', error);
-      toast.error("Failed to update like");
+      
+      // Revert UI updates if there was an error
+      setIsLiked(isLiked);
+      setLikesCount(prev => isLiked ? prev + 1 : Math.max(0, prev - 1));
     } finally {
       setIsLiking(false);
     }
   };
 
-  const fetchComments = async () => {
-    setIsLoadingComments(true);
-    try {
-      const { data: commentsData, error: commentsError } = await supabase
-        .from('post_comments')
-        .select(`
-          id,
-          content,
-          created_at,
-          user_id,
-          profiles (
-            full_name,
-            avatar_url,
-            username
-          )
-        `)
-        .eq('post_id', id)
-        .order('created_at', { ascending: true });
-
-      if (commentsError) throw commentsError;
-
-      const transformedComments = (commentsData || []).map(comment => ({
-        id: comment.id,
-        content: comment.content,
-        created_at: comment.created_at,
-        user: {
-          id: comment.user_id,
-          full_name: comment.profiles?.full_name || 'Unknown User',
-          avatar_url: comment.profiles?.avatar_url || '',
-          username: comment.profiles?.username || 'unknown'
-        }
-      }));
-
-      setComments(transformedComments);
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-      toast.error("Failed to load comments");
-    } finally {
-      setIsLoadingComments(false);
-    }
-  };
-
   const toggleComments = () => {
-    if (!showComments) {
-      fetchComments();
-    }
     setShowComments(!showComments);
   };
 
   const handleUserClick = () => {
-    if (user.id === currentUser?.id) {
+    if (post.author.id === user?.id) {
       navigate('/profile');
     } else {
-      navigate(`/profile?id=${user.id}`);
+      navigate(`/profile?id=${post.author.id}`);
     }
+  };
+  
+  const updateCommentsCount = (increment = true) => {
+    // Create a copy of the post to avoid modifying the original object directly
+    // This fixes the "Cannot assign to read only property" error
+    const updatedPost = { ...post };
+    
+    // Update the comment count on the copy
+    if (increment) {
+      updatedPost.commentsCount += 1;
+    } else {
+      updatedPost.commentsCount = Math.max(0, updatedPost.commentsCount - 1);
+    }
+    
+    // Since we can't directly modify the original post, we can use the copied values
+    // for UI updates only
+    
+    // Ensure the comments section is visible when a new comment is added
+    if (increment && !showComments) {
+      setShowComments(true);
+    }
+  };
+  
+  // Then modify the handleCommentAdded function:
+  const handleCommentAdded = (isDeleted = false) => {
+    // Update local UI state
+    if (isDeleted) {
+      // Decrement for deletion
+      setLocalCommentsCount(prev => Math.max(0, prev - 1));
+    } else {
+      // Increment for addition
+      setLocalCommentsCount(prev => prev + 1);
+    }
+    
+    // Only call onPostUpdated when absolutely necessary
+    // For example, we might want to do this only when changing post attributes
+    // but not for comment operations
+    // if (onPostUpdated) {
+    //   onPostUpdated();
+    // }
   };
 
   return (
     <Card className="p-4">
       <div className="flex gap-3">
-        <Avatar className="w-10 h-10">
-          <AvatarImage src={user.avatar_url} />
+        <Avatar className="w-10 h-10 flex-shrink-0">
+          <AvatarImage src={post.author.avatarUrl || undefined} />
           <AvatarFallback>
             <User className="w-6 h-6" />
           </AvatarFallback>
         </Avatar>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
             <button 
               className="hover:underline font-semibold"
               onClick={handleUserClick}
             >
-              {user.full_name}
+              {post.author.displayName}
             </button>
             <button 
               className="text-gray-500 hover:underline"
               onClick={handleUserClick}
             >
-              @{user.username}
+              @{post.author.displayName}
             </button>
             <span className="text-gray-500">·</span>
             <span className="text-gray-500">
-              {formatDistanceToNow(new Date(created_at), { addSuffix: true })}
+              {post.createdAt 
+                ? (() => {
+                    try {
+                      return formatDistanceToNow(new Date(post.createdAt), { addSuffix: true });
+                    } catch (e) {
+                      console.warn('Invalid date:', post.createdAt);
+                      return 'recently';
+                    }
+                  })()
+                : 'recently'}
             </span>
           </div>
-          <p className="mt-2 text-gray-900">
-            {formatContentWithTickers(content)}
+          <p className="mt-2 text-gray-900 break-words">
+            {formatContentWithTickers(post.content)}
           </p>
           
-          {image_url && (
-            <div className="mt-3 rounded-lg overflow-hidden">
-              <img
-                src={image_url}
-                alt="Post image"
-                className="max-h-[400px] w-full object-cover"
-              />
-            </div>
+          {post.imageUrl && (
+            <PostImage 
+              imageUrl={post.imageUrl} 
+              variants={post.imageVariants} 
+              alt={`Post by ${post.author.displayName}`}
+            />
           )}
 
           <div className="flex gap-6 mt-4">
@@ -224,7 +237,7 @@ export const Post = ({
               size="sm"
               className="flex items-center gap-2"
               onClick={handleLike}
-              disabled={!currentUser || isLiking}
+              disabled={!user || isLiking}
             >
               <Heart 
                 className={`w-4 h-4 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} 
@@ -238,24 +251,17 @@ export const Post = ({
               onClick={toggleComments}
             >
               <MessageCircle className="w-4 h-4" />
-              <span>{comments_count}</span>
+              <span>{localCommentsCount}</span>
             </Button>
           </div>
 
           {showComments && (
             <div className="mt-4 border-t border-gray-200 dark:border-gray-800 pt-4">
-              {isLoadingComments ? (
-                <div className="text-center py-4">Loading comments...</div>
-              ) : (
-                <Comments
-                  postId={id}
-                  comments={comments}
-                  onCommentAdded={() => {
-                    fetchComments();
-                    onPostUpdated?.();
-                  }}
-                />
-              )}
+              <Comments 
+                postId={post.id} 
+                comments={post.comments || []}
+                onCommentAdded={handleCommentAdded}
+              />
             </div>
           )}
         </div>
