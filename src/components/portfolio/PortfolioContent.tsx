@@ -1,13 +1,12 @@
-import { useState, useEffect } from "react";
+// src/components/portfolio/PortfolioContent.tsx
+import { useState, useEffect, useCallback } from "react";
 import { PortfolioEmpty } from "./PortfolioEmpty";
 import { PortfolioCreate } from "./PortfolioCreate";
 import { PortfolioView } from "./PortfolioView";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { fetchFinancialData } from "@/utils/financialApi";
 import { Portfolio, Stock } from "./types";
-import { updatePortfolioStock, calculatePortfolioMetrics } from "./utils/portfolioOperations";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import portfolioApi from '@/services/portfolioApi';
 
 interface PortfolioContentProps {
   portfolioId: string;
@@ -15,189 +14,61 @@ interface PortfolioContentProps {
 
 const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
-  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(portfolioId);
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(portfolioId || null);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Separate loading states for different operations
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const fetchPortfolios = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const portfolios = await portfolioApi.getPortfolios();
+      setPortfolios(portfolios);
+      
+      // Set the first portfolio as selected if none is selected and we have portfolios
+      if ((!selectedPortfolioId || selectedPortfolioId === "") && portfolios.length > 0) {
+        setSelectedPortfolioId(portfolios[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching portfolios:', error);
+      setError("Failed to fetch portfolio data. Please try again later.");
+      toast.error("Failed to fetch portfolio data");
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedPortfolioId]);
 
   useEffect(() => {
     fetchPortfolios();
-  }, []);
+  }, [fetchPortfolios]);
 
   useEffect(() => {
-    setSelectedPortfolioId(portfolioId);
-  }, [portfolioId]);
-
-  const fetchPortfolios = async () => {
-    setLoading(true);
-    try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        toast.error("Error fetching user session");
-        console.error("Error fetching session:", sessionError);
-        setLoading(false);
-        return;
-      }
-
-      if (!session) {
-        toast.error("Please sign in to view portfolios");
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("portfolios")
-        .select("*, portfolio_stocks(*)")
-        .eq('user_id', session.user.id);
-
-      if (error) {
-        toast.error("Error fetching portfolios");
-        console.error("Error fetching portfolios:", error);
-        setLoading(false);
-        return;
-      }
-
-      if (data) {
-        const processedPortfolios = await Promise.all(data.map(async (portfolio) => {
-          const stocksPromises = (portfolio.portfolio_stocks || []).map(async (stock: any) => {
-            try {
-              const quoteData = await fetchFinancialData('quote', stock.ticker);
-              if (!quoteData || !quoteData[0]) {
-                console.error(`No quote data received for ${stock.ticker}`);
-                throw new Error(`Failed to fetch quote data for ${stock.ticker}`);
-              }
-              
-              const currentPrice = quoteData[0]?.price || 0;
-              const shares = Number(stock.shares);
-              const avgPrice = Number(stock.avg_price);
-              const marketValue = shares * currentPrice;
-              const gainLoss = marketValue - (shares * avgPrice);
-              const gainLossPercent = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 : 0;
-
-              await supabase
-                .from('portfolio_stocks')
-                .update({
-                  current_price: currentPrice,
-                  market_value: marketValue,
-                  gain_loss: gainLoss,
-                  gain_loss_percent: gainLossPercent
-                })
-                .eq('id', stock.id);
-
-              return {
-                ticker: stock.ticker,
-                name: stock.name,
-                shares,
-                avgPrice,
-                currentPrice,
-                marketValue,
-                percentOfPortfolio: 0,
-                gainLoss,
-                gainLossPercent
-              };
-            } catch (error) {
-              console.error(`Error fetching price for ${stock.ticker}:`, error);
-              toast.error(`Failed to fetch current price for ${stock.ticker}`);
-              
-              return {
-                ticker: stock.ticker,
-                name: stock.name,
-                shares: Number(stock.shares),
-                avgPrice: Number(stock.avg_price),
-                currentPrice: Number(stock.current_price),
-                marketValue: Number(stock.market_value),
-                percentOfPortfolio: Number(stock.percent_of_portfolio),
-                gainLoss: Number(stock.gain_loss),
-                gainLossPercent: Number(stock.gain_loss_percent)
-              };
-            }
-          });
-
-          const stocks = await Promise.all(stocksPromises);
-          const { totalValue, stocksWithPercentages } = calculatePortfolioMetrics(stocks);
-          
-          await supabase
-            .from('portfolios')
-            .update({ total_value: totalValue })
-            .eq('id', portfolio.id);
-
-          await Promise.all(stocksWithPercentages.map(stock =>
-            supabase
-              .from('portfolio_stocks')
-              .update({ percent_of_portfolio: stock.percentOfPortfolio })
-              .eq('portfolio_id', portfolio.id)
-              .eq('ticker', stock.ticker)
-          ));
-
-          return {
-            id: portfolio.id,
-            name: portfolio.name,
-            stocks: stocksWithPercentages,
-            totalValue
-          };
-        }));
-
-        setPortfolios(processedPortfolios);
-        // Set the first portfolio as selected if none is selected
-        if (!selectedPortfolioId && processedPortfolios.length > 0) {
-          setSelectedPortfolioId(processedPortfolios[0].id);
-        }
-      }
-    } catch (error) {
-      console.error('Error in fetchPortfolios:', error);
-      toast.error("Failed to fetch portfolio data");
+    if (portfolioId) {
+      setSelectedPortfolioId(portfolioId);
     }
-    setLoading(false);
-  };
+  }, [portfolioId]);
 
   const handleAddPortfolio = async (newPortfolio: Portfolio) => {
     try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const createRequest = {
+        name: newPortfolio.name,
+        positions: newPortfolio.stocks.map(stock => ({
+          ticker: stock.ticker,
+          name: stock.name,
+          shares: stock.shares,
+          avgPrice: stock.avgPrice
+        }))
+      };
       
-      if (sessionError) {
-        toast.error("Error fetching user session");
-        console.error("Error fetching session:", sessionError);
-        return;
-      }
-
-      if (!session) {
-        toast.error("Please sign in to create a portfolio");
-        return;
-      }
-
-      const { data: portfolioData, error: portfolioError } = await supabase
-        .from('portfolios')
-        .insert({
-          name: newPortfolio.name,
-          total_value: newPortfolio.totalValue,
-          user_id: session.user.id
-        })
-        .select()
-        .single();
-
-      if (portfolioError) throw portfolioError;
-
-      const stockPromises = newPortfolio.stocks.map(stock => 
-        supabase
-          .from('portfolio_stocks')
-          .insert({
-            portfolio_id: portfolioData.id,
-            ticker: stock.ticker,
-            name: stock.name,
-            shares: stock.shares,
-            avg_price: stock.avgPrice,
-            current_price: stock.currentPrice,
-            market_value: stock.marketValue,
-            percent_of_portfolio: stock.percentOfPortfolio,
-            gain_loss: stock.gainLoss,
-            gain_loss_percent: stock.gainLossPercent
-          })
-      );
-
-      await Promise.all(stockPromises);
+      const createdPortfolio = await portfolioApi.createPortfolio(createRequest);
       
-      await fetchPortfolios();
-      setSelectedPortfolioId(portfolioData.id);
+      // Add the new portfolio to the existing list instead of refetching all portfolios
+      setPortfolios(prev => [...prev, createdPortfolio]);
+      setSelectedPortfolioId(createdPortfolio.id);
       setIsCreating(false);
       toast.success("Portfolio created successfully");
     } catch (error) {
@@ -206,76 +77,199 @@ const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
     }
   };
 
-  const handleUpdatePortfolio = async (updatedPortfolio: Portfolio) => {
+  const updateLocalPortfolio = (updatedPortfolio: Portfolio) => {
+    // Update the portfolio in the local state
+    setPortfolios(prev => 
+      prev.map(p => p.id === updatedPortfolio.id ? updatedPortfolio : p)
+    );
+  };
+
+  const handleUpdatePortfolioName = async (id: string, newName: string) => {
+    setIsUpdating(true);
     try {
-      await supabase
-        .from('portfolios')
-        .update({
-          name: updatedPortfolio.name,
-          total_value: updatedPortfolio.totalValue
-        })
-        .eq('id', updatedPortfolio.id);
-
-      const { data: currentStocks } = await supabase
-        .from('portfolio_stocks')
-        .select('*')
-        .eq('portfolio_id', updatedPortfolio.id);
-
-      const currentStocksMap = new Map(currentStocks?.map(s => [s.ticker, s]));
-
-      for (const stock of updatedPortfolio.stocks) {
-        const existingStock = currentStocksMap.get(stock.ticker);
-
-        if (existingStock) {
-          await updatePortfolioStock(updatedPortfolio.id, stock, existingStock);
-        } else {
-          await supabase
-            .from('portfolio_stocks')
-            .insert({
-              portfolio_id: updatedPortfolio.id,
-              ticker: stock.ticker,
-              name: stock.name,
-              shares: stock.shares,
-              avg_price: stock.avgPrice,
-              current_price: stock.currentPrice,
-              market_value: stock.marketValue,
-              percent_of_portfolio: stock.percentOfPortfolio,
-              gain_loss: stock.gainLoss,
-              gain_loss_percent: stock.gainLossPercent
-            });
-        }
-      }
-
-      const updatedTickers = new Set(updatedPortfolio.stocks.map(s => s.ticker));
-      const tickersToDelete = [...currentStocksMap.keys()].filter(ticker => !updatedTickers.has(ticker));
-      
-      if (tickersToDelete.length > 0) {
-        await supabase
-          .from('portfolio_stocks')
-          .delete()
-          .eq('portfolio_id', updatedPortfolio.id)
-          .in('ticker', tickersToDelete);
-      }
-      
-      await fetchPortfolios();
-      toast.success("Portfolio updated successfully");
+      const updatedPortfolio = await portfolioApi.updatePortfolio(id, newName);
+      updateLocalPortfolio(updatedPortfolio);
+      toast.success("Portfolio name updated successfully");
     } catch (error) {
-      console.error('Error updating portfolio:', error);
-      toast.error("Failed to update portfolio");
+      console.error('Error updating portfolio name:', error);
+      toast.error("Failed to update portfolio name");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleAddPosition = async (portfolioId: string, position: {
+    ticker: string;
+    name: string;
+    shares: number;
+    avgPrice: number;
+  }) => {
+    setIsUpdating(true);
+    try {
+      // Find current portfolio
+      const currentPortfolio = portfolios.find(p => p.id === portfolioId);
+      if (!currentPortfolio) throw new Error("Portfolio not found");
+
+      // Add position to the API
+      const newPosition = await portfolioApi.addPosition(portfolioId, position);
+      
+      // Optimistically update the local state without a full refresh
+      const updatedStocks = [...currentPortfolio.stocks];
+      
+      // Check if we're updating an existing position
+      const existingIndex = updatedStocks.findIndex(s => s.ticker === position.ticker);
+      if (existingIndex >= 0) {
+        // Replace the existing position
+        updatedStocks[existingIndex] = newPosition;
+      } else {
+        // Add the new position
+        updatedStocks.push(newPosition);
+      }
+      
+      // Recalculate total value
+      const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
+      
+      // Create updated portfolio object
+      const updatedPortfolio = {
+        ...currentPortfolio,
+        stocks: updatedStocks,
+        totalValue
+      };
+      
+      // Update state
+      updateLocalPortfolio(updatedPortfolio);
+      
+      toast.success(`Position ${position.ticker} added successfully`);
+    } catch (error) {
+      console.error('Error adding position:', error);
+      toast.error("Failed to add position");
+      
+      // If there was an error, refresh the portfolios to ensure data consistency
+      fetchPortfolios();
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleUpdatePosition = async (portfolioId: string, ticker: string, shares: number, avgPrice: number) => {
+    setIsUpdating(true);
+    try {
+      // Find current portfolio
+      const currentPortfolio = portfolios.find(p => p.id === portfolioId);
+      if (!currentPortfolio) throw new Error("Portfolio not found");
+
+      // Update position in the API
+      const updatedPosition = await portfolioApi.updatePosition(portfolioId, ticker, { 
+        ticker, 
+        shares, 
+        avgPrice 
+      });
+      
+      // Optimistically update the local state
+      const updatedStocks = currentPortfolio.stocks.map(stock => 
+        stock.ticker === ticker ? updatedPosition : stock
+      );
+      
+      // Recalculate total value
+      const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
+      
+      // Recalculate percentages
+      const stocksWithPercentages = updatedStocks.map(stock => ({
+        ...stock,
+        percentOfPortfolio: (stock.marketValue / totalValue) * 100
+      }));
+      
+      // Create updated portfolio object
+      const updatedPortfolio = {
+        ...currentPortfolio,
+        stocks: stocksWithPercentages,
+        totalValue
+      };
+      
+      // Update state
+      updateLocalPortfolio(updatedPortfolio);
+      
+      toast.success(`Position ${ticker} updated successfully`);
+    } catch (error) {
+      console.error('Error updating position:', error);
+      toast.error("Failed to update position");
+      
+      // If there was an error, refresh the portfolios to ensure data consistency
+      fetchPortfolios();
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeletePosition = async (portfolioId: string, ticker: string) => {
+    setIsUpdating(true);
+    try {
+      // Find current portfolio
+      const currentPortfolio = portfolios.find(p => p.id === portfolioId);
+      if (!currentPortfolio) throw new Error("Portfolio not found");
+
+      // Delete position from the API
+      await portfolioApi.deletePosition(portfolioId, ticker);
+      
+      // Optimistically update the local state
+      const updatedStocks = currentPortfolio.stocks.filter(stock => stock.ticker !== ticker);
+      
+      // If all stocks are deleted, set empty array and zero total value
+      if (updatedStocks.length === 0) {
+        const updatedPortfolio = {
+          ...currentPortfolio,
+          stocks: [],
+          totalValue: 0
+        };
+        
+        // Update state
+        updateLocalPortfolio(updatedPortfolio);
+      } else {
+        // Recalculate total value
+        const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
+        
+        // Recalculate percentages
+        const stocksWithPercentages = updatedStocks.map(stock => ({
+          ...stock,
+          percentOfPortfolio: (stock.marketValue / totalValue) * 100
+        }));
+        
+        // Create updated portfolio object
+        const updatedPortfolio = {
+          ...currentPortfolio,
+          stocks: stocksWithPercentages,
+          totalValue
+        };
+        
+        // Update state
+        updateLocalPortfolio(updatedPortfolio);
+      }
+      
+      toast.success(`Position ${ticker} removed successfully`);
+    } catch (error) {
+      console.error('Error deleting position:', error);
+      toast.error("Failed to delete position");
+      
+      // If there was an error, refresh the portfolios to ensure data consistency
+      fetchPortfolios();
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleDeletePortfolio = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('portfolios')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
+      await portfolioApi.deletePortfolio(id);
+      
+      // Update local state without refetching
       setPortfolios(prev => prev.filter(portfolio => portfolio.id !== id));
-      setSelectedPortfolioId(null);
+      
+      // If we deleted the selected portfolio, select another one if available
+      if (selectedPortfolioId === id) {
+        const remainingPortfolios = portfolios.filter(p => p.id !== id);
+        setSelectedPortfolioId(remainingPortfolios.length > 0 ? remainingPortfolios[0].id : null);
+      }
+      
       toast.success("Portfolio deleted successfully");
     } catch (error) {
       console.error('Error deleting portfolio:', error);
@@ -283,8 +277,39 @@ const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  const handleUpdatePortfolio = (updatedPortfolio: Portfolio) => {
+    // This is a local update function for when we modify a portfolio in the UI
+    // It handles updating the portfolio in the local state
+    updateLocalPortfolio(updatedPortfolio);
+    
+    // If we change the name, we need to update it on the server
+    const currentPortfolio = portfolios.find(p => p.id === updatedPortfolio.id);
+    if (currentPortfolio && currentPortfolio.name !== updatedPortfolio.name) {
+      handleUpdatePortfolioName(updatedPortfolio.id, updatedPortfolio.name);
+    }
+  };
+
+  // Handle loading state
+  if (loading) {
+    return <div className="flex items-center justify-center h-64">Loading portfolios...</div>;
+  }
   
+  // Handle error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <p className="text-red-500 mb-4">{error}</p>
+        <button 
+          onClick={() => fetchPortfolios()}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // Handle creating a new portfolio
   if (isCreating) {
     return (
       <PortfolioCreate
@@ -294,14 +319,29 @@ const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
     );
   }
 
+  // Handle empty portfolios
   if (portfolios.length === 0) {
     return <PortfolioEmpty onCreate={() => setIsCreating(true)} />;
   }
 
+  // Find the selected portfolio
   const selectedPortfolio = portfolios.find(p => p.id === selectedPortfolioId);
 
   return (
     <div className="space-y-6">
+      {/* Loading overlay for operations */}
+      {isUpdating && (
+        <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg shadow-lg">
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+              <span>Updating...</span>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Portfolio selector */}
       <div className="flex items-center space-x-4">
         <Select
           value={selectedPortfolioId || undefined}
@@ -320,13 +360,41 @@ const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
         </Select>
       </div>
 
-      {selectedPortfolio && (
+      {/* Portfolio view */}
+      {selectedPortfolio ? (
         <PortfolioView
           portfolio={selectedPortfolio}
           onAddPortfolio={() => setIsCreating(true)}
           onDeletePortfolio={handleDeletePortfolio}
           onUpdatePortfolio={handleUpdatePortfolio}
+          // Pass the new position handlers
+          onAddPosition={(company, shares, avgPrice) => {
+            if (!selectedPortfolio) return;
+            
+            // Convert to proper types
+            const newShares = Number(shares);
+            const newAvgPrice = Number(avgPrice);
+            
+            handleAddPosition(selectedPortfolio.id, {
+              ticker: company.ticker,
+              name: company.name,
+              shares: newShares,
+              avgPrice: newAvgPrice
+            });
+          }}
+          onUpdatePosition={(ticker, shares, avgPrice) => {
+            if (!selectedPortfolio) return;
+            handleUpdatePosition(selectedPortfolio.id, ticker, shares, avgPrice);
+          }}
+          onDeletePosition={(ticker) => {
+            if (!selectedPortfolio) return;
+            handleDeletePosition(selectedPortfolio.id, ticker);
+          }}
         />
+      ) : (
+        <div className="text-center py-10">
+          <p className="text-gray-500">No portfolio selected. Please select a portfolio from the dropdown above.</p>
+        </div>
       )}
     </div>
   );

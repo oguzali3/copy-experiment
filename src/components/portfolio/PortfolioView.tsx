@@ -14,6 +14,11 @@ interface PortfolioViewProps {
   onAddPortfolio: () => void;
   onDeletePortfolio: (id: string) => void;
   onUpdatePortfolio: (portfolio: Portfolio) => void;
+  // Add direct handlers for position management
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onAddPosition: (company: any, shares: string, avgPrice: string) => void;
+  onUpdatePosition: (ticker: string, shares: number, avgPrice: number) => void;
+  onDeletePosition: (ticker: string) => void;
 }
 
 export const PortfolioView = ({
@@ -21,9 +26,13 @@ export const PortfolioView = ({
   onAddPortfolio,
   onDeletePortfolio,
   onUpdatePortfolio,
+  onAddPosition,
+  onUpdatePosition,
+  onDeletePosition,
 }: PortfolioViewProps) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddingTicker, setIsAddingTicker] = useState(false);
+  const [performanceTimeframe, setPerformanceTimeframe] = useState("5D");
 
   const handleUpdatePortfolioName = (newName: string) => {
     onUpdatePortfolio({
@@ -33,6 +42,7 @@ export const PortfolioView = ({
     toast.success("Portfolio name updated");
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleAddPosition = (company: any, shares: string, avgPrice: string) => {
     if (!company || !shares || !avgPrice) {
       toast.error("Please fill in all fields");
@@ -41,107 +51,17 @@ export const PortfolioView = ({
 
     const newShares = Number(shares);
     const newAvgPrice = Number(avgPrice);
-  
-    // Check if the stock already exists in the portfolio
-    const updatedStocks = portfolio.stocks.map(stock => {
-      if (stock.ticker === company.ticker) {
-        // If the stock exists, update it
-        const totalCost = (stock.shares * stock.avgPrice) + (newShares * newAvgPrice);
-        const updatedShares = stock.shares + newShares;
-        const updatedAvgPrice = totalCost / updatedShares;
-        const updatedMarketValue = updatedShares * stock.currentPrice;
-        const updatedGainLoss = updatedMarketValue - (updatedShares * updatedAvgPrice);
-        const updatedGainLossPercent = ((stock.currentPrice - updatedAvgPrice) / updatedAvgPrice) * 100;
-  
-        return {
-          ...stock,
-          shares: updatedShares,
-          avgPrice: updatedAvgPrice,
-          marketValue: updatedMarketValue,
-          gainLoss: updatedGainLoss,
-          gainLossPercent: updatedGainLossPercent,
-        };
-      }
-      return stock; // Leave other stocks unchanged
-    });
-  
-    // Check if the stock was not found in the portfolio (i.e., it's a new stock)
-    const stockExists = portfolio.stocks.some(stock => stock.ticker === company.ticker);
-    if (!stockExists) {
-      const newStock: Stock = {
-        ticker: company.ticker,
-        name: company.name,
-        shares: newShares,
-        avgPrice: newAvgPrice,
-        currentPrice: 0,
-        marketValue: 0,
-        percentOfPortfolio: 0,
-        gainLoss: 0,
-        gainLossPercent: 0,
-      };
-  
-      updatedStocks.push(newStock);
-      toast.success(`Added ${newStock.name} to portfolio`);
-    } else {
-      toast.success(`Updated ${company.name} in portfolio`);
-    }
-  
-    // Update portfolio state
-    onUpdatePortfolio({
-      ...portfolio,
-      stocks: updatedStocks,
-    });
-  };
-
-  const handleUpdatePosition = (ticker: string, shares: number, avgPrice: number) => {
-    const updatedStocks = portfolio.stocks.map(stock => {
-      if (stock.ticker === ticker) {
-        const marketValue = shares * stock.currentPrice;
-        const gainLoss = marketValue - (shares * avgPrice);
-        const gainLossPercent = ((stock.currentPrice - avgPrice) / avgPrice) * 100;
-        
-        return {
-          ...stock,
-          shares,
-          avgPrice,
-          marketValue,
-          gainLoss,
-          gainLossPercent
-        };
-      }
-      return stock;
-    });
-
-    const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
-    const stocksWithUpdatedPercentages = updatedStocks.map(stock => ({
-      ...stock,
-      percentOfPortfolio: (stock.marketValue / totalValue) * 100
-    }));
-
-    onUpdatePortfolio({
-      ...portfolio,
-      stocks: stocksWithUpdatedPercentages,
-      totalValue
-    });
-
-    toast.success(`Updated position for ${ticker}`);
-  };
-
-  const handleDeletePosition = (ticker: string) => {
-    const updatedStocks = portfolio.stocks.filter(stock => stock.ticker !== ticker);
-    const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
     
-    const stocksWithUpdatedPercentages = updatedStocks.map(stock => ({
-      ...stock,
-      percentOfPortfolio: (stock.marketValue / totalValue) * 100
-    }));
-
-    onUpdatePortfolio({
-      ...portfolio,
-      stocks: stocksWithUpdatedPercentages,
-      totalValue
-    });
-    toast.success(`Removed ${ticker} from portfolio`);
+    if (newShares <= 0 || newAvgPrice <= 0) {
+      toast.error("Shares and average price must be greater than zero");
+      return;
+    }
+    
+    // Use the direct handler passed from parent
+    onAddPosition(company, shares, avgPrice);
+    
+    // Close the dialog
+    setIsAddingTicker(false);
   };
 
   return (
@@ -175,19 +95,42 @@ export const PortfolioView = ({
 
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h2 className="text-lg font-medium mb-4">Portfolio Performance</h2>
-          <PortfolioPerformanceChart timeframe="5D" />
+          <PortfolioPerformanceChart 
+            timeframe={performanceTimeframe} 
+            portfolioValue={portfolio.totalValue}
+          />
         </div>
       </div>
 
       <div className="space-y-2">
-        <p className="text-sm text-gray-600 italic">
-          Tip: Click directly on the Shares or Average Price values in the table below to edit existing positions.
-        </p>
-        <PortfolioTable 
-          stocks={portfolio.stocks} 
-          onDeletePosition={handleDeletePosition}
-          onUpdatePosition={handleUpdatePosition}
-        />
+        <div className="flex justify-between items-center">
+          <p className="text-sm text-gray-600 italic">
+            Tip: Click directly on the Shares or Average Price values in the table below to edit existing positions.
+          </p>
+          <div className="text-sm text-gray-500">
+            Total Value: <span className="font-medium">${portfolio.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+        </div>
+        
+        {portfolio.stocks.length > 0 ? (
+          <PortfolioTable 
+            stocks={portfolio.stocks} 
+            onDeletePosition={onDeletePosition}
+            onUpdatePosition={onUpdatePosition}
+          />
+        ) : (
+          <div className="bg-white p-10 rounded-lg shadow-sm text-center">
+            <p className="text-gray-500 mb-4">No positions in this portfolio yet</p>
+            <Button
+              variant="outline"
+              className="text-blue-600 border-blue-600"
+              onClick={() => setIsAddingTicker(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Your First Position
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="flex justify-end gap-4">

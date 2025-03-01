@@ -1,6 +1,7 @@
 // src/services/auth.service.ts
 import apolloClient from "@/integrations/apollo/apolloClient";
 import { gql } from "@apollo/client";
+import { jwtDecode } from "jwt-decode";
 
 // GraphQL Mutations
 const SIGN_IN_MUTATION = gql`
@@ -48,8 +49,22 @@ const SSO_VERIFY_MUTATION = gql`
   }
 `;
 
+// Add a query to get the current user
+const GET_CURRENT_USER = gql`
+  query GetCurrentUser {
+    me {
+      id
+      email
+      displayName
+      avatarUrl
+      isVerified
+    }
+  }
+`;
+
 // Auth token handling
 const TOKEN_KEY = 'auth_token';
+const USER_DATA_KEY = 'user_data';
 
 export const setAuthToken = (token: string) => {
   localStorage.setItem(TOKEN_KEY, token);
@@ -63,11 +78,35 @@ export const getAuthToken = (): string | null => {
 
 export const clearAuthToken = () => {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_DATA_KEY);
   apolloClient.resetStore();
 };
 
 export const isAuthenticated = (): boolean => {
   return !!getAuthToken();
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const parseToken = (token: string): any => {
+  try {
+    return jwtDecode(token);
+  } catch (error) {
+    console.error('Error decoding token:', error);
+    return null;
+  }
+};
+
+
+// Store user data in localStorage to avoid unnecessary API calls
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const setUserData = (user: any) => {
+  localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const getUserData = (): any | null => {
+  const userData = localStorage.getItem(USER_DATA_KEY);
+  return userData ? JSON.parse(userData) : null;
 };
 
 // Auth service methods
@@ -84,6 +123,7 @@ export const AuthService = {
       
       if (data?.signIn?.token) {
         setAuthToken(data.signIn.token);
+        setUserData(data.signIn.user);
         return {
           user: data.signIn.user,
           token: data.signIn.token
@@ -109,6 +149,7 @@ export const AuthService = {
       
       if (data?.signUp?.token) {
         setAuthToken(data.signUp.token);
+        setUserData(data.signUp.user);
         return {
           user: data.signUp.user,
           token: data.signUp.token
@@ -131,7 +172,8 @@ export const AuthService = {
   // Handle SSO callback from NestJS backend
   async handleSsoCallback(token: string) {
     setAuthToken(token);
-    // You may want to fetch user details here if needed
+    // Fetch user details
+    await this.getCurrentUser(true);
   },
 
   // Verify SSO token (client-side verification with Google token)
@@ -146,6 +188,7 @@ export const AuthService = {
       
       if (data?.ssoVerify?.token) {
         setAuthToken(data.ssoVerify.token);
+        setUserData(data.ssoVerify.user);
         return {
           user: data.ssoVerify.user,
           token: data.ssoVerify.token
@@ -164,20 +207,44 @@ export const AuthService = {
     clearAuthToken();
   },
 
-  // Get current user (could be extended with a GraphQL query for full user details)
-  async getCurrentUser() {
-    // In a real implementation, you would fetch the user profile from the backend
-    // For now, this is a placeholder
+  async getCurrentUser(forceRefresh = false) {
     if (!isAuthenticated()) {
       return null;
     }
     
-    // This would be a GraphQL query to your backend
-    // For now, just return a dummy user
-    return {
-      id: '1',
-      email: 'user@example.com',
-      displayName: 'User',
-    };
+    // Return cached user data if available and not forcing refresh
+    const cachedUser = getUserData();
+    if (cachedUser && !forceRefresh) {
+      return cachedUser;
+    }
+    
+    try {
+      // Parse the token to get user data instead of using GraphQL
+      const token = getAuthToken();
+      if (token) {
+        const decoded = parseToken(token);
+        if (decoded) {
+          // Extract user data from the token
+          const userData = {
+            id: decoded.sub || decoded.userId || decoded.id,
+            email: decoded.email,
+            displayName: decoded.name || decoded.displayName || decoded.email,
+          };
+          
+          // Cache the user data
+          setUserData(userData);
+          return userData;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      // If there's an error (like an expired token), clear the auth token
+      if (error.message.includes('Unauthorized')) {
+        clearAuthToken();
+      }
+      return null;
+    }
   }
 };
