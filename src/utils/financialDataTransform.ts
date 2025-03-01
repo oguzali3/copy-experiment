@@ -2,6 +2,8 @@ export const transformFinancialData = (
   incomeStatementData: any,
   balanceSheetData: any,
   cashFlowData: any,
+  keyMetricsData: any = [],
+  financialRatiosData: any = [],
   selectedMetrics: string[],
   timePeriods: string[],
   sliderValue: number[],
@@ -12,12 +14,17 @@ export const transformFinancialData = (
   let incomeData = normalizeData(incomeStatementData, ticker);
   let balanceData = normalizeData(balanceSheetData, ticker);
   let cashData = normalizeData(cashFlowData, ticker);
+  let metricsData = normalizeData(keyMetricsData, ticker);
+  let ratiosData = normalizeData(financialRatiosData, ticker);
   
   console.log('Normalized Income Statement Data:', incomeData);
   console.log('Normalized Balance Sheet Data:', balanceData);
   console.log('Normalized Cash Flow Data:', cashData);
+  console.log('Normalized Key Metrics Data:', metricsData);
+  console.log('Normalized Financial Ratios Data:', ratiosData);
   
-  if (!incomeData.length && !balanceData.length && !cashData.length) {
+  if (!incomeData.length && !balanceData.length && !cashData.length && 
+      !metricsData.length && !ratiosData.length) {
     console.error('No valid data available after normalization');
     return [];
   }
@@ -26,16 +33,16 @@ export const transformFinancialData = (
   const incomePeriods = extractPeriods(incomeData, timeFrame);
   const balancePeriods = extractPeriods(balanceData, timeFrame);
   const cashPeriods = extractPeriods(cashData, timeFrame);
-
-  console.log('Income Periods:', incomePeriods);
-  console.log('Balance Periods:', balancePeriods);
-  console.log('Cash Periods:', cashPeriods);
+  const metricsPeriods = extractPeriods(metricsData, timeFrame);
+  const ratiosPeriods = extractPeriods(ratiosData, timeFrame);
 
   // Get all unique periods (keys)
   const allPeriodKeys = new Set<string>();
   incomePeriods.forEach(p => allPeriodKeys.add(p.periodKey));
   balancePeriods.forEach(p => allPeriodKeys.add(p.periodKey));
   cashPeriods.forEach(p => allPeriodKeys.add(p.periodKey));
+  metricsPeriods.forEach(p => allPeriodKeys.add(p.periodKey));
+  ratiosPeriods.forEach(p => allPeriodKeys.add(p.periodKey));
 
   // Sort the period keys chronologically (oldest to newest, left to right)
   const sortedPeriodKeys = Array.from(allPeriodKeys).sort((a, b) => {
@@ -71,6 +78,8 @@ export const transformFinancialData = (
     const incomeItem = incomePeriods.find(p => p.periodKey === periodKey)?.item;
     const balanceItem = balancePeriods.find(p => p.periodKey === periodKey)?.item;
     const cashItem = cashPeriods.find(p => p.periodKey === periodKey)?.item;
+    const metricsItem = metricsPeriods.find(p => p.periodKey === periodKey)?.item;
+    const ratiosItem = ratiosPeriods.find(p => p.periodKey === periodKey)?.item;
 
     // Create period display string
     const periodDisplay = periodKey === 'TTM' ? 'TTM' : periodKey;
@@ -79,13 +88,11 @@ export const transformFinancialData = (
     const result: any = { period: periodDisplay };
 
     // Add all metrics from all sources to support any potential metric selection
-    processAllMetrics(result, incomeItem, balanceItem, cashItem);
+    processAllMetrics(result, incomeItem, balanceItem, cashItem, metricsItem, ratiosItem);
 
     return result;
   });
   
-  console.log('Complete Chart Data (All Metrics):', chartData);
-
   // Filter out any entries that have no data for the selected metrics
   const filteredByMetrics = chartData.filter(item => {
     // If no metrics are selected, show all data
@@ -114,14 +121,21 @@ export const transformFinancialData = (
 };
 
 // Process all possible metrics from all data sources to support any selections
-const processAllMetrics = (result: any, incomeItem: any, balanceItem: any, cashItem: any) => {
+const processAllMetrics = (
+  result: any, 
+  incomeItem: any, 
+  balanceItem: any, 
+  cashItem: any,
+  metricsItem: any,
+  ratiosItem: any
+) => {
   // Income statement metrics
   if (incomeItem) {
-    // Core income statement metrics
     const incomeMetrics = [
       'revenue', 'netIncome', 'grossProfit', 'operatingIncome', 'ebitda', 'eps',
       'costOfRevenue', 'operatingExpenses', 'interestExpense', 'incomeTaxExpense',
-      'researchAndDevelopmentExpenses', 'sellingGeneralAndAdministrativeExpenses'
+      'researchAndDevelopmentExpenses', 'sellingGeneralAndAdministrativeExpenses',
+      'revenueGrowth', 'netIncomeGrowth', 'epsGrowth', 'ebitdaGrowth'
     ];
     
     incomeMetrics.forEach(metric => {
@@ -133,7 +147,6 @@ const processAllMetrics = (result: any, incomeItem: any, balanceItem: any, cashI
   
   // Balance sheet metrics
   if (balanceItem) {
-    // Core balance sheet metrics
     const balanceMetrics = [
       'totalAssets', 'totalLiabilities', 'totalEquity', 'cashAndCashEquivalents',
       'totalDebt', 'netDebt', 'inventory', 'accountsReceivable', 'accountsPayable',
@@ -152,7 +165,6 @@ const processAllMetrics = (result: any, incomeItem: any, balanceItem: any, cashI
   
   // Cash flow metrics
   if (cashItem) {
-    // Core cash flow metrics
     const cashFlowMetrics = [
       'operatingCashFlow', 'freeCashFlow', 'capitalExpenditure',
       'netCashProvidedByOperatingActivities', 'netCashUsedForInvestingActivites',
@@ -167,44 +179,100 @@ const processAllMetrics = (result: any, incomeItem: any, balanceItem: any, cashI
       }
     });
   }
+
+  // Key metrics
+  if (metricsItem) {
+    const keyMetricsFields = [
+      'revenuePerShare', 'netIncomePerShare', 'operatingCashFlowPerShare',
+      'freeCashFlowPerShare', 'cashPerShare', 'bookValuePerShare', 'tangibleBookValuePerShare',
+      'shareholdersEquityPerShare', 'interestDebtPerShare', 'marketCap', 'enterpriseValue',
+      'peRatio', 'priceToSalesRatio', 'pocfRatio', 'pfcfRatio', 'pbRatio', 'ptbRatio',
+      'evToSales', 'enterpriseValueOverEBITDA', 'evToOperatingCashFlow', 'earningsYield',
+      'freeCashFlowYield', 'debtToEquity', 'debtToAssets', 'netDebtToEBITDA', 'currentRatio',
+      'interestCoverage', 'incomeQuality', 'dividendYield', 'payoutRatio',
+      'salesGeneralAndAdministrativeToRevenue', 'researchAndDdevelopementToRevenue',
+      'intangiblesToTotalAssets', 'capexToOperatingCashFlow', 'capexToRevenue',
+      'capexToDepreciation', 'stockBasedCompensationToRevenue', 'grahamNumber',
+      'roic', 'returnOnTangibleAssets', 'grahamNetNet', 'workingCapital',
+      'tangibleAssetValue', 'netCurrentAssetValue', 'investedCapital',
+      'averageReceivables', 'averagePayables', 'averageInventory',
+      'daysSalesOutstanding', 'daysPayablesOutstanding', 'daysOfInventoryOnHand',
+      'receivablesTurnover', 'payablesTurnover', 'inventoryTurnover', 'roe', 'capexPerShare'
+    ];
+    
+    keyMetricsFields.forEach(metric => {
+      if (metricsItem[metric] !== undefined) {
+        result[metric] = parseNumericValue(metricsItem[metric]);
+      }
+    });
+  }
+
+  // Financial ratios
+  if (ratiosItem) {
+    const ratioFields = [
+      'currentRatio', 'quickRatio', 'cashRatio', 'daysOfSalesOutstanding',
+      'daysOfInventoryOutstanding', 'operatingCycle', 'daysOfPayablesOutstanding',
+      'cashConversionCycle', 'grossProfitMargin', 'operatingProfitMargin',
+      'pretaxProfitMargin', 'netProfitMargin', 'effectiveTaxRate', 'returnOnAssets',
+      'returnOnEquity', 'returnOnCapitalEmployed', 'netIncomePerEBT', 'ebtPerEbit',
+      'ebitPerRevenue', 'debtRatio', 'debtEquityRatio', 'longTermDebtToCapitalization',
+      'totalDebtToCapitalization', 'interestCoverage', 'cashFlowToDebtRatio',
+      'companyEquityMultiplier', 'receivablesTurnover', 'payablesTurnover',
+      'inventoryTurnover', 'fixedAssetTurnover', 'assetTurnover', 'operatingCashFlowPerShare',
+      'freeCashFlowPerShare', 'cashPerShare', 'payoutRatio', 'operatingCashFlowSalesRatio',
+      'freeCashFlowOperatingCashFlowRatio', 'cashFlowCoverageRatios', 'shortTermCoverageRatios',
+      'capitalExpenditureCoverageRatio', 'dividendPaidAndCapexCoverageRatio',
+      'dividendPayoutRatio', 'priceBookValueRatio', 'priceToBookRatio', 'priceToSalesRatio',
+      'priceEarningsRatio', 'priceToFreeCashFlowsRatio', 'priceToOperatingCashFlowsRatio',
+      'priceCashFlowRatio', 'priceEarningsToGrowthRatio', 'priceSalesRatio',
+      'dividendYield', 'enterpriseValueMultiple', 'priceFairValue'
+    ];
+    
+    ratioFields.forEach(metric => {
+      if (ratiosItem[metric] !== undefined) {
+        result[metric] = parseNumericValue(ratiosItem[metric]);
+      }
+    });
+  }
   
-  // Calculate financial ratios if we have sufficient data
+  // Calculate financial ratios if we have sufficient data for standard ratios
   if (incomeItem && balanceItem) {
-    // Profitability ratios
-    if (incomeItem.netIncome !== undefined && balanceItem.totalAssets !== undefined && parseNumericValue(balanceItem.totalAssets) !== 0) {
-      result.returnOnAssets = (parseNumericValue(incomeItem.netIncome) / parseNumericValue(balanceItem.totalAssets)) * 100;
-    }
-    
-    if (incomeItem.netIncome !== undefined && balanceItem.totalEquity !== undefined && parseNumericValue(balanceItem.totalEquity) !== 0) {
-      result.returnOnEquity = (parseNumericValue(incomeItem.netIncome) / parseNumericValue(balanceItem.totalEquity)) * 100;
-    }
-    
-    if (incomeItem.netIncome !== undefined && incomeItem.revenue !== undefined && parseNumericValue(incomeItem.revenue) !== 0) {
-      result.profitMargin = (parseNumericValue(incomeItem.netIncome) / parseNumericValue(incomeItem.revenue)) * 100;
-    }
-    
-    if (incomeItem.operatingIncome !== undefined && incomeItem.revenue !== undefined && parseNumericValue(incomeItem.revenue) !== 0) {
-      result.operatingMargin = (parseNumericValue(incomeItem.operatingIncome) / parseNumericValue(incomeItem.revenue)) * 100;
-    }
-    
-    // Liquidity ratios
-    if (balanceItem.totalCurrentAssets !== undefined && balanceItem.totalCurrentLiabilities !== undefined && parseNumericValue(balanceItem.totalCurrentLiabilities) !== 0) {
-      result.currentRatio = parseNumericValue(balanceItem.totalCurrentAssets) / parseNumericValue(balanceItem.totalCurrentLiabilities);
-    }
-    
-    // Leverage ratios
-    if (balanceItem.totalDebt !== undefined && balanceItem.totalEquity !== undefined && parseNumericValue(balanceItem.totalEquity) !== 0) {
-      result.debtToEquity = parseNumericValue(balanceItem.totalDebt) / parseNumericValue(balanceItem.totalEquity);
-    }
-    
-    if (balanceItem.totalDebt !== undefined && balanceItem.totalAssets !== undefined && parseNumericValue(balanceItem.totalAssets) !== 0) {
-      result.debtToAssets = parseNumericValue(balanceItem.totalDebt) / parseNumericValue(balanceItem.totalAssets);
-    }
-    
-    // Efficiency ratios
-    if (incomeItem.revenue !== undefined && balanceItem.totalAssets !== undefined && parseNumericValue(balanceItem.totalAssets) !== 0) {
-      result.assetTurnover = parseNumericValue(incomeItem.revenue) / parseNumericValue(balanceItem.totalAssets);
-    }
+    // Common ratios that might not be included in the data but can be calculated
+    calculateStandardRatios(result, incomeItem, balanceItem);
+  }
+};
+
+// Calculate standard financial ratios from income and balance sheet data
+const calculateStandardRatios = (result: any, incomeItem: any, balanceItem: any) => {
+  // Only calculate if not already present in data
+  
+  // Profitability ratios
+  if (result.returnOnAssets === undefined && 
+      incomeItem.netIncome !== undefined && 
+      balanceItem.totalAssets !== undefined && 
+      parseNumericValue(balanceItem.totalAssets) !== 0) {
+    result.returnOnAssets = (parseNumericValue(incomeItem.netIncome) / parseNumericValue(balanceItem.totalAssets)) * 100;
+  }
+  
+  if (result.returnOnEquity === undefined && 
+      incomeItem.netIncome !== undefined && 
+      balanceItem.totalEquity !== undefined && 
+      parseNumericValue(balanceItem.totalEquity) !== 0) {
+    result.returnOnEquity = (parseNumericValue(incomeItem.netIncome) / parseNumericValue(balanceItem.totalEquity)) * 100;
+  }
+  
+  if (result.profitMargin === undefined && 
+      incomeItem.netIncome !== undefined && 
+      incomeItem.revenue !== undefined && 
+      parseNumericValue(incomeItem.revenue) !== 0) {
+    result.profitMargin = (parseNumericValue(incomeItem.netIncome) / parseNumericValue(incomeItem.revenue)) * 100;
+  }
+  
+  if (result.operatingMargin === undefined && 
+      incomeItem.operatingIncome !== undefined && 
+      incomeItem.revenue !== undefined && 
+      parseNumericValue(incomeItem.revenue) !== 0) {
+    result.operatingMargin = (parseNumericValue(incomeItem.operatingIncome) / parseNumericValue(incomeItem.revenue)) * 100;
   }
 };
 
