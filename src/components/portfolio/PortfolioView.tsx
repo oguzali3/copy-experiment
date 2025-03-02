@@ -1,3 +1,4 @@
+// In PortfolioView.tsx
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Settings, Plus } from "lucide-react";
@@ -8,6 +9,9 @@ import { PortfolioTable } from "./PortfolioTable";
 import { Stock, Portfolio } from "./types";
 import { PortfolioSettingsDialog } from "./dialogs/PortfolioSettingsDialog";
 import { AddPositionDialog } from "./dialogs/AddPositionDialog";
+// Import the PortfolioSummaryCards component
+import { PortfolioSummaryCards } from "./PortfolioSummaryCards";
+import { DeletePortfolioDialog } from "./PortfolioDelete";
 
 interface PortfolioViewProps {
   portfolio: Portfolio;
@@ -33,7 +37,24 @@ export const PortfolioView = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddingTicker, setIsAddingTicker] = useState(false);
   const [performanceTimeframe, setPerformanceTimeframe] = useState("5D");
-
+  
+  const dayChange = portfolio.dayChange;
+  const dayChangePercent = portfolio.dayChangePercent;
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Create a delete handler
+  const handleDeletePortfolio = async () => {
+    setIsDeleting(true);
+    try {
+      await onDeletePortfolio(portfolio.id);
+      // The toast will be shown by the parent component
+    } catch (error) {
+      // Error will be handled by parent, but we should reset our local state
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+    }
+  };
   const handleUpdatePortfolioName = (newName: string) => {
     onUpdatePortfolio({
       ...portfolio,
@@ -86,6 +107,14 @@ export const PortfolioView = ({
           </Button>
         </div>
       </div>
+
+      {/* Add the summary cards here */}
+      <PortfolioSummaryCards
+        totalValue={portfolio.totalValue}
+        dayChange={dayChange}
+        dayChangePercent={dayChangePercent}
+        stocks={portfolio.stocks}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -144,12 +173,19 @@ export const PortfolioView = ({
 
         <Button 
           variant="destructive"
-          onClick={() => onDeletePortfolio(portfolio.id)}
+          onClick={() => setIsDeleteDialogOpen(true)}
         >
           Delete Portfolio
         </Button>
       </div>
-
+      
+      <DeletePortfolioDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        portfolioName={portfolio.name}
+        onConfirmDelete={handleDeletePortfolio}
+        isDeleting={isDeleting}
+      />
       <PortfolioSettingsDialog
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}

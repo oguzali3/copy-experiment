@@ -1,51 +1,27 @@
 // src/components/portfolio/PortfolioContent.tsx
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { PortfolioEmpty } from "./PortfolioEmpty";
 import { PortfolioCreate } from "./PortfolioCreate";
 import { PortfolioView } from "./PortfolioView";
 import { toast } from "sonner";
-import { Portfolio, Stock } from "./types";
+import { Portfolio } from "./types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import portfolioApi from '@/services/portfolioApi';
 
 interface PortfolioContentProps {
   portfolioId: string;
+  portfolios: Portfolio[];
+  setPortfolios: React.Dispatch<React.SetStateAction<Portfolio[]>>;
 }
 
-const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
-  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioContentProps) => {
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(portfolioId || null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // No initial loading since data comes from props
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Separate loading states for different operations
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const fetchPortfolios = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const portfolios = await portfolioApi.getPortfolios();
-      setPortfolios(portfolios);
-      
-      // Set the first portfolio as selected if none is selected and we have portfolios
-      if ((!selectedPortfolioId || selectedPortfolioId === "") && portfolios.length > 0) {
-        setSelectedPortfolioId(portfolios[0].id);
-      }
-    } catch (error) {
-      console.error('Error fetching portfolios:', error);
-      setError("Failed to fetch portfolio data. Please try again later.");
-      toast.error("Failed to fetch portfolio data");
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedPortfolioId]);
-
-  useEffect(() => {
-    fetchPortfolios();
-  }, [fetchPortfolios]);
-
+  // Update selected portfolio ID when prop changes
   useEffect(() => {
     if (portfolioId) {
       setSelectedPortfolioId(portfolioId);
@@ -53,6 +29,9 @@ const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
   }, [portfolioId]);
 
   const handleAddPortfolio = async (newPortfolio: Portfolio) => {
+    // Set loading state to true BEFORE the API call
+    setIsUpdating(true); // Add this line
+    
     try {
       const createRequest = {
         name: newPortfolio.name,
@@ -66,7 +45,7 @@ const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
       
       const createdPortfolio = await portfolioApi.createPortfolio(createRequest);
       
-      // Add the new portfolio to the existing list instead of refetching all portfolios
+      // Add the new portfolio to the existing list
       setPortfolios(prev => [...prev, createdPortfolio]);
       setSelectedPortfolioId(createdPortfolio.id);
       setIsCreating(false);
@@ -74,13 +53,22 @@ const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
     } catch (error) {
       console.error('Error creating portfolio:', error);
       toast.error("Failed to create portfolio");
+    } finally {
+      setIsUpdating(false); // Add this line to reset the loading state
     }
   };
 
   const updateLocalPortfolio = (updatedPortfolio: Portfolio) => {
     // Update the portfolio in the local state
     setPortfolios(prev => 
-      prev.map(p => p.id === updatedPortfolio.id ? updatedPortfolio : p)
+      prev.map(p => p.id === updatedPortfolio.id ? {
+        ...updatedPortfolio,
+        // Ensure these values are always updated correctly
+        dayChange: updatedPortfolio.dayChange,
+        dayChangePercent: updatedPortfolio.dayChangePercent,
+        previousDayValue: updatedPortfolio.previousDayValue,
+        lastPriceUpdate: updatedPortfolio.lastPriceUpdate
+      } : p)
     );
   };
 
@@ -144,8 +132,9 @@ const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
       console.error('Error adding position:', error);
       toast.error("Failed to add position");
       
-      // If there was an error, refresh the portfolios to ensure data consistency
-      fetchPortfolios();
+      // If there was an error, refresh the data
+      const refreshedPortfolios = await portfolioApi.getPortfolios();
+      setPortfolios(refreshedPortfolios);
     } finally {
       setIsUpdating(false);
     }
@@ -194,8 +183,9 @@ const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
       console.error('Error updating position:', error);
       toast.error("Failed to update position");
       
-      // If there was an error, refresh the portfolios to ensure data consistency
-      fetchPortfolios();
+      // If there was an error, refresh the data
+      const refreshedPortfolios = await portfolioApi.getPortfolios();
+      setPortfolios(refreshedPortfolios);
     } finally {
       setIsUpdating(false);
     }
@@ -250,8 +240,9 @@ const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
       console.error('Error deleting position:', error);
       toast.error("Failed to delete position");
       
-      // If there was an error, refresh the portfolios to ensure data consistency
-      fetchPortfolios();
+      // If there was an error, refresh the data
+      const refreshedPortfolios = await portfolioApi.getPortfolios();
+      setPortfolios(refreshedPortfolios);
     } finally {
       setIsUpdating(false);
     }
@@ -274,6 +265,7 @@ const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
     } catch (error) {
       console.error('Error deleting portfolio:', error);
       toast.error("Failed to delete portfolio");
+      throw error; // Important: rethrow the error so the dialog component knows
     }
   };
 
@@ -300,7 +292,11 @@ const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
       <div className="flex flex-col items-center justify-center h-64">
         <p className="text-red-500 mb-4">{error}</p>
         <button 
-          onClick={() => fetchPortfolios()}
+          onClick={async () => {
+            const refreshedPortfolios = await portfolioApi.getPortfolios();
+            setPortfolios(refreshedPortfolios);
+            setError(null);
+          }}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
           Retry
@@ -315,6 +311,7 @@ const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
       <PortfolioCreate
         onSubmit={handleAddPortfolio}
         onCancel={() => setIsCreating(false)}
+        isLoading={isUpdating}  // Pass the loading state
       />
     );
   }
@@ -362,38 +359,47 @@ const PortfolioContent = ({ portfolioId }: PortfolioContentProps) => {
 
       {/* Portfolio view */}
       {selectedPortfolio ? (
-        <PortfolioView
-          portfolio={selectedPortfolio}
-          onAddPortfolio={() => setIsCreating(true)}
-          onDeletePortfolio={handleDeletePortfolio}
-          onUpdatePortfolio={handleUpdatePortfolio}
-          // Pass the new position handlers
-          onAddPosition={(company, shares, avgPrice) => {
-            if (!selectedPortfolio) return;
-            
-            // Convert to proper types
-            const newShares = Number(shares);
-            const newAvgPrice = Number(avgPrice);
-            
-            handleAddPosition(selectedPortfolio.id, {
-              ticker: company.ticker,
-              name: company.name,
-              shares: newShares,
-              avgPrice: newAvgPrice
-            });
-          }}
-          onUpdatePosition={(ticker, shares, avgPrice) => {
-            if (!selectedPortfolio) return;
-            handleUpdatePosition(selectedPortfolio.id, ticker, shares, avgPrice);
-          }}
-          onDeletePosition={(ticker) => {
-            if (!selectedPortfolio) return;
-            handleDeletePosition(selectedPortfolio.id, ticker);
-          }}
-        />
+  <PortfolioView
+    portfolio={selectedPortfolio}
+    onAddPortfolio={() => setIsCreating(true)}
+    onDeletePortfolio={handleDeletePortfolio}
+    onUpdatePortfolio={handleUpdatePortfolio}
+    // Pass the new position handlers
+    onAddPosition={(company, shares, avgPrice) => {
+      if (!selectedPortfolio) return;
+      
+      // Convert to proper types
+      const newShares = Number(shares);
+      const newAvgPrice = Number(avgPrice);
+      
+      handleAddPosition(selectedPortfolio.id, {
+        ticker: company.ticker,
+        name: company.name,
+        shares: newShares,
+        avgPrice: newAvgPrice
+      });
+    }}
+    onUpdatePosition={(ticker, shares, avgPrice) => {
+      if (!selectedPortfolio) return;
+      handleUpdatePosition(selectedPortfolio.id, ticker, shares, avgPrice);
+    }}
+    onDeletePosition={(ticker) => {
+      if (!selectedPortfolio) return;
+      handleDeletePosition(selectedPortfolio.id, ticker);
+    }}
+  />
       ) : (
         <div className="text-center py-10">
-          <p className="text-gray-500">No portfolio selected. Please select a portfolio from the dropdown above.</p>
+          <p className="text-gray-500 mb-6">No portfolio selected. Please select a portfolio from the dropdown above.</p>
+          <button
+            onClick={() => setIsCreating(true)}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 inline-flex items-center"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Create New Portfolio
+          </button>
         </div>
       )}
     </div>

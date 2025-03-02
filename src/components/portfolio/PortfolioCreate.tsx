@@ -17,13 +17,15 @@ import { toast } from "sonner";
 interface PortfolioCreateProps {
   onSubmit: (portfolio: Portfolio) => void;
   onCancel: () => void;
+  isLoading?: boolean;
 }
 
-export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) => {
+export const PortfolioCreate = ({ onSubmit, onCancel, isLoading = false }: PortfolioCreateProps) => {
   const [name, setName] = useState("");
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [isAddingStock, setIsAddingStock] = useState(false);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleAddStock = (company: any) => {
     setIsAddingStock(false);
     
@@ -90,7 +92,11 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
       id: Date.now().toString(),
       name: name.trim(),
       stocks: stocksWithPercentage,
-      totalValue
+      totalValue,
+      previousDayValue: totalValue, // Set initial previous day value to the same as total value
+      dayChange: 0, // No change on day one
+      dayChangePercent: 0, // No percentage change on day one
+      lastPriceUpdate: new Date() // Current timestamp
     };
 
     onSubmit(portfolio);
@@ -98,6 +104,16 @@ export const PortfolioCreate = ({ onSubmit, onCancel }: PortfolioCreateProps) =>
 
   return (
     <div className="max-w-4xl mx-auto mt-10">
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg shadow-lg">
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+              <span>Creating Portfolio...</span>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-semibold">Create New Portfolio</h2>

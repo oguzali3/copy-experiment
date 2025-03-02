@@ -30,6 +30,10 @@ interface PortfolioResponseDto {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  previousDayValue: number;
+  dayChange: number;
+  dayChangePercent: number;
+  lastPriceUpdate: Date | null;
 }
 
 interface StockPositionResponseDto {
@@ -47,13 +51,21 @@ interface StockPositionResponseDto {
   updatedAt: string;
 }
 
-// Map backend response to frontend model
-const mapToPortfolio = (dto: PortfolioResponseDto): Portfolio => ({
-  id: dto.id,
-  name: dto.name,
-  totalValue: dto.totalValue,
-  stocks: dto.positions.map(pos => mapToStock(pos))
-});
+interface GetPortfoliosOptions {
+    skipRefresh?: boolean;
+    forceRefresh?: boolean;
+  }
+
+  const mapToPortfolio = (dto: PortfolioResponseDto): Portfolio => ({
+    id: dto.id,
+    name: dto.name,
+    totalValue: typeof dto.totalValue === 'string' ? parseFloat(dto.totalValue) : dto.totalValue,
+    previousDayValue: dto.previousDayValue || dto.totalValue, // This is correct
+    dayChange: dto.dayChange !== undefined ? dto.dayChange : 0, // Ensure it's explicitly 0 for new portfolios
+    dayChangePercent: dto.dayChangePercent !== undefined ? dto.dayChangePercent : 0,
+    lastPriceUpdate: dto.lastPriceUpdate ? new Date(dto.lastPriceUpdate) : null,
+    stocks: dto.positions.map(pos => mapToStock(pos))
+  });
 
 // Map position DTO to Stock model
 const mapToStock = (dto: StockPositionResponseDto): Stock => ({
@@ -112,10 +124,17 @@ class RequestQueue {
 const requestQueue = new RequestQueue();
 
 const portfolioApi = {
-  // Get all portfolios
-  getPortfolios: async (): Promise<Portfolio[]> => {
+  // In portfolioApi.ts
+getPortfolios: async (options?: GetPortfoliosOptions): Promise<Portfolio[]> => {
     try {
-      const response = await apiClient.get<PortfolioResponseDto[]>('/portfolios');
+      // Make sure this line is correctly using the options
+      const skipRefresh = options?.skipRefresh === true;
+      
+      // And this is actually sending it to the API
+      const response = await apiClient.get<PortfolioResponseDto[]>('/portfolios', {
+        params: { skipRefresh }
+      });
+      
       return response.data.map(mapToPortfolio);
     } catch (error) {
       console.error('Error fetching portfolios:', error);
@@ -123,16 +142,6 @@ const portfolioApi = {
     }
   },
 
-  // Get single portfolio
-  getPortfolio: async (id: string): Promise<Portfolio | null> => {
-    try {
-      const response = await apiClient.get<PortfolioResponseDto>(`/portfolios/${id}`);
-      return mapToPortfolio(response.data);
-    } catch (error) {
-      console.error(`Error fetching portfolio ${id}:`, error);
-      return null;
-    }
-  },
 
   // Create portfolio
   createPortfolio: async (data: CreatePortfolioRequest): Promise<Portfolio> => {

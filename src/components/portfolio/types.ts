@@ -15,4 +15,8 @@ export type Portfolio = {
   name: string;
   stocks: Stock[];
   totalValue: number;
+  previousDayValue: number;
+  dayChange: number;
+  dayChangePercent: number;
+  lastPriceUpdate: Date | null;
 };

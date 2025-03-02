@@ -8,7 +8,6 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ApolloProvider } from "@apollo/client";
-import apolloClient from "./integrations/apollo/apolloClient";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -25,6 +24,7 @@ import SsoCallback from "./pages/SsoCallback";
 import Feed from "./pages/Feed";
 import Search from "./pages/Search";
 import Profile from "./pages/Profile";
+import { apolloClient } from "./lib/graphql/client";
 
 const queryClient = new QueryClient({
   defaultOptions: {

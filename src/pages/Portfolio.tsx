@@ -3,8 +3,9 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import PortfolioContent from "@/components/portfolio/PortfolioContent";
 import { toast } from "sonner";
-import portfolioApi from "@/services/portfolioApi";
-import { isAuthenticated, getAuthToken } from "@/services/auth.service";
+import { isAuthenticated } from "@/services/auth.service";
+import portfolioApi from '@/services/portfolioApi';
+import { Portfolio as PortfolioType } from "@/components/portfolio/types";
 
 interface LocationState {
   portfolioId?: string;
@@ -17,16 +18,13 @@ const Portfolio = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [portfolioId, setPortfolioId] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [portfolios, setPortfolios] = useState<PortfolioType[]>([]);
   
   // Get portfolioId from URL params or location state
   const urlPortfolioId = params.id;
   const statePortfolioId = (location.state as LocationState)?.portfolioId;
 
   useEffect(() => {
-    // Add debug logging
-    console.log("Auth check: isAuthenticated =", isAuthenticated());
-    console.log("Auth token =", getAuthToken()?.substring(0, 10) + "...");
-    
     // Check if user is authenticated
     if (!isAuthenticated()) {
       const error = "Please sign in to access your portfolio";
@@ -36,31 +34,36 @@ const Portfolio = () => {
       return;
     }
 
-    // Use portfolioId from URL params first, then from location state
-    const currentPortfolioId = urlPortfolioId || statePortfolioId;
-    
-    if (currentPortfolioId) {
-      setPortfolioId(currentPortfolioId);
-      setIsLoading(false);
-      return;
-    }
-
-    // If no portfolioId is provided, fetch the first portfolio
-    const fetchFirstPortfolio = async () => {
+    const fetchData = async () => {
       try {
-        // Debug console
         console.log("Attempting to fetch portfolios...");
         
-        const portfolios = await portfolioApi.getPortfolios();
-        console.log("Portfolios fetched:", portfolios);
+        // Use skipRefresh=true to prevent expensive refreshes when just loading the page
+        const fetchedPortfolios = await portfolioApi.getPortfolios({ skipRefresh: true });
+        setPortfolios(fetchedPortfolios);
+        console.log("Portfolios fetched:", fetchedPortfolios);
         
-        if (portfolios && portfolios.length > 0) {
-          setPortfolioId(portfolios[0].id);
+        // Determine which portfolio ID to use
+        const currentPortfolioId = urlPortfolioId || statePortfolioId;
+        
+        if (currentPortfolioId) {
+          console.log("Using provided portfolio ID:", currentPortfolioId);
+          setPortfolioId(currentPortfolioId);
+        } else if (fetchedPortfolios && fetchedPortfolios.length > 0) {
+          // Use first portfolio if none specified
+          const firstPortfolioId = fetchedPortfolios[0].id;
+          console.log("Setting first portfolio ID:", firstPortfolioId);
+          setPortfolioId(firstPortfolioId);
+          
+          // Update the URL to include the portfolio ID
+          navigate(`/portfolio/${firstPortfolioId}`, { replace: true });
+        } else {
+          console.log("No portfolios found");
         }
+        
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching portfolios:", error);
-        // More detailed error message
         const errorMsg = error.response?.data?.message || "Failed to load portfolio data";
         console.log("Error details:", error.response?.data);
         
@@ -74,7 +77,7 @@ const Portfolio = () => {
       }
     };
 
-    fetchFirstPortfolio();
+    fetchData();
   }, [urlPortfolioId, statePortfolioId, navigate]);
 
   if (isLoading) {
@@ -85,7 +88,12 @@ const Portfolio = () => {
     return <div className="text-center text-red-500">{authError}</div>;
   }
 
-  return <PortfolioContent portfolioId={portfolioId || ""} />;
+  // Pass both the portfolioId and the portfolios data
+  return <PortfolioContent 
+    portfolioId={portfolioId || ""} 
+    portfolios={portfolios}
+    setPortfolios={setPortfolios}
+  />;
 };
 
 export default Portfolio;

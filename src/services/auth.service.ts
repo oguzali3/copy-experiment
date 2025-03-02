@@ -1,5 +1,5 @@
 // src/services/auth.service.ts
-import apolloClient from "@/integrations/apollo/apolloClient";
+import { apolloClient } from "@/lib/graphql/client";
 import { gql } from "@apollo/client";
 import { jwtDecode } from "jwt-decode";
 

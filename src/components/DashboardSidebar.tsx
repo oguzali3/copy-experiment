@@ -26,6 +26,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from '@supabase/auth-helpers-react';
+import portfolioApi from '@/services/portfolioApi';
 
 const menuItems = [
   { title: "Dashboard", icon: Home, path: "/dashboard" },
@@ -73,12 +74,25 @@ export const DashboardSidebar = () => {
     fetchDefaultPortfolio();
   }, [user]);
 
-  const handlePortfolioClick = (e: React.MouseEvent) => {
+  // In DashboardSidebar.tsx
+  const handlePortfolioClick = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (defaultPortfolioId) {
-      navigate('/portfolio', { state: { portfolioId: defaultPortfolioId } });
-    } else {
-      navigate('/profile');
+    
+    try {
+      // This will use the cache if available
+      const portfolios = await portfolioApi.getPortfolios({ skipRefresh: true });
+      if (portfolios && portfolios.length > 0) {
+        const portfolioId = portfolios[0].id;
+        // Navigate once with the portfolio ID
+        navigate('/portfolio', { state: { portfolioId } });
+      } else {
+        // Even with no portfolios, still navigate to the portfolio page
+        navigate('/portfolio');
+      }
+    } catch (error) {
+      console.error('Error getting portfolios:', error);
+      // Still navigate to portfolio page even if there's an error
+      navigate('/portfolio');
     }
   };
 
