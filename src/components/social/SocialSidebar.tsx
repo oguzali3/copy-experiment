@@ -1,3 +1,4 @@
+// src/components/social/SocialSidebar.tsx
 import { Home, Search, Bell, Mail, UserCircle, User, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@supabase/auth-helpers-react";
@@ -120,3 +121,5 @@ export const SocialSidebar = () => {
     </div>
   );
 };
+
+export default SocialSidebar;

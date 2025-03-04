@@ -44,35 +44,40 @@ const App = () => {
           <AuthProvider>
             <TooltipProvider>
               <SidebarProvider>
-                <div className="min-h-screen flex w-full dark:bg-[#1c1c20] dark:text-white">
-                  <Toaster />
-                  <Sonner />
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/signin" element={<SignIn />} />
-                    <Route path="/signup" element={<SignUp />} />
-                    <Route path="/auth/sso/callback" element={<SsoCallback />} />
-                    
-                    {/* Protected Dashboard Layout Routes */}
-                    <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/analysis" element={<Analysis />} />
-                      <Route path="/company/:ticker/news" element={<CompanyNews />} />
-                      <Route path="/charting" element={<Charting />} />
-                      <Route path="/screening" element={<Screening />} />
-                      <Route path="/watchlists" element={<Watchlists />} />
-                      <Route path="/portfolio" element={<Portfolio />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/feed" element={<Feed />} />
-                      <Route path="/feed/*" element={<Feed />} />
-                      <Route path="/search" element={<Search />} />
-                      <Route path="/profile" element={<Profile />} />
+                <Toaster />
+                <Sonner />
+                <Routes>
+                  <Route path="/" element={<Navigate to="/feed" replace />} />
+                  <Route path="/signin" element={<SignIn />} />
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route path="/auth/sso/callback" element={<SsoCallback />} />
+                  
+                  {/* Social Routes - Direct components without layout wrapper */}
+                  <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                  <Route path="/feed/explore" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                  <Route path="/feed/notifications" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                  <Route path="/feed/messages" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                  <Route path="/feed/create" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                  <Route path="/feed/*" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                  <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/activity" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                  
+                  {/* Protected Dashboard Layout Routes */}
+                  <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/analysis" element={<Analysis />} />
+                    <Route path="/company/:ticker/news" element={<CompanyNews />} />
+                    <Route path="/charting" element={<Charting />} />
+                    <Route path="/screening" element={<Screening />} />
+                    <Route path="/watchlists" element={<Watchlists />} />
+                    <Route path="/portfolio" element={<Portfolio />} />
+                    <Route path="/settings" element={<Settings />} />
 
-                      {/* Catch all route */}
-                      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                    </Route>
-                  </Routes>
-                </div>
+                    {/* Catch all route */}
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                  </Route>
+                </Routes>
               </SidebarProvider>
             </TooltipProvider>
           </AuthProvider>
