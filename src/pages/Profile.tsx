@@ -317,8 +317,8 @@ const Profile = () => {
         linkedinHandle: data.linkedinHandle || "",
         avatarUrl: data.avatarUrl,
         avatarVariants: data.avatarVariants || null,
-        followerCount: data.followerCount || 0,
-        followingCount: data.followingCount || 0,
+        followerCount: Number(data.followerCount) || 0, 
+        followingCount: Number(data.followingCount) || 0,
         isPrivate: data.isPrivate || false
       });
       setAvatarUrl(data.avatarUrl);
@@ -356,7 +356,20 @@ const Profile = () => {
     
     try {
       const data = await api.getFollowers(profileId);
-      setFollowers(data || []);
+      console.log("Raw follower data:", data); // Debug log
+      
+      // Map the API response to ensure the expected structure
+      const formattedFollowers = data.map((follower: any) => ({
+        // Ensure id is correctly mapped (might be userId in the response)
+        id: follower.userId || follower.id,
+        username: follower.username || "",
+        displayName: follower.displayName || "",
+        avatarUrl: follower.avatarUrl,
+        isFollowing: follower.isFollowing || false
+      }));
+      
+      console.log("Formatted followers:", formattedFollowers); // Debug log
+      setFollowers(formattedFollowers || []);
     } catch (error) {
       console.error('Error fetching followers:', error);
       toast.error("Failed to load followers");
@@ -368,7 +381,20 @@ const Profile = () => {
     
     try {
       const data = await api.getFollowing(profileId);
-      setFollowing(data || []);
+      console.log("Raw following data:", data); // Debug log
+      
+      // Map the API response to ensure the expected structure
+      const formattedFollowing = data.map((following: any) => ({
+        // Ensure id is correctly mapped (might be userId in the response)
+        id: following.userId || following.id,
+        username: following.username || "",
+        displayName: following.displayName || "",
+        avatarUrl: following.avatarUrl,
+        isFollowing: true // Following users are always "followed" by definition
+      }));
+      
+      console.log("Formatted following:", formattedFollowing); // Debug log
+      setFollowing(formattedFollowing || []);
     } catch (error) {
       console.error('Error fetching following:', error);
       toast.error("Failed to load following");
@@ -377,12 +403,15 @@ const Profile = () => {
   const getListItemKey = (type: string, id: string) => `${type}-${id}`;
 
   const handleFollowBack = async (userId: string) => {
-    if (!user) {
-      toast("Please sign in to follow users");
+    if (!user || !userId) {
+      toast.error("User information is missing");
       return;
     }
     
     try {
+      // Log the userId to debug
+      console.log("Following user with ID:", userId);
+      
       await api.followUser(userId);
       
       // Update followers list to show following status
@@ -391,7 +420,7 @@ const Profile = () => {
           ? { ...follower, isFollowing: true }
           : follower
       ));
-
+  
       // Immediately update the following count
       setProfileData(prev => ({
         ...prev,
@@ -478,6 +507,8 @@ const Profile = () => {
   const onSubmit = async (data: ProfileData) => {
     if (!user) return;
     try {
+      const loadingToast = toast.loading("Updating profile...");
+      
       const updatedProfile = await api.updateProfile({
         displayName: data.displayName,
         username: data.username,
@@ -487,8 +518,25 @@ const Profile = () => {
         linkedinHandle: data.linkedinHandle
       });
       
-      setProfileData({ ...profileData, ...updatedProfile });
-      toast("Profile updated successfully");
+      // Update profile data
+      setProfileData(prev => ({
+        ...prev,
+        displayName: updatedProfile.displayName || prev.displayName,
+        username: updatedProfile.username || prev.username,
+        bio: updatedProfile.bio || prev.bio,
+        website: updatedProfile.website || prev.website,
+        twitterHandle: updatedProfile.twitterHandle || prev.twitterHandle,
+        linkedinHandle: updatedProfile.linkedinHandle || prev.linkedinHandle,
+        // Ensure these values are maintained correctly
+        followerCount: updatedProfile.followerCount !== undefined ? updatedProfile.followerCount : prev.followerCount,
+        followingCount: updatedProfile.followingCount !== undefined ? updatedProfile.followingCount : prev.followingCount
+      }));
+      
+      // Dismiss loading toast and show success
+      toast.dismiss(loadingToast);
+      toast.success("Profile updated successfully");
+      
+      // Exit editing mode
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -878,22 +926,21 @@ const Profile = () => {
               </div>
               {user && user.id !== follower.id && (
                 <Button
-                  variant={follower.isFollowing ? "outline" : "default"}
-                  className={follower.isFollowing ? "hover:bg-red-50 hover:text-red-600" : ""}
-                  onClick={() => follower.isFollowing 
-                    ? handleUnfollow(follower.id)
-                    : handleFollowBack(follower.id)
-                  }
-                >
-                  {follower.isFollowing ? (
-                    "Unfollow"
-                  ) : (
-                    <>
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Follow back
-                    </>
-                  )}
-                </Button>
+                variant={follower.isFollowing ? "outline" : "default"}
+                onClick={() => follower.isFollowing 
+                  ? handleUnfollow(follower.id)
+                  : handleFollowBack(follower.id)
+                }
+              >
+                {follower.isFollowing ? (
+                  "Unfollow"
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Follow back
+                  </>
+                )}
+              </Button>
               )}
             </div>
           ))
