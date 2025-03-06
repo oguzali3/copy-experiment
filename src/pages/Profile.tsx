@@ -1,171 +1,42 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useForm } from "react-hook-form";
-import { useState, useRef, useEffect } from "react";
-import { Camera, Link as LinkIcon, Twitter, Linkedin, Settings, MoreHorizontal, TrendingUp, TrendingDown, UserPlus, UserMinus, UserCircle } from "lucide-react";
+// src/pages/profile/ProfilePage.tsx
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { SocialSidebar } from "@/components/social/SocialSidebar";
-import { SocialHeader } from "@/components/social/SocialHeader";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { AvatarDisplay } from "@/components/social/AvatarDisplay";
-import { ProfileAvatarUploader } from "@/components/social/ProfileAvatarUploader";
+import { SocialSidebar } from "@/components/social/SocialSidebar";
+import { SocialHeader } from "@/components/social/SocialHeader";
+import { FollowerData, PortfolioData, ProfileData } from '@/components/profile/types';
+import { profileAPI } from '@/services/profileApi';
+import { ProfileHeader } from '@/components/profile/ProfileHeader';
+import { ProfileBio } from '@/components/profile/ProfileBio';
+import { ProfileActions } from '@/components/profile/ProfileActions';
+import { ProfileEditForm } from '@/components/profile/ProfileEditForm';
+import { ProfileTabs } from '@/components/profile/ProfileTabs';
+import { PortfoliosTab } from '@/components/profile/tabs/PortfoliosTab';
+import { FollowersTab } from '@/components/profile/tabs/FollowersTab';
+import { FollowingTab } from '@/components/profile/tabs/FollowingTab';
 
-// Define API base URL - updated to use localhost:4000
+// Import API and types
+
+// Import components
+
+
+// Define API base URL
 const API_URL = 'http://localhost:4000';
 
-// Types from your backend
-type ProfileData = {
-  id: string;
-  displayName: string;
-  username: string;
-  bio: string;
-  website: string;
-  twitterHandle: string;
-  linkedinHandle: string;
-  avatarUrl: string | null;
-  avatarVariants?: {
-    original?: string;
-    thumbnail?: string;
-    medium?: string;
-    optimized?: string;
-  } | null;
-  followerCount: number;
-  followingCount: number;
-  isPrivate: boolean;
-};
+type TabType = 'portfolios' | 'followers' | 'following';
 
-type PortfolioData = {
-  id: string;
-  name: string;
-  yearlyPerformance: number | null;
-  totalValue: number | null;
-};
-
-type FollowerData = {
-  id: string;
-  username: string;
-  displayName: string;
-  avatarUrl: string | null;
-  isFollowing: boolean;
-};
-
-// API service - updated to match your NestJS controller endpoints
-const api = {
-  async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
-    const token = localStorage.getItem('auth_token');
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-      'Authorization': `Bearer ${token}`
-    };
-
-    const response = await fetch(`${API_URL}/${endpoint}`, {
-      ...options,
-      headers
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'API request failed');
-    }
-
-    return response.json();
-  },
-
-  async getProfile(userId: string) {
-    return this.fetchWithAuth(`profiles/${userId}`);
-  },
-
-  async updateProfile(data: Partial<ProfileData>) {
-    return this.fetchWithAuth('profiles', {
-      method: 'PUT',
-      body: JSON.stringify({
-        displayName: data.displayName,
-        bio: data.bio,
-        website: data.website,
-        twitterHandle: data.twitterHandle,
-        linkedinHandle: data.linkedinHandle
-      })
-    });
-  },
-
-  async followUser(userId: string) {
-    return this.fetchWithAuth(`profiles/follow/${userId}`, {
-      method: 'POST'
-    });
-  },
-
-  async unfollowUser(userId: string) {
-    return this.fetchWithAuth(`profiles/unfollow/${userId}`, {
-      method: 'POST'
-    });
-  },
-
-  async getFollowers(userId: string) {
-    // This endpoint needs to be implemented in your backend
-    return this.fetchWithAuth(`profiles/${userId}/followers`);
-  },
-
-  async getFollowing(userId: string) {
-    // This endpoint needs to be implemented in your backend
-    return this.fetchWithAuth(`profiles/${userId}/following`);
-  },
-
-  async getUserPortfolios(userId: string) {
-    // This endpoint needs to be implemented in your backend
-    return this.fetchWithAuth(`portfolios/user/${userId}`);
-  },
-
-  async uploadAvatar(file: File) {
-    const formData = new FormData();
-    formData.append('avatar', file);
-    
-    const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_URL}/profiles/avatar`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to upload avatar');
-    }
-
-    return response.json(); // This should now include avatarVariants
-  },
-
-  async toggleProfilePrivacy() {
-    return this.fetchWithAuth('profiles/privacy', {
-      method: 'POST'
-    });
-  },
-
-  async updatePreferences(preferences: any) {
-    return this.fetchWithAuth('profiles/preferences', {
-      method: 'PUT',
-      body: JSON.stringify(preferences)
-    });
-  },
-
-  async searchProfiles(query: string, limit: number = 10) {
-    return this.fetchWithAuth(`profiles/search?query=${encodeURIComponent(query)}&limit=${limit}`);
-  }
-};
-
-const Profile = () => {
+const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState('portfolios');
-  const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabType>('portfolios');
+  const [isFollowing, setIsFollowing] = useState(false);
   const [userPortfolios, setUserPortfolios] = useState<PortfolioData[]>([]);
   const [profileData, setProfileData] = useState<ProfileData>({
     id: "",
@@ -182,7 +53,6 @@ const Profile = () => {
   });
   const [followers, setFollowers] = useState<FollowerData[]>([]);
   const [following, setFollowing] = useState<FollowerData[]>([]);
-  const [showPrivacySettings, setShowPrivacySettings] = useState(false);
   const [avatarVariants, setAvatarVariants] = useState<{
     original?: string;
     thumbnail?: string;
@@ -190,15 +60,6 @@ const Profile = () => {
     optimized?: string;
   } | null>(null);
   
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors }
-  } = useForm<ProfileData>();
-
   const urlProfileId = new URLSearchParams(location.search).get('id');
   const profileId = urlProfileId || user?.id;
   const isOwner = user?.id === profileId;
@@ -251,53 +112,10 @@ const Profile = () => {
     if (!user || !profileId) return;
     
     try {
-      // Check if current user is following the profile user
-      const followers = await api.getFollowers(profileId);
+      const followers = await profileAPI.getFollowers(profileId);
       setIsFollowing(followers.some((follower: any) => follower.id === user.id));
     } catch (error) {
       console.error('Error checking follow status:', error);
-    }
-  };
-
-  const handleFollow = async () => {
-    if (!user || !profileId) {
-      toast("Please sign in to follow users");
-      return;
-    }
-    
-    try {
-      if (isFollowing) {
-        await api.unfollowUser(profileId);
-        setIsFollowing(false);
-        toast(`Unfollowed ${profileData.displayName}`);
-      } else {
-        await api.followUser(profileId);
-        setIsFollowing(true);
-        toast(`Following ${profileData.displayName}`);
-      }
-      
-      // Refresh profile data to update follower count
-      await fetchProfileData();
-    } catch (error) {
-      console.error('Error toggling follow:', error);
-      toast.error("Failed to update follow status");
-    }
-  };
-
-  const togglePrivacy = async () => {
-    if (!user) return;
-    
-    try {
-      const response = await api.toggleProfilePrivacy();
-      setProfileData(prev => ({
-        ...prev,
-        isPrivate: response.isPrivate
-      }));
-      
-      toast.success(`Profile is now ${response.isPrivate ? 'private' : 'public'}`);
-    } catch (error) {
-      console.error('Error toggling privacy:', error);
-      toast.error("Failed to update privacy settings");
     }
   };
 
@@ -305,7 +123,7 @@ const Profile = () => {
     if (!profileId) return;
     
     try {
-      const data = await api.getProfile(profileId);
+      const data = await profileAPI.getProfile(profileId);
       
       setProfileData({
         id: data.id,
@@ -323,16 +141,6 @@ const Profile = () => {
       });
       setAvatarUrl(data.avatarUrl);
       setAvatarVariants(data.avatarVariants || null);
-  
-      // Update form values if owner
-      if (isOwner) {
-        setValue("displayName", data.displayName || "");
-        setValue("username", data.username || "");
-        setValue("bio", data.bio || "");
-        setValue("website", data.website || "");
-        setValue("twitterHandle", data.twitterHandle || "");
-        setValue("linkedinHandle", data.linkedinHandle || "");
-      }
     } catch (error) {
       console.error('Error fetching profile:', error);
       throw error;
@@ -343,7 +151,7 @@ const Profile = () => {
     if (!profileId) return;
     
     try {
-      const data = await api.getUserPortfolios(profileId);
+      const data = await profileAPI.getUserPortfolios(profileId);
       setUserPortfolios(data || []);
     } catch (error) {
       console.error('Error fetching portfolios:', error);
@@ -355,12 +163,10 @@ const Profile = () => {
     if (!profileId) return;
     
     try {
-      const data = await api.getFollowers(profileId);
-      console.log("Raw follower data:", data); // Debug log
+      const data = await profileAPI.getFollowers(profileId);
       
       // Map the API response to ensure the expected structure
       const formattedFollowers = data.map((follower: any) => ({
-        // Ensure id is correctly mapped (might be userId in the response)
         id: follower.userId || follower.id,
         username: follower.username || "",
         displayName: follower.displayName || "",
@@ -368,7 +174,6 @@ const Profile = () => {
         isFollowing: follower.isFollowing || false
       }));
       
-      console.log("Formatted followers:", formattedFollowers); // Debug log
       setFollowers(formattedFollowers || []);
     } catch (error) {
       console.error('Error fetching followers:', error);
@@ -380,12 +185,10 @@ const Profile = () => {
     if (!profileId) return;
     
     try {
-      const data = await api.getFollowing(profileId);
-      console.log("Raw following data:", data); // Debug log
+      const data = await profileAPI.getFollowing(profileId);
       
       // Map the API response to ensure the expected structure
       const formattedFollowing = data.map((following: any) => ({
-        // Ensure id is correctly mapped (might be userId in the response)
         id: following.userId || following.id,
         username: following.username || "",
         displayName: following.displayName || "",
@@ -393,14 +196,12 @@ const Profile = () => {
         isFollowing: true // Following users are always "followed" by definition
       }));
       
-      console.log("Formatted following:", formattedFollowing); // Debug log
       setFollowing(formattedFollowing || []);
     } catch (error) {
       console.error('Error fetching following:', error);
       toast.error("Failed to load following");
     }
   };
-  const getListItemKey = (type: string, id: string) => `${type}-${id}`;
 
   const handleFollowBack = async (userId: string) => {
     if (!user || !userId) {
@@ -409,10 +210,7 @@ const Profile = () => {
     }
     
     try {
-      // Log the userId to debug
-      console.log("Following user with ID:", userId);
-      
-      await api.followUser(userId);
+      await profileAPI.followUser(userId);
       
       // Update followers list to show following status
       setFollowers(followers.map(follower => 
@@ -438,7 +236,7 @@ const Profile = () => {
     if (!user) return;
     
     try {
-      await api.unfollowUser(userId);
+      await profileAPI.unfollowUser(userId);
       
       // Update following list
       setFollowing(following.filter(follow => follow.id !== userId));
@@ -463,10 +261,6 @@ const Profile = () => {
     }
   };
 
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
   const handleAvatarUpdated = (newAvatarUrl: string, newAvatarVariants?: any) => {
     setAvatarUrl(newAvatarUrl);
     setAvatarVariants(newAvatarVariants || null);
@@ -479,55 +273,64 @@ const Profile = () => {
     }));
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user) return;
+  const handleToggleFollow = async () => {
+    if (!user || !profileId) {
+      toast("Please sign in to follow users");
+      return;
+    }
+    
     try {
-      setIsUploading(true);
+      if (isFollowing) {
+        await profileAPI.unfollowUser(profileId);
+        setIsFollowing(false);
+        toast(`Unfollowed ${profileData.displayName}`);
+      } else {
+        await profileAPI.followUser(profileId);
+        setIsFollowing(true);
+        toast(`Following ${profileData.displayName}`);
+      }
       
-      const response = await api.uploadAvatar(file);
-      
-      setAvatarUrl(response.avatarUrl);
-      setAvatarVariants(response.avatarVariants || null);
-      toast("Profile picture updated successfully");
+      // Refresh profile data to update follower count
+      await fetchProfileData();
     } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast.error("Failed to update profile picture. Please try again.");
-    } finally {
-      setIsUploading(false);
+      console.error('Error toggling follow:', error);
+      toast.error("Failed to update follow status");
     }
   };
 
-  const handlePortfolioClick = (portfolioId: string) => {
-    navigate('/portfolio', {
-      state: { portfolioId }
-    });
+  const handleTogglePrivacy = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await profileAPI.toggleProfilePrivacy();
+      setProfileData(prev => ({
+        ...prev,
+        isPrivate: response.isPrivate
+      }));
+      
+      toast.success(`Profile is now ${response.isPrivate ? 'private' : 'public'}`);
+    } catch (error) {
+      console.error('Error toggling privacy:', error);
+      toast.error("Failed to update privacy settings");
+    }
   };
 
-  const onSubmit = async (data: ProfileData) => {
+  const handleProfileUpdate = async (data: Partial<ProfileData>) => {
     if (!user) return;
+    
     try {
       const loadingToast = toast.loading("Updating profile...");
       
-      const updatedProfile = await api.updateProfile({
-        displayName: data.displayName,
-        username: data.username,
-        bio: data.bio,
-        website: data.website,
-        twitterHandle: data.twitterHandle,
-        linkedinHandle: data.linkedinHandle
-      });
+      const updatedProfile = await profileAPI.updateProfile(data);
       
       // Update profile data
       setProfileData(prev => ({
         ...prev,
         displayName: updatedProfile.displayName || prev.displayName,
-        username: updatedProfile.username || prev.username,
         bio: updatedProfile.bio || prev.bio,
         website: updatedProfile.website || prev.website,
         twitterHandle: updatedProfile.twitterHandle || prev.twitterHandle,
         linkedinHandle: updatedProfile.linkedinHandle || prev.linkedinHandle,
-        // Ensure these values are maintained correctly
         followerCount: updatedProfile.followerCount !== undefined ? updatedProfile.followerCount : prev.followerCount,
         followingCount: updatedProfile.followingCount !== undefined ? updatedProfile.followingCount : prev.followingCount
       }));
@@ -542,10 +345,6 @@ const Profile = () => {
       console.error('Error updating profile:', error);
       toast.error("Failed to update profile");
     }
-  };
-
-  const handleMoreOptionsClick = () => {
-    setShowPrivacySettings(!showPrivacySettings);
   };
 
   if (isLoading) {
@@ -569,433 +368,73 @@ const Profile = () => {
           <SocialHeader />
           <div className="flex-1 overflow-y-auto">
             <div className="px-4 py-4">
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                      {profileData.displayName || "Add your name"}
-                    </h1>
-                    {profileData.isPrivate && (
-                      <div className="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-xs font-medium text-gray-700 dark:text-gray-300">
-                        Private
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-600">
-                    <span>@{profileData.username || "username"}</span>
-                    <span>•</span>
-                    <span>{profileData.followerCount} followers</span>
-                    <span>•</span>
-                    <span>{profileData.followingCount} following</span>
-                  </div>
-                </div>
-                
-                <div className="flex-shrink-0">
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleFileChange} 
-                    accept="image/*" 
-                    className="hidden" 
-                  />
-                  <div className="flex-shrink-0">
-                    <ProfileAvatarUploader
-                      avatarUrl={avatarUrl}
-                      avatarVariants={avatarVariants}
-                      onAvatarUpdated={handleAvatarUpdated}
-                      isOwner={isOwner}
-                      username={profileData.username}
-                      size="xl"
-                      apiUrl={API_URL}
-                    />
-                  </div>
-                </div>
-              </div>
-  
-              <div className="mb-6">
-                <p className="text-base text-gray-700 dark:text-gray-300 mb-3">
-                  {profileData.bio || (isOwner ? "Add a bio to tell people about yourself" : "")}
-                </p>
-                {profileData.website && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <LinkIcon className="w-4 h-4" />
-                    <a href={profileData.website} target="_blank" rel="noopener noreferrer" className="hover:text-blue-500">
-                      {profileData.website}
-                    </a>
-                  </div>
-                )}
-                {profileData.twitterHandle && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                    <Twitter className="w-4 h-4" />
-                    <a href={`https://twitter.com/${profileData.twitterHandle}`} target="_blank" rel="noopener noreferrer" className="hover:text-blue-500">
-                      @{profileData.twitterHandle}
-                    </a>
-                  </div>
-                )}
-                {profileData.linkedinHandle && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                    <Linkedin className="w-4 h-4" />
-                    <a href={`https://linkedin.com/in/${profileData.linkedinHandle}`} target="_blank" rel="noopener noreferrer" className="hover:text-blue-500">
-                      {profileData.linkedinHandle}
-                    </a>
-                  </div>
-                )}
-              </div>
-  
-              <div className="flex gap-3 mb-6">
-                {isOwner ? (
-                  <>
-                    <Button className="flex-1 text-white text-sm bg-blue-500 hover:bg-blue-400">
-                      New post
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="flex-1 text-sm" 
-                      onClick={() => setIsEditing(!isEditing)}
-                    >
-                      Edit profile
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    className={`flex-1 text-sm ${isFollowing ? 'bg-gray-200 hover:bg-gray-300 text-gray-800' : 'bg-blue-500 hover:bg-blue-400 text-white'}`}
-                    onClick={handleFollow}
-                  >
-                    {isFollowing ? (
-                      <>
-                        <UserMinus className="w-4 h-4 mr-2" />
-                        Unfollow
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Follow
-                      </>
-                    )}
-                  </Button>
-                )}
-                <div className="relative">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="px-2"
-                    onClick={handleMoreOptionsClick}
-                  >
-                    <MoreHorizontal className="w-5 h-5" />
-                  </Button>
-                  
-                  {showPrivacySettings && isOwner && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 py-1 border border-gray-200 dark:border-gray-700">
-                      <button 
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={togglePrivacy}
-                      >
-                        {profileData.isPrivate ? 'Make Profile Public' : 'Make Profile Private'}
-                      </button>
-                      <button 
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => navigate('/settings')}
-                      >
-                        Settings
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-  
+              {/* Profile Header */}
+              <ProfileHeader 
+                profileData={profileData}
+                avatarUrl={avatarUrl}
+                avatarVariants={avatarVariants}
+                isOwner={isOwner}
+                onAvatarUpdated={handleAvatarUpdated}
+                apiUrl={API_URL}
+              />
+              
+              {/* Profile Bio */}
+              <ProfileBio 
+                profileData={profileData}
+                isOwner={isOwner}
+              />
+              
+              {/* Profile Actions */}
+              <ProfileActions 
+                isOwner={isOwner}
+                isFollowing={isFollowing}
+                onToggleFollow={handleToggleFollow}
+                onEditProfile={() => setIsEditing(true)}
+                onTogglePrivacy={handleTogglePrivacy}
+                profileDisplayName={profileData.displayName}
+                isPrivate={profileData.isPrivate}
+              />
+              
+              {/* Edit Profile Form or Tabs */}
               {isEditing ? (
-                <Card className="p-6">
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label htmlFor="displayName" className="text-sm font-medium">
-                          Display Name
-                        </label>
-                        <input 
-                          id="displayName" 
-                          {...register("displayName", { required: "Display name is required" })} 
-                          className={`w-full p-2 border rounded-md ${errors.displayName ? 'border-red-500' : 'border-gray-300'}`} 
-                          placeholder="Your display name" 
-                        />
-                        {errors.displayName && (
-                          <p className="text-red-500 text-xs mt-1">{errors.displayName.message}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <label htmlFor="username" className="text-sm font-medium">
-                          @handle
-                        </label>
-                        <input 
-                          id="username" 
-                          {...register("username", { required: "Username is required", pattern: { value: /^[a-zA-Z0-9_]+$/, message: "Username can only contain letters, numbers, and underscores" } })} 
-                          className={`w-full p-2 border rounded-md ${errors.username ? 'border-red-500' : 'border-gray-300'}`}
-                          placeholder="@username" 
-                        />
-                        {errors.username && (
-                          <p className="text-red-500 text-xs mt-1">{errors.username.message}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <label htmlFor="bio" className="text-sm font-medium">
-                          Bio
-                        </label>
-                        <textarea 
-                          id="bio" 
-                          {...register("bio")} 
-                          className="w-full p-2 border rounded-md border-gray-300" 
-                          rows={4} 
-                          placeholder="Tell us about yourself..." 
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label htmlFor="website" className="text-sm font-medium">
-                          Website
-                        </label>
-                        <div className="flex items-center space-x-2">
-                          <LinkIcon className="w-4 h-4 text-gray-400" />
-                          <input 
-                            id="website" 
-                            {...register("website", { 
-                              // pattern: { 
-                              //   value: /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/, 
-                              //   message: "Please enter a valid URL" 
-                              // } 
-                            })} 
-                            className={`flex-1 p-2 border rounded-md ${errors.website ? 'border-red-500' : 'border-gray-300'}`}
-                            placeholder="https://your-website.com" 
-                          />
-                        </div>
-                        {errors.website && (
-                          <p className="text-red-500 text-xs mt-1">{errors.website.message}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <label htmlFor="twitterHandle" className="text-sm font-medium">
-                          Twitter
-                        </label>
-                        <div className="flex items-center space-x-2">
-                          <Twitter className="w-4 h-4 text-gray-400" />
-                          <input 
-                            id="twitterHandle" 
-                            {...register("twitterHandle", { 
-                              pattern: { 
-                                value: /^[a-zA-Z0-9_]{1,15}$/, 
-                                message: "Please enter a valid Twitter handle" 
-                              } 
-                            })} 
-                            className={`flex-1 p-2 border rounded-md ${errors.twitterHandle ? 'border-red-500' : 'border-gray-300'}`}
-                            placeholder="@twitter_handle" 
-                          />
-                        </div>
-                        {errors.twitterHandle && (
-                          <p className="text-red-500 text-xs mt-1">{errors.twitterHandle.message}</p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <label htmlFor="linkedinHandle" className="text-sm font-medium">
-                          LinkedIn
-                        </label>
-                        <div className="flex items-center space-x-2">
-                          <Linkedin className="w-4 h-4 text-gray-400" />
-                          <input 
-                            id="linkedinHandle" 
-                            {...register("linkedinHandle")} 
-                            className="flex-1 p-2 border rounded-md border-gray-300" 
-                            placeholder="linkedin.com/in/username" 
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end space-x-4">
-                      <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit">
-                        Save Changes
-                      </Button>
-                    </div>
-                  </form>
-                </Card>
+                <ProfileEditForm 
+                  profileData={profileData}
+                  onSubmit={handleProfileUpdate}
+                  onCancel={() => setIsEditing(false)}
+                />
               ) : (
                 <div className="border-t">
-                  <div className="flex gap-8 mt-4 border-b">
-                    <button 
-                      onClick={() => setActiveTab('portfolios')} 
-                      className={`px-4 py-2 font-medium ${activeTab === 'portfolios' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-                    >
-                      Portfolios
-                    </button>
-                    <button 
-                      onClick={() => setActiveTab('followers')} 
-                      className={`px-4 py-2 font-medium ${activeTab === 'followers' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-                    >
-                      Followers
-                    </button>
-                    <button 
-                      onClick={() => setActiveTab('following')} 
-                      className={`px-4 py-2 font-medium ${activeTab === 'following' ? 'text-gray-900 border-b-2 border-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
-                    >
-                      Following
-                    </button>
-                  </div>
-  
+                  {/* Tabs Navigation */}
+                  <ProfileTabs 
+                    activeTab={activeTab}
+                    onTabChange={(tab) => setActiveTab(tab)}
+                  />
+                  
+                  {/* Tab Content */}
                   <div className="py-6">
                     {activeTab === 'portfolios' && (
-                      <div className="space-y-4">
-                        {isOwner && (
-                          <Button 
-                            onClick={() => navigate('/portfolio-subscriptions')} 
-                            className="w-full bg-gradient-to-r from-black to-gray-900 hover:from-gray-900 hover:to-black text-white font-medium py-2.5"
-                          >
-                            Create A Portfolio Subscription Service
-                          </Button>
-                        )}
-                        
-                        <div className="space-y-2">
-                          {userPortfolios.length > 0 ? userPortfolios.map(portfolio => (
-                            <button 
-                              key={portfolio.id} 
-                              className="w-full group transition-all duration-300 hover:scale-[1.01]" 
-              onClick={() => handlePortfolioClick(portfolio.id)}
-            >
-              <div className="py-3 px-4 bg-gradient-to-br from-white to-gray-50/90 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 hover:border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <h3 className="text-base font-semibold text-gray-900 group-hover:text-gray-800">
-                      {portfolio.name}
-                    </h3>
-                    <span className="text-sm text-gray-500 font-medium">
-                      ${portfolio.totalValue?.toLocaleString() || '0'}
-                    </span>
-                  </div>
-                  {portfolio.yearlyPerformance !== null && (
-                    <div className={`flex items-center ${portfolio.yearlyPerformance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {portfolio.yearlyPerformance >= 0 ? (
-                        <TrendingUp className="w-4 h-4 mr-1" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4 mr-1" />
-                      )}
-                      <span className="text-sm font-medium">
-                        {Math.abs(portfolio.yearlyPerformance).toFixed(2)}%
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </button>
-          )) : (
-            <div className="text-gray-600">
-              No portfolios yet
-            </div>
-          )}
-        </div>
-      </div>
-    )}
-
-    {activeTab === 'followers' && (
-      <div className="space-y-4">
-        {followers.length > 0 ? (
-          followers.map(follower => (
-            <div key={getListItemKey('follower', follower.id)} className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
-                  {follower.avatarUrl ? (
-                    <img 
-                      src={follower.avatarUrl} 
-                      alt={follower.username} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <UserCircle className="w-6 h-6 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                    {follower.displayName}
-                  </h3>
-                  <p className="text-sm text-gray-500">@{follower.username}</p>
-                </div>
-              </div>
-              {user && user.id !== follower.id && (
-                <Button
-                variant={follower.isFollowing ? "outline" : "default"}
-                onClick={() => follower.isFollowing 
-                  ? handleUnfollow(follower.id)
-                  : handleFollowBack(follower.id)
-                }
-              >
-                {follower.isFollowing ? (
-                  "Unfollow"
-                ) : (
-                  <>
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Follow back
-                  </>
-                )}
-              </Button>
-              )}
-            </div>
-          ))
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            No followers yet
-          </div>
-        )}
-      </div>
-    )}
-
-    {activeTab === 'following' && (
-      <div className="space-y-4">
-        {following.length > 0 ? (
-          following.map(follow => (
-            <div key={getListItemKey('following', follow.id)} className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
-                  {follow.avatarUrl ? (
-                    <img 
-                      src={follow.avatarUrl} 
-                      alt={follow.username} 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <UserCircle className="w-6 h-6 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                    {follow.displayName}
-                  </h3>
-                  <p className="text-sm text-gray-500">@{follow.username}</p>
-                </div>
-              </div>
-              {user && user.id !== follow.id && (
-                <Button
-                  variant="outline"
-                  className="hover:bg-red-50 hover:text-red-600"
-                  onClick={() => handleUnfollow(follow.id)}
-                >
-                  Unfollow
-                </Button>
-              )}
-            </div>
-          ))
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            Not following anyone yet
-          </div>
-        )}
-      </div>
-    )}
+                      <PortfoliosTab 
+                        portfolios={userPortfolios}
+                        isOwner={isOwner}
+                      />
+                    )}
+                    
+                    {activeTab === 'followers' && (
+                      <FollowersTab 
+                        followers={followers}
+                        currentUserId={user?.id}
+                        onFollowUser={handleFollowBack}
+                        onUnfollowUser={handleUnfollow}
+                      />
+                    )}
+                    
+                    {activeTab === 'following' && (
+                      <FollowingTab 
+                        following={following}
+                        currentUserId={user?.id}
+                        onUnfollowUser={handleUnfollow}
+                      />
+                    )}
                   </div>
                 </div>
               )}
@@ -1007,5 +446,4 @@ const Profile = () => {
   );
 };
 
-// Add default export to fix the error
-export default Profile;
+export default ProfilePage;
