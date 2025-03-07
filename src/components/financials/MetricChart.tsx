@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { getMetricColor, formatYAxis } from './chartUtils';
 import { ChartTooltip } from './ChartTooltip';
 import { Button } from "@/components/ui/button";
 import { BarChart3, LineChart } from "lucide-react";
+import { getMetricFormat, getMetricDisplayName } from '@/utils/metricDefinitions';
 
 interface MetricChartProps {
   data: any[];
@@ -20,6 +21,32 @@ export const MetricChart = ({
   metricTypes,
   onMetricTypeChange
 }: MetricChartProps) => {
+  // Log initial props for debugging
+  useEffect(() => {
+    console.log('MetricChart props:', {
+      dataLength: data?.length || 0,
+      metrics,
+      metricTypes
+    });
+    
+    // Check if we have the metrics we're looking for in the data
+    if (data?.length > 0 && metrics?.length > 0) {
+      const firstItem = data[0];
+      const metricsInData = metrics.filter(metric => firstItem[metric] !== undefined);
+      const missingMetrics = metrics.filter(metric => firstItem[metric] === undefined);
+      
+      console.log(`Metrics in chart data: ${metricsInData.length}/${metrics.length}`);
+      if (missingMetrics.length > 0) {
+        console.log('Missing metrics in chart data:', missingMetrics);
+      }
+      
+      // Log values for a few metrics to check
+      metricsInData.forEach(metric => {
+        console.log(`${metric} values:`, data.slice(0, 2).map(item => item[metric]));
+      });
+    }
+  }, [data, metrics]);
+
   if (!data?.length || !metrics?.length) {
     return (
       <div className="w-full bg-white p-4 rounded-lg flex items-center justify-center h-[300px]">
@@ -45,115 +72,35 @@ export const MetricChart = ({
     );
   }
 
-  console.log('Chart data after filtering:', filteredData);
-  console.log('Selected metrics:', metrics);
-  console.log('Metric types:', metricTypes);
-
-  // Helper function to get display name for a metric
-  const getMetricDisplayName = (metricId: string): string => {
-    // Map of common metric IDs to display names
-    const metricNames: Record<string, string> = {
-      'revenue': 'Revenue',
-      'netIncome': 'Net Income',
-      'grossProfit': 'Gross Profit',
-      'operatingIncome': 'Operating Income',
-      'ebitda': 'EBITDA',
-      'eps': 'EPS',
-      'totalAssets': 'Total Assets',
-      'totalLiabilities': 'Total Liabilities',
-      'totalEquity': 'Total Equity',
-      'cashAndCashEquivalents': 'Cash & Equivalents',
-      'totalDebt': 'Total Debt',
-      'netDebt': 'Net Debt',
-      'operatingCashFlow': 'Operating Cash Flow',
-      'freeCashFlow': 'Free Cash Flow',
-      'capitalExpenditure': 'Capital Expenditure',
-      'returnOnAssets': 'Return on Assets (ROA)',
-      'returnOnEquity': 'Return on Equity (ROE)',
-      'profitMargin': 'Profit Margin',
-      'operatingMargin': 'Operating Margin',
-      'currentRatio': 'Current Ratio',
-      'debtToEquity': 'Debt to Equity',
-      'debtToAssets': 'Debt to Assets'
-    };
-    
-    // Return mapped name if exists, otherwise format the ID
-    return metricNames[metricId] || formatMetricId(metricId);
+  // Determine if we need a percentage Y-axis or a currency Y-axis
+  const hasPercentageMetrics = metrics.some(metric => getMetricFormat(metric) === 'percentage');
+  const hasRatioMetrics = metrics.some(metric => getMetricFormat(metric) === 'ratio');
+  const hasCurrencyMetrics = metrics.some(metric => getMetricFormat(metric) === 'currency');
+  
+  // Group similar metrics together
+  const metricGroups: Record<string, string[]> = {
+    currency: metrics.filter(m => getMetricFormat(m) === 'currency'),
+    percentage: metrics.filter(m => getMetricFormat(m) === 'percentage'),
+    ratio: metrics.filter(m => getMetricFormat(m) === 'ratio'),
+    number: metrics.filter(m => getMetricFormat(m) === 'number')
   };
   
-  // Helper function to format metric ID into a display name
-  const formatMetricId = (id: string): string => {
-    // Replace camelCase with spaces
-    let label = id.replace(/([A-Z])/g, ' $1').trim();
-    
-    // Capitalize first letter of each word
-    label = label.split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-    
-    // Handle common acronyms
-    return label
-      .replace(/Ebit/g, 'EBIT')
-      .replace(/Ebitda/g, 'EBITDA')
-      .replace(/Eps/g, 'EPS')
-      .replace(/Roa/g, 'ROA')
-      .replace(/Roe/g, 'ROE');
-  };
+  // If we have mixed types, we might need multiple y-axes (simplified for now)
+  const primaryMetricType = 
+    metricGroups.currency.length > 0 ? 'currency' :
+    metricGroups.percentage.length > 0 ? 'percentage' :
+    metricGroups.ratio.length > 0 ? 'ratio' : 'number';
 
-  // Calculate growth rates and CAGR for each metric
-  const calculateGrowthRates = (metricName: string) => {
-    // Filter out data points where this metric has a value
-    const metricData = filteredData
-      .filter(item => item[metricName] !== undefined && item[metricName] !== null)
-      .sort((a, b) => {
-        // Sort by period (newest last for calculation)
-        if (a.period === 'TTM') return -1;
-        if (b.period === 'TTM') return 1;
-        
-        // Handle quarterly format
-        if (a.period?.includes('Q') && b.period?.includes('Q')) {
-          const [aQ, aYear] = a.period.split(' ');
-          const [bQ, bYear] = b.period.split(' ');
-          
-          if (aYear !== bYear) {
-            return parseInt(aYear) - parseInt(bYear);
-          }
-          return parseInt(aQ.slice(1)) - parseInt(bQ.slice(1));
-        }
-        
-        // Handle annual format
-        return parseInt(a.period) - parseInt(b.period);
-      });
-    
-    if (metricData.length < 2) {
-      return { totalChange: 'N/A', cagr: 'N/A' };
-    }
-    
-    try {
-      const firstValue = metricData[0][metricName];
-      const lastValue = metricData[metricData.length - 1][metricName];
-      
-      if (firstValue === 0 || !firstValue || !lastValue) {
-        return { totalChange: 'N/A', cagr: 'N/A' };
-      }
-      
-      // Calculate total change
-      const totalChange = ((lastValue - firstValue) / Math.abs(firstValue)) * 100;
-      
-      // Calculate CAGR
-      const periods = metricData.length - 1;
-      const years = periods; // Adjust based on period type if needed
-      const cagr = years > 0 && firstValue > 0 && lastValue > 0
-        ? (Math.pow(lastValue / firstValue, 1 / years) - 1) * 100
-        : null;
-      
-      return {
-        totalChange: isNaN(totalChange) ? 'N/A' : `${totalChange.toFixed(2)}%`,
-        cagr: cagr === null || isNaN(cagr) ? 'N/A' : `${cagr.toFixed(2)}%`
-      };
-    } catch (error) {
-      console.error(`Error calculating growth rates for ${metricName}:`, error);
-      return { totalChange: 'N/A', cagr: 'N/A' };
+  // Function to format Y-axis values based on metric type
+  const formatYAxisValue = (value: number) => {
+    if (primaryMetricType === 'percentage') {
+      return `${value.toFixed(1)}%`;
+    } else if (primaryMetricType === 'ratio') {
+      return value.toFixed(2);
+    } else if (primaryMetricType === 'currency') {
+      return formatYAxis(value);
+    } else {
+      return value.toLocaleString();
     }
   };
 
@@ -211,10 +158,11 @@ export const MetricChart = ({
               dy={20}
             />
             <YAxis 
-              tickFormatter={formatYAxis}
+              tickFormatter={formatYAxisValue}
               tick={{ fontSize: 12, fill: '#6B7280' }}
               axisLine={{ stroke: '#E5E7EB' }}
               tickLine={false}
+              domain={primaryMetricType === 'percentage' ? [0, 'auto'] : ['auto', 'auto']}
             />
             <Tooltip content={<ChartTooltip ticker={ticker} />} />
             
@@ -222,7 +170,14 @@ export const MetricChart = ({
               const color = getMetricColor(index);
               const displayName = getMetricDisplayName(metric);
               
-              if (metricTypes[metric] === 'line') {
+              // Use line chart for percentage and ratio metrics by default unless explicitly set to bar
+              const defaultType = 
+                (getMetricFormat(metric) === 'percentage' || getMetricFormat(metric) === 'ratio') 
+                  ? 'line' : 'bar';
+              
+              const chartType = metricTypes[metric] || defaultType;
+              
+              if (chartType === 'line') {
                 return (
                   <Line
                     key={metric}
@@ -254,7 +209,25 @@ export const MetricChart = ({
       <div className="mt-4 border-t pt-4">
         <div className="flex flex-col gap-2">
           {metrics.map((metric, index) => {
-            const { totalChange, cagr } = calculateGrowthRates(metric);
+            // Calculate average, max, min
+            const values = filteredData
+              .map(item => typeof item[metric] === 'number' ? item[metric] : null)
+              .filter(val => val !== null && !isNaN(val));
+            
+            const avg = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+            const max = values.length ? Math.max(...values) : 0;
+            const min = values.length ? Math.min(...values) : 0;
+            
+            // Format based on metric type
+            const format = getMetricFormat(metric);
+            const formatValue = (val: number) => {
+              if (format === 'percentage') return `${val.toFixed(2)}%`;
+              if (format === 'ratio') return val.toFixed(2);
+              if (format === 'currency') return new Intl.NumberFormat('en-US', {
+                style: 'currency', currency: 'USD', notation: 'compact'
+              }).format(val);
+              return val.toLocaleString();
+            };
             
             return (
               <div key={metric} className="flex items-center gap-3">
@@ -264,8 +237,8 @@ export const MetricChart = ({
                 />
                 <span className="text-gray-900 font-medium">
                   {ticker} - {getMetricDisplayName(metric)} {' '}
-                  (Total Change: {totalChange}) {' '}
-                  (CAGR: {cagr})
+                  (Avg: {formatValue(avg)}) {' '}
+                  (Range: {formatValue(min)} - {formatValue(max)})
                 </span>
               </div>
             );

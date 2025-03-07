@@ -41,32 +41,42 @@ export const TimeRangePanel = ({
     onSliderChange(value);
   };
 
-  // Preset buttons for common time ranges
+  // Fixed preset buttons for common time ranges
   const presets = [
-    { label: "1Y", handler: () => {
-      const endIndex = timePeriods.length - 1;
-      const startIndex = Math.max(0, endIndex - 3);
-      handleLocalSliderChange([startIndex, endIndex]);
-    }},
     { label: "5Y", handler: () => {
+      // For 5Y, select the last 5 years of data (most recent)
       const endIndex = timePeriods.length - 1;
-      const startIndex = Math.max(0, endIndex - 9);
+      const startIndex = Math.max(0, endIndex - 4); // 5 years including current year
       handleLocalSliderChange([startIndex, endIndex]);
     }},
     { label: "10Y", handler: () => {
+      // For 10Y, select the last 10 years of data (most recent)
       const endIndex = timePeriods.length - 1;
-      const startIndex = Math.max(0, endIndex - 19);
+      const startIndex = Math.max(0, endIndex - 9); // 10 years including current year
       handleLocalSliderChange([startIndex, endIndex]);
     }},
     { label: "All", handler: () => {
+      // All data
       handleLocalSliderChange([0, timePeriods.length - 1]);
     }}
   ];
 
   // Calculate position for each dot in the slider
   const calculatePosition = (index: number) => {
-    const total = Math.max(1, timePeriods.length - 1);
-    return (index / total) * 100;
+    if (timePeriods.length <= 1) return 50; // Center if only one period
+    
+    // Add offset to match slider's internal padding
+    // Slider handles often don't reach the absolute edges of the track
+    const paddingOffset = 0.8; // Percentage offset from edges (adjust as needed)
+    
+    if (index === 0) {
+      return paddingOffset; // First dot position
+    } else if (index === timePeriods.length - 1) {
+      return 100 - paddingOffset; // Last dot position
+    } else {
+      // For middle dots, distribute evenly between offset boundaries
+      return paddingOffset + ((100 - (2 * paddingOffset)) * index / (timePeriods.length - 1));
+    }
   };
 
   // Get visible time periods based on slider values
@@ -76,32 +86,8 @@ export const TimeRangePanel = ({
   );
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-500">
-          {visiblePeriods.length > 0 ? (
-            <span>
-              Showing {visiblePeriods.length} periods: {visiblePeriods[0]} to {visiblePeriods[visiblePeriods.length - 1]}
-            </span>
-          ) : (
-            <span>No periods selected</span>
-          )}
-        </div>
-        <div className="flex space-x-2">
-          {presets.map((preset) => (
-            <Button 
-              key={preset.label}
-              variant="outline" 
-              size="sm"
-              onClick={preset.handler}
-            >
-              {preset.label}
-            </Button>
-          ))}
-        </div>
-      </div>
-      
-      <div className="px-2 py-6">
+    <div className="space-y-6 mt-6">
+      <div className="px-2 py-4">
         <div className="relative">
           <Slider
             min={0}
@@ -153,6 +139,31 @@ export const TimeRangePanel = ({
               ) : null;
             })}
           </div>
+        </div>
+      </div>
+      
+      {/* Increased spacing below slider */}
+      <div className="flex justify-between items-center mt-10 pt-4 border-t border-gray-100">
+        <div className="text-sm text-gray-500">
+          {visiblePeriods.length > 0 ? (
+            <span>
+              Showing {visiblePeriods.length} periods: {visiblePeriods[0]} to {visiblePeriods[visiblePeriods.length - 1]}
+            </span>
+          ) : (
+            <span>No periods selected</span>
+          )}
+        </div>
+        <div className="flex space-x-2">
+          {presets.map((preset) => (
+            <Button 
+              key={preset.label}
+              variant="outline" 
+              size="sm"
+              onClick={preset.handler}
+            >
+              {preset.label}
+            </Button>
+          ))}
         </div>
       </div>
     </div>

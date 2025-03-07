@@ -1,14 +1,27 @@
 import { supabase } from "@/integrations/supabase/client";
 import { formatFinancialData } from "./data-formatter";
 
-export type FinancialEndpoint = 'quote' | 'profile' | 'income-statement' | 'balance-sheet-statement' | 'cash-flow-statement';
+export type FinancialEndpoint = 
+  'quote' | 
+  'profile' | 
+  'income-statement' | 
+  'balance-sheet-statement' | 
+  'cash-flow-statement' | 
+  'key-metrics' | 
+  'financial-ratios';
 
 export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: string, period: 'annual' | 'quarter' = 'annual') {
   try {
-    console.log(`Fetching ${endpoint} data for ${symbol} with period try ${period}`);
+    console.log(`Fetching ${endpoint} data for ${symbol} with period ${period}`);
 
-    // For financial statements, use local API
-    if (['income-statement', 'balance-sheet-statement', 'cash-flow-statement'].includes(endpoint)) {
+    // For all local API endpoints
+    if ([
+      'income-statement', 
+      'balance-sheet-statement', 
+      'cash-flow-statement',
+      'key-metrics',
+      'financial-ratios'
+    ].includes(endpoint)) {
       // Map the period to match backend expectations
       const periodMap = {
         'annual': 'annual',
@@ -21,7 +34,9 @@ export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: st
       const endpointMap = {
         'income-statement': 'income-statement',
         'balance-sheet-statement': 'balance-sheet',
-        'cash-flow-statement': 'cash-flow'
+        'cash-flow-statement': 'cash-flow',
+        'key-metrics': 'key-metrics',
+        'financial-ratios': 'ratios'
       };
 
       const mappedEndpoint = endpointMap[endpoint];

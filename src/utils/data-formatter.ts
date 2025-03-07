@@ -105,88 +105,222 @@ export function formatFinancialData(data: any) {
     capitalExpenditure: toNumber(data.capitalExpenditure),
     freeCashFlow: toNumber(data.freeCashFlow)
   };
-// Balance Sheet specific fields
-const balanceSheetFields = {
-  // Assets
-  cashAndCashEquivalents: toNumber(data.cashAndCashEquivalents),
-  shortTermInvestments: toNumber(data.shortTermInvestments),
-  netReceivables: toNumber(data.netReceivables),
-  inventory: toNumber(data.inventory),
-  otherCurrentAssets: toNumber(data.otherCurrentAssets),
-  totalCurrentAssets: toNumber(data.totalCurrentAssets),
-  propertyPlantEquipmentNet: toNumber(data.propertyPlantEquipmentNet),
-  goodwill: toNumber(data.goodwill),
-  intangibleAssets: toNumber(data.intangibleAssets),
-  longTermInvestments: toNumber(data.longTermInvestments),
-  otherNonCurrentAssets: toNumber(data.otherNonCurrentAssets),
-  totalNonCurrentAssets: toNumber(data.totalNonCurrentAssets),
-  totalAssets: toNumber(data.totalAssets),
-  
-  // Liabilities
-  accountPayables: toNumber(data.accountPayables),
-  shortTermDebt: toNumber(data.shortTermDebt),
-  taxPayables: toNumber(data.taxPayables),
-  deferredRevenue: toNumber(data.deferredRevenue),
-  otherCurrentLiabilities: toNumber(data.otherCurrentLiabilities),
-  totalCurrentLiabilities: toNumber(data.totalCurrentLiabilities),
-  longTermDebt: toNumber(data.longTermDebt),
-  deferredRevenueNonCurrent: toNumber(data.deferredRevenueNonCurrent),
-  deferredTaxLiabilitiesNonCurrent: toNumber(data.deferredTaxLiabilitiesNonCurrent),
-  otherNonCurrentLiabilities: toNumber(data.otherNonCurrentLiabilities),
-  totalNonCurrentLiabilities: toNumber(data.totalNonCurrentLiabilities),
-  totalLiabilities: toNumber(data.totalLiabilities),
-  
-  // Stockholders' Equity
-  commonStock: toNumber(data.commonStock),
-  retainedEarnings: toNumber(data.retainedEarnings),
-  accumulatedOtherComprehensiveIncomeLoss: toNumber(data.accumulatedOtherComprehensiveIncomeLoss),
-  othertotalStockholdersEquity: toNumber(data.othertotalStockholdersEquity),
-  totalStockholdersEquity: toNumber(data.totalStockholdersEquity),
-  totalLiabilitiesAndStockholdersEquity: toNumber(data.totalLiabilitiesAndStockholdersEquity),
-  
-  // Other metrics
-  totalInvestments: toNumber(data.totalInvestments),
-  totalDebt: toNumber(data.totalDebt),
-  netDebt: toNumber(data.netDebt),
-  cashAndShortTermInvestments: toNumber(data.cashAndShortTermInvestments),
-  goodwillAndIntangibleAssets: toNumber(data.goodwillAndIntangibleAssets),
-  taxAssets: toNumber(data.taxAssets),
-  otherAssets: toNumber(data.otherAssets),
-  otherLiabilities: toNumber(data.otherLiabilities),
-  capitalLeaseObligations: toNumber(data.capitalLeaseObligations),
-  preferredStock: toNumber(data.preferredStock),
-  totalEquity: toNumber(data.totalEquity),
-  minorityInterest: toNumber(data.minorityInterest),
-  totalLiabilitiesAndTotalEquity: toNumber(data.totalLiabilitiesAndTotalEquity)
 
-};
-
-// Determine the statement type based on the presence of key fields
-const isIncomeStatement = 'revenue' in data;
-const isCashFlowStatement = 'freeCashFlow' in data;
-const isBalanceSheet = 'totalAssets' in data && 'totalLiabilities' in data;
-
-if (isIncomeStatement) {
-  return {
-    ...commonFields,
-    ...incomeStatementFields
+  // Balance Sheet specific fields
+  const balanceSheetFields = {
+    // Assets
+    cashAndCashEquivalents: toNumber(data.cashAndCashEquivalents),
+    shortTermInvestments: toNumber(data.shortTermInvestments),
+    netReceivables: toNumber(data.netReceivables),
+    inventory: toNumber(data.inventory),
+    otherCurrentAssets: toNumber(data.otherCurrentAssets),
+    totalCurrentAssets: toNumber(data.totalCurrentAssets),
+    propertyPlantEquipmentNet: toNumber(data.propertyPlantEquipmentNet),
+    goodwill: toNumber(data.goodwill),
+    intangibleAssets: toNumber(data.intangibleAssets),
+    longTermInvestments: toNumber(data.longTermInvestments),
+    taxAssets: toNumber(data.taxAssets),
+    otherNonCurrentAssets: toNumber(data.otherNonCurrentAssets),
+    totalNonCurrentAssets: toNumber(data.totalNonCurrentAssets),
+    otherAssets: toNumber(data.otherAssets),
+    totalAssets: toNumber(data.totalAssets),
+    
+    // Liabilities
+    accountPayables: toNumber(data.accountPayables),
+    shortTermDebt: toNumber(data.shortTermDebt),
+    taxPayables: toNumber(data.taxPayables),
+    deferredRevenue: toNumber(data.deferredRevenue),
+    otherCurrentLiabilities: toNumber(data.otherCurrentLiabilities),
+    totalCurrentLiabilities: toNumber(data.totalCurrentLiabilities),
+    longTermDebt: toNumber(data.longTermDebt),
+    deferredRevenueNonCurrent: toNumber(data.deferredRevenueNonCurrent),
+    deferredTaxLiabilitiesNonCurrent: toNumber(data.deferredTaxLiabilitiesNonCurrent),
+    otherNonCurrentLiabilities: toNumber(data.otherNonCurrentLiabilities),
+    totalNonCurrentLiabilities: toNumber(data.totalNonCurrentLiabilities),
+    otherLiabilities: toNumber(data.otherLiabilities),
+    capitalLeaseObligations: toNumber(data.capitalLeaseObligations),
+    totalLiabilities: toNumber(data.totalLiabilities),
+    
+    // Stockholders' Equity
+    commonStock: toNumber(data.commonStock),
+    retainedEarnings: toNumber(data.retainedEarnings),
+    accumulatedOtherComprehensiveIncomeLoss: toNumber(data.accumulatedOtherComprehensiveIncomeLoss),
+    othertotalStockholdersEquity: toNumber(data.othertotalStockholdersEquity),
+    totalStockholdersEquity: toNumber(data.totalStockholdersEquity),
+    totalEquity: toNumber(data.totalEquity),
+    totalLiabilitiesAndStockholdersEquity: toNumber(data.totalLiabilitiesAndStockholdersEquity),
+    minorityInterest: toNumber(data.minorityInterest),
+    totalLiabilitiesAndTotalEquity: toNumber(data.totalLiabilitiesAndTotalEquity),
+    
+    // Other metrics
+    totalInvestments: toNumber(data.totalInvestments),
+    totalDebt: toNumber(data.totalDebt),
+    netDebt: toNumber(data.netDebt),
+    cashAndShortTermInvestments: toNumber(data.cashAndShortTermInvestments),
+    goodwillAndIntangibleAssets: toNumber(data.goodwillAndIntangibleAssets),
+    preferredStock: toNumber(data.preferredStock)
   };
-}
 
-if (isCashFlowStatement) {
-  return {
-    ...commonFields,
-    ...cashFlowFields
+  // Key Metrics specific fields
+  const keyMetricsFields = {
+    revenuePerShare: toNumber(data.revenuePerShare),
+    netIncomePerShare: toNumber(data.netIncomePerShare),
+    operatingCashFlowPerShare: toNumber(data.operatingCashFlowPerShare),
+    freeCashFlowPerShare: toNumber(data.freeCashFlowPerShare),
+    cashPerShare: toNumber(data.cashPerShare),
+    bookValuePerShare: toNumber(data.bookValuePerShare),
+    tangibleBookValuePerShare: toNumber(data.tangibleBookValuePerShare),
+    shareholdersEquityPerShare: toNumber(data.shareholdersEquityPerShare),
+    interestDebtPerShare: toNumber(data.interestDebtPerShare),
+    marketCap: toNumber(data.marketCap),
+    enterpriseValue: toNumber(data.enterpriseValue),
+    peRatio: toNumber(data.peRatio),
+    priceToSalesRatio: toNumber(data.priceToSalesRatio),
+    pocfRatio: toNumber(data.pocfratio),
+    pfcfRatio: toNumber(data.pfcfRatio),
+    pbRatio: toNumber(data.pbRatio),
+    ptbRatio: toNumber(data.ptbRatio),
+    evToSales: toNumber(data.evToSales),
+    enterpriseValueOverEBITDA: toNumber(data.enterpriseValueOverEBITDA),
+    evToOperatingCashFlow: toNumber(data.evToOperatingCashFlow),
+    earningsYield: toNumber(data.earningsYield),
+    freeCashFlowYield: toNumber(data.freeCashFlowYield),
+    debtToEquity: toNumber(data.debtToEquity),
+    debtToAssets: toNumber(data.debtToAssets),
+    netDebtToEBITDA: toNumber(data.netDebtToEBITDA),
+    currentRatio: toNumber(data.currentRatio),
+    interestCoverage: toNumber(data.interestCoverage),
+    incomeQuality: toNumber(data.incomeQuality),
+    dividendYield: toNumber(data.dividendYield),
+    payoutRatio: toNumber(data.payoutRatio),
+    salesGeneralAndAdministrativeToRevenue: toNumber(data.salesGeneralAndAdministrativeToRevenue),
+    researchAndDdevelopementToRevenue: toNumber(data.researchAndDdevelopementToRevenue),
+    intangiblesToTotalAssets: toNumber(data.intangiblesToTotalAssets),
+    capexToOperatingCashFlow: toNumber(data.capexToOperatingCashFlow),
+    capexToRevenue: toNumber(data.capexToRevenue),
+    capexToDepreciation: toNumber(data.capexToDepreciation),
+    stockBasedCompensationToRevenue: toNumber(data.stockBasedCompensationToRevenue),
+    grahamNumber: toNumber(data.grahamNumber),
+    roic: toNumber(data.roic),
+    returnOnTangibleAssets: toNumber(data.returnOnTangibleAssets),
+    grahamNetNet: toNumber(data.grahamNetNet),
+    workingCapital: toNumber(data.workingCapital),
+    tangibleAssetValue: toNumber(data.tangibleAssetValue),
+    netCurrentAssetValue: toNumber(data.netCurrentAssetValue),
+    investedCapital: toNumber(data.investedCapital),
+    averageReceivables: toNumber(data.averageReceivables),
+    averagePayables: toNumber(data.averagePayables),
+    averageInventory: toNumber(data.averageInventory),
+    daysSalesOutstanding: toNumber(data.daysSalesOutstanding),
+    daysPayablesOutstanding: toNumber(data.daysPayablesOutstanding),
+    daysOfInventoryOnHand: toNumber(data.daysOfInventoryOnHand),
+    receivablesTurnover: toNumber(data.receivablesTurnover),
+    payablesTurnover: toNumber(data.payablesTurnover),
+    inventoryTurnover: toNumber(data.inventoryTurnover),
+    roe: toNumber(data.roe),
+    capexPerShare: toNumber(data.capexPerShare)
   };
-}
 
-if (isBalanceSheet) {
-  return {
-    ...commonFields,
-    ...balanceSheetFields
+  // Financial Ratios specific fields
+  const financialRatiosFields = {
+    currentRatio: toNumber(data.currentRatio),
+    quickRatio: toNumber(data.quickRatio),
+    cashRatio: toNumber(data.cashRatio),
+    daysOfSalesOutstanding: toNumber(data.daysOfSalesOutstanding),
+    daysOfInventoryOutstanding: toNumber(data.daysOfInventoryOutstanding),
+    operatingCycle: toNumber(data.operatingCycle),
+    daysOfPayablesOutstanding: toNumber(data.daysOfPayablesOutstanding),
+    cashConversionCycle: toNumber(data.cashConversionCycle),
+    grossProfitMargin: toNumber(data.grossProfitMargin),
+    operatingProfitMargin: toNumber(data.operatingProfitMargin),
+    pretaxProfitMargin: toNumber(data.pretaxProfitMargin),
+    netProfitMargin: toNumber(data.netProfitMargin),
+    effectiveTaxRate: toNumber(data.effectiveTaxRate),
+    returnOnAssets: toNumber(data.returnOnAssets),
+    returnOnEquity: toNumber(data.returnOnEquity),
+    returnOnCapitalEmployed: toNumber(data.returnOnCapitalEmployed),
+    netIncomePerEBT: toNumber(data.netIncomePerEBT),
+    ebtPerEbit: toNumber(data.ebtPerEbit),
+    ebitPerRevenue: toNumber(data.ebitPerRevenue),
+    debtRatio: toNumber(data.debtRatio),
+    debtEquityRatio: toNumber(data.debtEquityRatio),
+    longTermDebtToCapitalization: toNumber(data.longTermDebtToCapitalization),
+    totalDebtToCapitalization: toNumber(data.totalDebtToCapitalization),
+    interestCoverage: toNumber(data.interestCoverage),
+    cashFlowToDebtRatio: toNumber(data.cashFlowToDebtRatio),
+    companyEquityMultiplier: toNumber(data.companyEquityMultiplier),
+    receivablesTurnover: toNumber(data.receivablesTurnover),
+    payablesTurnover: toNumber(data.payablesTurnover),
+    inventoryTurnover: toNumber(data.inventoryTurnover),
+    fixedAssetTurnover: toNumber(data.fixedAssetTurnover),
+    assetTurnover: toNumber(data.assetTurnover),
+    operatingCashFlowPerShare: toNumber(data.operatingCashFlowPerShare),
+    freeCashFlowPerShare: toNumber(data.freeCashFlowPerShare),
+    cashPerShare: toNumber(data.cashPerShare),
+    payoutRatio: toNumber(data.payoutRatio),
+    operatingCashFlowSalesRatio: toNumber(data.operatingCashFlowSalesRatio),
+    freeCashFlowOperatingCashFlowRatio: toNumber(data.freeCashFlowOperatingCashFlowRatio),
+    cashFlowCoverageRatios: toNumber(data.cashFlowCoverageRatios),
+    shortTermCoverageRatios: toNumber(data.shortTermCoverageRatios),
+    capitalExpenditureCoverageRatio: toNumber(data.capitalExpenditureCoverageRatio),
+    dividendPaidAndCapexCoverageRatio: toNumber(data.dividendPaidAndCapexCoverageRatio),
+    dividendPayoutRatio: toNumber(data.dividendPayoutRatio),
+    priceBookValueRatio: toNumber(data.priceBookValueRatio),
+    priceToBookRatio: toNumber(data.priceToBookRatio),
+    priceToSalesRatio: toNumber(data.priceToSalesRatio),
+    priceEarningsRatio: toNumber(data.priceEarningsRatio),
+    priceToFreeCashFlowsRatio: toNumber(data.priceToFreeCashFlowsRatio),
+    priceToOperatingCashFlowsRatio: toNumber(data.priceToOperatingCashFlowsRatio),
+    priceCashFlowRatio: toNumber(data.priceCashFlowRatio),
+    priceEarningsToGrowthRatio: toNumber(data.priceEarningsToGrowthRatio),
+    priceSalesRatio: toNumber(data.priceSalesRatio),
+    dividendYield: toNumber(data.dividendYield),
+    enterpriseValueMultiple: toNumber(data.enterpriseValueMultiple),
+    priceFairValue: toNumber(data.priceFairValue)
   };
-}
 
-// If no statement type is detected, return common fields only
-return commonFields;
+  // Determine the statement type based on the presence of key fields
+  const isIncomeStatement = data.revenue !== undefined;
+  const isCashFlowStatement = data.freeCashFlow !== undefined;
+  const isBalanceSheet = data.totalAssets !== undefined && data.totalLiabilities !== undefined;
+  const isKeyMetrics = data.revenuePerShare !== undefined;
+  const isFinancialRatios = data.operatingCycle !== undefined;
+
+  if (isIncomeStatement) {
+    return {
+      ...commonFields,
+      ...incomeStatementFields
+    };
+  }
+
+  if (isCashFlowStatement) {
+    return {
+      ...commonFields,
+      ...cashFlowFields
+    };
+  }
+
+  if (isBalanceSheet) {
+    return {
+      ...commonFields,
+      ...balanceSheetFields
+    };
+  }
+
+  if (isKeyMetrics) {
+    return {
+      ...commonFields,
+      ...keyMetricsFields
+    };
+  }
+
+  if (isFinancialRatios) {
+    return {
+      ...commonFields,
+      ...financialRatiosFields
+    };
+  }
+
+  // If no statement type is detected, return common fields only
+  return commonFields;
 }

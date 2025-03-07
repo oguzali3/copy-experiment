@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchFinancialData } from "@/utils/financialApi";
 import { IncomeStatementLoading } from "./IncomeStatementLoading";
 import { IncomeStatementError } from "./IncomeStatementError";
-import { FinancialDataTable } from "./FinancialDataTable";
+import { ConsistentFinancialDataTable } from "./ConsistentFinancialDataTable";
 
 interface IncomeStatementProps {
   timeFrame: "annual" | "quarterly" | "ttm";
@@ -113,13 +113,15 @@ export const IncomeStatement = ({
 
   return (
     <div className="space-y-6">
-      <FinancialDataTable
-        combinedData={combinedData}
-        periods={periods}
-        selectedMetrics={selectedMetrics}
-        onMetricToggle={handleMetricToggle}
-        annualData={regularData}
-      />
+      <div className="bg-white rounded-lg border">
+        <ConsistentFinancialDataTable
+          combinedData={combinedData}
+          periods={periods}
+          selectedMetrics={selectedMetrics}
+          onMetricToggle={handleMetricToggle}
+          annualData={regularData}
+        />
+      </div>
     </div>
   );
 };
