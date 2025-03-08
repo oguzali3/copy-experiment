@@ -6,6 +6,19 @@ import { FollowerData, PortfolioData, ProfileData } from "@/components/profile/t
 // Define API base URL
 const API_URL = 'http://localhost:4000';
 
+// Custom error class to preserve API error responses
+export class APIError extends Error {
+  status: number;
+  data: any;
+
+  constructor(message: string, status: number, data: any) {
+    super(message);
+    this.name = 'APIError';
+    this.status = status;
+    this.data = data;
+  }
+}
+
 export const profileAPI = {
   async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const token = localStorage.getItem('auth_token');
@@ -21,8 +34,18 @@ export const profileAPI = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'API request failed');
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { message: 'API request failed' };
+      }
+      
+      throw new APIError(
+        errorData.message || 'API request failed',
+        response.status,
+        errorData
+      );
     }
 
     return response.json();
@@ -33,16 +56,37 @@ export const profileAPI = {
   },
 
   async updateProfile(data: Partial<ProfileData>): Promise<ProfileData> {
-    return this.fetchWithAuth('profiles', {
-      method: 'PUT',
-      body: JSON.stringify({
-        displayName: data.displayName,
-        bio: data.bio,
-        website: data.website,
-        twitterHandle: data.twitterHandle,
-        linkedinHandle: data.linkedinHandle
-      })
-    });
+    try {
+      return await this.fetchWithAuth('profiles', {
+        method: 'PUT',
+        body: JSON.stringify({
+          displayName: data.displayName,
+          bio: data.bio,
+          website: data.website,
+          twitterHandle: data.twitterHandle,
+          linkedinHandle: data.linkedinHandle
+        })
+      });
+    } catch (error) {
+      // Rethrow APIError with more specific messages for common profile update issues
+      if (error instanceof APIError) {
+        if (error.status === 400) {
+          // Try to detect specific validation errors
+          const errorMessage = error.data?.message?.toLowerCase() || '';
+          
+          if (errorMessage.includes('taken') || errorMessage.includes('already exists') || errorMessage.includes('unique')) {
+            throw new APIError('This username is already taken. Please choose another one.', 400, error.data);
+          }
+          
+          if (errorMessage.includes('format') || errorMessage.includes('pattern')) {
+            throw new APIError('Username format is invalid. Only letters, numbers, and underscores are allowed.', 400, error.data);
+          }
+        }
+      }
+      
+      // If not a specific case, rethrow the original error
+      throw error;
+    }
   },
 
   async followUser(userId: string) {
@@ -83,7 +127,18 @@ export const profileAPI = {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to upload avatar');
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { message: 'Failed to upload avatar' };
+      }
+      
+      throw new APIError(
+        errorData.message || 'Failed to upload avatar',
+        response.status,
+        errorData
+      );
     }
 
     return response.json();

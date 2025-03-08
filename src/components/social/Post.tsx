@@ -74,6 +74,7 @@ export const Post = ({ post, onPostUpdated, alwaysShowComments }: PostProps) => 
   const [likesCount, setLikesCount] = useState(post.likesCount);
   const [isLiking, setIsLiking] = useState(false);
   const [localCommentsCount, setLocalCommentsCount] = useState(post.commentsCount);
+  const [commentsVersion, setCommentsVersion] = useState(0);
 
   // Show comments by default if on activity page or alwaysShowComments is true
   const [showComments, setShowComments] = useState(
@@ -163,7 +164,6 @@ export const Post = ({ post, onPostUpdated, alwaysShowComments }: PostProps) => 
     }
   };
   
-  // Then modify the handleCommentAdded function:
   const handleCommentAdded = (isDeleted = false) => {
     // Update local UI state
     if (isDeleted) {
@@ -174,12 +174,8 @@ export const Post = ({ post, onPostUpdated, alwaysShowComments }: PostProps) => 
       setLocalCommentsCount(prev => prev + 1);
     }
     
-    // Only call onPostUpdated when absolutely necessary
-    // For example, we might want to do this only when changing post attributes
-    // but not for comment operations
-    // if (onPostUpdated) {
-    //   onPostUpdated();
-    // }
+    // Increment the version to force remounting of the Comments component
+    setCommentsVersion(prev => prev + 1);
   };
 
   return (
@@ -258,6 +254,7 @@ export const Post = ({ post, onPostUpdated, alwaysShowComments }: PostProps) => 
           {showComments && (
             <div className="mt-4 border-t border-gray-200 dark:border-gray-800 pt-4">
               <Comments 
+                key={`comments-${post.id}-${commentsVersion}`}
                 postId={post.id} 
                 comments={post.comments || []}
                 onCommentAdded={handleCommentAdded}

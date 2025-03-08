@@ -1,5 +1,5 @@
 // src/pages/profile/components/ProfileEditForm.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,10 +17,13 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
   onSubmit,
   onCancel
 }) => {
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting }
+    formState: { errors }
   } = useForm<ProfileData>({
     defaultValues: {
       displayName: profileData.displayName || "",
@@ -31,19 +34,44 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
     }
   });
 
-  const handleFormSubmit = handleSubmit(async (data) => {
-    await onSubmit({
-      displayName: data.displayName,
-      bio: data.bio,
-      website: data.website,
-      twitterHandle: data.twitterHandle,
-      linkedinHandle: data.linkedinHandle
-    });
-  });
+  const handleFormSubmit = async (data: ProfileData) => {
+    setIsSubmitting(true);
+    setServerError(null);
+    
+    try {
+      await onSubmit({
+        displayName: data.displayName,
+        bio: data.bio,
+        website: data.website,
+        twitterHandle: data.twitterHandle,
+        linkedinHandle: data.linkedinHandle
+      });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      // If there's an error message about duplicate usernames, show it in the form
+      if (error?.response?.data?.message?.includes('already taken')) {
+        setServerError('This username is already taken. Please choose another one.');
+      } else if (error?.response?.data?.message?.includes('format')) {
+        setServerError('Username format is invalid. Only letters, numbers, and underscores are allowed.');
+      } else if (error?.message) {
+        setServerError(error.message);
+      } else {
+        setServerError('Failed to update profile. Please try again.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <Card className="p-6">
-      <form onSubmit={handleFormSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+        {serverError && (
+          <div className="bg-red-50 border border-red-200 text-red-500 px-4 py-3 rounded-md">
+            {serverError}
+          </div>
+        )}
+        
         <div className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="displayName" className="text-sm font-medium">
@@ -58,7 +86,7 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
                   message: "Username can only contain letters, numbers, and underscores" 
                 }
               })} 
-              className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-300 focus:outline-none transition-all ${errors.displayName ? 'border-red-500' : 'border-gray-300'}`} 
+              className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-300 focus:outline-none transition-all ${errors.displayName || serverError ? 'border-red-500' : 'border-gray-300'}`} 
               placeholder="Your username" 
               aria-invalid={errors.displayName ? "true" : "false"}
             />

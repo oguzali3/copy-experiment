@@ -27,12 +27,30 @@ const ensureValidDate = (dateStr: string | undefined | null): string => {
   }
 };
 
+// Helper to deduplicate comments by ID
+const deduplicateComments = (comments: any[]): any[] => {
+  const uniqueComments = new Map();
+  comments.forEach(comment => {
+    // Only keep the first occurrence of each comment ID
+    if (!uniqueComments.has(comment.id)) {
+      uniqueComments.set(comment.id, comment);
+    }
+  });
+  return Array.from(uniqueComments.values());
+};
+
 export const Comments = ({ postId, comments: initialComments = [], onCommentAdded }: CommentsProps) => {
   const { user } = useAuth();
   const [newComment, setNewComment] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
   const [localComments, setLocalComments] = useState<any[]>([]);
+  const [optimisticComments, setOptimisticComments] = useState<Map<string, any>>(new Map());
+  
+  // Track comment processing state
+  const commentsInitializedRef = useRef(false);
+  const lastRefreshTimeRef = useRef(Date.now());
+  const isProcessingRef = useRef(false);
   
   // Use GraphQL hooks
   const { useCreateComment, usePostComments } = useCommentsApi();
@@ -49,27 +67,67 @@ export const Comments = ({ postId, comments: initialComments = [], onCommentAdde
     { first: 20 }
   );
 
-  // Track initialization
-  const initializedRef = useRef(false);
-  
-  // ONE SIMPLIFIED EFFECT - This only runs once
+  // When comments are loaded from the API, process them
   useEffect(() => {
-    if (!initializedRef.current) {
-      // Process initial comments and set state once
+    if (commentsLoading || isProcessingRef.current) return;
+    
+    isProcessingRef.current = true;
+    
+    try {
+      // Get comments from API if available, otherwise use props
+      let newComments: any[] = [];
+      
       if (safeComments && safeComments.length > 0) {
-        setLocalComments(safeComments);
-      } else if (initialComments && initialComments.length > 0) {
-        const processedComments = initialComments.map(comment => ({
+        newComments = [...safeComments];
+      } else if (initialComments && initialComments.length > 0 && !commentsInitializedRef.current) {
+        newComments = initialComments.map(comment => ({
           ...comment,
           createdAt: ensureValidDate(comment.createdAt || comment.created_at)
         }));
-        setLocalComments(processedComments);
+        commentsInitializedRef.current = true;
       }
       
-      initializedRef.current = true;
+      // Add any optimistic comments that don't have server counterparts yet
+      if (optimisticComments.size > 0) {
+        const pendingComments = Array.from(optimisticComments.values());
+        
+        // For each pending comment, check if we now have a real version
+        pendingComments.forEach(pendingComment => {
+          const hasRealComment = newComments.some(
+            comment => comment.content === pendingComment.content && 
+                     Math.abs(new Date(comment.createdAt).getTime() - 
+                             new Date(pendingComment.createdAt).getTime()) < 5000
+          );
+          
+          if (!hasRealComment) {
+            newComments.push(pendingComment);
+          }
+        });
+      }
+      
+      // Deduplicate and sort comments
+      if (newComments.length > 0) {
+        const uniqueComments = deduplicateComments(newComments)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        
+        setLocalComments(uniqueComments);
+      }
+    } finally {
+      isProcessingRef.current = false;
     }
-  }, []); // Empty dependency array - only runs once
-  
+  }, [safeComments, initialComments, commentsLoading, optimisticComments]);
+
+  // Throttled comment refresh function
+  const refreshComments = () => {
+    const now = Date.now();
+    if (now - lastRefreshTimeRef.current < 2000) {
+      return; // Don't refresh more than once every 2 seconds
+    }
+    
+    lastRefreshTimeRef.current = now;
+    refetchComments();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !newComment.trim() || createLoading) return;
@@ -78,9 +136,12 @@ export const Comments = ({ postId, comments: initialComments = [], onCommentAdde
     const commentContent = newComment.trim();
     setNewComment(""); // Clear input immediately for better UX
 
-    // Create an optimistic comment for better UX
+    // Create a temporary ID for optimistic rendering
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    
+    // Create an optimistic comment
     const optimisticComment = {
-      id: `temp-${Date.now()}`,
+      id: tempId,
       content: commentContent,
       createdAt: new Date().toISOString(),
       likesCount: 0,
@@ -92,41 +153,39 @@ export const Comments = ({ postId, comments: initialComments = [], onCommentAdde
       }
     };
 
-    // Immediately add to local state for instant UI feedback
-    setLocalComments(prevComments => [optimisticComment, ...prevComments]);
+    // Add this to our optimistic comments map
+    setOptimisticComments(prev => {
+      const next = new Map(prev);
+      next.set(tempId, optimisticComment);
+      return next;
+    });
 
     try {
       // Call the GraphQL mutation to create the comment
-      const createdComment = await createComment({ 
+      await createComment({ 
         postId, 
         content: commentContent
       });
       
-      if (createdComment) {
-        console.log("Comment created successfully:", createdComment);
-        
-        // Replace optimistic comment with real one in UI
-        setLocalComments(prevComments => 
-          prevComments.map(comment => 
-            comment.id === optimisticComment.id ? createdComment : comment
-          )
-        );
-        
-        // Always notify parent component
-        if (onCommentAdded) {
-          onCommentAdded();
-        }
+      // After successful creation, schedule a refresh to get the real comment
+      refreshComments();
+      
+      // Notify parent component
+      if (onCommentAdded) {
+        onCommentAdded();
       }
     } catch (error) {
       console.error('Error adding comment:', error);
       setErrorMsg("Failed to post comment. Please try again.");
       
       // Remove the optimistic comment on error
-      setLocalComments(prevComments => 
-        prevComments.filter(comment => comment.id !== optimisticComment.id)
-      );
+      setOptimisticComments(prev => {
+        const next = new Map(prev);
+        next.delete(tempId);
+        return next;
+      });
       
-      // Restore the comment text so user doesn't lose their input
+      // Restore the comment text
       setNewComment(commentContent);
     }
   };
@@ -137,9 +196,15 @@ export const Comments = ({ postId, comments: initialComments = [], onCommentAdde
       prevComments.filter(comment => comment.id !== commentId)
     );
     
-    // Notify parent about the deletion to update counts
+    // Also remove from optimistic comments if it exists there
+    setOptimisticComments(prev => {
+      const next = new Map(prev);
+      next.delete(commentId);
+      return next;
+    });
+    
+    // Notify parent about the deletion
     if (onCommentAdded) {
-      // Pass false to indicate deletion (it will decrease the count)
       onCommentAdded(true); 
     }
   };
@@ -149,11 +214,7 @@ export const Comments = ({ postId, comments: initialComments = [], onCommentAdde
     setErrorMsg(null);
     
     try {
-      const result = await refetchComments();
-      if (result?.data?.postComments) {
-        setLocalComments(result.data.postComments);
-        initializedRef.current = true; // Mark as initialized when we get data
-      }
+      await refetchComments();
     } catch (error) {
       console.error("Error retrying comment fetch:", error);
       setErrorMsg("Still having trouble. Please try again later.");
@@ -167,11 +228,10 @@ export const Comments = ({ postId, comments: initialComments = [], onCommentAdde
     return {
       id: comment.id,
       content: comment.content,
-      // Ensure the createdAt date is a valid ISO string
       createdAt: ensureValidDate(comment.createdAt || comment.created_at),
       likesCount: comment.likesCount || 0,
       isLikedByMe: comment.isLikedByMe || false,
-      postId: postId, // Add this line to include the postId
+      postId: postId,
       author: {
         id: comment.author?.id || comment.user?.id || user?.id || 'unknown',
         displayName: comment.author?.displayName || comment.user?.full_name || user?.displayName || 'Unknown User',
@@ -179,11 +239,6 @@ export const Comments = ({ postId, comments: initialComments = [], onCommentAdde
       }
     };
   };
-
-  // Use safeComments directly in the render if available
-  const displayComments = safeComments && safeComments.length > 0 && initializedRef.current
-    ? safeComments
-    : localComments;
 
   return (
     <div className="space-y-4">
@@ -213,11 +268,11 @@ export const Comments = ({ postId, comments: initialComments = [], onCommentAdde
 
       {/* Comments section with error handling */}
       <div className="space-y-1 divide-y divide-gray-200 dark:divide-gray-800">
-        {commentsLoading && !displayComments.length ? (
+        {commentsLoading && !localComments.length ? (
           <div className="py-4 text-center text-gray-500">
             {isRetrying ? "Retrying..." : "Loading comments..."}
           </div>
-        ) : commentsError && !displayComments.length ? (
+        ) : commentsError && !localComments.length ? (
           <div className="py-4">
             <div className="bg-red-50 dark:bg-red-900/10 p-3 rounded-md mb-3">
               <div className="flex items-center gap-2 text-red-600 dark:text-red-400 mb-1">
@@ -242,13 +297,13 @@ export const Comments = ({ postId, comments: initialComments = [], onCommentAdde
           </div>
         ) : null}
 
-        {/* Comment list */}
-        {displayComments.length > 0 ? (
-          displayComments.map((comment: any) => (
+        {/* Comment list - with deduplication */}
+        {localComments.length > 0 ? (
+          deduplicateComments(localComments).map((comment: any) => (
             <CommentComponent
               key={comment.id}
               comment={prepareCommentData(comment)}
-              postId={postId} // Pass the postId
+              postId={postId}
               onCommentDeleted={() => handleCommentDeleted(comment.id)}
             />
           ))

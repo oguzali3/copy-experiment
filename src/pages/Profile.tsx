@@ -351,12 +351,14 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleProfileUpdate = async (data: Partial<ProfileData>) => {
-    if (!user) return;
+  
+const handleProfileUpdate = async (data: Partial<ProfileData>) => {
+  if (!user) return;
+  
+  try {
+    const loadingToast = toast.loading("Updating profile...");
     
     try {
-      const loadingToast = toast.loading("Updating profile...");
-      
       const updatedProfile = await profileAPI.updateProfile(data);
       
       // Update profile data
@@ -377,11 +379,37 @@ const ProfilePage: React.FC = () => {
       
       // Exit editing mode
       setIsEditing(false);
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error("Failed to update profile");
+    } catch (error: any) {
+      toast.dismiss(loadingToast);
+      
+      // Check for specific error types
+      if (error.response) {
+        // The server responded with an error status
+        if (error.response.status === 400) {
+          // Bad request - likely duplicate username
+          if (error.response.data?.message?.includes('already taken')) {
+            toast.error("This username is already taken. Please choose another one.");
+          } else if (error.response.data?.message?.includes('format')) {
+            toast.error("Username format is invalid. Only letters, numbers, and underscores are allowed.");
+          } else {
+            toast.error(error.response.data?.message || "Failed to update profile");
+          }
+        } else {
+          toast.error("Failed to update profile: " + (error.response.data?.message || "Server error"));
+        }
+      } else if (error.message) {
+        // Network error or something else with a message property
+        toast.error("Failed to update profile: " + error.message);
+      } else {
+        // Generic error
+        toast.error("Failed to update profile. Please try again later.");
+      }
     }
-  };
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    toast.error("Failed to update profile");
+  }
+};
 
   // Show skeleton loader while profile data is loading
   if (isProfileLoading) {
