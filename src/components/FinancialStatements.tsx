@@ -16,7 +16,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
   
   // Update period parameter based on timeFrame
-  const period = timeFrame === 'quarterly' ? 'quarter' : 'annual';
+  const period = timeFrame === 'annual' ? 'annual' : 'quarter';
   
   // Fetch data from all financial statement sources
   const { financialData, isLoading: isIncomeStatementLoading } = useFinancialData(ticker, period);
@@ -27,6 +27,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
   // Debug log to check if we're getting data
   useEffect(() => {
+    console.log(`TimeFrame: ${timeFrame}, Period: ${period}`);
     console.log('Data loaded:', {
       incomeStatement: financialData?.length || 0,
       balanceSheet: balanceSheetData?.length || 0,
@@ -35,27 +36,24 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       financialRatios: financialRatiosData?.length || 0
     });
     
-    // Check first items of key metrics and financial ratios
-    if (keyMetricsData?.length > 0) {
-      console.log('First Key Metrics item sample properties:', 
-        Object.keys(keyMetricsData[0]).slice(0, 10)
+    // Check first items of income statement data
+    if (financialData?.length > 0) {
+      console.log('First Income Statement item:', 
+        financialData[0].period,
+        financialData[0].date,
+        'Revenue:', financialData[0].revenue
       );
     }
-    
-    if (financialRatiosData?.length > 0) {
-      console.log('First Financial Ratios item sample properties:', 
-        Object.keys(financialRatiosData[0]).slice(0, 10)
-      );
-    }
-  }, [financialData, balanceSheetData, cashFlowData, keyMetricsData, financialRatiosData]);
+  }, [timeFrame, period, financialData, balanceSheetData, cashFlowData, keyMetricsData, financialRatiosData]);
 
+  // Pass timeFrame to useTimePeriods for proper period extraction
   const {
     startDate,
     endDate,
     sliderValue,
     timePeriods,
     handleSliderChange
-  } = useTimePeriods(financialData, ticker);
+  } = useTimePeriods(financialData, ticker, timeFrame);
 
   const {
     selectedMetrics,
@@ -69,8 +67,10 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   useEffect(() => {
     if (selectedMetrics.length > 0) {
       console.log('Currently selected metrics:', selectedMetrics);
+      console.log('Available time periods:', timePeriods);
+      console.log('Current slider value:', sliderValue);
     }
-  }, [selectedMetrics]);
+  }, [selectedMetrics, timePeriods, sliderValue]);
 
   // Check if any data source is still loading
   const isLoading = 
@@ -82,7 +82,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
 
   // Store transformed data
   const [metricData, setMetricData] = useState<any[]>([]);
-  
+
   // Transform data when inputs change
   useEffect(() => {
     if (isLoading || selectedMetrics.length === 0) {
@@ -91,6 +91,8 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     }
     
     try {
+      console.log(`Transforming data for ${timeFrame} view with ${selectedMetrics.length} metrics...`);
+      
       const transformedData = transformFinancialData(
         financialData || [],
         balanceSheetData || [],
@@ -106,6 +108,14 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       
       setMetricData(transformedData);
       
+      console.log(`Transformed data: ${transformedData.length} periods`);
+      if (transformedData.length > 0) {
+        console.log('First transformed item period:', transformedData[0].period);
+        console.log('First transformed item metrics:', 
+          selectedMetrics.map(m => `${m}: ${transformedData[0][m]}`)
+        );
+      }
+
       // Debug log to check if data contains selected metrics
       if (transformedData.length > 0 && selectedMetrics.length > 0) {
         const firstItem = transformedData[0];

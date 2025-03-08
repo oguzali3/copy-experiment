@@ -17,7 +17,7 @@ export const transformFinancialData = (
 
   // Extract data from all data sources
   const extractedData: Record<string, Record<string, any>> = {};
-  
+
   // Helper function to process each data source
   const processDataSource = (
     data: any[], 
@@ -76,44 +76,80 @@ export const transformFinancialData = (
   processDataSource(keyMetricsData, 'key-metrics');
   processDataSource(financialRatiosData, 'financial-ratios');
   
-  // Convert to array and sort in ASCENDING order (oldest to newest)
-  let transformedData = Object.values(extractedData)
-    .sort((a, b) => {
-      // TTM handling - place at the end for ascending sort
+  // Debug: log extracted data keys
+  console.log('Extracted data periods:', Object.keys(extractedData));
+  
+  // Convert to array and sort
+  let transformedData = Object.values(extractedData);
+  
+  // Debug: log data before sorting
+  console.log('Data before sorting, count:', transformedData.length);
+  if (transformedData.length > 0) {
+    console.log('Sample first item period:', transformedData[0].period);
+  }
+
+  // Sort based on time frame
+  if (timeFrame === 'quarterly') {
+    // For quarterly, sort in ascending order (oldest to newest)
+    transformedData = transformedData.sort((a, b) => {
+      // TTM handling for quarterly view
+      if (a.period === 'TTM') return 1; // TTM at end for ascending
+      if (b.period === 'TTM') return -1;
+      
+      // Extract year and quarter for comparison
+      const aMatches = a.period.match(/Q(\d+)\s+(\d+)/);
+      const bMatches = b.period.match(/Q(\d+)\s+(\d+)/);
+      
+      if (!aMatches || !bMatches) return 0;
+      
+      const [, aQuarter, aYear] = aMatches;
+      const [, bQuarter, bYear] = bMatches;
+      
+      // Compare years first
+      if (aYear !== bYear) {
+        return parseInt(aYear) - parseInt(bYear); // Ascending
+      }
+      
+      // Then compare quarters
+      return parseInt(aQuarter) - parseInt(bQuarter); // Ascending
+    });
+  } else {
+    // For annual and TTM, sort in ascending order (oldest to newest)
+    transformedData = transformedData.sort((a, b) => {
+      // TTM handling
       if (a.period === 'TTM') return 1;
       if (b.period === 'TTM') return -1;
       
-      // Quarterly data handling
-      if (a.period?.includes('Q') && b.period?.includes('Q')) {
-        const [aQ, aYear] = a.period.split(' ');
-        const [bQ, bYear] = b.period.split(' ');
-        
-        // First compare years
-        if (aYear !== bYear) {
-          return parseInt(aYear) - parseInt(bYear); // Ascending by year
-        }
-        
-        // Then compare quarters
-        return parseInt(aQ.slice(1)) - parseInt(bQ.slice(1)); // Ascending by quarter
-      }
-      
-      // Annual data handling
-      if (!isNaN(parseInt(a.period)) && !isNaN(parseInt(b.period))) {
-        return parseInt(a.period) - parseInt(b.period); // Ascending order
-      }
-      
-      // Fallback to string comparison
-      return a.period.localeCompare(b.period);
+      // Annual data (years)
+      return parseInt(a.period) - parseInt(b.period); // Ascending
     });
+  }
+  
+  // Debug: log data after sorting
+  console.log('Data after sorting, first 3 periods:', 
+    transformedData.slice(0, 3).map(item => item.period)
+  );
+  console.log('Data after sorting, last 3 periods:', 
+    transformedData.slice(-3).map(item => item.period)
+  );
 
-  // Filter data to only include the selected time periods
+  // Filter data to only include the selected time periods from slider
   if (timePeriods.length && sliderValue?.length === 2) {
-    const startIdx = sliderValue[0];
-    const endIdx = sliderValue[1];
+    const startIdx = Math.min(sliderValue[0], sliderValue[1]);
+    const endIdx = Math.max(sliderValue[0], sliderValue[1]);
     
     if (startIdx >= 0 && endIdx < timePeriods.length) {
       const selectedPeriods = timePeriods.slice(startIdx, endIdx + 1);
+      
+      // Debug: log selected periods
+      console.log('Selected periods from slider:', selectedPeriods);
+      
       transformedData = transformedData.filter(item => selectedPeriods.includes(item.period));
+      
+      // Debug: log filtered data
+      console.log('Data after period filtering:', 
+        transformedData.map(item => item.period)
+      );
     }
   }
 
@@ -162,6 +198,18 @@ export const transformFinancialData = (
     
     return filteredItem;
   });
+  
+  // Debug: check for metrics in first item
+  if (filteredData.length > 0 && selectedMetrics.length > 0) {
+    const firstItem = filteredData[0];
+    const metricsFound = selectedMetrics.filter(metric => firstItem[metric] !== undefined);
+    console.log(`Found ${metricsFound.length}/${selectedMetrics.length} metrics in first data item`);
+    
+    if (metricsFound.length < selectedMetrics.length) {
+      const missingMetrics = selectedMetrics.filter(metric => firstItem[metric] === undefined);
+      console.log('Missing metrics:', missingMetrics);
+    }
+  }
   
   return filteredData;
 };
