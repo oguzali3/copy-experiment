@@ -70,7 +70,7 @@ export const useFinancialData = (ticker: string, period: 'annual' | 'quarter' = 
       if (a.period === 'TTM') return -1;
       if (b.period === 'TTM') return 1;
       return new Date(b.date).getTime() - new Date(a.date).getTime();
-    }).slice(0, period === 'quarter' ? 20 : 10);
+    }).slice(0, period === 'quarter' ? 60 : 15);
   }, [rawData, period]);
 
   return { financialData, isLoading, error };
