@@ -168,71 +168,77 @@ export const INCOME_STATEMENT_METRICS = [
     return metric ? metric.format : 'currency';
   };
   
-  // Format a metric value based on its format
-  export const formatValue = (value: number | null, format?: string): string => {
-    if (value === null || value === undefined || isNaN(value)) return 'N/A';
-    
-    switch (format) {
-      case 'percentage':
-        return `${value.toFixed(2)}%`;
-      case 'ratio':
-        return value.toFixed(2);
-      case 'number':
-        return value.toLocaleString(undefined, { 
-          maximumFractionDigits: 2 
-        });
-      case 'currency':
-      default:
-        return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          notation: 'compact',
-          maximumFractionDigits: 1
-        }).format(value);
-    }
+// Update to formatValue function in metricDefinitions.ts
+export const formatValue = (value: number | null, format?: string): string => {
+  if (value === null || value === undefined || isNaN(value)) return 'N/A';
+  
+  switch (format) {
+    case 'percentage':
+      // Make sure percentages are displayed correctly
+      // If value is already in percentage form (e.g., 15 for 15%)
+      return `${value.toFixed(2)}%`;
+    case 'ratio':
+      return value.toFixed(2);
+    case 'number':
+      return value.toLocaleString(undefined, { 
+        maximumFractionDigits: 2 
+      });
+    case 'currency':
+    default:
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        notation: 'compact',
+        maximumFractionDigits: 1
+      }).format(value);
+  }
+};
+
+// Update to calculateMetricValue function to handle percentage calculations
+export const calculateMetricValue = (
+  metric: any,
+  current: any,
+  previous: any = null
+): number | null => {
+  if (!current) return null;
+  
+  const parseValue = (val: any): number => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === 'number') return val;
+    return parseFloat(String(val).replace(/[^0-9.-]/g, "")) || 0;
   };
   
-  // Calculate a metric value (for metrics that require calculation)
-  export const calculateMetricValue = (
-    metric: any,
-    current: any,
-    previous: any = null
-  ): number | null => {
-    if (!current) return null;
+  // If the metric has a custom calculation function, use it
+  if (metric.calculate) {
+    return metric.calculate(current, previous);
+  }
+  
+  // Growth metrics (require previous period)
+  if (metric.format === 'percentage' && metric.id.includes('Growth') && previous) {
+    const baseMetricId = metric.id.replace('Growth', '');
+    const currentValue = parseValue(current[baseMetricId]);
+    const previousValue = parseValue(previous[baseMetricId]);
     
-    const parseValue = (val: any): number => {
-      if (val === null || val === undefined) return 0;
-      if (typeof val === 'number') return val;
-      return parseFloat(String(val).replace(/[^0-9.-]/g, "")) || 0;
-    };
+    if (previousValue === 0) return null;
+    return ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
+  }
+  
+  // Special case for percentage ratio values
+  if (metric.format === 'percentage' && !metric.id.includes('Growth')) {
+    const rawValue = parseValue(current[metric.id]);
     
-    // If the metric has a custom calculation function, use it
-    if (metric.calculate) {
-      return metric.calculate(current, previous);
+    // If the value is already in decimal form (e.g., 0.15 for 15%), convert to percentage
+    if (rawValue > -1 && rawValue < 1) {
+      return rawValue * 100;
     }
     
-    // Growth metrics (require previous period)
-    if (metric.format === 'percentage' && metric.id.includes('Growth') && previous) {
-      const baseMetricId = metric.id.replace('Growth', '');
-      const currentValue = parseValue(current[baseMetricId]);
-      const previousValue = parseValue(previous[baseMetricId]);
-      
-      if (previousValue === 0) return null;
-      return ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
-    }
-    
-    // Special case for cash growth
-    if (metric.id === 'cashGrowth' && previous) {
-      const currentCash = parseValue(current.cashAndShortTermInvestments || current.cashAndCashEquivalents);
-      const previousCash = parseValue(previous.cashAndShortTermInvestments || previous.cashAndCashEquivalents);
-      
-      if (previousCash === 0) return null;
-      return ((currentCash - previousCash) / Math.abs(previousCash)) * 100;
-    }
-    
-    // Direct value metrics
-    return parseValue(current[metric.id]);
-  };
+    // Otherwise, return as is (assuming it's already in percentage form)
+    return rawValue;
+  }
+  
+  // Direct value metrics
+  return parseValue(current[metric.id]);
+};
   
   // Helper function to format metric ID into a display name
   const formatMetricId = (id: string): string => {

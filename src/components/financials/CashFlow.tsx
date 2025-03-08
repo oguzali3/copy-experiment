@@ -1,8 +1,10 @@
-import { useCashFlowData } from "@/hooks/useCashFlowData";
+import { useQuery } from "@tanstack/react-query";
+import { fetchFinancialData } from "@/utils/financialApi";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { CashFlowTable } from "./CashFlowTable";
+import { useMemo } from "react";
 
 interface CashFlowProps {
   timeFrame: "annual" | "quarterly" | "ttm";
@@ -17,8 +19,92 @@ export const CashFlow = ({
   onMetricsChange,
   ticker 
 }: CashFlowProps) => {
-  const period = timeFrame === 'quarterly' ? 'quarter' : 'annual';
-  const { cashFlowData, isLoading, error } = useCashFlowData(ticker, period);
+  // Fetch quarterly data if timeFrame is quarterly or ttm
+  const { data: quarterlyData, isLoading: isQuarterlyLoading, error: quarterlyError } = useQuery({
+    queryKey: ['cash-flow', ticker, 'quarter'],
+    queryFn: () => fetchFinancialData('cash-flow-statement', ticker, 'quarter'),
+    enabled: !!ticker && (timeFrame === 'quarterly' || timeFrame === 'ttm'),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Fetch annual data for comparisons
+  const { data: annualData, isLoading: isAnnualLoading, error: annualError } = useQuery({
+    queryKey: ['cash-flow', ticker, 'annual'],
+    queryFn: () => fetchFinancialData('cash-flow-statement', ticker, 'annual'),
+    enabled: !!ticker,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Process and combine data based on timeFrame
+  const { processedData, isLoading, error } = useMemo(() => {
+    if (timeFrame === 'annual') {
+      if (isAnnualLoading) return { isLoading: true, error: null, processedData: [] };
+      if (annualError) return { isLoading: false, error: annualError, processedData: [] };
+      if (!annualData || !Array.isArray(annualData) || annualData.length === 0) {
+        return { isLoading: false, error: new Error(`No annual cash flow data for ${ticker}`), processedData: [] };
+      }
+
+      // Sort annual data
+      const sortedData = [...annualData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      return { 
+        processedData: sortedData,
+        isLoading: false, 
+        error: null 
+      };
+    } 
+    else if (timeFrame === 'quarterly') {
+      if (isQuarterlyLoading) return { isLoading: true, error: null, processedData: [] };
+      if (quarterlyError) return { isLoading: false, error: quarterlyError, processedData: [] };
+      if (!quarterlyData || !Array.isArray(quarterlyData) || quarterlyData.length === 0) {
+        return { isLoading: false, error: new Error(`No quarterly cash flow data for ${ticker}`), processedData: [] };
+      }
+
+      // Sort quarterly data ensuring TTM comes first
+      const sortedData = [...quarterlyData].sort((a, b) => {
+        if (a.period === 'TTM') return -1;
+        if (b.period === 'TTM') return 1;
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      });
+      console.log('Cash flow results:', sortedData);
+      return { 
+        processedData: sortedData.slice(0, 60),
+        isLoading: false, 
+        error: null 
+      };
+    }
+    else if (timeFrame === 'ttm') {
+      // For TTM view, combine TTM and annual data
+      if (isQuarterlyLoading || isAnnualLoading) return { isLoading: true, error: null, processedData: [] };
+      if (quarterlyError || annualError) return { isLoading: false, error: quarterlyError || annualError, processedData: [] };
+      
+      // Check quarterly data
+      if (!quarterlyData || !Array.isArray(quarterlyData) || quarterlyData.length === 0) {
+        return { isLoading: false, error: new Error(`No quarterly cash flow data for ${ticker}`), processedData: [] };
+      }
+
+      // Find TTM data
+      const ttmData = quarterlyData.find(item => item.period === 'TTM');
+      
+      // Sort annual data
+      const sortedAnnualData = annualData && Array.isArray(annualData) && annualData.length > 0
+        ? [...annualData].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        : [];
+
+      // Combine TTM with annual data
+      const combinedData = ttmData
+        ? [ttmData, ...sortedAnnualData.slice(0, 9)] // TTM first, then up to 9 years of annual data
+        : sortedAnnualData.slice(0, 10);
+
+      return { 
+        processedData: combinedData,
+        isLoading: false, 
+        error: null 
+      };
+    }
+
+    return { isLoading: false, error: null, processedData: [] };
+  }, [timeFrame, quarterlyData, annualData, isQuarterlyLoading, isAnnualLoading, quarterlyError, annualError, ticker]);
 
   if (isLoading) {
     return (
@@ -34,30 +120,21 @@ export const CashFlow = ({
     );
   }
 
-  if (error || !cashFlowData) {
+  if (error || !processedData || processedData.length === 0) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          {error ? "Error loading cash flow data. Please try again later." : `No cash flow data available for ${ticker}.`}
+          {error ? (error as Error).message : `No cash flow data available for ${ticker}.`}
         </AlertDescription>
       </Alert>
     );
   }
 
-  // Sort data by date in descending order and limit to 20 items if quarterly
-  const sortedData = [...cashFlowData]
-    .sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      return dateB.getTime() - dateA.getTime();
-    })
-    .slice(0, period === 'quarter' ? 20 : 10);
-
   return (
     <div className="space-y-6">
       <CashFlowTable 
-        data={sortedData}
+        data={processedData}
         selectedMetrics={selectedMetrics}
         onMetricsChange={onMetricsChange}
         timeFrame={timeFrame}

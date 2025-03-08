@@ -23,11 +23,102 @@ export const ConsistentFinancialDataTable = ({
   const calculateCashGrowth = (current: any, previous: any) => {
     if (!current || !previous) return null;
     
-    const currentCash = parseFloat(String(current.cashAndShortTermInvestments).replace(/[^0-9.-]+/g, ""));
-    const previousCash = parseFloat(String(previous.cashAndShortTermInvestments).replace(/[^0-9.-]+/g, ""));
+    const currentCash = parseFloat(String(current.cashAndShortTermInvestments || '0').replace(/[^0-9.-]+/g, ""));
+    const previousCash = parseFloat(String(previous?.cashAndShortTermInvestments || '0').replace(/[^0-9.-]+/g, ""));
     
     if (!previousCash || previousCash === 0) return null;
     return ((currentCash / previousCash) - 1) * 100;
+  };
+
+  // Safely calculate TTM metrics that reference annualData
+  const calculateTTMMetric = (current: any, metricName: string) => {
+    if (!current) return null;
+    if (!annualData || annualData.length < 2) return null;
+
+    // Safety check for accessing annualData
+    const getAnnualValue = (index: number, field: string) => {
+      try {
+        if (annualData && annualData.length > index) {
+          return parseFloat(String(annualData[index][field] || '0').replace(/[^0-9.-]+/g, ""));
+        }
+        return 0;
+      } catch (error) {
+        console.warn(`Error accessing annualData[${index}].${field}:`, error);
+        return 0;
+      }
+    };
+
+    try {
+      switch (metricName) {
+        case 'revenueGrowth':
+          return calculateTTMGrowth(current, annualData);
+          
+        case 'cashGrowth': {
+          const currentCash = parseFloat(String(current.cashAndShortTermInvestments || '0').replace(/[^0-9.-]+/g, ""));
+          const previousYearCash = getAnnualValue(1, 'cashAndShortTermInvestments');
+          
+          if (!previousYearCash || previousYearCash === 0) return null;
+          return ((currentCash / previousYearCash) - 1) * 100;
+        }
+        
+        case 'netIncomeGrowth': {
+          const currentNetIncome = parseFloat(String(current.netIncome || '0').replace(/[^0-9.-]+/g, ""));
+          const mostRecentAnnualNetIncome = getAnnualValue(0, 'netIncome');
+          const previousAnnualNetIncome = getAnnualValue(1, 'netIncome');
+
+          if (!previousAnnualNetIncome) return null;
+
+          const netIncomeDiff = Math.abs(currentNetIncome - mostRecentAnnualNetIncome);
+          const tolerance = mostRecentAnnualNetIncome * 0.001;
+
+          if (netIncomeDiff <= tolerance) {
+            return ((mostRecentAnnualNetIncome - previousAnnualNetIncome) / Math.abs(previousAnnualNetIncome)) * 100;
+          }
+
+          return ((currentNetIncome - previousAnnualNetIncome) / Math.abs(previousAnnualNetIncome)) * 100;
+        }
+        
+        case 'epsGrowth': {
+          const currentEPS = parseFloat(String(current.eps || '0').replace(/[^0-9.-]+/g, ""));
+          const mostRecentAnnualEPS = getAnnualValue(0, 'eps');
+          const previousAnnualEPS = getAnnualValue(1, 'eps');
+
+          if (!previousAnnualEPS) return null;
+
+          const epsDiff = Math.abs(currentEPS - mostRecentAnnualEPS);
+          const tolerance = mostRecentAnnualEPS * 0.001;
+
+          if (epsDiff <= tolerance) {
+            return ((mostRecentAnnualEPS - previousAnnualEPS) / Math.abs(previousAnnualEPS)) * 100;
+          }
+
+          return ((currentEPS - previousAnnualEPS) / Math.abs(previousAnnualEPS)) * 100;
+        }
+        
+        case 'ebitdaGrowth': {
+          const currentEBITDA = parseFloat(String(current.ebitda || '0').replace(/[^0-9.-]+/g, ""));
+          const mostRecentAnnualEBITDA = getAnnualValue(0, 'ebitda');
+          const previousAnnualEBITDA = getAnnualValue(1, 'ebitda');
+
+          if (!previousAnnualEBITDA) return null;
+
+          const ebitdaDiff = Math.abs(currentEBITDA - mostRecentAnnualEBITDA);
+          const tolerance = mostRecentAnnualEBITDA * 0.001;
+
+          if (ebitdaDiff <= tolerance) {
+            return ((mostRecentAnnualEBITDA - previousAnnualEBITDA) / Math.abs(previousAnnualEBITDA)) * 100;
+          }
+
+          return ((currentEBITDA - previousAnnualEBITDA) / Math.abs(previousAnnualEBITDA)) * 100;
+        }
+        
+        default:
+          return null;
+      }
+    } catch (error) {
+      console.error(`Error calculating ${metricName} for TTM:`, error);
+      return null;
+    }
   };
 
   return (
@@ -51,65 +142,29 @@ export const ConsistentFinancialDataTable = ({
                 if (current.period === "TTM") {
                   // Special handling for shares metrics in TTM period
                   if (metric.id === 'weightedAverageShsOut' || metric.id === 'weightedAverageShsOutDil') {
-                    const sharesInBillions = annualData[0][metric.id] / 1000000000;
-                    return `${sharesInBillions.toFixed(2)}B`;
+                    // Check if annualData exists
+                    if (annualData && annualData.length > 0) {
+                      const sharesInBillions = annualData[0][metric.id] / 1000000000;
+                      return `${sharesInBillions.toFixed(2)}B`;
+                    } else {
+                      // Use the TTM data directly
+                      const sharesInBillions = current[metric.id] / 1000000000;
+                      return `${sharesInBillions.toFixed(2)}B`;
+                    }
                   }
                   if (metric.id === 'sharesChange') {
-                    const currentShares = annualData[0].weightedAverageShsOutDil / 1000000000;
-                    const previousShares = annualData[1].weightedAverageShsOutDil / 1000000000;
-                    return ((currentShares - previousShares) / Math.abs(previousShares)) * 100;
-                  }
-                  if (metric.id === "revenueGrowth") {
-                    return calculateTTMGrowth(current, annualData);
-                  }
-                  if (metric.id === "cashGrowth") {
-                    const currentCash = parseFloat(String(current.cashAndShortTermInvestments).replace(/[^0-9.-]+/g, ""));
-                    const previousYearCash = parseFloat(String(annualData[1].cashAndShortTermInvestments).replace(/[^0-9.-]+/g, ""));
-                    
-                    if (!previousYearCash || previousYearCash === 0) return null;
-                    return ((currentCash / previousYearCash) - 1) * 100;
-                  }
-                  if (metric.id === "netIncomeGrowth") {
-                    const currentNetIncome = parseFloat(String(current.netIncome).replace(/[^0-9.-]+/g, ""));
-                    const mostRecentAnnualNetIncome = parseFloat(String(annualData[0].netIncome).replace(/[^0-9.-]+/g, ""));
-                    const previousAnnualNetIncome = parseFloat(String(annualData[1].netIncome).replace(/[^0-9.-]+/g, ""));
-
-                    const netIncomeDiff = Math.abs(currentNetIncome - mostRecentAnnualNetIncome);
-                    const tolerance = mostRecentAnnualNetIncome * 0.001;
-
-                    if (netIncomeDiff <= tolerance) {
-                      return ((mostRecentAnnualNetIncome - previousAnnualNetIncome) / Math.abs(previousAnnualNetIncome)) * 100;
+                    // Check if we have enough annual data
+                    if (annualData && annualData.length >= 2) {
+                      const currentShares = annualData[0].weightedAverageShsOutDil / 1000000000;
+                      const previousShares = annualData[1].weightedAverageShsOutDil / 1000000000;
+                      return ((currentShares - previousShares) / Math.abs(previousShares)) * 100;
                     }
-
-                    return ((currentNetIncome - previousAnnualNetIncome) / Math.abs(previousAnnualNetIncome)) * 100;
+                    return null; // Not enough data to calculate
                   }
-                  if (metric.id === "epsGrowth") {
-                    const currentEPS = parseFloat(String(current.eps).replace(/[^0-9.-]+/g, ""));
-                    const mostRecentAnnualEPS = parseFloat(String(annualData[0].eps).replace(/[^0-9.-]+/g, ""));
-                    const previousAnnualEPS = parseFloat(String(annualData[1].eps).replace(/[^0-9.-]+/g, ""));
-
-                    const epsDiff = Math.abs(currentEPS - mostRecentAnnualEPS);
-                    const tolerance = mostRecentAnnualEPS * 0.001;
-
-                    if (epsDiff <= tolerance) {
-                      return ((mostRecentAnnualEPS - previousAnnualEPS) / Math.abs(previousAnnualEPS)) * 100;
-                    }
-
-                    return ((currentEPS - previousAnnualEPS) / Math.abs(previousAnnualEPS)) * 100;
-                  }
-                  if (metric.id === "ebitdaGrowth") {
-                    const currentEBITDA = parseFloat(String(current.ebitda).replace(/[^0-9.-]+/g, ""));
-                    const mostRecentAnnualEBITDA = parseFloat(String(annualData[0].ebitda).replace(/[^0-9.-]+/g, ""));
-                    const previousAnnualEBITDA = parseFloat(String(annualData[1].ebitda).replace(/[^0-9.-]+/g, ""));
-
-                    const ebitdaDiff = Math.abs(currentEBITDA - mostRecentAnnualEBITDA);
-                    const tolerance = mostRecentAnnualEBITDA * 0.001;
-
-                    if (ebitdaDiff <= tolerance) {
-                      return ((mostRecentAnnualEBITDA - previousAnnualEBITDA) / Math.abs(previousAnnualEBITDA)) * 100;
-                    }
-
-                    return ((currentEBITDA - previousAnnualEBITDA) / Math.abs(previousAnnualEBITDA)) * 100;
+                  
+                  // Use the special TTM calculation function for metrics that need annual data
+                  if (['revenueGrowth', 'cashGrowth', 'netIncomeGrowth', 'epsGrowth', 'ebitdaGrowth'].includes(metric.id)) {
+                    return calculateTTMMetric(current, metric.id);
                   }
                 }
                 
