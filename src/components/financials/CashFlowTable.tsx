@@ -1,6 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { formatPeriod } from "@/utils/formatPeriod";
 
 interface CashFlowTableProps {
   data: any[];
@@ -22,26 +23,7 @@ export const CashFlowTable = ({
     onMetricsChange(newMetrics);
   };
 
-  const formatPeriod = (date: string) => {
-    const dateObj = new Date(date);
-    if (timeFrame === 'quarterly') {
-      const quarter = Math.floor((dateObj.getMonth() + 3) / 3);
-      const year = dateObj.getFullYear();
-      const monthDay = dateObj.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric',
-        year: 'numeric'
-      });
-      return {
-        quarter: `Q${quarter} ${year}`,
-        date: monthDay
-      };
-    }
-    return {
-      quarter: dateObj.getFullYear().toString(),
-      date: ''
-    };
-  };
+  // Using our new utility function
 
   const formatValue = (value: any) => {
     if (value === null || value === undefined) return 'N/A';
@@ -101,7 +83,7 @@ export const CashFlowTable = ({
                 <TableHead className="w-[50px] sticky left-0 z-20 bg-white"></TableHead>
                 <TableHead className="w-[250px] sticky left-[50px] z-20 bg-gray-50 font-semibold">Metrics</TableHead>
                 {data.map((row, index) => {
-                  const { quarter, date } = formatPeriod(row.date);
+                  const { quarter, date } = formatPeriod(row.date, row.period, timeFrame);
                   return (
                     <TableHead key={`${row.date}-${index}`} className="text-right min-w-[120px]">
                       <div>{quarter}</div>

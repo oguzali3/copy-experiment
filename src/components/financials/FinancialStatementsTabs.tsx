@@ -4,6 +4,7 @@ import { BalanceSheet } from "./BalanceSheet";
 import { CashFlow } from "./CashFlow";
 import { KeyMetrics } from "./KeyMetrics";
 import { FinancialRatios } from "./FinancialRatios";
+import { useEffect, useState } from "react";
 
 interface FinancialStatementsTabsProps {
   timeFrame: "annual" | "quarterly" | "ttm";
@@ -18,6 +19,15 @@ export const FinancialStatementsTabs = ({
   onMetricsChange,
   ticker
 }: FinancialStatementsTabsProps) => {
+  // State to handle forcing quarterly data when TTM is selected
+  const [period, setPeriod] = useState<'annual' | 'quarter'>(timeFrame === 'annual' ? 'annual' : 'quarter');
+  
+  // Update the period when timeFrame changes
+  useEffect(() => {
+    // When timeFrame is 'ttm', we need to fetch quarterly data
+    setPeriod(timeFrame === 'annual' ? 'annual' : 'quarter');
+  }, [timeFrame]);
+
   return (
     <Tabs defaultValue="income" className="w-full">
       <TabsList className="w-full justify-start mb-4 flex-wrap">

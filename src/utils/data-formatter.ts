@@ -16,14 +16,24 @@ export function formatFinancialData(data: any) {
   // Helper function to format dates
   const formatDate = (dateStr: string): string => {
     if (!dateStr) return '';
-    const date = new Date(dateStr);
     
-    // Check if it includes time component
-    if (dateStr.includes('T')) {
-      // Format as datetime
+    try {
+      const date = new Date(dateStr);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return dateStr;
+      }
+      
+      // Check if it includes time component
+      if (dateStr.includes('T')) {
+        // Format as datetime
+        return date.toISOString().split('T')[0];
+      }
       return date.toISOString().split('T')[0];
+    } catch (error) {
+      return dateStr;
     }
-    return date.toISOString().split('T')[0];
   };
 
   // Common fields for all financial statements
@@ -35,7 +45,8 @@ export function formatFinancialData(data: any) {
     fillingDate: formatDate(data.fillingDate),
     acceptedDate: data.acceptedDate?.replace('T', ' ').replace('.000Z', ''),
     calendarYear: data.calendarYear?.toString(),
-    period: data.period === 'annual' ? 'FY' : data.period,
+    // Preserve the original period if it's TTM
+    period: data.period === 'TTM' ? 'TTM' : (data.period === 'annual' ? 'FY' : data.period),
     link: data.link,
     finalLink: data.finalLink
   };
@@ -176,7 +187,7 @@ export function formatFinancialData(data: any) {
     enterpriseValue: toNumber(data.enterpriseValue),
     peRatio: toNumber(data.peRatio),
     priceToSalesRatio: toNumber(data.priceToSalesRatio),
-    pocfRatio: toNumber(data.pocfratio),
+    pocfratio: toNumber(data.pocfratio),
     pfcfRatio: toNumber(data.pfcfRatio),
     pbRatio: toNumber(data.pbRatio),
     ptbRatio: toNumber(data.ptbRatio),

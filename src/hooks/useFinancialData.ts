@@ -1,10 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 
 export const useFinancialData = (ticker: string, period: 'annual' | 'quarter' = 'annual') => {
-  const { data: financialData, isLoading } = useQuery({
+  const { data: rawData, isLoading, error } = useQuery({
     queryKey: ['financial-data', ticker, period],
     queryFn: async () => {
-      console.log(`Fetching ${period} financial data for ${ticker} from local API`);
+      // Reduce log frequency to avoid console spam
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`Fetching ${period} financial data for ${ticker} from local API`);
+      }
       
       try {
         // Map the period to match backend expectations
@@ -18,7 +22,11 @@ export const useFinancialData = (ticker: string, period: 'annual' | 'quarter' = 
         }
 
         const data = await response.json();
-        console.log(`Received ${period} income statement data from local API:`, data);
+        
+        // Only log in development and limit frequency
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`Received ${period} income statement data`);
+        }
 
         // Check if data is already an array
         if (Array.isArray(data)) {
@@ -29,19 +37,17 @@ export const useFinancialData = (ticker: string, period: 'annual' | 'quarter' = 
         if (typeof data === 'object' && data !== null) {
           // Check if it has ticker.period structure
           if (data[ticker] && data[ticker][mappedPeriod] && Array.isArray(data[ticker][mappedPeriod])) {
-            console.log(`Normalizing nested income statement data for ${ticker}`);
             return data[ticker][mappedPeriod];
           }
           
           // If it has just period structure
           const periods = Object.keys(data).filter(key => ['annual', 'quarter', 'ttm'].includes(key));
           if (periods.length > 0 && Array.isArray(data[periods[0]])) {
-            console.log(`Normalizing income statement data by period key: ${periods[0]}`);
             return data[periods[0]];
           }
         }
         
-        console.warn("Unknown income statement data format:", data);
+        console.warn("Unknown income statement data format");
         return [];
       } catch (error) {
         console.error('Error fetching from local API:', error);
@@ -49,7 +55,23 @@ export const useFinancialData = (ticker: string, period: 'annual' | 'quarter' = 
       }
     },
     enabled: !!ticker,
+    // Add stale time to reduce refetching
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  return { financialData: financialData || [], isLoading };
+  // Use useMemo to prevent re-calculation on every render
+  const financialData = useMemo(() => {
+    if (!rawData || !Array.isArray(rawData) || rawData.length === 0) {
+      return [];
+    }
+    
+    // Sort with TTM first, then by date
+    return [...rawData].sort((a, b) => {
+      if (a.period === 'TTM') return -1;
+      if (b.period === 'TTM') return 1;
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    }).slice(0, period === 'quarter' ? 20 : 10);
+  }, [rawData, period]);
+
+  return { financialData, isLoading, error };
 };

@@ -10,11 +10,21 @@ export type FinancialEndpoint =
   'key-metrics' | 
   'financial-ratios';
 
-export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: string, period: 'annual' | 'quarter' = 'annual') {
+/**
+ * Fetches financial data from the appropriate API endpoint
+ * 
+ * @param endpoint The financial API endpoint to fetch from
+ * @param symbol The stock ticker symbol
+ * @param period The data period ('annual' or 'quarter')
+ * @returns Normalized financial data array with proper TTM handling
+ */
+export async function fetchFinancialData(
+  endpoint: FinancialEndpoint, 
+  symbol: string, 
+  period: 'annual' | 'quarter' = 'annual'
+) {
   try {
-    console.log(`Fetching ${endpoint} data for ${symbol} with period ${period}`);
-
-    // For all local API endpoints
+    // For local API endpoints
     if ([
       'income-statement', 
       'balance-sheet-statement', 
@@ -28,9 +38,9 @@ export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: st
         'quarter': 'quarter'
       };
 
-      const mappedPeriod = periodMap[period] || period;
+      const mappedPeriod = periodMap[period];
 
-      // Map the endpoints to match your backend routes
+      // Map the endpoints to match backend routes
       const endpointMap = {
         'income-statement': 'income-statement',
         'balance-sheet-statement': 'balance-sheet',
@@ -42,11 +52,15 @@ export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: st
       const mappedEndpoint = endpointMap[endpoint];
       const url = `http://localhost:4000/api/analysis/${mappedEndpoint}/${symbol}?period=${mappedPeriod}`;
       
-      console.log('Requesting from local API:', url);
+      // Only log in development and reduce frequency
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Requesting from local API:', url);
+      }
+      
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`Local API request failed: ${response.statusText}`);
+        throw new Error(`Local API request failed: ${response.status} ${response.statusText}`);
       }
 
       const rawData = await response.json();
@@ -56,7 +70,6 @@ export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: st
         ? rawData.map(formatFinancialData)
         : formatFinancialData(rawData);
 
-      console.log(`Received ${endpoint} formatted data:`, formattedData);
       return formattedData;
     }
 
@@ -75,7 +88,6 @@ export async function fetchFinancialData(endpoint: FinancialEndpoint, symbol: st
       throw new Error(`No data received for ${symbol}`);
     }
 
-    console.log(`Received ${endpoint} data from supabase:`, data);
     return data;
   } catch (error) {
     console.error(`Error fetching ${endpoint} data for ${symbol}:`, error);
