@@ -1,8 +1,7 @@
 // src/components/social/CreatePost.tsx
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -10,6 +9,7 @@ import { User, ImagePlus, X } from "lucide-react";
 import { usePostsApi } from "@/hooks/usePostsApi";
 import { useMutation } from "@apollo/client";
 import { UPLOAD_IMAGE } from "@/lib/graphql/operations/upload";
+import { AvatarDisplay } from "./AvatarDisplay"; // Import AvatarDisplay component
 
 // Define the input type to match your GraphQL schema
 interface CreatePostVariables {
@@ -41,6 +41,11 @@ export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) =>
   
   // Combined loading state
   const isSubmitting = createPostLoading || uploadLoading;
+  
+  // Debug user state to console - remove in production
+  useEffect(() => {
+    console.log("User in CreatePost:", user);
+  }, [user]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -133,19 +138,34 @@ export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) =>
     }
   };
 
+  // Determine whether to show AvatarDisplay or a fallback
+  const renderUserAvatar = () => {
+    if (user && user.avatarUrl) {
+      // If we have an authenticated user with an avatar URL
+      return (
+        <AvatarDisplay 
+          avatarUrl={user.avatarUrl}
+          username={user.displayName}
+          size="md"
+          interactive={true}
+          className="w-10 h-10 flex-shrink-0"
+          onClick={() => window.location.href = '/profile'}
+        />
+      );
+    } else {
+      // Fallback to using the standard Avatar component
+      return (
+        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+          <User className="h-5 w-5 text-gray-500" />
+        </div>
+      );
+    }
+  };
+
   return (
     <Card className="p-4">
       <div className="flex gap-4">
-        <Avatar className="w-10 h-10 rounded-full border border-gray-200">
-          <AvatarImage 
-            src={user?.avatarUrl} 
-            alt={user?.displayName || 'User avatar'}
-            className="object-cover"
-          />
-          <AvatarFallback className="bg-gray-100">
-            <User className="h-5 w-5 text-gray-500" />
-          </AvatarFallback>
-        </Avatar>
+        {renderUserAvatar()}
         <div className="flex-1">
           <Textarea
             placeholder="What's on your mind?"

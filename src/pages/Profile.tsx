@@ -17,11 +17,6 @@ import { PortfoliosTab } from '@/components/profile/tabs/PortfoliosTab';
 import { FollowersTab } from '@/components/profile/tabs/FollowersTab';
 import { FollowingTab } from '@/components/profile/tabs/FollowingTab';
 
-// Import API and types
-
-// Import components
-
-
 // Define API base URL
 const API_URL = 'http://localhost:4000';
 
@@ -34,7 +29,10 @@ const ProfilePage: React.FC = () => {
   
   const [isEditing, setIsEditing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [isPortfolioLoading, setIsPortfolioLoading] = useState(true);
+  const [isFollowersLoading, setIsFollowersLoading] = useState(true);
+  const [isFollowingLoading, setIsFollowingLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>('portfolios');
   const [isFollowing, setIsFollowing] = useState(false);
   const [userPortfolios, setUserPortfolios] = useState<PortfolioData[]>([]);
@@ -64,49 +62,89 @@ const ProfilePage: React.FC = () => {
   const profileId = urlProfileId || user?.id;
   const isOwner = user?.id === profileId;
 
+  // Initial authentication check
   useEffect(() => {
-    const initializeProfile = async () => {
-      if (!user) {
-        navigate('/signin');
-        return;
-      }
+    if (!user) {
+      navigate('/signin');
+      return;
+    }
 
-      if (!profileId) {
-        navigate('/');
-        return;
-      }
+    if (!profileId) {
+      navigate('/');
+      return;
+    }
+  }, [user, profileId, navigate]);
 
+  // Load profile data immediately
+  useEffect(() => {
+    const loadProfileData = async () => {
+      if (!profileId) return;
+      
       try {
         await fetchProfileData();
+        setIsProfileLoading(false);
+        
+        // After profile data is loaded, check if following (only for other profiles)
         if (user && profileId !== user.id) {
-          await checkIfFollowing();
+          checkIfFollowing();
         }
-        await fetchUserPortfolios();
-        
-        if (activeTab === 'followers') {
-          await fetchFollowers();
-        } else if (activeTab === 'following') {
-          await fetchFollowing();
-        }
-        
-        setIsLoading(false);
       } catch (error) {
-        console.error('Error initializing profile:', error);
+        console.error('Error loading profile data:', error);
         toast.error("Failed to load profile data");
         navigate('/');
       }
     };
 
-    initializeProfile();
-  }, [profileId, user]);
+    loadProfileData();
+  }, [profileId, user?.id]);
 
+  // Load portfolios separately
   useEffect(() => {
-    if (activeTab === 'followers') {
-      fetchFollowers();
-    } else if (activeTab === 'following') {
-      fetchFollowing();
-    }
-  }, [activeTab]);
+    const loadPortfolios = async () => {
+      if (!profileId) return;
+      
+      try {
+        await fetchUserPortfolios();
+        setIsPortfolioLoading(false);
+      } catch (error) {
+        console.error('Error loading portfolios:', error);
+        toast.error("Failed to load portfolios");
+        // Don't navigate away, since we already have the profile data
+        setIsPortfolioLoading(false);
+      }
+    };
+
+    loadPortfolios();
+  }, [profileId]);
+
+  // Load followers/following data based on active tab
+  useEffect(() => {
+    const loadTabData = async () => {
+      if (!profileId) return;
+      
+      if (activeTab === 'followers' && isFollowersLoading) {
+        try {
+          await fetchFollowers();
+          setIsFollowersLoading(false);
+        } catch (error) {
+          console.error('Error loading followers:', error);
+          toast.error("Failed to load followers");
+          setIsFollowersLoading(false);
+        }
+      } else if (activeTab === 'following' && isFollowingLoading) {
+        try {
+          await fetchFollowing();
+          setIsFollowingLoading(false);
+        } catch (error) {
+          console.error('Error loading following:', error);
+          toast.error("Failed to load following");
+          setIsFollowingLoading(false);
+        }
+      }
+    };
+
+    loadTabData();
+  }, [activeTab, profileId, isFollowersLoading, isFollowingLoading]);
 
   const checkIfFollowing = async () => {
     if (!user || !profileId) return;
@@ -155,7 +193,7 @@ const ProfilePage: React.FC = () => {
       setUserPortfolios(data || []);
     } catch (error) {
       console.error('Error fetching portfolios:', error);
-      toast.error("Failed to load portfolios");
+      throw error;
     }
   };
 
@@ -177,7 +215,7 @@ const ProfilePage: React.FC = () => {
       setFollowers(formattedFollowers || []);
     } catch (error) {
       console.error('Error fetching followers:', error);
-      toast.error("Failed to load followers");
+      throw error;
     }
   };
 
@@ -199,7 +237,7 @@ const ProfilePage: React.FC = () => {
       setFollowing(formattedFollowing || []);
     } catch (error) {
       console.error('Error fetching following:', error);
-      toast.error("Failed to load following");
+      throw error;
     }
   };
 
@@ -347,7 +385,8 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  // Show skeleton loader while profile data is loading
+  if (isProfileLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -416,6 +455,7 @@ const ProfilePage: React.FC = () => {
                       <PortfoliosTab 
                         portfolios={userPortfolios}
                         isOwner={isOwner}
+                        isLoading={isPortfolioLoading}
                       />
                     )}
                     
@@ -425,6 +465,7 @@ const ProfilePage: React.FC = () => {
                         currentUserId={user?.id}
                         onFollowUser={handleFollowBack}
                         onUnfollowUser={handleUnfollow}
+                        isLoading={isFollowersLoading}
                       />
                     )}
                     
@@ -433,6 +474,7 @@ const ProfilePage: React.FC = () => {
                         following={following}
                         currentUserId={user?.id}
                         onUnfollowUser={handleUnfollow}
+                        isLoading={isFollowingLoading}
                       />
                     )}
                   </div>
