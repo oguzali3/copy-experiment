@@ -31,7 +31,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       <div className="flex-1">
         <div className="flex items-center gap-2 mb-1">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {profileData.displayName || "Add your name"}
+            {profileData.displayName || "Add your username"}
           </h1>
           {profileData.isPrivate && (
             <div className="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-xs font-medium text-gray-700 dark:text-gray-300">
@@ -40,7 +40,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           )}
         </div>
         <div className="flex items-center gap-3 text-sm text-gray-600">
-          <span>@{profileData.username || "username"}</span>
+          <span>@{profileData.displayName || "username"}</span>
           <span>•</span>
           <span>{profileData.followerCount} followers</span>
           <span>•</span>
@@ -54,7 +54,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           avatarVariants={avatarVariants}
           onAvatarUpdated={onAvatarUpdated}
           isOwner={isOwner}
-          username={profileData.username}
+          username={profileData.displayName}
           size="xl"
           apiUrl={apiUrl}
         />

@@ -26,7 +26,7 @@ export const UserListItem: React.FC<UserListItemProps> = ({
           {user.avatarUrl ? (
             <img 
               src={user.avatarUrl} 
-              alt={user.username} 
+              alt={user.displayName} 
               className="w-full h-full object-cover"
             />
           ) : (
@@ -39,7 +39,7 @@ export const UserListItem: React.FC<UserListItemProps> = ({
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">
             {user.displayName}
           </h3>
-          <p className="text-sm text-gray-500">@{user.username}</p>
+          <p className="text-sm text-gray-500">@{user.displayName}</p>
         </div>
       </div>
       

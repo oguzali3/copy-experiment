@@ -39,7 +39,6 @@ const ProfilePage: React.FC = () => {
   const [profileData, setProfileData] = useState<ProfileData>({
     id: "",
     displayName: "",
-    username: "",
     bio: "",
     website: "",
     twitterHandle: "",
@@ -166,7 +165,6 @@ const ProfilePage: React.FC = () => {
       setProfileData({
         id: data.id,
         displayName: data.displayName || "",
-        username: data.username || "",
         bio: data.bio || "",
         website: data.website || "",
         twitterHandle: data.twitterHandle || "",

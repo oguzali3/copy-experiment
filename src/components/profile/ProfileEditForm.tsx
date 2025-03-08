@@ -24,7 +24,6 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
   } = useForm<ProfileData>({
     defaultValues: {
       displayName: profileData.displayName || "",
-      username: profileData.username || "",
       bio: profileData.bio || "",
       website: profileData.website || "",
       twitterHandle: profileData.twitterHandle || "",
@@ -48,41 +47,25 @@ export const ProfileEditForm: React.FC<ProfileEditFormProps> = ({
         <div className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="displayName" className="text-sm font-medium">
-              Display Name <span className="text-red-500">*</span>
+              Username <span className="text-red-500">*</span>
             </label>
             <input 
               id="displayName" 
-              {...register("displayName", { required: "Display name is required" })} 
+              {...register("displayName", { 
+                required: "Username is required",
+                pattern: { 
+                  value: /^[a-zA-Z0-9_]+$/, 
+                  message: "Username can only contain letters, numbers, and underscores" 
+                }
+              })} 
               className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-300 focus:outline-none transition-all ${errors.displayName ? 'border-red-500' : 'border-gray-300'}`} 
-              placeholder="Your display name" 
+              placeholder="Your username" 
               aria-invalid={errors.displayName ? "true" : "false"}
             />
             {errors.displayName && (
               <p className="text-red-500 text-xs mt-1">{errors.displayName.message}</p>
             )}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="username" className="text-sm font-medium">
-              @username
-            </label>
-            <input 
-              id="username" 
-              {...register("username", { 
-                pattern: { 
-                  value: /^[a-zA-Z0-9_]+$/, 
-                  message: "Username can only contain letters, numbers, and underscores" 
-                } 
-              })} 
-              className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-300 focus:outline-none transition-all ${errors.username ? 'border-red-500' : 'border-gray-300'}`}
-              placeholder="@username" 
-              disabled={true}  // Username shouldn't be editable
-              aria-invalid={errors.username ? "true" : "false"}
-            />
-            {errors.username && (
-              <p className="text-red-500 text-xs mt-1">{errors.username.message}</p>
-            )}
-            <p className="text-xs text-gray-500">Username cannot be changed</p>
+            <p className="text-xs text-gray-500">This will be used as your @username and display name</p>
           </div>
 
           <div className="space-y-2">
