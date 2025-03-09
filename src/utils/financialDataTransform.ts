@@ -15,8 +15,94 @@ export const transformFinancialData = (
 ) => {
   if (!selectedMetrics.length) return [];
 
+  // Pre-filter data based on timeFrame
+  if (timeFrame === 'ttm') {
+    // For TTM mode - only keep annual data and TTM entries
+    const filterDataForTTM = (data: any[]) => {
+      if (!data?.length) return [];
+      
+      return data.filter(item => {
+        // Keep TTM items
+        if (item.period === 'TTM') return true;
+        
+        // Filter out quarterly data
+        if (item.period && item.period.includes('Q')) return false;
+        
+        // For other items, check if they have a date and extract year
+        if (item.date) {
+          const year = new Date(item.date).getFullYear();
+          if (!isNaN(year)) {
+            return true;
+          }
+        }
+        
+        // For items without dates, only keep those with 4-digit year periods
+        if (item.period && /^\d{4}$/.test(item.period)) {
+          return true;
+        }
+        
+        // Exclude anything else
+        return false;
+      });
+    };
+    
+    // Filter all data sources
+    incomeStatementData = filterDataForTTM(incomeStatementData);
+    balanceSheetData = filterDataForTTM(balanceSheetData);
+    cashFlowData = filterDataForTTM(cashFlowData);
+    keyMetricsData = filterDataForTTM(keyMetricsData);
+    financialRatiosData = filterDataForTTM(financialRatiosData);
+  }
+  else if (timeFrame === 'quarterly') {
+    // For quarterly mode - exclude TTM entries
+    const filterDataForQuarterly = (data: any[]) => {
+      if (!data?.length) return [];
+      
+      return data.filter(item => {
+        // Filter out TTM items
+        if (item.period === 'TTM') return false;
+        
+        // Keep only items with quarterly periods or date-based quarters
+        if (item.period && item.period.includes('Q')) return true;
+        
+        if (item.date) {
+          // Keep items with dates, they'll be formatted as quarters later
+          return true;
+        }
+        
+        // Exclude other items
+        return false;
+      });
+    };
+    
+    // Filter all data sources to remove TTM entries in quarterly view
+    incomeStatementData = filterDataForQuarterly(incomeStatementData);
+    balanceSheetData = filterDataForQuarterly(balanceSheetData);
+    cashFlowData = filterDataForQuarterly(cashFlowData);
+    keyMetricsData = filterDataForQuarterly(keyMetricsData);
+    financialRatiosData = filterDataForQuarterly(financialRatiosData);
+  }
+
   // Extract data from all data sources
   const extractedData: Record<string, Record<string, any>> = {};
+
+  // Helper function to determine if a period should be included based on timeFrame
+  const shouldIncludePeriod = (periodKey: string): boolean => {
+    // In quarterly mode, exclude TTM
+    if (timeFrame === 'quarterly' && periodKey === 'TTM') {
+      return false;
+    }
+    
+    // In TTM mode, only include TTM and year periods (no quarters)
+    if (timeFrame === 'ttm') {
+      if (periodKey === 'TTM') return true;
+      if (periodKey.includes('Q')) return false;
+      return /^\d{4}$/.test(periodKey); // Only include 4-digit years
+    }
+    
+    // In annual mode, include all periods
+    return true;
+  };
 
   // Helper function to process each data source
   const processDataSource = (
@@ -45,8 +131,8 @@ export const transformFinancialData = (
         periodKey = item.period || 'Unknown';
       }
       
-      // Skip quarterly periods in TTM mode except for the TTM period itself
-      if (timeFrame === 'ttm' && periodKey !== 'TTM' && periodKey.includes('Q')) {
+      // Check if this period should be included based on timeFrame
+      if (!shouldIncludePeriod(periodKey)) {
         return;
       }
       
@@ -80,19 +166,16 @@ export const transformFinancialData = (
   processDataSource(keyMetricsData, 'key-metrics');
   processDataSource(financialRatiosData, 'financial-ratios');
   
+  // Log extracted periods
   console.log('Extracted data periods:', Object.keys(extractedData));
   
   // Convert to array and sort
   let transformedData = Object.values(extractedData);
-
+  
   // Sort based on time frame
   if (timeFrame === 'quarterly') {
     // For quarterly, sort in ascending order (oldest to newest)
     transformedData = transformedData.sort((a, b) => {
-      // TTM handling for quarterly view
-      if (a.period === 'TTM') return 1; // TTM at end for ascending
-      if (b.period === 'TTM') return -1;
-      
       // Extract year and quarter for comparison
       const aMatches = a.period.match(/Q(\d+)\s+(\d+)/);
       const bMatches = b.period.match(/Q(\d+)\s+(\d+)/);
@@ -122,23 +205,8 @@ export const transformFinancialData = (
     });
   }
   
-  // Additional filtering for TTM mode - only include annual periods and TTM
-  if (timeFrame === 'ttm') {
-    transformedData = transformedData.filter(item => {
-      // Keep TTM period
-      if (item.period === 'TTM') return true;
-      
-      // Filter out any quarterly periods that might have made it through
-      if (item.period.includes('Q')) return false;
-      
-      // Keep annual periods (years)
-      return true;
-    });
-    
-    console.log('TTM mode data periods after filtering:', 
-      transformedData.map(item => item.period)
-    );
-  }
+  // Final check of transformed data periods
+  console.log(`${timeFrame} mode - Transformed periods:`, transformedData.map(item => item.period));
 
   // Filter data to only include the selected time periods from slider
   if (timePeriods.length && sliderValue?.length === 2) {
