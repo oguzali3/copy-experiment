@@ -8,6 +8,7 @@ interface TimeRangePanelProps {
   sliderValue?: number[];
   onSliderChange?: (value: number[]) => void;
   timePeriods?: string[];
+  timeFrame: "annual" | "quarterly" | "ttm";
 }
 
 export const TimeRangePanel = ({
@@ -15,7 +16,8 @@ export const TimeRangePanel = ({
   endDate = "",
   sliderValue,
   onSliderChange = () => {},
-  timePeriods = []
+  timePeriods = [],
+  timeFrame = "annual"
 }: TimeRangePanelProps) => {
   // If there are no time periods, render nothing
   if (!timePeriods.length) return null;
@@ -41,25 +43,72 @@ export const TimeRangePanel = ({
     onSliderChange(value);
   };
 
-  // Fixed preset buttons for common time ranges
-  const presets = [
-    { label: "5Y", handler: () => {
-      // For 5Y, select the last 5 years of data (most recent)
-      const endIndex = timePeriods.length - 1;
-      const startIndex = Math.max(0, endIndex - 4); // 5 years including current year
-      handleLocalSliderChange([startIndex, endIndex]);
-    }},
-    { label: "10Y", handler: () => {
-      // For 10Y, select the last 10 years of data (most recent)
-      const endIndex = timePeriods.length - 1;
-      const startIndex = Math.max(0, endIndex - 9); // 10 years including current year
-      handleLocalSliderChange([startIndex, endIndex]);
-    }},
-    { label: "All", handler: () => {
-      // All data
-      handleLocalSliderChange([0, timePeriods.length - 1]);
-    }}
-  ];
+  // Get preset configurations based on timeFrame
+  const getPresetButtons = () => {
+    if (timeFrame === 'quarterly') {
+      // Quarterly presets - 1Y (4 quarters), 2Y (8 quarters), 3Y (12 quarters)
+      return [
+        { 
+          label: "1Y", 
+          handler: () => {
+            const endIndex = timePeriods.length - 1;
+            const startIndex = Math.max(0, endIndex - 3); // 4 quarters = 1 year
+            handleLocalSliderChange([startIndex, endIndex]);
+          }
+        },
+        { 
+          label: "3Y", 
+          handler: () => {
+            const endIndex = timePeriods.length - 1;
+            const startIndex = Math.max(0, endIndex - 11); // 8 quarters = 2 years
+            handleLocalSliderChange([startIndex, endIndex]);
+          }
+        },
+        { 
+          label: "5Y", 
+          handler: () => {
+            const endIndex = timePeriods.length - 1;
+            const startIndex = Math.max(0, endIndex - 19); // 12 quarters = 3 years
+            handleLocalSliderChange([startIndex, endIndex]);
+          }
+        },
+        { 
+          label: "All", 
+          handler: () => {
+            handleLocalSliderChange([0, timePeriods.length - 1]);
+          }
+        }
+      ];
+    } else {
+      // Annual/TTM presets
+      return [
+        { 
+          label: "5Y", 
+          handler: () => {
+            const endIndex = timePeriods.length - 1;
+            const startIndex = Math.max(0, endIndex - 4); // 5 years including current year
+            handleLocalSliderChange([startIndex, endIndex]);
+          }
+        },
+        { 
+          label: "10Y", 
+          handler: () => {
+            const endIndex = timePeriods.length - 1;
+            const startIndex = Math.max(0, endIndex - 9); // 10 years including current year
+            handleLocalSliderChange([startIndex, endIndex]);
+          }
+        },
+        { 
+          label: "All", 
+          handler: () => {
+            handleLocalSliderChange([0, timePeriods.length - 1]);
+          }
+        }
+      ];
+    }
+  };
+
+  const presets = getPresetButtons();
 
   // Calculate position for each dot in the slider
   const calculatePosition = (index: number) => {
@@ -119,11 +168,16 @@ export const TimeRangePanel = ({
           {/* Display period labels (selectively to avoid overcrowding) */}
           <div className="absolute w-full -bottom-6 left-0 right-0">
             {timePeriods.map((period, index) => {
+              // For quarterly data, show fewer labels to avoid overcrowding
+              const labelInterval = timeFrame === 'quarterly' ? 
+                Math.max(1, Math.floor(timePeriods.length / 6)) : 
+                Math.max(1, Math.floor(timePeriods.length / 10));
+              
               // Only show labels at start, end, and at regular intervals
               const shouldShow = 
                 index === 0 || 
                 index === timePeriods.length - 1 || 
-                index % Math.max(1, Math.floor(timePeriods.length / 10)) === 0;
+                index % labelInterval === 0;
                 
               return shouldShow ? (
                 <div

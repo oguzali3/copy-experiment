@@ -16,6 +16,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const [timeFrame, setTimeFrame] = useState<"annual" | "quarterly" | "ttm">("annual");
   
   // Update period parameter based on timeFrame
+  // Note: For TTM mode, we still need quarterly data because it contains the TTM period
   const period = timeFrame === 'annual' ? 'annual' : 'quarter';
   
   // Fetch data from all financial statement sources
@@ -25,9 +26,9 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
   const { keyMetricsData, isLoading: isKeyMetricsLoading } = useKeyMetricsData(ticker, period);
   const { financialRatiosData, isLoading: isFinancialRatiosLoading } = useFinancialRatiosData(ticker, period);
 
-  // Debug log to check if we're getting data
+  // Debug log to check time frame and data
   useEffect(() => {
-    console.log(`TimeFrame: ${timeFrame}, Period: ${period}`);
+    console.log(`TimeFrame: ${timeFrame}, API Period: ${period}`);
     console.log('Data loaded:', {
       incomeStatement: financialData?.length || 0,
       balanceSheet: balanceSheetData?.length || 0,
@@ -36,15 +37,28 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
       financialRatios: financialRatiosData?.length || 0
     });
     
-    // Check first items of income statement data
+    // Check data for TTM entries and period formats
     if (financialData?.length > 0) {
-      console.log('First Income Statement item:', 
-        financialData[0].period,
-        financialData[0].date,
-        'Revenue:', financialData[0].revenue
-      );
+      // Look for TTM entry
+      const ttmEntry = financialData.find(item => item.period === 'TTM');
+      console.log('TTM entry found:', ttmEntry ? 'Yes' : 'No');
+      
+      // Count period types
+      const periodTypes = {
+        annual: financialData.filter(item => !item.period?.includes('Q') && item.period !== 'TTM').length,
+        quarterly: financialData.filter(item => item.period?.includes('Q')).length,
+        ttm: financialData.filter(item => item.period === 'TTM').length
+      };
+      console.log('Period types count:', periodTypes);
+      
+      // Log first few items to check format
+      console.log('First few items:', financialData.slice(0, 3).map(item => ({
+        period: item.period,
+        date: item.date,
+        revenue: item.revenue
+      })));
     }
-  }, [timeFrame, period, financialData, balanceSheetData, cashFlowData, keyMetricsData, financialRatiosData]);
+  }, [timeFrame, period, financialData]);
 
   // Pass timeFrame to useTimePeriods for proper period extraction
   const {
@@ -62,15 +76,6 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     handleMetricTypeChange,
     handleRemoveMetric,
   } = useMetrics(ticker);
-
-  // Debug log to check which metrics are selected
-  useEffect(() => {
-    if (selectedMetrics.length > 0) {
-      console.log('Currently selected metrics:', selectedMetrics);
-      console.log('Available time periods:', timePeriods);
-      console.log('Current slider value:', sliderValue);
-    }
-  }, [selectedMetrics, timePeriods, sliderValue]);
 
   // Check if any data source is still loading
   const isLoading = 
@@ -92,7 +97,10 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
     
     try {
       console.log(`Transforming data for ${timeFrame} view with ${selectedMetrics.length} metrics...`);
+      console.log('Time periods from slider:', timePeriods);
+      console.log('Slider values:', sliderValue);
       
+      // Transform the data using our updated transformer
       const transformedData = transformFinancialData(
         financialData || [],
         balanceSheetData || [],
@@ -106,26 +114,14 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
         timeFrame
       );
       
+      // Update the state with the transformed data
       setMetricData(transformedData);
       
-      console.log(`Transformed data: ${transformedData.length} periods`);
+      // Log periods in transformed data
       if (transformedData.length > 0) {
-        console.log('First transformed item period:', transformedData[0].period);
-        console.log('First transformed item metrics:', 
-          selectedMetrics.map(m => `${m}: ${transformedData[0][m]}`)
+        console.log(`Transformed data: ${transformedData.length} periods:`, 
+          transformedData.map(item => item.period)
         );
-      }
-
-      // Debug log to check if data contains selected metrics
-      if (transformedData.length > 0 && selectedMetrics.length > 0) {
-        const firstItem = transformedData[0];
-        const metricsFound = selectedMetrics.filter(metric => firstItem[metric] !== undefined);
-        const metricsNotFound = selectedMetrics.filter(metric => firstItem[metric] === undefined);
-        
-        console.log(`Metrics found in data: ${metricsFound.length}/${selectedMetrics.length}`);
-        if (metricsNotFound.length > 0) {
-          console.log('Metrics not found in transformed data:', metricsNotFound);
-        }
       }
     } catch (error) {
       console.error('Error transforming financial data:', error);
@@ -177,6 +173,7 @@ export const FinancialStatements = ({ ticker }: { ticker: string }) => {
           startDate={startDate}
           endDate={endDate}
           onRemoveMetric={handleRemoveMetric}
+          timeFrame={timeFrame}
         />
       )}
       

@@ -18,32 +18,86 @@ export const useTimePeriods = (
       return;
     }
 
-    // Extract all unique periods based on timeFrame
-    const periods = Array.from(new Set(
-      financialData.map(item => {
-        if (item.period === 'TTM') return 'TTM';
-        
-        if (item.date) {
-          const date = new Date(item.date);
-          
-          if (timeFrame === 'quarterly') {
-            // For quarterly, format as Q1 2023, etc.
-            const quarter = Math.floor((date.getMonth() + 3) / 3);
-            return `Q${quarter} ${date.getFullYear()}`;
-          } else {
-            // For annual, just use the year
-            return date.getFullYear().toString();
-          }
+    console.log(`Processing time periods for ${timeFrame} mode with ${financialData.length} data points`);
+
+    // Extract and filter periods based on timeFrame
+    let extractedPeriods: string[] = [];
+    
+    if (timeFrame === 'ttm') {
+      // For TTM mode - get TTM period and annual periods only (no quarterly)
+      const ttmPeriod = financialData.find(item => item.period === 'TTM');
+      
+      // Get annual periods only (no quarterly)
+      const annualPeriods = new Set<string>();
+      
+      financialData.forEach(item => {
+        // Skip TTM and quarterly periods
+        if (item.period === 'TTM' || (item.period && item.period.includes('Q'))) {
+          return;
         }
         
-        return item.period || '';
-      }).filter(Boolean)
-    ));
-
-    console.log('Extracted raw periods:', periods);
+        if (item.date) {
+          const year = new Date(item.date).getFullYear().toString();
+          if (!isNaN(parseInt(year))) {
+            annualPeriods.add(year);
+          }
+        } else if (item.period && !isNaN(parseInt(item.period))) {
+          annualPeriods.add(item.period);
+        }
+      });
+      
+      // Convert to array, sort, and add TTM at the end
+      extractedPeriods = Array.from(annualPeriods).sort((a, b) => parseInt(a) - parseInt(b));
+      
+      if (ttmPeriod) {
+        extractedPeriods.push('TTM');
+      }
+      
+      console.log(`TTM Mode - Found ${extractedPeriods.length} periods:`, extractedPeriods);
+    } 
+    else if (timeFrame === 'quarterly') {
+      // For quarterly, extract quarters with proper formatting
+      const periodSet = new Set<string>();
+      
+      financialData.forEach(item => {
+        if (item.period === 'TTM') {
+          periodSet.add('TTM');
+        } 
+        else if (item.date) {
+          const date = new Date(item.date);
+          const quarter = Math.floor((date.getMonth() + 3) / 3);
+          const year = date.getFullYear();
+          periodSet.add(`Q${quarter} ${year}`);
+        }
+        else if (item.period) {
+          periodSet.add(item.period);
+        }
+      });
+      
+      extractedPeriods = Array.from(periodSet);
+    } 
+    else {
+      // For annual, just get years
+      const periodSet = new Set<string>();
+      
+      financialData.forEach(item => {
+        if (item.period === 'TTM') {
+          periodSet.add('TTM');
+        }
+        else if (item.date) {
+          const year = new Date(item.date).getFullYear().toString();
+          periodSet.add(year);
+        }
+        else if (item.period) {
+          periodSet.add(item.period);
+        }
+      });
+      
+      extractedPeriods = Array.from(periodSet);
+    }
 
     // Sort periods in ASCENDING order (oldest to newest)
-    const sortedPeriods = [...periods].sort((a, b) => {
+    const sortedPeriods = [...extractedPeriods].sort((a, b) => {
       // Place TTM at the end for ascending order
       if (a === 'TTM') return 1;
       if (b === 'TTM') return -1;

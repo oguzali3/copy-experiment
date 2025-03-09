@@ -24,8 +24,6 @@ export const BalanceSheetTable = ({
     onMetricsChange(newMetrics);
   };
 
-  // Using our new utility function
-
   return (
     <div className="bg-white rounded-lg border">
       <ScrollArea className="w-full rounded-md">
@@ -37,8 +35,12 @@ export const BalanceSheetTable = ({
                 <TableHead className="w-[250px] sticky left-[50px] z-20 bg-gray-50 font-semibold">Metrics</TableHead>
                 {filteredData.map((row, index) => {
                   const { quarter, date } = formatPeriod(row.date, row.period, timeFrame);
+                  // Ensure the header key is unique by combining multiple values
                   return (
-                    <TableHead key={`${row.date}-${index}`} className="text-right min-w-[120px]">
+                    <TableHead 
+                      key={`header-${index}-${row.date || ''}-${row.period || ''}`} 
+                      className="text-right min-w-[120px]"
+                    >
                       <div>{quarter}</div>
                       {date && <div className="text-xs text-gray-500">{date}</div>}
                     </TableHead>
@@ -47,11 +49,11 @@ export const BalanceSheetTable = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {metrics.map((metric) => (
-                <TableRow key={metric.id}>
+              {metrics.map((metric, metricIndex) => (
+                <TableRow key={`metric-row-${metric.id}-${metricIndex}`}>
                   <TableCell className="w-[50px] sticky left-0 z-20 bg-white pr-0">
                     <Checkbox
-                      id={`checkbox-${metric.id}`}
+                      id={`checkbox-${metric.id}-${metricIndex}`}
                       checked={selectedMetrics.includes(metric.id)}
                       onCheckedChange={() => handleMetricToggle(metric.id)}
                     />
@@ -59,13 +61,21 @@ export const BalanceSheetTable = ({
                   <TableCell className="font-medium sticky left-[50px] z-20 bg-gray-50">
                     {metric.label}
                   </TableCell>
-                  {filteredData.map((row: any) => (
-                    <TableCell key={`${row.date}-${metric.id}`} className="text-right">
-                      {metric.type === "calculated" 
-                        ? formatValue(metric.calculate(row))
-                        : formatValue(parseNumber(row[metric.id]))}
-                    </TableCell>
-                  ))}
+                  {filteredData.map((row: any, rowIndex: number) => {
+                    // Create a unique key combining multiple identifiers
+                    const cellKey = `cell-${metric.id}-${rowIndex}-${row.date || ''}-${row.period || ''}`;
+                    
+                    return (
+                      <TableCell 
+                        key={cellKey} 
+                        className="text-right"
+                      >
+                        {metric.type === "calculated" 
+                          ? formatValue(metric.calculate(row))
+                          : formatValue(parseNumber(row[metric.id]))}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))}
             </TableBody>

@@ -18,6 +18,7 @@ interface MetricsChartSectionProps {
   startDate?: string;
   endDate?: string;
   onRemoveMetric?: (metricId: string) => void;
+  timeFrame?: "annual" | "quarterly" | "ttm";
 }
 
 export const MetricsChartSection = ({
@@ -31,7 +32,8 @@ export const MetricsChartSection = ({
   onSliderChange,
   startDate,
   endDate,
-  onRemoveMetric
+  onRemoveMetric,
+  timeFrame = "annual"
 }: MetricsChartSectionProps) => {
   if (selectedMetrics.length === 0) {
     return null;
@@ -130,6 +132,7 @@ export const MetricsChartSection = ({
           sliderValue={sliderValue}
           onSliderChange={onSliderChange}
           timePeriods={timePeriods}
+          timeFrame={timeFrame}
         />
       )}
     </Card>
