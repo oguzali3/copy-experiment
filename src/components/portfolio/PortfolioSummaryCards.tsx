@@ -7,16 +7,43 @@ interface PortfolioSummaryCardsProps {
   dayChange: number;  // Daily change in dollars
   dayChangePercent: number;  // Daily change in percentage
   stocks: Stock[];
+  previousDayValue?: number; // Add this prop to receive the previous day value
 }
 
 export const PortfolioSummaryCards = ({ 
   totalValue,
   dayChange,
   dayChangePercent,
-  stocks 
+  stocks,
+  previousDayValue
 }: PortfolioSummaryCardsProps) => {
   // Ensure totalValue is a valid number
   const safeTotal = isNaN(totalValue) ? 0 : totalValue;
+  const safePreviousValue = previousDayValue && !isNaN(previousDayValue) ? previousDayValue : safeTotal;
+  
+  // Calculate day change using previous day value
+  const calculateDayChange = () => {
+    // If we don't have a previous day value, there's no change
+    if (!safePreviousValue) return { amount: 0, percent: 0 };
+    
+    // Calculate the change in dollar amount
+    const changeAmount = safeTotal - safePreviousValue;
+    
+    // Calculate the percentage change (avoid division by zero)
+    const changePercent = safePreviousValue !== 0 
+      ? (changeAmount / safePreviousValue) * 100 
+      : 0;
+      
+    return {
+      amount: changeAmount,
+      percent: changePercent
+    };
+  };
+  
+  // Use calculated values or fallback to props
+  const calculatedChange = calculateDayChange();
+  const displayDayChange = isNaN(dayChange) ? calculatedChange.amount : dayChange;
+  const displayDayChangePercent = isNaN(dayChangePercent) ? calculatedChange.percent : dayChangePercent;
   
   // Calculate top 3 positions - with data validation
   const validStocks = stocks.filter(stock => 
@@ -28,7 +55,6 @@ export const PortfolioSummaryCards = ({
     .slice(0, 3);
   
   // Calculate sector weights (simplified - in a real app you'd have sector data per stock)
-  // This is a placeholder implementation
   const sectorCount = {
     technology: 0,
     healthcare: 0,
@@ -46,7 +72,6 @@ export const PortfolioSummaryCards = ({
     else if ('mnop'.includes(firstLetter)) sectorCount.consumer += stock.marketValue;
     else sectorCount.other += stock.marketValue;
   });
-  
   
   // Format currency
   const formatCurrency = (value: number) => {
@@ -86,27 +111,32 @@ export const PortfolioSummaryCards = ({
             <div>
               <p className="text-sm font-medium text-gray-500">Today's Change</p>
               <div className="flex items-center mt-1">
-                <h3 className={`text-2xl font-bold ${dayChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(Math.abs(dayChange))}
+                <h3 className={`text-2xl font-bold ${displayDayChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(Math.abs(displayDayChange))}
                 </h3>
-                <span className={`ml-2 flex items-center ${dayChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {dayChange >= 0 ? (
+                <span className={`ml-2 flex items-center ${displayDayChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {displayDayChange >= 0 ? (
                     <ArrowUpIcon className="h-4 w-4 mr-1" />
                   ) : (
                     <ArrowDownIcon className="h-4 w-4 mr-1" />
                   )}
-                  {isNaN(dayChangePercent) ? '0.00' : Math.abs(dayChangePercent).toFixed(2)}%
+                  {Math.abs(displayDayChangePercent).toFixed(2)}%
                 </span>
               </div>
+              {previousDayValue && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Reference: {formatCurrency(safePreviousValue)}
+                </p>
+              )}
             </div>
-            <div className={`h-12 w-12 rounded-full ${dayChange >= 0 ? 'bg-green-100' : 'bg-red-100'} flex items-center justify-center`}>
-              <TrendingUp className={`h-6 w-6 ${dayChange >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+            <div className={`h-12 w-12 rounded-full ${displayDayChange >= 0 ? 'bg-green-100' : 'bg-red-100'} flex items-center justify-center`}>
+              <TrendingUp className={`h-6 w-6 ${displayDayChange >= 0 ? 'text-green-600' : 'text-red-600'}`} />
             </div>
           </div>
         </CardContent>
       </Card>
       
-      
+      {/* You can add more cards here as needed */}
       
     </div>
   );

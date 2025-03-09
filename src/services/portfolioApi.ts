@@ -261,7 +261,18 @@ getPortfolios: async (options?: GetPortfoliosOptions): Promise<Portfolio[]> => {
         }
       }
     });
-  }
+  },
+  getLightRefreshPortfolio: async (portfolioId: string): Promise<Portfolio> => {
+    try {
+      const response = await apiClient.get<PortfolioResponseDto>(
+        `/portfolios/${portfolioId}/light-refresh`
+      );
+      return mapToPortfolio(response.data);
+    } catch (error) {
+      console.error('Error light refreshing portfolio:', error);
+      throw error;
+    }
+  },
 };
 
 export default portfolioApi;

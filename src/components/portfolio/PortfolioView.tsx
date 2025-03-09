@@ -1,7 +1,7 @@
 // In PortfolioView.tsx
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Settings, Plus } from "lucide-react";
+import { Settings, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { PortfolioAllocationChart } from "./PortfolioAllocationChart";
 import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
@@ -22,7 +22,10 @@ interface PortfolioViewProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onAddPosition: (company: any, shares: string, avgPrice: string) => void;
   onUpdatePosition: (ticker: string, shares: number, avgPrice: number) => void;
+  onRefreshPrices: (portfolioId: string) => Promise<void>;
+  lastRefreshTime?: Date | null;
   onDeletePosition: (ticker: string) => void;
+  marketStatus: 'open' | 'closed' | 'pre-market' | 'after-hours';
 }
 
 export const PortfolioView = ({
@@ -32,7 +35,10 @@ export const PortfolioView = ({
   onUpdatePortfolio,
   onAddPosition,
   onUpdatePosition,
+  onRefreshPrices,
+  lastRefreshTime,
   onDeletePosition,
+  marketStatus,
 }: PortfolioViewProps) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddingTicker, setIsAddingTicker] = useState(false);
@@ -90,6 +96,11 @@ export const PortfolioView = ({
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{portfolio.name}</h1>
         <div className="flex items-center gap-4">
+        {lastRefreshTime && (
+          <span className="text-xs text-gray-500">
+            Last updated: {lastRefreshTime.toLocaleTimeString()}
+          </span>
+        )}
           <Button 
             variant="outline" 
             className="text-blue-600 border-blue-600"
@@ -170,7 +181,30 @@ export const PortfolioView = ({
           <Settings className="mr-2 h-4 w-4" />
           Portfolio Settings
         </Button>
-
+        <div className="flex items-center gap-2">
+          <span 
+            className={`inline-flex h-2 w-2 rounded-full ${
+              marketStatus === 'open' ? 'bg-green-500' :
+              marketStatus === 'pre-market' || marketStatus === 'after-hours' ? 'bg-yellow-500' :
+              'bg-gray-500'
+            }`}
+          ></span>
+          <span className="text-xs text-gray-600">
+            {marketStatus === 'open' ? 'Market Open' :
+            marketStatus === 'pre-market' ? 'Pre-Market' :
+            marketStatus === 'after-hours' ? 'After-Hours' :
+            'Market Closed'}
+          </span>
+        </div>
+        <Button 
+          variant="outline" 
+          className="text-purple-600 border-purple-600"
+          onClick={() => onRefreshPrices(portfolio.id)}
+        >
+          <RefreshCw
+           className="mr-2 h-4 w-4" />
+          Refresh Prices
+        </Button>
         <Button 
           variant="destructive"
           onClick={() => setIsDeleteDialogOpen(true)}

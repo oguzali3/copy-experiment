@@ -101,6 +101,15 @@ export const profileAPI = {
     });
   },
 
+  async checkFollowStatus(userId: string): Promise<{ following: boolean }> {
+    try {
+      return await this.fetchWithAuth(`profiles/follow-status/${userId}`);
+    } catch (error) {
+      console.error('Error checking follow status:', error);
+      return { following: false }; // Default to not following if error occurs
+    }
+  },
+
   async getFollowers(userId: string): Promise<FollowerData[]> {
     return this.fetchWithAuth(`profiles/${userId}/followers`);
   },

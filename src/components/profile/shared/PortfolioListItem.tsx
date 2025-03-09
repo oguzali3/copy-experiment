@@ -1,6 +1,6 @@
 // src/pages/profile/components/shared/PortfolioListItem.tsx
 import React from 'react';
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Clock } from "lucide-react";
 import { PortfolioData } from '../types';
 
 interface PortfolioListItemProps {
@@ -8,7 +8,20 @@ interface PortfolioListItemProps {
   onClick: () => void;
 }
 
-export const PortfolioListItem: React.FC<PortfolioListItemProps> = ({ portfolio, onClick }) => {
+export const PortfolioListItem: React.FC<PortfolioListItemProps> = ({ 
+  portfolio, 
+  onClick
+}) => {
+  // Check if day change percent value is valid
+  const hasValidDayChange = portfolio.dayChangePercent !== null && 
+                            portfolio.dayChangePercent !== undefined && 
+                            !isNaN(Number(portfolio.dayChangePercent));
+                            
+  // Format totalValue to display as currency
+  const formattedValue = typeof portfolio.totalValue === 'string' 
+    ? parseFloat(portfolio.totalValue).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
+    : (portfolio.totalValue || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
   return (
     <button 
       className="w-full group transition-all duration-300 hover:scale-[1.01]"
@@ -22,18 +35,27 @@ export const PortfolioListItem: React.FC<PortfolioListItemProps> = ({ portfolio,
               {portfolio.name}
             </h3>
             <span className="text-sm text-gray-500 font-medium">
-              ${portfolio.totalValue?.toLocaleString() || '0'}
+              ${formattedValue}
             </span>
           </div>
-          {portfolio.yearlyPerformance !== null && (
-            <div className={`flex items-center ${portfolio.yearlyPerformance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {portfolio.yearlyPerformance >= 0 ? (
+          
+          {/* Today's Performance */}
+          {hasValidDayChange ? (
+            <div className={`flex items-center ${Number(portfolio.dayChangePercent) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {Number(portfolio.dayChangePercent) >= 0 ? (
                 <TrendingUp className="w-4 h-4 mr-1" />
               ) : (
                 <TrendingDown className="w-4 h-4 mr-1" />
               )}
               <span className="text-sm font-medium">
-                {Math.abs(portfolio.yearlyPerformance).toFixed(2)}%
+                {Math.abs(Number(portfolio.dayChangePercent)).toFixed(2)}%
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center text-gray-400">
+              <Clock className="w-4 h-4 mr-1" />
+              <span className="text-sm font-medium">
+                --
               </span>
             </div>
           )}

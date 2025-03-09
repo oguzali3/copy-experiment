@@ -2,7 +2,7 @@
 import React from 'react';
 import { UserListItem } from '../shared/UserListItem';
 import { FollowerData } from '../types';
-import { Skeleton } from "@/components/ui/skeleton"; // Assuming you have a Skeleton component
+import { Skeleton } from "@/components/ui/skeleton"; 
 
 interface FollowersTabProps {
   followers: FollowerData[];

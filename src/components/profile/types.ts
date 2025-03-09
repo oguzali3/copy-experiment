@@ -20,8 +20,13 @@ export type ProfileData = {
 export type PortfolioData = {
   id: string;
   name: string;
-  yearlyPerformance: number | null;
-  totalValue: number | null;
+  totalValue: number | string | null;
+  previousDayValue?: number | string | null;
+  dayChange?: number | string | null;
+  dayChangePercent?: number | string | null;
+  lastPriceUpdate?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  positions?: Array<any>;
 };
 
 export type FollowerData = {

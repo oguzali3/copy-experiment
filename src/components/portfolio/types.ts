@@ -8,6 +8,8 @@ export type Stock = {
   percentOfPortfolio: number;
   gainLoss: number;
   gainLossPercent: number;
+  isStale?: boolean; // Add this optional property
+
 };
 
 export type Portfolio = {

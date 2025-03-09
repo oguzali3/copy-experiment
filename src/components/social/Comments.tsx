@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/components/social/Comments.tsx
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,6 +51,7 @@ export const Comments = ({ postId, comments: initialComments = [], onCommentAdde
   const commentsInitializedRef = useRef(false);
   const lastRefreshTimeRef = useRef(Date.now());
   const isProcessingRef = useRef(false);
+  const previousCommentsRef = useRef<any[]>([]);
   
   // Use GraphQL hooks
   const { useCreateComment, usePostComments } = useCommentsApi();
@@ -67,10 +68,9 @@ export const Comments = ({ postId, comments: initialComments = [], onCommentAdde
     { first: 20 }
   );
 
-  // When comments are loaded from the API, process them
-  useEffect(() => {
-    if (commentsLoading || isProcessingRef.current) return;
-    
+  // Memoize the comment processing function to avoid recreating it on every render
+  const processComments = useCallback(() => {
+    if (isProcessingRef.current) return;
     isProcessingRef.current = true;
     
     try {
@@ -105,20 +105,47 @@ export const Comments = ({ postId, comments: initialComments = [], onCommentAdde
         });
       }
       
-      // Deduplicate and sort comments
+      // Only update state if the comments have actually changed
       if (newComments.length > 0) {
         const uniqueComments = deduplicateComments(newComments)
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         
-        setLocalComments(uniqueComments);
+        // Compare with previous comments to avoid unnecessary updates
+        const prevCommentsJSON = JSON.stringify(previousCommentsRef.current.map(c => c.id));
+        const newCommentsJSON = JSON.stringify(uniqueComments.map(c => c.id));
+        
+        if (prevCommentsJSON !== newCommentsJSON) {
+          previousCommentsRef.current = uniqueComments;
+          setLocalComments(uniqueComments);
+        }
       }
     } finally {
       isProcessingRef.current = false;
     }
-  }, [safeComments, initialComments, commentsLoading, optimisticComments]);
+  }, [safeComments, initialComments, optimisticComments]);
+
+  // When dependencies change, process comments
+  useEffect(() => {
+    if (!commentsLoading) {
+      processComments();
+    }
+  }, [commentsLoading, processComments]);
+
+  // Initialize comments when component mounts
+  useEffect(() => {
+    if (initialComments.length > 0 && !commentsInitializedRef.current && !commentsLoading) {
+      const formattedComments = initialComments.map(comment => ({
+        ...comment,
+        createdAt: ensureValidDate(comment.createdAt || comment.created_at)
+      }));
+      commentsInitializedRef.current = true;
+      setLocalComments(formattedComments);
+      previousCommentsRef.current = formattedComments;
+    }
+  }, [initialComments, commentsLoading]);
 
   // Throttled comment refresh function
-  const refreshComments = () => {
+  const refreshComments = useCallback(() => {
     const now = Date.now();
     if (now - lastRefreshTimeRef.current < 2000) {
       return; // Don't refresh more than once every 2 seconds
@@ -126,7 +153,7 @@ export const Comments = ({ postId, comments: initialComments = [], onCommentAdde
     
     lastRefreshTimeRef.current = now;
     refetchComments();
-  };
+  }, [refetchComments]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -299,7 +326,7 @@ export const Comments = ({ postId, comments: initialComments = [], onCommentAdde
 
         {/* Comment list - with deduplication */}
         {localComments.length > 0 ? (
-          deduplicateComments(localComments).map((comment: any) => (
+          localComments.map((comment: any) => (
             <CommentComponent
               key={comment.id}
               comment={prepareCommentData(comment)}

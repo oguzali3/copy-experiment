@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { UserCircle, UserPlus } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
 import { FollowerData } from '../types';
 
 interface UserListItemProps {
@@ -19,9 +20,31 @@ export const UserListItem: React.FC<UserListItemProps> = ({
   onUnfollowUser,
   actionType
 }) => {
+  const navigate = useNavigate();
+
+  const navigateToProfile = (e: React.MouseEvent) => {
+    // Get the clicked element
+    const target = e.target as HTMLElement;
+    
+    // Prevent navigation if clicking on action buttons or their children
+    if (target.closest('button')) {
+      e.stopPropagation();
+      return;
+    }
+    
+    // Navigate to the user's profile
+    navigate(`/profile?id=${user.id}`);
+  };
+
   return (
-    <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-      <div className="flex items-center space-x-3">
+    <div 
+      className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer transition-colors relative group" 
+      onClick={navigateToProfile}
+      role="button"
+      aria-label={`View ${user.displayName}'s profile`}
+    >
+      <div className="absolute inset-0 border-2 border-transparent group-hover:border-blue-200 dark:group-hover:border-blue-800 rounded-lg pointer-events-none transition-colors"></div>
+      <div className="flex items-center space-x-3 profile-container">
         <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200">
           {user.avatarUrl ? (
             <img 
@@ -35,8 +58,8 @@ export const UserListItem: React.FC<UserListItemProps> = ({
             </div>
           )}
         </div>
-        <div>
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+        <div className="relative group">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center">
             {user.displayName}
           </h3>
           <p className="text-sm text-gray-500">@{user.displayName}</p>
@@ -46,14 +69,20 @@ export const UserListItem: React.FC<UserListItemProps> = ({
       {!isCurrentUser && actionType !== 'none' && (
         <>
           {actionType === 'follow' && onFollowUser && (
-            <Button onClick={onFollowUser}>
+            <Button onClick={(e) => {
+              e.stopPropagation();
+              onFollowUser();
+            }}>
               <UserPlus className="w-4 h-4 mr-2" />
               Follow
             </Button>
           )}
           
           {actionType === 'follow-back' && onFollowUser && (
-            <Button onClick={onFollowUser}>
+            <Button onClick={(e) => {
+              e.stopPropagation();
+              onFollowUser();
+            }}>
               <UserPlus className="w-4 h-4 mr-2" />
               Follow back
             </Button>
@@ -63,7 +92,10 @@ export const UserListItem: React.FC<UserListItemProps> = ({
             <Button
               variant="outline"
               className="hover:bg-red-50 hover:text-red-600"
-              onClick={onUnfollowUser}
+              onClick={(e) => {
+                e.stopPropagation();
+                onUnfollowUser();
+              }}
             >
               Unfollow
             </Button>

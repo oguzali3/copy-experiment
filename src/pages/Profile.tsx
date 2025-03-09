@@ -61,6 +61,19 @@ const ProfilePage: React.FC = () => {
   const profileId = urlProfileId || user?.id;
   const isOwner = user?.id === profileId;
 
+  // Reset state when profile changes
+  useEffect(() => {
+    // Reset state when profile ID changes
+    setIsProfileLoading(true);
+    setIsPortfolioLoading(true);
+    setIsFollowersLoading(true);
+    setIsFollowingLoading(true);
+    setFollowers([]);
+    setFollowing([]);
+    setUserPortfolios([]);
+    setIsFollowing(false);
+  }, [profileId]);
+
   // Initial authentication check
   useEffect(() => {
     if (!user) {
@@ -77,15 +90,15 @@ const ProfilePage: React.FC = () => {
   // Load profile data immediately
   useEffect(() => {
     const loadProfileData = async () => {
-      if (!profileId) return;
+      if (!profileId || !user) return;
       
       try {
         await fetchProfileData();
         setIsProfileLoading(false);
         
         // After profile data is loaded, check if following (only for other profiles)
-        if (user && profileId !== user.id) {
-          checkIfFollowing();
+        if (profileId !== user.id) {
+          await checkIfFollowing();
         }
       } catch (error) {
         console.error('Error loading profile data:', error);
@@ -94,13 +107,15 @@ const ProfilePage: React.FC = () => {
       }
     };
 
-    loadProfileData();
-  }, [profileId, user?.id]);
+    if (profileId && user) {
+      loadProfileData();
+    }
+  }, [profileId, user]);
 
   // Load portfolios separately
   useEffect(() => {
     const loadPortfolios = async () => {
-      if (!profileId) return;
+      if (!profileId || !user) return;
       
       try {
         await fetchUserPortfolios();
@@ -108,18 +123,19 @@ const ProfilePage: React.FC = () => {
       } catch (error) {
         console.error('Error loading portfolios:', error);
         toast.error("Failed to load portfolios");
-        // Don't navigate away, since we already have the profile data
         setIsPortfolioLoading(false);
       }
     };
 
-    loadPortfolios();
-  }, [profileId]);
+    if (profileId && user) {
+      loadPortfolios();
+    }
+  }, [profileId, user]);
 
   // Load followers/following data based on active tab
   useEffect(() => {
     const loadTabData = async () => {
-      if (!profileId) return;
+      if (!profileId || !user) return;
       
       if (activeTab === 'followers' && isFollowersLoading) {
         try {
@@ -142,19 +158,40 @@ const ProfilePage: React.FC = () => {
       }
     };
 
-    loadTabData();
-  }, [activeTab, profileId, isFollowersLoading, isFollowingLoading]);
+    
+    if (profileId && user) {
+      loadTabData();
+    }
+  }, [activeTab, profileId, user, isFollowersLoading, isFollowingLoading]);
+
+  useEffect(() => {
+    if (!isOwner && user && profileId && !isProfileLoading) {
+      checkIfFollowing();
+    }
+  }, [profileId, user, isProfileLoading, isOwner]);
 
   const checkIfFollowing = async () => {
     if (!user || !profileId) return;
     
     try {
+      // Get the followers of the profile we're viewing
       const followers = await profileAPI.getFollowers(profileId);
-      setIsFollowing(followers.some((follower: any) => follower.id === user.id));
+      
+      // Check if the current user is among the followers
+      // Using type assertion to handle possible different structures in the API response
+      const isUserFollowing = followers.some((follower: any) => {
+        return follower.id === user.id || 
+               (follower.userId !== undefined && follower.userId === user.id) ||
+               (follower.user !== undefined && follower.user.id === user.id);
+      });
+      
+      console.log('Is user following this profile:', isUserFollowing);
+      setIsFollowing(isUserFollowing);
     } catch (error) {
       console.error('Error checking follow status:', error);
     }
   };
+  
 
   const fetchProfileData = async () => {
     if (!profileId) return;
@@ -199,17 +236,18 @@ const ProfilePage: React.FC = () => {
     if (!profileId) return;
     
     try {
+      console.log(`Fetching followers for profile: ${profileId}`);
       const data = await profileAPI.getFollowers(profileId);
       
       // Map the API response to ensure the expected structure
       const formattedFollowers = data.map((follower: any) => ({
         id: follower.userId || follower.id,
-        username: follower.username || "",
         displayName: follower.displayName || "",
         avatarUrl: follower.avatarUrl,
         isFollowing: follower.isFollowing || false
       }));
       
+      console.log(`Received ${formattedFollowers.length} followers`);
       setFollowers(formattedFollowers || []);
     } catch (error) {
       console.error('Error fetching followers:', error);
@@ -221,17 +259,18 @@ const ProfilePage: React.FC = () => {
     if (!profileId) return;
     
     try {
+      console.log(`Fetching following for profile: ${profileId}`);
       const data = await profileAPI.getFollowing(profileId);
       
       // Map the API response to ensure the expected structure
       const formattedFollowing = data.map((following: any) => ({
         id: following.userId || following.id,
-        username: following.username || "",
         displayName: following.displayName || "",
         avatarUrl: following.avatarUrl,
         isFollowing: true // Following users are always "followed" by definition
       }));
       
+      console.log(`Received ${formattedFollowing.length} following`);
       setFollowing(formattedFollowing || []);
     } catch (error) {
       console.error('Error fetching following:', error);
@@ -317,20 +356,50 @@ const ProfilePage: React.FC = () => {
     
     try {
       if (isFollowing) {
-        await profileAPI.unfollowUser(profileId);
+        // Optimistically update UI
         setIsFollowing(false);
+        setProfileData(prev => ({
+          ...prev,
+          followerCount: Math.max(0, (prev.followerCount || 0) - 1)
+        }));
+        
+        // Then perform the API call
+        await profileAPI.unfollowUser(profileId);
+        
+        // Force refresh followers list to clear cache
+        await fetchFollowers();
+        
         toast(`Unfollowed ${profileData.displayName}`);
       } else {
-        await profileAPI.followUser(profileId);
+        // Optimistically update UI
         setIsFollowing(true);
+        setProfileData(prev => ({
+          ...prev,
+          followerCount: (prev.followerCount || 0) + 1
+        }));
+        
+        // Then perform the API call
+        await profileAPI.followUser(profileId);
+        
+        // Force refresh followers list
+        await fetchFollowers();
+        
         toast(`Following ${profileData.displayName}`);
       }
       
-      // Refresh profile data to update follower count
-      await fetchProfileData();
+      // Force refresh of followers tab if it's active
+      if (activeTab === 'followers') {
+        setIsFollowersLoading(true);
+        await fetchFollowers();
+        setIsFollowersLoading(false);
+      }
     } catch (error) {
       console.error('Error toggling follow:', error);
       toast.error("Failed to update follow status");
+      
+      // Revert the optimistic updates and refresh data
+      await fetchProfileData();
+      await checkIfFollowing();
     }
   };
 
@@ -472,7 +541,15 @@ const handleProfileUpdate = async (data: Partial<ProfileData>) => {
                   {/* Tabs Navigation */}
                   <ProfileTabs 
                     activeTab={activeTab}
-                    onTabChange={(tab) => setActiveTab(tab)}
+                    onTabChange={(tab) => {
+                      setActiveTab(tab);
+                      // Reset loading flags when tab changes
+                      if (tab === 'followers' && followers.length === 0) {
+                        setIsFollowersLoading(true);
+                      } else if (tab === 'following' && following.length === 0) {
+                        setIsFollowingLoading(true);
+                      }
+                    }}
                   />
                   
                   {/* Tab Content */}

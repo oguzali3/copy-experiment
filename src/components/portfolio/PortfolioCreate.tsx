@@ -35,13 +35,12 @@ export const PortfolioCreate = ({ onSubmit, onCancel, isLoading = false }: Portf
       return;
     }
 
-    // Add as new position
     const newStock: Stock = {
       ticker: company.ticker,
       name: company.name,
       shares: 0,
       avgPrice: 0,
-      currentPrice: Math.random() * 1000, // Mock price
+      currentPrice: 0, // Set to 0, will be updated by backend
       marketValue: 0,
       percentOfPortfolio: 0,
       gainLoss: 0,

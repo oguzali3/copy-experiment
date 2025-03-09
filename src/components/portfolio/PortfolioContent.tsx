@@ -20,6 +20,10 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isLightRefreshing, setIsLightRefreshing] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
+  const [marketStatus, setMarketStatus] = useState<'open' | 'closed' | 'pre-market' | 'after-hours'>('closed');
+
 
   // Update selected portfolio ID when prop changes
   useEffect(() => {
@@ -27,6 +31,102 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       setSelectedPortfolioId(portfolioId);
     }
   }, [portfolioId]);
+
+  useEffect(() => {
+    const updateMarketStatus = () => {
+      setMarketStatus(determineMarketStatus());
+    };
+    
+    // Update immediately and then every minute
+    updateMarketStatus();
+    const interval = setInterval(updateMarketStatus, 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (selectedPortfolioId) {
+      const performLightRefresh = async () => {
+        try {
+          // Don't show loading indicator for light refresh - keep it in the background
+          setIsLightRefreshing(true);
+          
+          // Get latest data
+          const refreshedPortfolio = await portfolioApi.getLightRefreshPortfolio(selectedPortfolioId);
+          
+          // Update only this portfolio in the list
+          setPortfolios(prev => 
+            prev.map(p => p.id === selectedPortfolioId ? refreshedPortfolio : p)
+          );
+          
+          // Record the refresh time
+          setLastRefreshTime(new Date());
+        } catch (error) {
+          console.error("Light refresh failed:", error);
+          // No error toast - this is a background operation
+        } finally {
+          setIsLightRefreshing(false);
+        }
+      };
+      
+      performLightRefresh();
+      
+      // Set up poll only during market hours
+      const isMarketOpen = () => {
+        const now = new Date();
+        const day = now.getDay();
+        const hours = now.getHours();
+        
+        // Weekend check (0 = Sunday, 6 = Saturday)
+        if (day === 0 || day === 6) return false;
+        
+        // Market hours check (9:30 AM - 4:00 PM ET, simplified)
+        if (hours < 9 || hours >= 16) return false;
+        if (hours === 9 && now.getMinutes() < 30) return false;
+        
+        return true;
+      };
+      
+      // Only poll during market hours, and less frequently
+      let refreshInterval: NodeJS.Timeout | null = null;
+      if (isMarketOpen()) {
+        // Poll every 5 minutes during market hours
+        refreshInterval = setInterval(performLightRefresh, 5 * 60 * 1000);
+      }
+      
+      return () => {
+        if (refreshInterval) clearInterval(refreshInterval);
+      };
+    }
+  }, [selectedPortfolioId]);
+
+  const determineMarketStatus = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    
+    // Weekend
+    if (day === 0 || day === 6) return 'closed';
+    
+    // Check market hours (9:30 AM - 4:00 PM ET, simplified)
+    const marketMinutes = hours * 60 + minutes;
+    const marketOpenMinutes = 9 * 60 + 30;  // 9:30 AM
+    const marketCloseMinutes = 16 * 60;     // 4:00 PM
+    const preMarketOpenMinutes = 4 * 60;    // 4:00 AM (pre-market)
+    const afterHoursCloseMinutes = 20 * 60; // 8:00 PM (after-hours)
+    
+    if (marketMinutes >= marketOpenMinutes && marketMinutes < marketCloseMinutes) {
+      return 'open';
+    } else if (marketMinutes >= preMarketOpenMinutes && marketMinutes < marketOpenMinutes) {
+      return 'pre-market';
+    } else if (marketMinutes >= marketCloseMinutes && marketMinutes < afterHoursCloseMinutes) {
+      return 'after-hours';
+    } else {
+      return 'closed';
+    }
+  };
+  
 
   const handleAddPortfolio = async (newPortfolio: Portfolio) => {
     // Set loading state to true BEFORE the API call
@@ -55,6 +155,23 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       toast.error("Failed to create portfolio");
     } finally {
       setIsUpdating(false); // Add this line to reset the loading state
+    }
+  };
+  const handleRefreshPrices = async (portfolioId: string) => {
+    setIsUpdating(true);
+    try {
+      // Call API to refresh prices
+      const refreshedPortfolio = await portfolioApi.refreshPrices(portfolioId);
+      
+      // Update the local state with new data
+      updateLocalPortfolio(refreshedPortfolio);
+      
+      toast.success("Stock prices refreshed successfully");
+    } catch (error) {
+      console.error('Error refreshing prices:', error);
+      toast.error("Failed to refresh stock prices");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -364,6 +481,9 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
     onAddPortfolio={() => setIsCreating(true)}
     onDeletePortfolio={handleDeletePortfolio}
     onUpdatePortfolio={handleUpdatePortfolio}
+    onRefreshPrices={handleRefreshPrices}
+    marketStatus={marketStatus}
+    lastRefreshTime={lastRefreshTime}
     // Pass the new position handlers
     onAddPosition={(company, shares, avgPrice) => {
       if (!selectedPortfolio) return;
