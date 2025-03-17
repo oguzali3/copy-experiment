@@ -1,5 +1,5 @@
 // src/components/portfolio/PortfolioContent.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { PortfolioEmpty } from "./PortfolioEmpty";
 import { PortfolioCreate } from "./PortfolioCreate";
 import { PortfolioView } from "./PortfolioView";
@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Portfolio } from "./types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import portfolioApi from '@/services/portfolioApi';
+import { standardizePortfolioData } from "@/utils/portfolioDataUtils";
 
 interface PortfolioContentProps {
   portfolioId: string;
@@ -14,16 +15,30 @@ interface PortfolioContentProps {
   setPortfolios: React.Dispatch<React.SetStateAction<Portfolio[]>>;
 }
 
+// Minimum time between light refreshes (30 seconds)
+const MIN_REFRESH_INTERVAL = 30 * 1000; 
+// Minimum time between initial page load refreshes (5 minutes)
+const PAGE_LOAD_REFRESH_INTERVAL = 5 * 60 * 1000;
+
 const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioContentProps) => {
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(portfolioId || null);
-  const [loading, setLoading] = useState(false); // No initial loading since data comes from props
+  const [loading, setLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLightRefreshing, setIsLightRefreshing] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
   const [marketStatus, setMarketStatus] = useState<'open' | 'closed' | 'pre-market' | 'after-hours'>('closed');
-
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+  
+  // Track the last refresh timestamp to throttle requests
+  const lastRefreshTimestamp = useRef<number>(0);
+  // Track the last page load refresh timestamp
+  const lastPageLoadRefresh = useRef<number>(0);
+  // Keep track of the refresh interval
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Track if component is mounted to avoid memory leaks
+  const isMounted = useRef(true);
 
   // Update selected portfolio ID when prop changes
   useEffect(() => {
@@ -31,6 +46,16 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       setSelectedPortfolioId(portfolioId);
     }
   }, [portfolioId]);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const updateMarketStatus = () => {
@@ -44,62 +69,180 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
     return () => clearInterval(interval);
   }, []);
 
+  // Add effect for refreshing prices on initial load
   useEffect(() => {
-    if (selectedPortfolioId) {
-      const performLightRefresh = async () => {
-        try {
-          // Don't show loading indicator for light refresh - keep it in the background
-          setIsLightRefreshing(true);
-          
-          // Get latest data
-          const refreshedPortfolio = await portfolioApi.getLightRefreshPortfolio(selectedPortfolioId);
-          
-          // Update only this portfolio in the list
-          setPortfolios(prev => 
-            prev.map(p => p.id === selectedPortfolioId ? refreshedPortfolio : p)
-          );
-          
-          // Record the refresh time
-          setLastRefreshTime(new Date());
-        } catch (error) {
-          console.error("Light refresh failed:", error);
-          // No error toast - this is a background operation
-        } finally {
-          setIsLightRefreshing(false);
-        }
-      };
+    const refreshOnInitialLoad = async () => {
+      // Only refresh if we have a selected portfolio and we're not already refreshing
+      if (!selectedPortfolioId || isUpdating || isLightRefreshing) return;
       
-      performLightRefresh();
-      
-      // Set up poll only during market hours
-      const isMarketOpen = () => {
-        const now = new Date();
-        const day = now.getDay();
-        const hours = now.getHours();
-        
-        // Weekend check (0 = Sunday, 6 = Saturday)
-        if (day === 0 || day === 6) return false;
-        
-        // Market hours check (9:30 AM - 4:00 PM ET, simplified)
-        if (hours < 9 || hours >= 16) return false;
-        if (hours === 9 && now.getMinutes() < 30) return false;
-        
-        return true;
-      };
-      
-      // Only poll during market hours, and less frequently
-      let refreshInterval: NodeJS.Timeout | null = null;
-      if (isMarketOpen()) {
-        // Poll every 5 minutes during market hours
-        refreshInterval = setInterval(performLightRefresh, 5 * 60 * 1000);
+      const now = Date.now();
+      // Skip if we've refreshed recently
+      if (now - lastPageLoadRefresh.current < PAGE_LOAD_REFRESH_INTERVAL) {
+        return;
       }
       
-      return () => {
-        if (refreshInterval) clearInterval(refreshInterval);
-      };
+      // Update the timestamp
+      lastPageLoadRefresh.current = now;
+      
+      try {
+        console.log("Automatically refreshing prices on page load for portfolio:", selectedPortfolioId);
+        // Use the full refresh API to get latest prices
+        await handleRefreshPrices(selectedPortfolioId);
+        
+        // Set initial load flag to true
+        setInitialLoadDone(true);
+        toast.success("Prices updated on page load");
+      } catch (error) {
+        console.error("Error refreshing prices on initial load:", error);
+        // Still mark as done even if there's an error
+        setInitialLoadDone(true);
+      }
+    };
+    
+    // Only run this if initialLoadDone is false
+    if (!initialLoadDone && selectedPortfolioId) {
+      refreshOnInitialLoad();
     }
-  }, [selectedPortfolioId]);
+  }, [selectedPortfolioId, initialLoadDone, isUpdating, isLightRefreshing]);
 
+  // Improved sanitizer function for portfolio data validation
+  const sanitizePortfolio = useCallback((portfolio: Portfolio): Portfolio => {
+    // Helper to ensure numeric values
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ensureNumber = (val: any): number => {
+      if (val === null || val === undefined) return 0;
+      if (typeof val === 'string') return parseFloat(val) || 0;
+      return typeof val === 'number' && !isNaN(val) ? val : 0;
+    };
+    
+    // Sanitize stocks first
+    const sanitizedStocks = portfolio.stocks.map(stock => ({
+      ...stock,
+      shares: ensureNumber(stock.shares),
+      avgPrice: ensureNumber(stock.avgPrice),
+      currentPrice: ensureNumber(stock.currentPrice),
+      marketValue: ensureNumber(stock.shares) * ensureNumber(stock.currentPrice),
+      percentOfPortfolio: 0, // Recalculate this later
+      gainLoss: ensureNumber(stock.shares) * (ensureNumber(stock.currentPrice) - ensureNumber(stock.avgPrice)),
+      gainLossPercent: ensureNumber(stock.avgPrice) > 0 
+        ? ((ensureNumber(stock.currentPrice) - ensureNumber(stock.avgPrice)) / ensureNumber(stock.avgPrice)) * 100 
+        : 0
+    }));
+    
+    // Calculate total value based on market values
+    const totalValue = sanitizedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
+    
+    // Add percentage of portfolio
+    const stocksWithPercentages = sanitizedStocks.map(stock => ({
+      ...stock,
+      percentOfPortfolio: totalValue > 0 ? (stock.marketValue / totalValue) * 100 : 0
+    }));
+    
+    // Ensure previous day value makes sense
+    const previousDayValue = ensureNumber(portfolio.previousDayValue);
+    
+    // Calculate day changes based on sanitized values
+    const dayChange = totalValue - previousDayValue;
+    const dayChangePercent = previousDayValue > 0 
+      ? (dayChange / previousDayValue) * 100 
+      : 0;
+    
+    return {
+      ...portfolio,
+      totalValue,
+      previousDayValue,
+      dayChange,
+      dayChangePercent,
+      stocks: stocksWithPercentages,
+      lastPriceUpdate: portfolio.lastPriceUpdate
+    };
+  }, []);
+
+  // Optimized light refresh function with improved validation
+  const performLightRefresh = useCallback(async (force = false) => {
+    // Skip if no portfolio is selected
+    if (!selectedPortfolioId) return;
+    
+    // Skip if a refresh is already in progress
+    if (isLightRefreshing) return;
+    
+    const now = Date.now();
+    // Skip if we've refreshed recently, unless force=true
+    if (!force && now - lastRefreshTimestamp.current < MIN_REFRESH_INTERVAL) {
+      return;
+    }
+    
+    try {
+      // Set refreshing state and update timestamp
+      setIsLightRefreshing(true);
+      lastRefreshTimestamp.current = now;
+      
+      // Get latest data
+      const refreshedPortfolio = await portfolioApi.getLightRefreshPortfolio(selectedPortfolioId);
+      
+      // Only update if component is still mounted
+      if (isMounted.current) {
+        console.log("Light refresh received portfolio data:", refreshedPortfolio);
+        
+        // Import and use the standardizer to ensure consistency
+        const standardizedPortfolio = standardizePortfolioData(refreshedPortfolio);
+        
+        // Update the specific portfolio with the standardized data
+        setPortfolios(prev => 
+          prev.map(p => p.id === selectedPortfolioId ? standardizedPortfolio : p)
+        );
+        
+        // Record the refresh time
+        setLastRefreshTime(new Date());
+      }
+    } catch (error) {
+      console.error("Light refresh failed:", error);
+      // No error toast - this is a background operation
+    } finally {
+      if (isMounted.current) {
+        setIsLightRefreshing(false);
+      }
+    }
+  }, [selectedPortfolioId, isLightRefreshing, setPortfolios]);
+
+  // Set up light refresh polling based on selected portfolio
+  useEffect(() => {
+    // Clear any existing interval when portfolio changes
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+      refreshIntervalRef.current = null;
+    }
+    
+    if (selectedPortfolioId) {
+      // Initial refresh (if needed)
+      performLightRefresh();
+      
+      // Determine if market is open for polling frequency
+      const isMarketOpen = () => {
+        const status = determineMarketStatus();
+        return status === 'open' || status === 'pre-market' || status === 'after-hours';
+      };
+      
+      // Set polling interval based on market status
+      const intervalTime = isMarketOpen() ? 5 * 60 * 1000 : 15 * 60 * 1000; // 5 min during market hours, 15 min otherwise
+      
+      refreshIntervalRef.current = setInterval(() => {
+        performLightRefresh();
+      }, intervalTime);
+    }
+    
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, [selectedPortfolioId, performLightRefresh]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ensureNumber = (val: any): number => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === 'string') return parseFloat(val) || 0;
+    return typeof val === 'number' && !isNaN(val) ? val : 0;
+  };
   const determineMarketStatus = () => {
     const now = new Date();
     const day = now.getDay();
@@ -127,10 +270,9 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
     }
   };
   
-
   const handleAddPortfolio = async (newPortfolio: Portfolio) => {
     // Set loading state to true BEFORE the API call
-    setIsUpdating(true); // Add this line
+    setIsUpdating(true);
     
     try {
       const createRequest = {
@@ -145,54 +287,86 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       
       const createdPortfolio = await portfolioApi.createPortfolio(createRequest);
       
+      // Sanitize the returned portfolio
+      const sanitizedPortfolio = sanitizePortfolio(createdPortfolio);
+      
       // Add the new portfolio to the existing list
-      setPortfolios(prev => [...prev, createdPortfolio]);
-      setSelectedPortfolioId(createdPortfolio.id);
+      setPortfolios(prev => [...prev, sanitizedPortfolio]);
+      setSelectedPortfolioId(sanitizedPortfolio.id);
       setIsCreating(false);
       toast.success("Portfolio created successfully");
     } catch (error) {
       console.error('Error creating portfolio:', error);
       toast.error("Failed to create portfolio");
     } finally {
-      setIsUpdating(false); // Add this line to reset the loading state
-    }
-  };
-  const handleRefreshPrices = async (portfolioId: string) => {
-    setIsUpdating(true);
-    try {
-      // Call API to refresh prices
-      const refreshedPortfolio = await portfolioApi.refreshPrices(portfolioId);
-      
-      // Update the local state with new data
-      updateLocalPortfolio(refreshedPortfolio);
-      
-      toast.success("Stock prices refreshed successfully");
-    } catch (error) {
-      console.error('Error refreshing prices:', error);
-      toast.error("Failed to refresh stock prices");
-    } finally {
       setIsUpdating(false);
     }
   };
+  
+  // In PortfolioContent.tsx
+const handleRefreshPrices = useCallback(async (portfolioId: string): Promise<void> => {
+  setIsUpdating(true);
+  try {
+    // Call API to refresh prices
+    const refreshedPortfolio = await portfolioApi.refreshPrices(portfolioId);
+    
+    // Sanitize the returned portfolio
+    const sanitizedPortfolio = sanitizePortfolio(refreshedPortfolio);
+    
+    // Update the specific portfolio
+    setPortfolios(prev => 
+      prev.map(p => p.id === portfolioId ? sanitizedPortfolio : p)
+    );
+    
+    // Update last refresh time
+    setLastRefreshTime(new Date());
+    
+    // Also update lastRefreshTimestamp to prevent immediate light refreshes
+    lastRefreshTimestamp.current = Date.now();
+    
+    // IMPORTANT: Add a longer timeout to ensure the forced refresh has time to complete
+    setTimeout(async () => {
+      try {
+        console.log("Performing delayed complete refresh of all portfolios");
+        // Clear all caches before making the request
+        await portfolioApi.clearAllCaches(); // Make sure this function is exported
+        
+        const freshPortfolios = await portfolioApi.getPortfolios({
+          forceRefresh: true
+        });
+        
+        if (freshPortfolios.length > 0 && isMounted.current) {
+          console.log("Updating with fresh portfolio data");
+          setPortfolios(freshPortfolios);
+        }
+      } catch (refreshError) {
+        console.error('Delayed refresh error:', refreshError);
+      }
+    }, 2000); // Increase timeout to 2 seconds
+  } catch (error) {
+    console.error('Error refreshing prices:', error);
+    toast.error("Failed to refresh stock prices");
+    throw error;
+  } finally {
+    setIsUpdating(false);
+  }
+}, [setPortfolios, sanitizePortfolio]);
 
-  const updateLocalPortfolio = (updatedPortfolio: Portfolio) => {
+  const updateLocalPortfolio = useCallback((updatedPortfolio: Portfolio) => {
+    // Sanitize the portfolio data first
+    const sanitizedPortfolio = sanitizePortfolio(updatedPortfolio);
+    
     // Update the portfolio in the local state
     setPortfolios(prev => 
-      prev.map(p => p.id === updatedPortfolio.id ? {
-        ...updatedPortfolio,
-        // Ensure these values are always updated correctly
-        dayChange: updatedPortfolio.dayChange,
-        dayChangePercent: updatedPortfolio.dayChangePercent,
-        previousDayValue: updatedPortfolio.previousDayValue,
-        lastPriceUpdate: updatedPortfolio.lastPriceUpdate
-      } : p)
+      prev.map(p => p.id === updatedPortfolio.id ? sanitizedPortfolio : p)
     );
-  };
+  }, [sanitizePortfolio, setPortfolios]);  
 
-  const handleUpdatePortfolioName = async (id: string, newName: string) => {
+  const handleUpdatePortfolioName = useCallback(async (id: string, newName: string) => {
     setIsUpdating(true);
     try {
       const updatedPortfolio = await portfolioApi.updatePortfolio(id, newName);
+      // Sanitize before updating state
       updateLocalPortfolio(updatedPortfolio);
       toast.success("Portfolio name updated successfully");
     } catch (error) {
@@ -201,9 +375,9 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [updateLocalPortfolio]);
 
-  const handleAddPosition = async (portfolioId: string, position: {
+  const handleAddPosition = useCallback(async (portfolioId: string, position: {
     ticker: string;
     name: string;
     shares: number;
@@ -211,14 +385,16 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
   }) => {
     setIsUpdating(true);
     try {
-      // Find current portfolio
-      const currentPortfolio = portfolios.find(p => p.id === portfolioId);
-      if (!currentPortfolio) throw new Error("Portfolio not found");
-
       // Add position to the API
       const newPosition = await portfolioApi.addPosition(portfolioId, position);
       
-      // Optimistically update the local state without a full refresh
+      // Find current portfolio
+      const currentPortfolio = portfolios.find(p => p.id === portfolioId);
+      if (!currentPortfolio) {
+        throw new Error("Portfolio not found");
+      }
+      
+      // Create an updated portfolio with the new position
       const updatedStocks = [...currentPortfolio.stocks];
       
       // Check if we're updating an existing position
@@ -231,18 +407,23 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
         updatedStocks.push(newPosition);
       }
       
-      // Recalculate total value
-      const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
-      
-      // Create updated portfolio object
-      const updatedPortfolio = {
+      // Create a temporary portfolio with the updated stocks
+      const tempPortfolio: Portfolio = {
         ...currentPortfolio,
-        stocks: updatedStocks,
-        totalValue
+        stocks: updatedStocks
       };
       
-      // Update state
-      updateLocalPortfolio(updatedPortfolio);
+      // Let the sanitize function handle all the calculations
+      const sanitizedPortfolio = sanitizePortfolio(tempPortfolio);
+      
+      // Update the state with the complete updated portfolio
+      setPortfolios(prev => 
+        prev.map(p => p.id === portfolioId ? sanitizedPortfolio : p)
+      );
+      
+      // Update the last refresh time
+      setLastRefreshTime(new Date());
+      lastRefreshTimestamp.current = Date.now();
       
       toast.success(`Position ${position.ticker} added successfully`);
     } catch (error) {
@@ -255,15 +436,15 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [portfolios, setPortfolios, sanitizePortfolio]);
 
-  const handleUpdatePosition = async (portfolioId: string, ticker: string, shares: number, avgPrice: number) => {
+  const handleUpdatePosition = useCallback(async (portfolioId: string, ticker: string, shares: number, avgPrice: number) => {
     setIsUpdating(true);
     try {
       // Find current portfolio
       const currentPortfolio = portfolios.find(p => p.id === portfolioId);
       if (!currentPortfolio) throw new Error("Portfolio not found");
-
+  
       // Update position in the API
       const updatedPosition = await portfolioApi.updatePosition(portfolioId, ticker, { 
         ticker, 
@@ -271,29 +452,26 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
         avgPrice 
       });
       
-      // Optimistically update the local state
+      // Create updated stocks array
       const updatedStocks = currentPortfolio.stocks.map(stock => 
         stock.ticker === ticker ? updatedPosition : stock
       );
       
-      // Recalculate total value
-      const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
-      
-      // Recalculate percentages
-      const stocksWithPercentages = updatedStocks.map(stock => ({
-        ...stock,
-        percentOfPortfolio: (stock.marketValue / totalValue) * 100
-      }));
-      
-      // Create updated portfolio object
-      const updatedPortfolio = {
+      // Create a temporary portfolio with updated stocks
+      const tempPortfolio: Portfolio = {
         ...currentPortfolio,
-        stocks: stocksWithPercentages,
-        totalValue
+        stocks: updatedStocks
       };
       
-      // Update state
-      updateLocalPortfolio(updatedPortfolio);
+      // Process the portfolio through our sanitizer
+      const sanitizedPortfolio = sanitizePortfolio(tempPortfolio);
+      
+      // Update state with sanitized portfolio
+      updateLocalPortfolio(sanitizedPortfolio);
+      
+      // Update the last refresh time
+      setLastRefreshTime(new Date());
+      lastRefreshTimestamp.current = Date.now();
       
       toast.success(`Position ${ticker} updated successfully`);
     } catch (error) {
@@ -306,7 +484,7 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [portfolios, updateLocalPortfolio, setPortfolios, sanitizePortfolio]);
 
   const handleDeletePosition = async (portfolioId: string, ticker: string) => {
     setIsUpdating(true);
@@ -314,43 +492,24 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       // Find current portfolio
       const currentPortfolio = portfolios.find(p => p.id === portfolioId);
       if (!currentPortfolio) throw new Error("Portfolio not found");
-
+  
       // Delete position from the API
       await portfolioApi.deletePosition(portfolioId, ticker);
       
-      // Optimistically update the local state
+      // Remove the position from the local state
       const updatedStocks = currentPortfolio.stocks.filter(stock => stock.ticker !== ticker);
       
-      // If all stocks are deleted, set empty array and zero total value
-      if (updatedStocks.length === 0) {
-        const updatedPortfolio = {
-          ...currentPortfolio,
-          stocks: [],
-          totalValue: 0
-        };
-        
-        // Update state
-        updateLocalPortfolio(updatedPortfolio);
-      } else {
-        // Recalculate total value
-        const totalValue = updatedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
-        
-        // Recalculate percentages
-        const stocksWithPercentages = updatedStocks.map(stock => ({
-          ...stock,
-          percentOfPortfolio: (stock.marketValue / totalValue) * 100
-        }));
-        
-        // Create updated portfolio object
-        const updatedPortfolio = {
-          ...currentPortfolio,
-          stocks: stocksWithPercentages,
-          totalValue
-        };
-        
-        // Update state
-        updateLocalPortfolio(updatedPortfolio);
-      }
+      // Create a temporary portfolio without the deleted position
+      const tempPortfolio: Portfolio = {
+        ...currentPortfolio,
+        stocks: updatedStocks
+      };
+      
+      // Process through sanitizer for consistent calculations
+      const sanitizedPortfolio = sanitizePortfolio(tempPortfolio);
+      
+      // Update state
+      updateLocalPortfolio(sanitizedPortfolio);
       
       toast.success(`Position ${ticker} removed successfully`);
     } catch (error) {
@@ -387,9 +546,11 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
   };
 
   const handleUpdatePortfolio = (updatedPortfolio: Portfolio) => {
-    // This is a local update function for when we modify a portfolio in the UI
-    // It handles updating the portfolio in the local state
-    updateLocalPortfolio(updatedPortfolio);
+    // Process through sanitizer before updating
+    const sanitizedPortfolio = sanitizePortfolio(updatedPortfolio);
+    
+    // Update the local state
+    updateLocalPortfolio(sanitizedPortfolio);
     
     // If we change the name, we need to update it on the server
     const currentPortfolio = portfolios.find(p => p.id === updatedPortfolio.id);
@@ -400,7 +561,10 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
 
   // Handle loading state
   if (loading) {
-    return <div className="flex items-center justify-center h-64">Loading portfolios...</div>;
+    return <div className="flex items-center justify-center h-64">
+      <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+      <span className="ml-3">Loading portfolios...</span>
+    </div>;
   }
   
   // Handle error state
@@ -410,9 +574,14 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
         <p className="text-red-500 mb-4">{error}</p>
         <button 
           onClick={async () => {
-            const refreshedPortfolios = await portfolioApi.getPortfolios();
-            setPortfolios(refreshedPortfolios);
-            setError(null);
+            try {
+              const refreshedPortfolios = await portfolioApi.getPortfolios();
+              setPortfolios(refreshedPortfolios);
+              setError(null);
+            } catch (e) {
+              console.error("Error retrying portfolio fetch:", e);
+              toast.error("Failed to refresh portfolios. Please try again.");
+            }
           }}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
@@ -476,38 +645,38 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
 
       {/* Portfolio view */}
       {selectedPortfolio ? (
-  <PortfolioView
-    portfolio={selectedPortfolio}
-    onAddPortfolio={() => setIsCreating(true)}
-    onDeletePortfolio={handleDeletePortfolio}
-    onUpdatePortfolio={handleUpdatePortfolio}
-    onRefreshPrices={handleRefreshPrices}
-    marketStatus={marketStatus}
-    lastRefreshTime={lastRefreshTime}
-    // Pass the new position handlers
-    onAddPosition={(company, shares, avgPrice) => {
-      if (!selectedPortfolio) return;
-      
-      // Convert to proper types
-      const newShares = Number(shares);
-      const newAvgPrice = Number(avgPrice);
-      
-      handleAddPosition(selectedPortfolio.id, {
-        ticker: company.ticker,
-        name: company.name,
-        shares: newShares,
-        avgPrice: newAvgPrice
-      });
-    }}
-    onUpdatePosition={(ticker, shares, avgPrice) => {
-      if (!selectedPortfolio) return;
-      handleUpdatePosition(selectedPortfolio.id, ticker, shares, avgPrice);
-    }}
-    onDeletePosition={(ticker) => {
-      if (!selectedPortfolio) return;
-      handleDeletePosition(selectedPortfolio.id, ticker);
-    }}
-  />
+        <PortfolioView
+          portfolio={selectedPortfolio}
+          onAddPortfolio={() => setIsCreating(true)}
+          onDeletePortfolio={handleDeletePortfolio}
+          onUpdatePortfolio={handleUpdatePortfolio}
+          onRefreshPrices={handleRefreshPrices}
+          marketStatus={marketStatus}
+          lastRefreshTime={lastRefreshTime}
+          // Pass the new position handlers
+          onAddPosition={(company, shares, avgPrice) => {
+            if (!selectedPortfolio) return;
+            
+            // Convert to proper types
+            const newShares = Number(shares);
+            const newAvgPrice = Number(avgPrice);
+            
+            handleAddPosition(selectedPortfolio.id, {
+              ticker: company.ticker,
+              name: company.name,
+              shares: newShares,
+              avgPrice: newAvgPrice
+            });
+          }}
+          onUpdatePosition={(ticker, shares, avgPrice) => {
+            if (!selectedPortfolio) return;
+            handleUpdatePosition(selectedPortfolio.id, ticker, shares, avgPrice);
+          }}
+          onDeletePosition={(ticker) => {
+            if (!selectedPortfolio) return;
+            handleDeletePosition(selectedPortfolio.id, ticker);
+          }}
+        />
       ) : (
         <div className="text-center py-10">
           <p className="text-gray-500 mb-6">No portfolio selected. Please select a portfolio from the dropdown above.</p>
