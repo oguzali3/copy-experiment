@@ -220,87 +220,11 @@ export const PortfolioValueChart = ({
 
   // Effect to trigger fetch on dependencies change
   useEffect(() => {
-    // If we have data and the last value is different from the current portfolio value
-    if (data.length > 0 && portfolio && onUpdatePortfolio) {
-      const latestData = data[data.length - 1];
-      const latestValue = latestData.value;
-      const currentValue = ensureNumber(portfolio.totalValue);
-      
-      // If there's a significant difference (> $0.50)
-      if (Math.abs(latestValue - currentValue) > 0.5) {
-        console.log(`Latest history value ${latestValue} differs from portfolio value ${currentValue}`);
-        
-        // Extract day change values
-        const dayChange = latestData.dayChange !== undefined 
-          ? latestData.dayChange 
-          : latestValue - (data.length > 1 ? data[data.length - 2].value : currentValue);
-          
-        const dayChangePercent = latestData.dayChangePercent !== undefined
-          ? latestData.dayChangePercent
-          : (dayChange / (latestValue - dayChange)) * 100;
-        
-        // IMPORTANT: Create a completely new object for React state updates
-        // Clone all stocks to ensure proper reference change
-        const updatedStocks = portfolio.stocks.map(stock => ({...stock}));
-        
-        // Create updated portfolio with the latest value
-        const updatedPortfolio = {
-          ...portfolio,
-          totalValue: latestValue,
-          dayChange: dayChange,
-          dayChangePercent: dayChangePercent,
-          stocks: updatedStocks, // Use the cloned stocks
-          _forceUpdate: Date.now() // Add a timestamp to force recognition as a new object
-        };
-        
-        // Call the update function
-        console.log("Updating portfolio with latest value from history");
-        onUpdatePortfolio(updatedPortfolio);
-        
-        // Break the cycle by updating the local portfolio data directly
-        // Add this to stop the continuous update detection
-        return () => {
-          // Nothing to do in cleanup
-        };
-      }
+    if (portfolioId) {
+      console.log(`Triggering portfolio history fetch for ${portfolioId} with timeframe ${timeframe}`);
+      fetchPortfolioHistory();
     }
-  }, [data, portfolio, onUpdatePortfolio]);
-
-  // Add effect to update portfolio when historical data is newer
-  useEffect(() => {
-    // If we have data and the last value is different from the current portfolio value
-    if (data.length > 0 && portfolio && onUpdatePortfolio) {
-      const latestData = data[data.length - 1];
-      const latestValue = latestData.value;
-      const currentValue = ensureNumber(portfolio.totalValue);
-      
-      // If there's a significant difference (> $0.50)
-      if (Math.abs(latestValue - currentValue) > 0.5) {
-        console.log(`Latest history value ${latestValue} differs from portfolio value ${currentValue}`);
-        
-        // Extract day change values
-        const dayChange = latestData.dayChange !== undefined 
-          ? latestData.dayChange 
-          : latestValue - (data.length > 1 ? data[data.length - 2].value : currentValue);
-          
-        const dayChangePercent = latestData.dayChangePercent !== undefined
-          ? latestData.dayChangePercent
-          : (dayChange / (latestValue - dayChange)) * 100;
-        
-        // Create updated portfolio with the latest value
-        const updatedPortfolio = {
-          ...portfolio,
-          totalValue: latestValue,
-          dayChange: dayChange,
-          dayChangePercent: dayChangePercent
-        };
-        
-        // Call the update function
-        console.log("Updating portfolio with latest value from history");
-        onUpdatePortfolio(updatedPortfolio);
-      }
-    }
-  }, [data, portfolio, onUpdatePortfolio]);
+  }, [portfolioId, timeframe, fetchPortfolioHistory]);
 
   // Helper function to format currency values
   const formatCurrency = (value: number): string => {

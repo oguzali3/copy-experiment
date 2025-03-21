@@ -1,4 +1,4 @@
-// Fix for the PortfolioPerformanceChart.tsx
+// Fixed PortfolioPerformanceChart.tsx
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
@@ -56,49 +56,51 @@ export const PortfolioPerformanceChart = ({
     portfolioId: null,
     timeframe: null
   });
-// Helper function to format dates based on timeframe
-const formatDateForDisplay = (dateString: string, timeframe: TimeframeType): string => {
-  const date = new Date(dateString);
-  
-  switch (timeframe) {
-    case '1D':
-      // Format as "10:30 AM"
-      return new Intl.DateTimeFormat('en-US', { 
-        hour: 'numeric', 
-        minute: 'numeric',
-        hour12: true
-      }).format(date);
-    case '5D':
-    case '15D':
-      // Format as "Mar 10" or with weekday for shorter periods
-      return new Intl.DateTimeFormat('en-US', { 
-        weekday: 'short', 
-        month: 'short', 
-        day: 'numeric' 
-      }).format(date);
-    case '1M':
-    case '3M':
-      // Format as "Apr 15"
-      return new Intl.DateTimeFormat('en-US', { 
-        month: 'short', 
-        day: 'numeric' 
-      }).format(date);
-    case '6M':
-    case '1Y':
-      // Format as "Apr 2023"
-      return new Intl.DateTimeFormat('en-US', { 
-        month: 'short', 
-        year: 'numeric' 
-      }).format(date);
-    case 'ALL':
-      // Format as "2023"
-      return new Intl.DateTimeFormat('en-US', { 
-        year: 'numeric' 
-      }).format(date);
-    default:
-      return dateString;
-  }
-};
+
+  // Helper function to format dates based on timeframe
+  const formatDateForDisplay = useCallback((dateString: string, tf: TimeframeType): string => {
+    const date = new Date(dateString);
+    
+    switch (tf) {
+      case '1D':
+        // Format as "10:30 AM"
+        return new Intl.DateTimeFormat('en-US', { 
+          hour: 'numeric', 
+          minute: 'numeric',
+          hour12: true
+        }).format(date);
+      case '5D':
+      case '15D':
+        // Format as "Mar 10" or with weekday for shorter periods
+        return new Intl.DateTimeFormat('en-US', { 
+          weekday: 'short', 
+          month: 'short', 
+          day: 'numeric' 
+        }).format(date);
+      case '1M':
+      case '3M':
+        // Format as "Apr 15"
+        return new Intl.DateTimeFormat('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        }).format(date);
+      case '6M':
+      case '1Y':
+        // Format as "Apr 2023"
+        return new Intl.DateTimeFormat('en-US', { 
+          month: 'short', 
+          year: 'numeric' 
+        }).format(date);
+      case 'ALL':
+        // Format as "2023"
+        return new Intl.DateTimeFormat('en-US', { 
+          year: 'numeric' 
+        }).format(date);
+      default:
+        return dateString;
+    }
+  }, []);
+
   // Function to fetch portfolio performance data
   const fetchPortfolioPerformance = useCallback(async () => {
     // Skip if we're already loading or if portfolio ID is missing
@@ -270,7 +272,7 @@ const formatDateForDisplay = (dateString: string, timeframe: TimeframeType): str
   }, [portfolioId, timeframe, formatDateForDisplay, portfolio, onUpdatePortfolio]);
 
   useEffect(() => {
-    if (portfolio && timeframe === '1D') {
+    if (portfolio && timeframe === '1D' && portfolio.totalValue > 0) {
       // For 1D timeframe, we can derive performance data from the portfolio itself
       
       // Convert values to numbers to ensure consistency
@@ -311,9 +313,7 @@ const formatDateForDisplay = (dateString: string, timeframe: TimeframeType): str
     
     // Otherwise, proceed with normal API fetch
     fetchPortfolioPerformance();
-  }, [portfolio, portfolioId, timeframe, fetchPortfolioPerformance]);
-
-  
+  }, [portfolio, portfolioId, timeframe, fetchPortfolioPerformance, formatDateForDisplay]);
 
   const formatCurrency = (value: number): string => {
     if (value === undefined || isNaN(value)) {

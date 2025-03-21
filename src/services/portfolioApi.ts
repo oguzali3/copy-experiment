@@ -119,6 +119,7 @@ interface StockPositionResponseDto {
 interface GetPortfoliosOptions {
   skipRefresh?: boolean;
   forceRefresh?: boolean;
+  portfolioId?: string;
 }
 
 interface PortfolioHistoryData {
@@ -337,17 +338,14 @@ export function clearAllCaches() {
   console.log('Cache and pending requests completely cleared');
 }
 
-
-// Function to invalidate cache for a specific portfolio
-function invalidatePortfolioCache(portfolioId: string) {
+export function invalidatePortfolioCache(portfolioId: string) {
   const keysToInvalidate: string[] = [];
   
   // Find all cache keys related to this portfolio
   Array.from(requestCache.keys()).forEach(key => {
     if (key.includes(`/portfolios/${portfolioId}/`) || 
-        key.startsWith('/portfolios_') ||
-        key === '/portfolios' ||
-        key.includes(`light_refresh_${portfolioId}`)) {
+        key.includes(`light_refresh_${portfolioId}`) ||
+        key === `/portfolios/${portfolioId}`) {
       keysToInvalidate.push(key);
     }
   });
@@ -359,15 +357,21 @@ function invalidatePortfolioCache(portfolioId: string) {
   });
 }
 
+
+
 const portfolioApi = {
   clearAllCaches,
   getPortfolios: async (options?: GetPortfoliosOptions): Promise<Portfolio[]> => {
     try {
       const skipRefresh = options?.skipRefresh === true;
       const forceRefresh = options?.forceRefresh === true;
+      const specificPortfolioId = options?.portfolioId; // Add this parameter
       
-      // If force refresh is true, clear cache
-      if (forceRefresh) {
+      // If force refresh is true, clear specific portfolio cache instead of all
+      if (forceRefresh && specificPortfolioId) {
+        invalidatePortfolioCache(specificPortfolioId);
+      } else if (forceRefresh) {
+        // Only clear all if explicitly requested with no specific ID
         clearAllCaches();
       }
       
@@ -375,6 +379,7 @@ const portfolioApi = {
       const params = { 
         skipRefresh, 
         forceRefresh,
+        portfolioId: specificPortfolioId, // Pass to API if specified
         _t: Date.now() // Add timestamp to prevent browser caching
       };
       
@@ -394,8 +399,8 @@ const portfolioApi = {
         }
       );
       
-      // Process each portfolio with validation
-      const portfolios = response.data.map(dto => {
+      // Process portfolios with validation
+      let portfolios = response.data.map(dto => {
         // First check if we have recent light refresh data available
         const lightRefreshCacheKey = `light_refresh_${dto.id}`;
         const lightRefreshData = requestCache.get(lightRefreshCacheKey);
@@ -411,12 +416,18 @@ const portfolioApi = {
         return standardizePortfolioData(portfolio);
       });
       
+      // Filter by portfolioId if specified
+      if (specificPortfolioId) {
+        portfolios = portfolios.filter(p => p.id === specificPortfolioId);
+      }
+      
       return portfolios;
     } catch (error) {
       console.error('Error fetching portfolios:', error);
       return [];
     }
   },
+  
 
   // Create portfolio
   createPortfolio: async (data: CreatePortfolioRequest): Promise<Portfolio> => {
@@ -574,57 +585,62 @@ const portfolioApi = {
   },
 
   // Refresh portfolio prices
-  refreshPrices: async (portfolioId: string): Promise<Portfolio> => {
-    return requestQueue.add(async () => {
-      try {
-        // Clear ALL cache before making the request
-        clearAllCaches();
-        
-        // Make the refresh request with cache-busting headers
-        const response = await apiClient.post<PortfolioResponseDto>(
-          `/portfolios/${portfolioId}/refresh`, 
-          {},
-          {
-            headers: {
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0'
+    // Modify refreshPrices to avoid extra refresh calls
+    refreshPrices: async (portfolioId: string): Promise<Portfolio> => {
+      return requestQueue.add(async () => {
+        try {
+          // Only invalidate cache for this specific portfolio
+          invalidatePortfolioCache(portfolioId);
+          
+          // Make the refresh request with cache-busting headers
+          const response = await apiClient.post<PortfolioResponseDto>(
+            `/portfolios/${portfolioId}/refresh`, 
+            {},
+            {
+              headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+              }
             }
+          );
+          
+          // Process the response data
+          const portfolio = mapToPortfolio(response.data);
+          const correctedPortfolio = detectAndCorrectDataMismatch(portfolio);
+          
+          // IMPORTANT: Don't trigger another portfolios request
+          // This is what's causing the duplicate requests
+          /*
+          setTimeout(() => {
+            apiClient.get('/portfolios', { 
+              params: { 
+                forceRefresh: true,
+                _t: Date.now() 
+              },
+              headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+              }
+            }).catch(err => console.error('Background refresh error:', err));
+          }, 500);
+          */
+          
+          return correctedPortfolio;
+        } catch (error) {
+          console.error('Error refreshing portfolio prices:', error);
+          let errorMessage = 'Failed to refresh portfolio prices';
+          if (error.response?.data?.message) {
+            errorMessage = Array.isArray(error.response.data.message) 
+              ? error.response.data.message.join(', ') 
+              : error.response.data.message;
           }
-        );
-        
-        // Process the response data
-        const portfolio = mapToPortfolio(response.data);
-        const correctedPortfolio = detectAndCorrectDataMismatch(portfolio);
-        
-        // Force reload all portfolios after refresh
-        setTimeout(() => {
-          apiClient.get('/portfolios', { 
-            params: { 
-              forceRefresh: true,
-              _t: Date.now() 
-            },
-            headers: {
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0'
-            }
-          }).catch(err => console.error('Background refresh error:', err));
-        }, 500);
-        
-        return correctedPortfolio;
-      } catch (error) {
-        console.error('Error refreshing portfolio prices:', error);
-        let errorMessage = 'Failed to refresh portfolio prices';
-        if (error.response?.data?.message) {
-          errorMessage = Array.isArray(error.response.data.message) 
-            ? error.response.data.message.join(', ') 
-            : error.response.data.message;
+          throw new Error(errorMessage);
         }
-        throw new Error(errorMessage);
-      }
-    });
-  },
+      });
+    }
+  ,
 
   // Bulk refresh all portfolios (to be used at app initialization)
   refreshAllPrices: async (portfolioIds: string[]): Promise<void> => {
@@ -663,6 +679,8 @@ const portfolioApi = {
         'Expires': '0'
       };
       
+      console.log(`Performing light refresh for portfolio ${portfolioId}`);
+      
       // Make the request with cache busting
       const response = await apiClient.get<PortfolioResponseDto>(
         `/portfolios/${portfolioId}/light-refresh`,
@@ -671,16 +689,35 @@ const portfolioApi = {
       
       // Process portfolio data through our mapping function
       const portfolio = mapToPortfolio(response.data);
+      const standardizedPortfolio = standardizePortfolioData(portfolio);
       
       // Store the light refresh data in a special cache for immediate use
       requestCache.set(`light_refresh_${portfolioId}`, {
-        data: portfolio,
+        data: standardizedPortfolio,
         timestamp: Date.now()
       });
       
-      return portfolio;
+      return standardizedPortfolio;
     } catch (error) {
       console.error('Error light refreshing portfolio:', error);
+      
+      // Handle the case where the light refresh fails - try to get the portfolio from cache
+      console.log('Attempting to get portfolio from existing data');
+      const portfolios = await apiClient.get<PortfolioResponseDto[]>('/portfolios', {
+        params: { 
+          skipRefresh: true,
+          portfolioId: portfolioId 
+        }
+      });
+      
+      if (portfolios.data && portfolios.data.length > 0) {
+        const matchingPortfolio = portfolios.data.find(p => p.id === portfolioId);
+        if (matchingPortfolio) {
+          const portfolio = mapToPortfolio(matchingPortfolio);
+          return standardizePortfolioData(portfolio);
+        }
+      }
+      
       throw error;
     }
   },
