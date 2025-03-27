@@ -1,189 +1,399 @@
-import React, { useRef } from 'react';
-import { 
-  ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, 
-  CartesianGrid, Tooltip, Legend, TooltipProps
-} from 'recharts';
-import { metricCategories } from '@/data/metricCategories';
-
-// Custom tooltip component
-const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
-  if (!active || !payload || payload.length === 0) return null;
+// Calculate CAGR - Compound Annual Growth Rate
+const calculateCAGR = (startValue: number, endValue: number, years: number): number => {
+    if (startValue <= 0 || endValue <= 0 || years <= 0) return 0;
+    return ((Math.pow(endValue / startValue, 1 / years) - 1) * 100);
+  };import React, { useRef, useMemo } from 'react';
+  import { 
+    ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, 
+    CartesianGrid, Tooltip, Legend, TooltipProps
+  } from 'recharts';
+  import { metricCategories } from '@/data/metricCategories';
+  import { getMetricDisplayName, getMetricFormat } from '@/utils/metricDefinitions';
   
-  return (
-    <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md">
-      <p className="font-medium text-gray-800">{label}</p>
-      <div className="mt-2 space-y-1">
-        {payload.map((entry, index) => {
-          let formattedValue = entry.value as number;
-          let suffix = '';
-          
-          if (Math.abs(formattedValue) >= 1e9) {
-            formattedValue = +(formattedValue / 1e9).toFixed(2);
-            suffix = 'B';
-          } else if (Math.abs(formattedValue) >= 1e6) {
-            formattedValue = +(formattedValue / 1e6).toFixed(2);
-            suffix = 'M';
-          } else if (Math.abs(formattedValue) >= 1e3) {
-            formattedValue = +(formattedValue / 1e3).toFixed(2);
-            suffix = 'K';
-          } else {
-            formattedValue = +formattedValue.toFixed(2);
-          }
-          
-          return (
-            <p 
-              key={`tooltip-${index}`} 
-              style={{ color: entry.color as string }}
-              className="flex justify-between gap-4"
-            >
-              <span>{entry.name}: </span>
-              <span className="font-semibold">{formattedValue}{suffix}</span>
-            </p>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-interface MetricChartProps {
-  data: any[]; // Your processed data array
-  metrics: string[]; // Array of metric IDs
-  ticker: string;
-  metricTypes: Record<string, 'bar' | 'line'>;
-  onMetricTypeChange: (metric: string, type: 'bar' | 'line') => void;
-  companyName?: string;
-  title?: string; // Optional custom title
-}
-
-export const MetricChart: React.FC<MetricChartProps> = ({ 
-  data, 
-  metrics, 
-  ticker,
-  metricTypes,
-  onMetricTypeChange,
-  companyName,
-  title
-}) => {
-  const chartRef = useRef<HTMLDivElement>(null);
-  
-  // Generate default title if none provided
-  const chartTitle = title || `${companyName || ticker} - Financial Metrics`;
-  
-  // Generate colors for each metric
-  const colorMap: Record<string, string> = {};
-  const baseColors = [
-    '#2563eb', '#db2777', '#16a34a', '#ea580c', '#8b5cf6', 
-    '#0891b2', '#4338ca', '#b91c1c', '#4d7c0f', '#6d28d9'
-  ];
-  
-  metrics.forEach((metric, index) => {
-    colorMap[metric] = baseColors[index % baseColors.length];
-  });
-  
-  // Get readable metric names instead of keys
-  const getMetricDisplayName = (metricId: string): string => {
-    for (const category of metricCategories) {
-      const metric = category.metrics.find(m => m.id === metricId);
-      if (metric) return metric.name;
-    }
-    return metricId;
-  };
-  
-  // Format Y-axis values
-  const formatYAxis = (value: number) => {
-    if (Math.abs(value) >= 1e9) {
-      return `${(value / 1e9).toFixed(1)}B`;
-    } else if (Math.abs(value) >= 1e6) {
-      return `${(value / 1e6).toFixed(1)}M`;
-    } else if (Math.abs(value) >= 1e3) {
-      return `${(value / 1e3).toFixed(1)}K`;
-    }
-    return value.toFixed(1);
-  };
-
-  // Get metric display names for the subtitle
-  const metricNames = metrics.map(metricId => getMetricDisplayName(metricId));
-  const metricsSubtitle = metricNames.join(', ');
-
-  return (
-    <div className="h-full flex flex-col relative" ref={chartRef}>
-      {/* Chart Title - This will be visible in the PNG export */}
-      <div className="text-center mb-2">
-        <h3 className="text-lg font-medium text-gray-800">{chartTitle}</h3>
-        <p className="text-sm text-gray-500">{metricsSubtitle}</p>
-      </div>
-      
-      <div className="flex-grow relative">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={data}
-            margin={{ top: 10, right: 30, left: 20, bottom: 40 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="period" 
-              angle={-45} 
-              textAnchor="end" 
-              height={60}
-              tickMargin={10}
-            />
-            <YAxis tickFormatter={formatYAxis} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend 
-              formatter={(value) => getMetricDisplayName(value)}
-              wrapperStyle={{ paddingTop: 10 }}
-            />
+  // Custom tooltip component
+  const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+    if (!active || !payload || payload.length === 0) return null;
+    
+    return (
+      <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md">
+        <p className="font-medium text-gray-800">{label}</p>
+        <div className="mt-2 space-y-1">
+          {payload.map((entry, index) => {
+            let formattedValue = entry.value as number;
+            let suffix = '';
             
-            {/* Render each metric */}
-            {metrics.map((metric) => {
-              // Determine if this metric should be a bar or line
-              const chartType = metricTypes[metric] || 'bar';
+            if (Math.abs(formattedValue) >= 1e9) {
+              formattedValue = +(formattedValue / 1e9).toFixed(2);
+              suffix = 'B';
+            } else if (Math.abs(formattedValue) >= 1e6) {
+              formattedValue = +(formattedValue / 1e6).toFixed(2);
+              suffix = 'M';
+            } else if (Math.abs(formattedValue) >= 1e3) {
+              formattedValue = +(formattedValue / 1e3).toFixed(2);
+              suffix = 'K';
+            } else {
+              formattedValue = +formattedValue.toFixed(2);
+            }
+            
+            // Get the proper display name for the metric using the same approach as legend
+            let displayName;
+            try {
+              // First check if we can use name property directly
+              const metricId = String(entry.name || '');
               
-              // Create the appropriate chart element
-              return chartType === 'bar' ? (
-                <Bar 
-                  key={metric} 
-                  dataKey={(entry) => {
-                    const foundMetric = entry.metrics.find(m => m.name === metric);
-                    return foundMetric ? foundMetric.value : null;
-                  }}
-                  name={metric}
-                  fill={colorMap[metric]}
-                  barSize={30}
-                />
-              ) : (
-                <Line 
-                  key={metric} 
-                  type="monotone" 
-                  dataKey={(entry) => {
-                    const foundMetric = entry.metrics.find(m => m.name === metric);
-                    return foundMetric ? foundMetric.value : null;
-                  }}
-                  name={metric}
-                  stroke={colorMap[metric]}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              );
-            })}
-          </ComposedChart>
-        </ResponsiveContainer>
-        
-        {/* Logo in the bottom right corner with text */}
-        <div className="absolute bottom-2 right-2 flex items-center">
-          <p className="text-gray-600 font-medium mr-2">Powered by</p>
-          <img 
-            src="/mngrlogo.png" 
-            alt="MNGR Logo" 
-            className="h-24 w-auto" 
-            style={{ opacity: 0.8 }}
-          />
+              // Try through the utilities first
+              displayName = getLocalMetricDisplayName(metricId);
+              
+              // If display name is same as ID (lookup failed), apply same formatting as legend
+              if (displayName === metricId) {
+                displayName = formatRawMetricId(metricId);
+              }
+            } catch (error) {
+              // Last resort fallback
+              displayName = formatRawMetricId(String(entry.name || 'Unknown'));
+            }
+            
+            return (
+              <p 
+                key={`tooltip-${index}`} 
+                style={{ color: entry.color as string }}
+                className="flex justify-between gap-4"
+              >
+                <span>{displayName}: </span>
+                <span className="font-semibold">{formattedValue}{suffix}</span>
+              </p>
+            );
+          })}
         </div>
       </div>
-    </div>
-  );
-};
-
-export default MetricChart;
+    );
+  };
+  
+  // Helper function to format raw IDs into display names
+  const formatRawMetricId = (id: string): string => {
+    if (!id) return 'Unknown Metric';
+    
+    return id
+      // Handle camelCase by adding space before capital letters
+      .replace(/([A-Z])/g, ' $1')
+      // Capitalize the first letter
+      .replace(/^./, str => str.toUpperCase())
+      .trim();
+  };
+  
+  interface MetricChartProps {
+    data: any[]; // Your processed data array
+    metrics: string[]; // Array of metric IDs
+    ticker: string;
+    metricTypes: Record<string, 'bar' | 'line'>;
+    onMetricTypeChange: (metric: string, type: 'bar' | 'line') => void;
+    companyName?: string;
+    title?: string; // Optional custom title
+  }
+  
+  export const MetricChart: React.FC<MetricChartProps> = ({ 
+    data, 
+    metrics, 
+    ticker,
+    metricTypes,
+    onMetricTypeChange,
+    companyName,
+    title
+  }) => {
+    const chartRef = useRef<HTMLDivElement>(null);
+    
+    // Generate default title if none provided
+    const chartTitle = title || `${companyName || ticker} - Financial Metrics`;
+    
+    // Generate colors for each metric
+    const colorMap: Record<string, string> = {};
+    const baseColors = [
+      '#2563eb', '#db2777', '#16a34a', '#ea580c', '#8b5cf6', 
+      '#0891b2', '#4338ca', '#b91c1c', '#4d7c0f', '#6d28d9'
+    ];
+    
+    metrics.forEach((metric, index) => {
+      colorMap[metric] = baseColors[index % baseColors.length];
+    });
+    
+    // Get readable metric names - use from metricCategories if needed as fallback
+    const getLocalMetricDisplayName = (metricId: string): string => {
+      try {
+        // First try to get the name from metricDefinitions
+        // Make sure metricId is a string to avoid "replace is not a function" error
+        if (typeof metricId !== 'string') {
+          console.warn(`Invalid metric ID type: ${typeof metricId}`);
+          return String(metricId || '');
+        }
+        
+        const displayName = getMetricDisplayName(metricId);
+        
+        // If we got back the same ID, try from categories
+        if (displayName === metricId) {
+          for (const category of metricCategories) {
+            const metric = category.metrics.find(m => m.id === metricId);
+            if (metric) return metric.name;
+          }
+        }
+        
+        return displayName;
+      } catch (error) {
+        console.error(`Error getting display name for metric: ${metricId}`, error);
+        // Fallback to raw ID with formatting
+        return metricId.charAt(0).toUpperCase() + metricId.slice(1).replace(/([A-Z])/g, ' $1');
+      }
+    };
+    
+    // Format Y-axis values
+    const formatYAxis = (value: number) => {
+      if (Math.abs(value) >= 1e9) {
+        return `${(value / 1e9).toFixed(1)}B`;
+      } else if (Math.abs(value) >= 1e6) {
+        return `${(value / 1e6).toFixed(1)}M`;
+      } else if (Math.abs(value) >= 1e3) {
+        return `${(value / 1e3).toFixed(1)}K`;
+      }
+      return value.toFixed(1);
+    };
+    
+    // Calculate metrics stats for total change and CAGR
+    const metricsStats = useMemo(() => {
+      if (!data || !data.length || !metrics.length) return {};
+      
+      const stats: Record<string, { totalChange: number | null; cagr: number | null }> = {};
+      
+      metrics.forEach(metric => {
+        // Extract the data points for this metric across all periods
+        const metricDataPoints = data
+          .map(entry => {
+            const metricData = entry.metrics ? 
+              entry.metrics.find((m: any) => m.name === metric) : null;
+            
+            if (metricData) {
+              // If using the original data structure with metrics array
+              return {
+                period: entry.period,
+                value: typeof metricData.value === 'number' ? 
+                  metricData.value : parseFloat(metricData.value)
+              };
+            } else if (entry[metric] !== undefined) {
+              // If using flattened data structure
+              return {
+                period: entry.period,
+                value: typeof entry[metric] === 'number' ? 
+                  entry[metric] : parseFloat(entry[metric])
+              };
+            }
+            return null;
+          })
+          .filter(point => point && !isNaN(point.value)) as { period: string; value: number }[];
+        
+        if (metricDataPoints.length >= 2) {
+          // Sort by period (assuming periods can be compared as strings)
+          metricDataPoints.sort((a, b) => {
+            // Try to parse as years first
+            const yearA = parseInt(a.period);
+            const yearB = parseInt(b.period);
+            
+            if (!isNaN(yearA) && !isNaN(yearB)) {
+              return yearA - yearB;
+            }
+            
+            // If not years, try to compare as strings
+            return a.period.localeCompare(b.period);
+          });
+          
+          // Calculate total change
+          const startValue = metricDataPoints[0].value;
+          const endValue = metricDataPoints[metricDataPoints.length - 1].value;
+          
+          // Avoid division by zero
+          const totalChange = startValue !== 0 ? 
+            ((endValue - startValue) / Math.abs(startValue)) * 100 : null;
+          
+          // Calculate years for CAGR
+          let years = metricDataPoints.length - 1; // Default to number of periods - 1
+          
+          // If periods are years, calculate actual years elapsed
+          if (!isNaN(parseInt(metricDataPoints[0].period)) && 
+              !isNaN(parseInt(metricDataPoints[metricDataPoints.length - 1].period))) {
+            years = parseInt(metricDataPoints[metricDataPoints.length - 1].period) - 
+                    parseInt(metricDataPoints[0].period);
+          }
+          
+          // Calculate CAGR only for positive values
+          const cagr = (startValue > 0 && endValue > 0 && years > 0) ? 
+            calculateCAGR(startValue, endValue, years) : null;
+          
+          stats[metric] = { totalChange, cagr };
+        } else {
+          stats[metric] = { totalChange: null, cagr: null };
+        }
+      });
+      
+      return stats;
+    }, [data, metrics]);
+    
+    // Custom legend formatter with total change and CAGR
+    const legendFormatter = (value: string) => {
+      const stats = metricsStats[value];
+      
+      // Get proper display name for the metric
+      let displayName = getLocalMetricDisplayName(value);
+      
+      // If display name is still the same as raw ID, try to format it better
+      if (displayName === value) {
+        displayName = formatRawMetricId(value);
+      }
+      
+      let result = `${ticker} - ${displayName}`;
+      
+      // Determine if the metric is quarterly or annual
+      const frequency = 
+        data && data.length > 0 && data[0].period ? 
+        (data[0].period.toLowerCase().includes('q') ? '(Quarterly)' : '') : 
+        '';
+      
+      if (frequency) {
+        result += ` ${frequency}`;
+      }
+      
+      // Get the unit for display (Millions, etc.)
+      let unit = '';
+      if (value === 'revenue' || value === 'netIncome' || value.includes('liabilities')) {
+        unit = '(Millions)';
+      }
+      
+      if (unit) {
+        result += ` ${unit}`;
+      }
+      
+      // Add total change if available
+      if (stats && stats.totalChange !== null) {
+        result += ` (Total Change: ${stats.totalChange.toFixed(2)}%)`;
+      }
+      
+      // Add CAGR if available
+      if (stats && stats.cagr !== null) {
+        result += ` (CAGR: ${stats.cagr.toFixed(2)}%)`;
+      }
+      
+      // Return the text without applying color
+      return <span style={{ color: '#000000' }}>{result}</span>;
+    };
+  
+    // Get metric display names for the subtitle
+    const metricNames = metrics.map(metricId => getLocalMetricDisplayName(metricId));
+    const metricsSubtitle = metricNames.join(', ');
+  
+    return (
+      <div className="h-full flex flex-col relative" ref={chartRef}>
+        {/* Chart Title - This will be visible in the PNG export */}
+        <div className="text-center mb-2">
+          <h3 className="text-lg font-medium text-gray-800">{chartTitle}</h3>
+          <p className="text-sm text-gray-500">{metricsSubtitle}</p>
+        </div>
+        
+        <div className="flex-grow relative">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart
+              data={data}
+              margin={{ top: 10, right: 30, left: 20, bottom: 120 }}
+              barGap={10} // Increase space between bars in the same category
+              barCategoryGap={200}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="period" 
+                angle={-45} 
+                textAnchor="end" 
+                height={60}
+                tickMargin={10}
+              />
+              <YAxis tickFormatter={formatYAxis} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend 
+                formatter={legendFormatter}
+                wrapperStyle={{ 
+                  paddingTop: 10,
+                  left: 70,
+                  bottom: 100
+                }}
+                layout="vertical"
+                align="center"
+                verticalAlign="bottom"
+                iconType="circle"
+                iconSize={12}
+              />
+              
+              {/* Render each metric */}
+              {metrics.map((metric) => {
+                // Determine if this metric should be a bar or line
+                const chartType = metricTypes[metric] || 'bar';
+                
+                // Create the appropriate chart element
+                // Calculate optimal bar size based on data length
+                // Fewer data points = thicker bars, more data points = thinner bars
+                const calculateBarSize = () => {
+                  if (!data) return 30; // Default size
+                  
+                  const barMetricsCount = metrics.filter(m => metricTypes[m] === 'bar' || !metricTypes[m]).length;
+                  
+                  // Calculate total number of bars (data points × number of bar metrics)
+                  const totalBars = data.length * barMetricsCount;
+                  if (totalBars <= 6) return 200; // Very thick for 1-3 data points
+                  if (totalBars <= 12) return 130; // Very thick for 1-3 data points
+                  if (totalBars <= 20) return 70; // Thick for 4-5 data points
+                  if (totalBars <= 35) return 40; // Medium for 6-8 data points
+                  if (totalBars <= 45) return 30; // Thinner for 9-12 data points
+                  return 25; // Very thin for 13+ data points
+                };
+                
+                const barSize = calculateBarSize();
+                
+                return chartType === 'bar' ? (
+                  <Bar 
+                    key={metric} 
+                    dataKey={(entry) => {
+                      const foundMetric = entry.metrics.find(m => m.name === metric);
+                      return foundMetric ? foundMetric.value : null;
+                    }}
+                    name={metric}
+                    fill={colorMap[metric]}
+                    barSize={barSize}
+                  />
+                ) : (
+                  <Line 
+                    key={metric} 
+                    type="monotone" 
+                    dataKey={(entry) => {
+                      const foundMetric = entry.metrics.find(m => m.name === metric);
+                      return foundMetric ? foundMetric.value : null;
+                    }}
+                    name={metric}
+                    stroke={colorMap[metric]}
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                );
+              })}
+            </ComposedChart>
+          </ResponsiveContainer>
+          
+          {/* Logo in the bottom right corner with text */}
+          <div className="absolute bottom-0 right-0 flex items-center">
+            <p className="text-gray-600 font-medium mr-2">Powered by</p>
+            <img 
+              src="/mngrlogo.png" 
+              alt="MNGR Logo" 
+              className="h-32 w-auto" 
+              style={{ opacity: 0.8 }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  export default MetricChart;

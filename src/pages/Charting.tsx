@@ -324,7 +324,7 @@ const Charting = () => {
                 />
                 
                 {/* Add the ref to this div */}
-                <div className="h-[500px]" ref={chartContainerRef}>
+                <div className="h-[800px]" ref={chartContainerRef}>
                   <MetricChart 
                     data={getChartData() || []}
                     metrics={selectedMetrics.map(m => m.id)}

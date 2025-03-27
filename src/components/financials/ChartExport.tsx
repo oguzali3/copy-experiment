@@ -49,16 +49,16 @@ export const ChartExport: React.FC<ChartExportProps> = ({
       const originalPosition = chartRef.current.style.position;
       
       // Set fixed dimensions for export (800x567)
-      chartRef.current.style.width = '800px';
-      chartRef.current.style.height = '567px';
+      chartRef.current.style.width = '1600px';
+      chartRef.current.style.height = '1134px';
       chartRef.current.style.position = 'relative';
       
       // Small delay to ensure rendering is complete with new dimensions
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const canvas = await html2canvas(chartRef.current, {
-        width: 800,
-        height: 567,
+        width: 1600,
+        height: 1134,
         scale: 1, // No scaling needed since we're setting exact dimensions
         backgroundColor: '#FFFFFF',
         logging: false,
