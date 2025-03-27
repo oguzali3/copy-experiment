@@ -6,9 +6,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CategoryMetricsPanel, Metric } from"@/components/CategoryMetricsPanel";
 import { metricCategories } from '@/data/metricCategories';
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, BarChart3, LineChart, Cog, Eye, EyeOff, Move } from "lucide-react";
 import { useRef } from "react";
 import { ChartExport } from "@/components/financials/ChartExport";
+import { getMetricDisplayName } from "@/utils/metricDefinitions";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 import { 
   transformSingleMetricData, 
@@ -20,6 +24,167 @@ import {
 // API base URL
 const API_BASE_URL = "http://localhost:4000/api/analysis";
 
+// Settings Popover Component
+const MetricSettingsPopover = ({ metric, settings, onSettingChange }) => {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8"
+          title="Metric Settings"
+        >
+          <Cog size={16} />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-3">
+        <div className="space-y-2">
+          <h4 className="font-medium text-sm">{metric.name} - Statistics</h4>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id={`avg-${metric.id}`} 
+                checked={settings[metric.id]?.average || false} 
+                onCheckedChange={(checked) => 
+                  onSettingChange(metric.id, 'average', !!checked)
+                }
+              />
+              <Label htmlFor={`avg-${metric.id}`} className="text-sm">Show Average</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id={`median-${metric.id}`} 
+                checked={settings[metric.id]?.median || false} 
+                onCheckedChange={(checked) => 
+                  onSettingChange(metric.id, 'median', !!checked)
+                }
+              />
+              <Label htmlFor={`median-${metric.id}`} className="text-sm">Show Median</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id={`min-${metric.id}`} 
+                checked={settings[metric.id]?.min || false} 
+                onCheckedChange={(checked) => 
+                  onSettingChange(metric.id, 'min', !!checked)
+                }
+              />
+              <Label htmlFor={`min-${metric.id}`} className="text-sm">Show Minimum</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id={`max-${metric.id}`} 
+                checked={settings[metric.id]?.max || false} 
+                onCheckedChange={(checked) => 
+                  onSettingChange(metric.id, 'max', !!checked)
+                }
+              />
+              <Label htmlFor={`max-${metric.id}`} className="text-sm">Show Maximum</Label>
+            </div>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+// SelectedMetricsList Component
+const SelectedMetricsList = ({ 
+  metrics, 
+  ticker, 
+  metricTypes, 
+  onMetricTypeChange, 
+  onRemoveMetric,
+  onToggleVisibility,
+  metricVisibility = {},
+  metricSettings = {},
+  onMetricSettingChange
+}) => {
+  if (!metrics.length) {
+    return (
+      <div className="text-center text-gray-500 p-4">
+        No metrics selected. Please select metrics to visualize.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      {metrics.map((metric) => {
+        const displayName = metric.name || getMetricDisplayName(metric.id);
+        const isVisible = metricVisibility[metric.id] !== false; // Default to visible
+
+        return (
+          <div 
+            key={metric.id} 
+            className="flex items-center justify-between py-3 px-4 border border-gray-200 rounded-md bg-white"
+          >
+            <div className="flex items-center gap-2 flex-grow">
+              <Move size={16} className="text-gray-400 cursor-grab" />
+              <span className="font-medium text-gray-800">{displayName}</span>
+            </div>
+            
+            <div className="flex items-center gap-1">
+              {/* Chart Type Selector */}
+              <Button
+                variant={metricTypes[metric.id] === 'bar' ? 'default' : 'outline'}
+                size="icon"
+                onClick={() => onMetricTypeChange(metric.id, 'bar')}
+                className="h-8 w-8"
+                title="Bar Chart"
+              >
+                <BarChart3 size={16} />
+              </Button>
+              
+              <Button
+                variant={metricTypes[metric.id] === 'line' ? 'default' : 'outline'}
+                size="icon"
+                onClick={() => onMetricTypeChange(metric.id, 'line')}
+                className="h-8 w-8"
+                title="Line Chart"
+              >
+                <LineChart size={16} />
+              </Button>
+              
+              {/* Settings Button with Popover */}
+              <MetricSettingsPopover 
+                metric={metric}
+                settings={metricSettings}
+                onSettingChange={onMetricSettingChange}
+              />
+              
+              {/* Visibility Toggle (if handler provided) */}
+              {onToggleVisibility && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => onToggleVisibility(metric.id)}
+                  className="h-8 w-8"
+                  title={isVisible ? "Hide Metric" : "Show Metric"}
+                >
+                  {isVisible ? <Eye size={16} /> : <EyeOff size={16} />}
+                </Button>
+              )}
+              
+              {/* Remove Button */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => onRemoveMetric(metric.id)}
+                className="h-8 w-8 text-gray-500 hover:text-red-500"
+                title="Remove Metric"
+              >
+                <X size={16} />
+              </Button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const Charting = () => {
   // State for selected metrics and company
   const [selectedMetrics, setSelectedMetrics] = useState<Metric[]>([]);
@@ -27,6 +192,17 @@ const Charting = () => {
   const [sliderValue, setSliderValue] = useState([0, 14]);
   const [metricTypes, setMetricTypes] = useState<Record<string, 'bar' | 'line'>>({});
   const [selectedCategory, setSelectedCategory] = useState<string>("popular");
+  
+  // State for metric visibility
+  const [metricVisibility, setMetricVisibility] = useState<Record<string, boolean>>({});
+  
+  // State for metric statistics settings
+  const [metricSettings, setMetricSettings] = useState<Record<string, {
+    average?: boolean;
+    median?: boolean;
+    min?: boolean;
+    max?: boolean;
+  }>>({});
   
   // State for API data
   const [metricData, setMetricData] = useState<any[]>([]);
@@ -40,18 +216,45 @@ const Charting = () => {
     "2011", "2012", "2013", "2014", "2015", "2016", 
     "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"
   ];
+  
   const handleMetricSelect = (metric: Metric) => {
     if (!selectedMetrics.some(m => m.id === metric.id)) {
       setSelectedMetrics(prev => [...prev, metric]);
+      // Set default visibility to true for new metrics
+      setMetricVisibility(prev => ({
+        ...prev,
+        [metric.id]: true
+      }));
+      // Initialize settings for new metric
+      setMetricSettings(prev => ({
+        ...prev,
+        [metric.id]: {
+          average: false,
+          median: false,
+          min: false,
+          max: false
+        }
+      }));
     }
   };
 
   const handleRemoveMetric = (metricId: string) => {
     setSelectedMetrics(prev => prev.filter(m => m.id !== metricId));
+    // Clean up metricTypes and visibility when removing a metric
     setMetricTypes(prev => {
       const newTypes = { ...prev };
       delete newTypes[metricId];
       return newTypes;
+    });
+    setMetricVisibility(prev => {
+      const newVisibility = { ...prev };
+      delete newVisibility[metricId];
+      return newVisibility;
+    });
+    setMetricSettings(prev => {
+      const newSettings = { ...prev };
+      delete newSettings[metricId];
+      return newSettings;
     });
   };
 
@@ -67,6 +270,23 @@ const Charting = () => {
     setMetricTypes(prev => ({
       ...prev,
       [metric]: type
+    }));
+  };
+
+  const handleToggleVisibility = (metricId: string) => {
+    setMetricVisibility(prev => ({ 
+      ...prev, 
+      [metricId]: !prev[metricId] 
+    }));
+  };
+
+  const handleMetricSettingChange = (metricId: string, setting: string, value: boolean) => {
+    setMetricSettings(prev => ({
+      ...prev,
+      [metricId]: {
+        ...prev[metricId],
+        [setting]: value
+      }
     }));
   };
 
@@ -185,7 +405,6 @@ const Charting = () => {
     console.log('Selected years:', years);
     
     // Filter data based on the selected time range
-    // NOTE: Log the periods to see what format they're in
     console.log('Periods in data:', metricData.map(item => item.period));
     
     const filteredData = metricData.filter(item => {
@@ -194,9 +413,63 @@ const Charting = () => {
     });
     
     console.log('Filtered data length:', filteredData.length);
-    console.log('First filtered data item:', filteredData[0]);
     
-    return filteredData;
+    // Add statistics if enabled in settings
+    const enhancedData = [...filteredData];
+    
+    // Calculate statistics for each metric if enabled
+    selectedMetrics.forEach(metric => {
+      const settings = metricSettings[metric.id];
+      if (!settings) return;
+      
+      // Only process if any statistics are enabled
+      if (settings.average || settings.median || settings.min || settings.max) {
+        // Extract values for this metric across all periods
+        const values = filteredData
+          .map(item => {
+            const metricItem = item.metrics.find(m => m.name === metric.id);
+            return metricItem ? metricItem.value : null;
+          })
+          .filter(val => val !== null && !isNaN(val));
+        
+        if (values.length === 0) return;
+        
+        // Calculate statistics
+        const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+        
+        // Sort for median and min/max
+        const sortedValues = [...values].sort((a, b) => a - b);
+        const min = sortedValues[0];
+        const max = sortedValues[sortedValues.length - 1];
+        
+        // Calculate median
+        const mid = Math.floor(sortedValues.length / 2);
+        const median = sortedValues.length % 2 === 0
+          ? (sortedValues[mid - 1] + sortedValues[mid]) / 2
+          : sortedValues[mid];
+        
+        // Add reference lines to chart data
+        // This would be processed by the chart component
+        enhancedData.forEach(dataPoint => {
+          if (!dataPoint.statistics) dataPoint.statistics = {};
+          if (!dataPoint.statistics[metric.id]) dataPoint.statistics[metric.id] = {};
+          
+          if (settings.average) dataPoint.statistics[metric.id].average = avg;
+          if (settings.median) dataPoint.statistics[metric.id].median = median;
+          if (settings.min) dataPoint.statistics[metric.id].min = min;
+          if (settings.max) dataPoint.statistics[metric.id].max = max;
+        });
+      }
+    });
+    
+    return enhancedData;
+  };
+
+  // Get only visible metrics for chart
+  const getVisibleMetrics = () => {
+    return selectedMetrics
+      .filter(metric => metricVisibility[metric.id] !== false)
+      .map(metric => metric.id);
   };
 
   return (
@@ -238,22 +511,22 @@ const Charting = () => {
             </div>
           </div>
           
-          {/* Selected Metrics */}
+          {/* Selected Metrics - New Layout */}
           {selectedMetrics.length > 0 && (
             <div className="mt-4">
               <h2 className="text-sm font-medium mb-2 text-gray-600">Selected Metrics</h2>
-              <div className="flex flex-wrap gap-2">
-                {selectedMetrics.map((metric) => (
-                  <div key={metric.id} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
-                    {metric.name}
-                    <button 
-                      className="ml-1 text-blue-600 hover:text-blue-800"
-                      onClick={() => handleRemoveMetric(metric.id)}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <SelectedMetricsList
+                  metrics={selectedMetrics}
+                  ticker={selectedCompany?.ticker || ''}
+                  metricTypes={metricTypes}
+                  onMetricTypeChange={handleMetricTypeChange}
+                  onRemoveMetric={handleRemoveMetric}
+                  onToggleVisibility={handleToggleVisibility}
+                  metricVisibility={metricVisibility}
+                  metricSettings={metricSettings}
+                  onMetricSettingChange={handleMetricSettingChange}
+                />
               </div>
             </div>
           )}
@@ -292,20 +565,11 @@ const Charting = () => {
             {selectedCompany && selectedMetrics.length > 0 && getChartData() && (
               <>
                 <div className="flex justify-between items-center">
-                  {selectedMetrics.length === 1 && (
-                    <Select 
-                      value={metricTypes[selectedMetrics[0].id]} 
-                      onValueChange={(value: "bar" | "line") => handleMetricTypeChange(selectedMetrics[0].id, value)}
-                    >
-                      <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="Chart Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="bar">Bar Chart</SelectItem>
-                        <SelectItem value="line">Line Chart</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">
+                      {getVisibleMetrics().length} of {selectedMetrics.length} metrics visible
+                    </span>
+                  </div>
                   <ChartExport 
                     chartRef={chartContainerRef}
                     fileName="financial-metrics"
@@ -314,26 +578,25 @@ const Charting = () => {
                   />
                 </div>
                 
-                
                 <TimeRangePanel
                   startDate={`December 31, 20${19 + sliderValue[0]}`}
                   endDate={`December 31, 20${19 + sliderValue[1]}`}
                   sliderValue={sliderValue}
                   onSliderChange={handleSliderChange}
                   timePeriods={timePeriods}
+                  timeFrame={period === 'quarter' ? 'quarterly' : 'annual'}
                 />
                 
-                {/* Add the ref to this div */}
                 <div className="h-[800px]" ref={chartContainerRef}>
                   <MetricChart 
                     data={getChartData() || []}
-                    metrics={selectedMetrics.map(m => m.id)}
+                    metrics={getVisibleMetrics()}
                     ticker={selectedCompany.ticker}
                     metricTypes={metricTypes}
                     onMetricTypeChange={handleMetricTypeChange}
                     companyName={selectedCompany.name}
                     title={chartTitle || `${selectedCompany.name} (${selectedCompany.ticker})`}
-
+                    metricSettings={metricSettings}
                   />
                 </div>
               </>

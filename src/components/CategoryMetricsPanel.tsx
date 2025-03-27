@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 export interface MetricCategory {
   id: string;
   name: string;
-  icon: React.ReactNode;
+  icon: string; // Changed from React.ReactNode to string for Bootstrap icon classes
   metrics: Metric[];
 }
 
@@ -65,7 +65,9 @@ export const CategoryMetricsPanel: React.FC<CategoryMetricsPanelProps> = ({
             }`}
             onClick={() => onCategorySelect && onCategorySelect(category.id)}
           >
-            <div className="text-xl mb-1">{category.icon}</div>
+            <div className="text-xl mb-1">
+              <i className={category.icon}></i>
+            </div>
             <div className="text-xs font-medium">{category.name}</div>
           </button>
         ))}

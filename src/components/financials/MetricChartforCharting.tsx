@@ -2,10 +2,12 @@
 const calculateCAGR = (startValue: number, endValue: number, years: number): number => {
     if (startValue <= 0 || endValue <= 0 || years <= 0) return 0;
     return ((Math.pow(endValue / startValue, 1 / years) - 1) * 100);
-  };import React, { useRef, useMemo } from 'react';
+  };
+  
+  import React, { useRef, useMemo } from 'react';
   import { 
     ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, 
-    CartesianGrid, Tooltip, Legend, TooltipProps
+    CartesianGrid, Tooltip, Legend, TooltipProps, ReferenceLine
   } from 'recharts';
   import { metricCategories } from '@/data/metricCategories';
   import { getMetricDisplayName, getMetricFormat } from '@/utils/metricDefinitions';
@@ -89,6 +91,12 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
     onMetricTypeChange: (metric: string, type: 'bar' | 'line') => void;
     companyName?: string;
     title?: string; // Optional custom title
+    metricSettings?: Record<string, {
+      average?: boolean;
+      median?: boolean;
+      min?: boolean;
+      max?: boolean;
+    }>;
   }
   
   export const MetricChart: React.FC<MetricChartProps> = ({ 
@@ -98,9 +106,13 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
     metricTypes,
     onMetricTypeChange,
     companyName,
-    title
+    title,
+    metricSettings = {}
   }) => {
     const chartRef = useRef<HTMLDivElement>(null);
+    
+    // Console logs for debugging
+    console.log("MetricSettings received:", metricSettings);
     
     // Generate default title if none provided
     const chartTitle = title || `${companyName || ticker} - Financial Metrics`;
@@ -234,6 +246,79 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
       return stats;
     }, [data, metrics]);
     
+    // Calculate statistics for each metric (average, median, min, max)
+    const metricStatValues = useMemo(() => {
+      const stats: Record<string, {
+        average?: number;
+        median?: number;
+        min?: number;
+        max?: number;
+      }> = {};
+      
+      // Only process if we have data, metrics, and settings
+      if (!data?.length || !metrics?.length) return stats;
+      
+      metrics.forEach(metricId => {
+        // Skip if no settings enabled for this metric
+        const settings = metricSettings[metricId];
+        if (!settings) return;
+        
+        // Only proceed if any statistic is enabled
+        if (settings.average || settings.median || settings.min || settings.max) {
+          // Extract values for this metric
+          const values: number[] = [];
+          
+          data.forEach(item => {
+            let metricValue = null;
+            
+            // Handle both data structures (nested metrics array or flat)
+            if (item.metrics) {
+              const metricItem = item.metrics.find(m => m.name === metricId);
+              if (metricItem) metricValue = metricItem.value;
+            } else if (item[metricId] !== undefined) {
+              metricValue = item[metricId];
+            }
+            
+            if (metricValue !== null && metricValue !== undefined && !isNaN(metricValue)) {
+              values.push(typeof metricValue === 'number' ? metricValue : parseFloat(metricValue));
+            }
+          });
+          
+          // Skip if no valid values found
+          if (values.length === 0) return;
+          
+          stats[metricId] = {};
+          
+          // Calculate statistics
+          if (settings.average) {
+            stats[metricId].average = values.reduce((sum, val) => sum + val, 0) / values.length;
+          }
+          
+          if (settings.median || settings.min || settings.max) {
+            const sortedValues = [...values].sort((a, b) => a - b);
+            
+            if (settings.min) {
+              stats[metricId].min = sortedValues[0];
+            }
+            
+            if (settings.max) {
+              stats[metricId].max = sortedValues[sortedValues.length - 1];
+            }
+            
+            if (settings.median) {
+              const mid = Math.floor(sortedValues.length / 2);
+              stats[metricId].median = sortedValues.length % 2 === 0
+                ? (sortedValues[mid - 1] + sortedValues[mid]) / 2
+                : sortedValues[mid];
+            }
+          }
+        }
+      });
+      
+      console.log("Calculated metric statistics:", stats);
+      return stats;
+    }, [data, metrics, metricSettings]);
+    
     // Custom legend formatter with total change and CAGR
     const legendFormatter = (value: string) => {
       const stats = metricsStats[value];
@@ -286,6 +371,98 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
     const metricNames = metrics.map(metricId => getLocalMetricDisplayName(metricId));
     const metricsSubtitle = metricNames.join(', ');
   
+    // Generate reference lines for statistics
+    const renderReferenceLines = () => {
+      const referenceLines = [];
+      
+      console.log("Generating reference lines for metrics:", metrics);
+      
+      // Add a test reference line for debugging
+      // referenceLines.push(
+      //   <ReferenceLine 
+      //     key="test-line"
+      //     y={100} // Hardcoded value that should be visible
+      //     stroke="red" 
+      //     strokeWidth={2}
+      //     strokeDasharray="3 3"
+      //     label={{
+      //       value: "Test Line",
+      //       position: 'right',
+      //       fill: 'red',
+      //     }} 
+      //   />
+      // );
+      
+      metrics.forEach(metricId => {
+        const stats = metricStatValues[metricId];
+        if (!stats) {
+          console.log(`No stats found for metric: ${metricId}`);
+          return;
+        }
+        
+        console.log(`Adding reference lines for: ${metricId}`, stats);
+        
+        const color = colorMap[metricId];
+        
+        // Helper to format large numbers as B, M, K
+        const formatStatValue = (value: number): string => {
+            if (Math.abs(value) >= 1e9) {
+            return `${(value / 1e9).toFixed(2)}B`;
+            } else if (Math.abs(value) >= 1e6) {
+            return `${(value / 1e6).toFixed(2)}M`;
+            } else if (Math.abs(value) >= 1e3) {
+            return `${(value / 1e3).toFixed(2)}K`;
+            }
+            return value.toFixed(2);
+        };
+        
+        // Update the addReferenceLine function in renderReferenceLines()
+        const addReferenceLine = (value: number, label: string, dash: string = '3 3') => {
+            // Format the value with appropriate abbreviation
+            const formattedValue = formatStatValue(value);
+            
+            referenceLines.push(
+            <ReferenceLine 
+                key={`${metricId}-${label}`}
+                y={value} 
+                stroke={color} 
+                strokeWidth={1.5}
+                strokeDasharray={dash}
+                ifOverflow="extendDomain"
+                label={{
+                value: `${label}: ${formattedValue}`,
+                position: 'right',
+                fill: color,
+                fontSize: 11,
+                offset: 10
+                }} 
+                style={{ zIndex: 1000 }}
+            />
+            );
+        };
+        
+        // Add reference lines for each enabled statistic
+        if (stats.average !== undefined) {
+          addReferenceLine(stats.average, 'Avg');
+        }
+        
+        if (stats.median !== undefined) {
+          addReferenceLine(stats.median, 'Median', '5 5');
+        }
+        
+        if (stats.min !== undefined) {
+          addReferenceLine(stats.min, 'Min', '2 2');
+        }
+        
+        if (stats.max !== undefined) {
+          addReferenceLine(stats.max, 'Max', '2 2');
+        }
+      });
+      
+      console.log("Reference lines created:", referenceLines.length);
+      return referenceLines;
+    };
+  
     return (
       <div className="h-full flex flex-col relative" ref={chartRef}>
         {/* Chart Title - This will be visible in the PNG export */}
@@ -298,7 +475,7 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={data}
-              margin={{ top: 10, right: 30, left: 20, bottom: 120 }}
+              margin={{ top: 10, right: 120, left: 20, bottom: 120 }}
               barGap={10} // Increase space between bars in the same category
               barCategoryGap={200}
             >
@@ -325,6 +502,12 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
                 iconType="circle"
                 iconSize={12}
               />
+              
+              {/* Reference line at y=0 if any metrics might have negative values */}
+              <ReferenceLine y={0} stroke="#777" strokeDasharray="3 3" />
+              
+              {/* Statistical reference lines */}
+              {renderReferenceLines()}
               
               {/* Render each metric */}
               {metrics.map((metric) => {
@@ -365,7 +548,7 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
                 ) : (
                   <Line 
                     key={metric} 
-                    type="monotone" 
+                    type="linear" 
                     dataKey={(entry) => {
                       const foundMetric = entry.metrics.find(m => m.name === metric);
                       return foundMetric ? foundMetric.value : null;

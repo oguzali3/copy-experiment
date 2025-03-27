@@ -2,13 +2,13 @@ import { MetricCategory } from "@/components/CategoryMetricsPanel";
 
 // Icons for categories (using simple emoji for now, replace with actual icons)
 export const CategoryIcons = {
-  Popular: "🔥",
-  IncomeStatement: "📊",
-  BalanceSheet: "⚖️",
-  CashFlow: "💰",
-  Ratios: "📈",
-  KeyMetrics: "🔑"
+  IncomeStatement: "bi bi-bar-chart-fill",
+  BalanceSheet: "bi bi-clipboard2-data",
+  CashFlow: "bi bi-cash-stack",
+  Ratios: "bi bi-graph-up-arrow",
+  KeyMetrics: "bi bi-key"
 };
+
 
 // Define all available metric categories with comprehensive metrics from your database entities
 export const metricCategories: MetricCategory[] = [
@@ -17,6 +17,7 @@ export const metricCategories: MetricCategory[] = [
     id: "income_statement",
     name: "Income Statement",
     icon: CategoryIcons.IncomeStatement,
+    
     metrics: [
       { id: "revenue", name: "Revenue", table: "income_statements" },
       { id: "costOfRevenue", name: "Cost of Revenue", table: "income_statements" },
