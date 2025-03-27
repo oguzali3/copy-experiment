@@ -1,193 +1,245 @@
-import { useState, useEffect } from "react";
+// src/components/watchlist/WatchlistContent.tsx
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { WatchlistEmpty } from "./WatchlistEmpty";
 import { WatchlistCreate } from "./WatchlistCreate";
 import { WatchlistView } from "./WatchlistView";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Watchlist, WatchlistStock } from "@/types/watchlist";
+import { useWatchlist } from "@/contexts/WatchlistContext";
+import { useNavigate } from "react-router-dom";
 
 export const WatchlistContent = () => {
-  const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
-  const [selectedWatchlist, setSelectedWatchlist] = useState<Watchlist | null>(null);
+  const navigate = useNavigate();
+  const { 
+    watchlists, 
+    selectedWatchlist, 
+    availableMetrics,
+    categorizedMetrics, 
+    isLoading, 
+    authError,
+    setSelectedWatchlist,
+    fetchWatchlists,
+    createWatchlist,
+    updateWatchlist,
+    deleteWatchlist,
+    addStock,
+    deleteStock,
+    refreshMetrics,
+    addMetric,
+    removeMetric
+  } = useWatchlist();
+
   const [isCreating, setIsCreating] = useState(false);
-  const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingOperation, setProcessingOperation] = useState("");
+  
+  // Add a ref to track if we've already initiated a fetch
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
-    fetchWatchlists();
-  }, []);
-
-  const fetchWatchlists = async () => {
-    try {
-      const { data: watchlistsData, error: watchlistsError } = await supabase
-        .from('watchlists')
-        .select('*');
-
-      if (watchlistsError) throw watchlistsError;
-
-      const watchlistsWithStocks = await Promise.all(
-        watchlistsData.map(async (watchlist) => {
-          const { data: stocksData, error: stocksError } = await supabase
-            .from('watchlist_stocks')
-            .select('*')
-            .eq('watchlist_id', watchlist.id);
-
-          if (stocksError) throw stocksError;
-
-          return {
-            ...watchlist,
-            stocks: (stocksData || []).map((stock: WatchlistStock) => ({
-              ...stock,
-              price: 0, // These will be updated later with real data
-              change: 0,
-              marketCap: 0,
-            })),
-            selectedMetrics: [],
-          };
-        })
-      );
-
-      setWatchlists(watchlistsWithStocks);
-    } catch (error) {
-      console.error('Error fetching watchlists:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch watchlists",
-        variant: "destructive",
-      });
+    // Only fetch once when the component mounts
+    if (!hasFetchedRef.current && !isLoading) {
+      hasFetchedRef.current = true;
+      fetchWatchlists();
     }
-  };
+  }, [fetchWatchlists, isLoading]);
 
+  // Handle auth error
+  if (authError) {
+    return (
+      <div className="text-center text-red-500 p-8">
+        {authError}
+        <div className="mt-4">
+          <Button 
+            onClick={() => navigate("/signin")}
+            className="bg-[#f5a623] hover:bg-[#f5a623]/90 text-white"
+          >
+            Sign In
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle creating a new watchlist
   const handleCreateWatchlist = async (name: string) => {
+    setIsProcessing(true);
+    setProcessingOperation("Creating watchlist");
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('No user found');
-
-      const { data, error } = await supabase
-        .from('watchlists')
-        .insert([
-          { name, user_id: user.user.id }
-        ])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const newWatchlist: Watchlist = {
-        id: data.id,
-        name: data.name,
-        user_id: data.user_id,
-        stocks: [],
-        selectedMetrics: [],
-        created_at: data.created_at,
-        updated_at: data.updated_at
-      };
-
-      setWatchlists([...watchlists, newWatchlist]);
-      setSelectedWatchlist(newWatchlist);
+      await createWatchlist(name);
       setIsCreating(false);
-      toast({
-        title: "Success",
-        description: "Watchlist created successfully",
-      });
     } catch (error) {
-      console.error('Error creating watchlist:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create watchlist",
-        variant: "destructive",
-      });
+      console.error('Error in handleCreateWatchlist:', error);
+    } finally {
+      setIsProcessing(false);
+      setProcessingOperation("");
     }
   };
 
+  // Handle deleting a watchlist
   const handleDeleteWatchlist = async (id: string) => {
+    setIsProcessing(true);
+    setProcessingOperation("Deleting watchlist");
     try {
-      const { error } = await supabase
-        .from('watchlists')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setWatchlists(watchlists.filter(w => w.id !== id));
-      if (selectedWatchlist?.id === id) {
-        setSelectedWatchlist(null);
-      }
-      toast({
-        title: "Success",
-        description: "Watchlist deleted successfully",
-      });
+      await deleteWatchlist(id);
     } catch (error) {
-      console.error('Error deleting watchlist:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete watchlist",
-        variant: "destructive",
-      });
+      console.error('Error in handleDeleteWatchlist:', error);
+    } finally {
+      setIsProcessing(false);
+      setProcessingOperation("");
     }
   };
 
-  const handleUpdateWatchlist = async (updatedWatchlist: Watchlist) => {
+  // Handle updating a watchlist
+  const handleUpdateWatchlist = async (updatedWatchlist) => {
+    setIsProcessing(true);
+    setProcessingOperation("Updating watchlist");
     try {
-      const { error } = await supabase
-        .from('watchlists')
-        .update({ name: updatedWatchlist.name })
-        .eq('id', updatedWatchlist.id);
-
-      if (error) throw error;
-
-      setWatchlists(watchlists.map(w => 
-        w.id === updatedWatchlist.id ? updatedWatchlist : w
-      ));
-      setSelectedWatchlist(updatedWatchlist);
-      toast({
-        title: "Success",
-        description: "Watchlist updated successfully",
-      });
+      await updateWatchlist(updatedWatchlist);
     } catch (error) {
-      console.error('Error updating watchlist:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update watchlist",
-        variant: "destructive",
-      });
+      console.error('Error in handleUpdateWatchlist:', error);
+    } finally {
+      setIsProcessing(false);
+      setProcessingOperation("");
     }
   };
 
+  // Handle adding a stock
+  const handleAddStock = async (stock) => {
+    try {
+      await addStock(stock);
+    } catch (error) {
+      console.error('Error in handleAddStock:', error);
+    }
+  };
+
+  // Handle deleting a stock
+  const handleDeleteStock = async (ticker) => {
+    try {
+      await deleteStock(ticker);
+    } catch (error) {
+      console.error('Error in handleDeleteStock:', error);
+    }
+  };
+
+  // Handle refreshing metrics
+  const handleRefreshMetrics = async () => {
+    try {
+      await refreshMetrics();
+    } catch (error) {
+      console.error('Error in handleRefreshMetrics:', error);
+    }
+  };
+
+  // Handle adding a metric
+  const handleAddMetric = async (metricId) => {
+    try {
+      await addMetric(metricId);
+    } catch (error) {
+      console.error('Error in handleAddMetric:', error);
+    }
+  };
+
+  // Handle removing a metric
+  const handleRemoveMetric = async (metricId) => {
+    try {
+      await removeMetric(metricId);
+    } catch (error) {
+      console.error('Error in handleRemoveMetric:', error);
+    }
+  };
+
+  // Loading state
+  if (isLoading && watchlists.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Empty state - no watchlists
   if (watchlists.length === 0 && !isCreating) {
     return <WatchlistEmpty onCreateClick={() => setIsCreating(true)} />;
   }
 
+  // Create state - creating a new watchlist
   if (isCreating) {
     return (
-      <WatchlistCreate 
-        onSubmit={handleCreateWatchlist}
-        onCancel={() => setIsCreating(false)}
-      />
+      <div className="relative">
+        {/* Loading overlay for operations */}
+        {isProcessing && (
+          <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
+            <div className="bg-white p-4 rounded-lg shadow-lg">
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                <span>{processingOperation || "Processing..."}</span>
+              </div>
+            </div>
+          </div>
+        )}
+        <WatchlistCreate 
+          onSubmit={handleCreateWatchlist}
+          onCancel={() => setIsCreating(false)}
+          isSubmitting={isProcessing}
+        />
+      </div>
     );
   }
 
+  // Main view - watchlist tabs and content
   return (
-    <div className="space-y-6">
-      <div className="flex gap-2 border-b pb-4">
+    <div className="space-y-6 relative">
+      {/* Processing overlay */}
+      {isProcessing && (
+        <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg shadow-lg">
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+              <span>{processingOperation || "Processing..."}</span>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Watchlist tabs */}
+      <div className="flex gap-2 border-b pb-4 overflow-x-auto">
         {watchlists.map((watchlist) => (
           <Button
             key={watchlist.id}
             variant={selectedWatchlist?.id === watchlist.id ? "default" : "ghost"}
             onClick={() => setSelectedWatchlist(watchlist)}
             className={selectedWatchlist?.id === watchlist.id ? "bg-[#f5a623] hover:bg-[#f5a623]/90 text-white" : ""}
+            disabled={isProcessing}
           >
             {watchlist.name}
           </Button>
         ))}
+        <Button 
+          variant="outline" 
+          className="text-green-600 border-green-600"
+          onClick={() => setIsCreating(true)}
+          disabled={isProcessing}
+        >
+          + New Watchlist
+        </Button>
       </div>
 
+      {/* Selected watchlist view - passing categorizedMetrics */}
       {selectedWatchlist && (
         <WatchlistView
           watchlist={selectedWatchlist}
+          availableMetrics={availableMetrics}
+          categorizedMetrics={categorizedMetrics}
+          isLoading={isLoading || isProcessing}
           onAddWatchlist={() => setIsCreating(true)}
           onDeleteWatchlist={handleDeleteWatchlist}
           onUpdateWatchlist={handleUpdateWatchlist}
+          onAddStock={handleAddStock}
+          onDeleteStock={handleDeleteStock}
+          onRefreshMetrics={handleRefreshMetrics}
+          onAddMetric={handleAddMetric}
+          onRemoveMetric={handleRemoveMetric}
         />
       )}
     </div>

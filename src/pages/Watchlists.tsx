@@ -1,7 +1,13 @@
+// src/pages/Watchlists.tsx
 import { WatchlistContent } from "@/components/watchlist/WatchlistContent";
+import { WatchlistProvider } from "@/contexts/WatchlistContext";
 
-const Watchlists = () => {
-  return <WatchlistContent />;
+const WatchlistsPage = () => {
+  return (
+    <WatchlistProvider>
+      <WatchlistContent />
+    </WatchlistProvider>
+  );
 };
 
-export default Watchlists;
+export default WatchlistsPage;
