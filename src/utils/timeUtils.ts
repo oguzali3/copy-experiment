@@ -1,4 +1,4 @@
-// timeUtils.ts - Utilities for handling time periods in financial charts
+// timeUtils.ts - Utilities for handling time periods in financial charts with TTM support
 
 /**
  * Extracts time periods from API response data based on period type
@@ -11,14 +11,23 @@
       return [];
     }
   
-    // Extract all unique dates from the data
-    const dates = data.map(item => new Date(item.date));
+    // Create a set to store unique formatted periods (in case there are duplicates)
+    const uniquePeriods = new Set<string>();
+    
+    // First handle special cases like TTM
+    data.forEach(item => {
+      if (item.period === 'TTM') {
+        uniquePeriods.add('TTM');
+      }
+    });
+    
+    // Extract all dates from regular periods
+    const dates = data
+      .filter(item => item.period !== 'TTM')
+      .map(item => new Date(item.date));
     
     // Sort dates chronologically (oldest to newest)
     dates.sort((a, b) => a.getTime() - b.getTime());
-    
-    // Create a set to store unique formatted periods (in case there are duplicates)
-    const uniquePeriods = new Set<string>();
     
     // Format the dates based on period type and add to set
     dates.forEach(date => {
@@ -34,7 +43,7 @@
     });
     
     // Convert the set to an array and sort
-    let periodArray = Array.from(uniquePeriods);
+    let periodArray = Array.from(uniquePeriods).filter(p => p !== 'TTM');
     
     if (periodType === 'annual') {
       // For annual periods, sort numerically
@@ -55,11 +64,38 @@
       });
     }
     
+    // If TTM exists, add it at the end
+    if (uniquePeriods.has('TTM')) {
+      periodArray.push('TTM');
+    }
+    
     return periodArray;
   };
   
   /**
-   * Helper function to get a default range of time periods if API data isn't available yet
+   * Format a date string to a period identifier
+   * @param dateString Date string from API
+   * @param periodType 'annual' or 'quarter'
+   * @returns Formatted period identifier
+   */
+  export const getPeriodIdentifier = (dateString: string, periodType: 'annual' | 'quarter', apiPeriod?: string): string => {
+    // Special case for TTM
+    if (apiPeriod === 'TTM') {
+      return 'TTM';
+    }
+    
+    const date = new Date(dateString);
+    if (periodType === 'annual') {
+      return date.getFullYear().toString();
+    } else {
+      const month = date.toLocaleString('default', { month: 'short' });
+      const year = date.getFullYear().toString().slice(-2);
+      return `${month} ${year}`;
+    }
+  };
+  
+  /**
+   * Get default time periods when no data is available
    * @param periodType 'annual' or 'quarter'
    * @returns Array of default period strings
    */
@@ -67,8 +103,10 @@
     const currentYear = new Date().getFullYear();
     
     if (periodType === 'annual') {
-      // Generate last 14 years by default for annual
-      return Array.from({ length: 14 }, (_, i) => (currentYear - 13 + i).toString());
+      // Generate last 14 years by default for annual (plus TTM)
+      const years = Array.from({ length: 14 }, (_, i) => (currentYear - 13 + i).toString());
+      years.push('TTM');
+      return years;
     } else {
       // Generate last 16 quarters (4 years) for quarterly
       const quarters = [];
@@ -86,58 +124,23 @@
   };
   
   /**
-   * Formats a date for display in charts based on period type
-   * @param date Date object to format
-   * @param periodType 'annual' or 'quarter'
-   * @returns Formatted date string
-   */
-  export const formatDateForPeriod = (date: Date, periodType: 'annual' | 'quarter'): string => {
-    if (periodType === 'annual') {
-      return date.getFullYear().toString();
-    } else {
-      const month = date.toLocaleString('default', { month: 'short' });
-      const year = date.getFullYear().toString().slice(-2);
-      return `${month} ${year}`;
-    }
-  };
-  
-  /**
-   * Gets period identifier from a date string in API response
-   * @param dateString Date string from API
-   * @param periodType 'annual' or 'quarter'
-   * @returns Formatted period identifier
-   */
-  export const getPeriodIdentifier = (dateString: string, periodType: 'annual' | 'quarter'): string => {
-    const date = new Date(dateString);
-    return formatDateForPeriod(date, periodType);
-  };
-  
-  /**
-   * Creates a human-readable date range description
-   * @param startPeriod Start period string
-   * @param endPeriod End period string
-   * @param periodType 'annual' or 'quarter'
-   * @returns Formatted date range string
-   */
-  export const formatDateRange = (startPeriod: string, endPeriod: string, periodType: 'annual' | 'quarter'): string => {
-    if (!startPeriod || !endPeriod) return '';
-    
-    if (periodType === 'annual') {
-      return `${startPeriod} to ${endPeriod}`;
-    } else {
-      // For quarterly, we could expand this to show more context like "Q1 2023 to Q4 2023"
-      return `${startPeriod} to ${endPeriod}`;
-    }
-  };
-  
-  /**
    * Maps API data to the correct period format for charting
    * @param data API data item with date property
    * @param periodType 'annual' or 'quarter'
    * @returns Object with period identifier and original data
    */
   export const mapDataToPeriod = (data: any, periodType: 'annual' | 'quarter'): any => {
-    if (!data || !data.date) return null;
+    if (!data) return null;
+    
+    // Special case for TTM
+    if (data.period === 'TTM') {
+      return {
+        ...data,
+        periodId: 'TTM'
+      };
+    }
+    
+    if (!data.date) return null;
     
     const periodId = getPeriodIdentifier(data.date, periodType);
     return {

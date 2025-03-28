@@ -5,14 +5,26 @@ import {
 import { Button } from "@/components/ui/button";
 import { getMetricDisplayName } from "@/utils/metricDefinitions";
 import { MetricSettingsPopover } from "./MetricSettingsPopover";
+import { ChartType } from "@/types/chartTypes";
+
+// Custom stacked bar chart icon
+const BarChartStacked = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="12" width="6" height="8" />
+    <rect x="3" y="4" width="6" height="8" />
+    <rect x="15" y="16" width="6" height="4" />
+    <rect x="15" y="10" width="6" height="6" />
+    <rect x="15" y="4" width="6" height="6" />
+  </svg>
+);
 
 interface SelectedMetricsListProps {
   metrics: any[]; // Array of metric objects
   ticker: string;
-  metricTypes: Record<string, 'bar' | 'line'>;
+  metricTypes: Record<string, ChartType>;
   metricVisibility: Record<string, boolean>;
   metricLabels: Record<string, boolean>; // Added for label visibility
-  onMetricTypeChange: (metric: string, type: 'bar' | 'line') => void;
+  onMetricTypeChange: (metric: string, type: ChartType) => void;
   onRemoveMetric: (metricId: string) => void;
   onToggleVisibility: (metricId: string) => void;
   onToggleLabels: (metricId: string) => void; // New handler for toggling labels
@@ -47,6 +59,7 @@ const SelectedMetricsList: React.FC<SelectedMetricsListProps> = ({
         const displayName = metric.name || getMetricDisplayName(metric.id);
         const isVisible = metricVisibility[metric.id] !== false; // Default to visible
         const showLabels = metricLabels[metric.id] !== false; // Default to showing labels
+        const chartType = metricTypes[metric.id] || 'bar';
 
         return (
           <div
@@ -59,9 +72,9 @@ const SelectedMetricsList: React.FC<SelectedMetricsListProps> = ({
             </div>
 
             <div className="flex items-center gap-1">
-              {/* Chart Type Selector */}
+              {/* Chart Type Selector - Now with three options */}
               <Button
-                variant={metricTypes[metric.id] === "bar" ? "default" : "outline"}
+                variant={chartType === "bar" ? "default" : "outline"}
                 size="icon"
                 onClick={() => onMetricTypeChange(metric.id, "bar")}
                 className="h-8 w-8"
@@ -71,7 +84,17 @@ const SelectedMetricsList: React.FC<SelectedMetricsListProps> = ({
               </Button>
 
               <Button
-                variant={metricTypes[metric.id] === "line" ? "default" : "outline"}
+                variant={chartType === "stacked" ? "default" : "outline"}
+                size="icon"
+                onClick={() => onMetricTypeChange(metric.id, "stacked")}
+                className="h-8 w-8"
+                title="Stacked Bar Chart"
+              >
+                <BarChartStacked />
+              </Button>
+
+              <Button
+                variant={chartType === "line" ? "default" : "outline"}
                 size="icon"
                 onClick={() => onMetricTypeChange(metric.id, "line")}
                 className="h-8 w-8"
@@ -87,7 +110,7 @@ const SelectedMetricsList: React.FC<SelectedMetricsListProps> = ({
                 onSettingChange={onMetricSettingChange}
               />
               
-              {/* Data Label Toggle NEW */}
+              {/* Data Label Toggle */}
               <Button
                 variant="outline"
                 size="icon"
