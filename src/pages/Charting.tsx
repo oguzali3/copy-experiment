@@ -1,238 +1,144 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { CompanySearch } from "@/components/CompanySearch";
 import { TimeRangePanel } from "@/components/financials/TimeRangePanel";
 import { MetricChart } from "@/components/financials/MetricChartforCharting";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CategoryMetricsPanel, Metric } from"@/components/CategoryMetricsPanel";
 import { metricCategories } from '@/data/metricCategories';
 import { Button } from "@/components/ui/button";
-import { X, BarChart3, LineChart, Cog, Eye, EyeOff, Move, Pencil, PencilOff } from "lucide-react";
-import { useRef } from "react";
 import { ChartExport } from "@/components/financials/ChartExport";
 import { getMetricDisplayName } from "@/utils/metricDefinitions";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-
-import { 
-  transformSingleMetricData, 
-  mergeMetricsData, 
-  transformToChartFormat,
-  debugTransformation 
-} from '@/utils/dataTransformer';
+import { X, BarChart3, LineChart, Cog, Eye, EyeOff, Move, Pencil, PencilOff } from "lucide-react";
+import SelectedMetricsList from "@/components/SelectedMetricList";
 
 // API base URL
 const API_BASE_URL = "http://localhost:4000/api/analysis";
 
-// Settings Popover Component
-const MetricSettingsPopover = ({ metric, settings, onSettingChange }) => {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-8 w-8"
-          title="Metric Settings"
-        >
-          <Cog size={16} />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-56 p-3">
-        <div className="space-y-2">
-          <h4 className="font-medium text-sm">{metric.name} - Statistics</h4>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                id={`avg-${metric.id}`} 
-                checked={settings[metric.id]?.average || false} 
-                onCheckedChange={(checked) => 
-                  onSettingChange(metric.id, 'average', !!checked)
-                }
-              />
-              <Label htmlFor={`avg-${metric.id}`} className="text-sm">Show Average</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                id={`median-${metric.id}`} 
-                checked={settings[metric.id]?.median || false} 
-                onCheckedChange={(checked) => 
-                  onSettingChange(metric.id, 'median', !!checked)
-                }
-              />
-              <Label htmlFor={`median-${metric.id}`} className="text-sm">Show Median</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                id={`min-${metric.id}`} 
-                checked={settings[metric.id]?.min || false} 
-                onCheckedChange={(checked) => 
-                  onSettingChange(metric.id, 'min', !!checked)
-                }
-              />
-              <Label htmlFor={`min-${metric.id}`} className="text-sm">Show Minimum</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                id={`max-${metric.id}`} 
-                checked={settings[metric.id]?.max || false} 
-                onCheckedChange={(checked) => 
-                  onSettingChange(metric.id, 'max', !!checked)
-                }
-              />
-              <Label htmlFor={`max-${metric.id}`} className="text-sm">Show Maximum</Label>
-            </div>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-};
-
-// SelectedMetricsList Component
-const SelectedMetricsList = ({ 
-  metrics, 
-  ticker, 
-  metricTypes, 
-  onMetricTypeChange, 
-  onRemoveMetric,
-  onToggleVisibility,
-  onToggleLabels,
-  metricVisibility = {},
-  metricLabels = {},
-  metricSettings = {},
-  onMetricSettingChange
-}) => {
-  if (!metrics.length) {
-    return (
-      <div className="text-center text-gray-500 p-4">
-        No metrics selected. Please select metrics to visualize.
-      </div>
-    );
+/**
+ * Extract time periods from API response data
+ */
+const extractTimePeriods = (data, periodType) => {
+  if (!data || data.length === 0) {
+    return [];
   }
 
-  return (
-    <div className="space-y-1">
-      {metrics.map((metric) => {
-        const displayName = metric.name || getMetricDisplayName(metric.id);
-        const isVisible = metricVisibility[metric.id] !== false; // Default to visible
-        const showLabels = metricLabels[metric.id] !== false; // Default to showing labels
+  // Extract all unique dates from the data
+  const dates = data.map(item => new Date(item.date));
+  
+  // Sort dates chronologically (oldest to newest)
+  dates.sort((a, b) => a.getTime() - b.getTime());
+  
+  // Create a set to store unique formatted periods (in case there are duplicates)
+  const uniquePeriods = new Set();
+  
+  // Format the dates based on period type and add to set
+  dates.forEach(date => {
+    if (periodType === 'annual') {
+      // For annual data, just return the year
+      uniquePeriods.add(date.getFullYear().toString());
+    } else {
+      // Get the correct month (not adding 1 to getMonth() since we use toLocaleString)
+      const month = date.toLocaleString('default', { month: 'short' });
+      const year = date.getFullYear().toString().slice(-2); // Last two digits of year
+      uniquePeriods.add(`${month} ${year}`);
+    }
+  });
+  
+  // Convert the set to an array and sort
+  let periodArray = Array.from(uniquePeriods);
+  
+  if (periodType === 'annual') {
+    // For annual periods, sort numerically
+    periodArray.sort((a, b) => parseInt(a) - parseInt(b));
+  } else {
+    // For quarterly periods, sort by year and month
+    periodArray.sort((a, b) => {
+      const [monthA, yearA] = a.split(' ');
+      const [monthB, yearB] = b.split(' ');
+      
+      // Compare years first
+      const yearDiff = parseInt(yearA) - parseInt(yearB);
+      if (yearDiff !== 0) return yearDiff;
+      
+      // If years are the same, compare months
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return months.indexOf(monthA) - months.indexOf(monthB);
+    });
+  }
+  
+  return periodArray;
+};
 
-        return (
-          <div 
-            key={metric.id} 
-            className="flex items-center justify-between py-3 px-4 border border-gray-200 rounded-md bg-white"
-          >
-            <div className="flex items-center gap-2 flex-grow">
-              <Move size={16} className="text-gray-400 cursor-grab" />
-              <span className="font-medium text-gray-800">{displayName}</span>
-            </div>
-            
-            <div className="flex items-center gap-1">
-              {/* Chart Type Selector */}
-              <Button
-                variant={metricTypes[metric.id] === 'bar' ? 'default' : 'outline'}
-                size="icon"
-                onClick={() => onMetricTypeChange(metric.id, 'bar')}
-                className="h-8 w-8"
-                title="Bar Chart"
-              >
-                <BarChart3 size={16} />
-              </Button>
-              
-              <Button
-                variant={metricTypes[metric.id] === 'line' ? 'default' : 'outline'}
-                size="icon"
-                onClick={() => onMetricTypeChange(metric.id, 'line')}
-                className="h-8 w-8"
-                title="Line Chart"
-              >
-                <LineChart size={16} />
-              </Button>
-              
-              {/* Settings Button with Popover */}
-              <MetricSettingsPopover 
-                metric={metric}
-                settings={metricSettings}
-                onSettingChange={onMetricSettingChange}
-              />
-              
-              {/* Data Label Toggle (NEW) */}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => onToggleLabels(metric.id)}
-                className="h-8 w-8"
-                title={showLabels ? "Hide Data Labels" : "Show Data Labels"}
-              >
-                {showLabels ? <Pencil size={16} /> : <PencilOff size={16} />}
-              </Button>
-              
-              {/* Visibility Toggle */}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => onToggleVisibility(metric.id)}
-                className="h-8 w-8"
-                title={isVisible ? "Hide Metric" : "Show Metric"}
-              >
-                {isVisible ? <Eye size={16} /> : <EyeOff size={16} />}
-              </Button>
-              
-              {/* Remove Button */}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => onRemoveMetric(metric.id)}
-                className="h-8 w-8 text-gray-500 hover:text-red-500"
-                title="Remove Metric"
-              >
-                <X size={16} />
-              </Button>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+/**
+ * Format a date string to a period identifier
+ */
+const getPeriodIdentifier = (dateString, periodType) => {
+  const date = new Date(dateString);
+  if (periodType === 'annual') {
+    return date.getFullYear().toString();
+  } else {
+    const month = date.toLocaleString('default', { month: 'short' });
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month} ${year}`;
+  }
+};
+
+/**
+ * Get default time periods when no data is available
+ */
+const getDefaultTimePeriods = (periodType) => {
+  const currentYear = new Date().getFullYear();
+  
+  if (periodType === 'annual') {
+    // Generate last 14 years by default for annual
+    return Array.from({ length: 14 }, (_, i) => (currentYear - 13 + i).toString());
+  } else {
+    // Generate last 16 quarters (4 years) for quarterly
+    const quarters = [];
+    const months = ['Mar', 'Jun', 'Sep', 'Dec'];
+    
+    for (let i = 0; i < 16; i++) {
+      const yearOffset = Math.floor(i / 4);
+      const quarterIndex = i % 4;
+      const year = (currentYear - 3 + yearOffset).toString().slice(-2);
+      quarters.push(`${months[quarterIndex]} ${year}`);
+    }
+    
+    return quarters;
+  }
 };
 
 const Charting = () => {
   // State for selected metrics and company
-  const [selectedMetrics, setSelectedMetrics] = useState<Metric[]>([]);
-  const [selectedCompany, setSelectedCompany] = useState<any>(null);
-  const [sliderValue, setSliderValue] = useState([0, 14]);
-  const [metricTypes, setMetricTypes] = useState<Record<string, 'bar' | 'line'>>({});
-  const [selectedCategory, setSelectedCategory] = useState<string>("popular");
+  const [selectedMetrics, setSelectedMetrics] = useState([]);
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [metricTypes, setMetricTypes] = useState({});
+  const [selectedCategory, setSelectedCategory] = useState("popular");
   
-  // State for metric visibility
-  const [metricVisibility, setMetricVisibility] = useState<Record<string, boolean>>({});
-  
-  // NEW: State for metric data labels
-  const [metricLabels, setMetricLabels] = useState<Record<string, boolean>>({});
+  // State for metric visibility and labels
+  const [metricVisibility, setMetricVisibility] = useState({});
+  const [metricLabels, setMetricLabels] = useState({});
   
   // State for metric statistics settings
-  const [metricSettings, setMetricSettings] = useState<Record<string, {
-    average?: boolean;
-    median?: boolean;
-    min?: boolean;
-    max?: boolean;
-  }>>({});
+  const [metricSettings, setMetricSettings] = useState({});
   
   // State for API data
-  const [metricData, setMetricData] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState<'annual' | 'quarter'>('annual');
+  const [metricData, setMetricData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [period, setPeriod] = useState('annual');
   
-  const chartContainerRef = useRef<HTMLDivElement>(null);
-  const [chartTitle, setChartTitle] = useState<string>("");
-  const timePeriods = [
-    "2011", "2012", "2013", "2014", "2015", "2016", 
-    "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024"
-  ];
+  // Dynamic time periods
+  const [timePeriods, setTimePeriods] = useState(getDefaultTimePeriods('annual'));
+  // Use computed default for slider value
+  const [sliderValue, setSliderValue] = useState([0, getDefaultTimePeriods('annual').length - 1]);
   
-  const handleMetricSelect = (metric: Metric) => {
+  const chartContainerRef = useRef(null);
+  const [chartTitle, setChartTitle] = useState("");
+  
+  // Debug flag to help troubleshooting
+  const [debug, setDebug] = useState(false);
+  
+  const handleMetricSelect = (metric) => {
     if (!selectedMetrics.some(m => m.id === metric.id)) {
       setSelectedMetrics(prev => [...prev, metric]);
       // Set default visibility to true for new metrics
@@ -240,7 +146,7 @@ const Charting = () => {
         ...prev,
         [metric.id]: true
       }));
-      // NEW: Set default label visibility to true for new metrics
+      // Set default label visibility to true for new metrics
       setMetricLabels(prev => ({
         ...prev,
         [metric.id]: true
@@ -258,7 +164,7 @@ const Charting = () => {
     }
   };
 
-  const handleRemoveMetric = (metricId: string) => {
+  const handleRemoveMetric = (metricId) => {
     setSelectedMetrics(prev => prev.filter(m => m.id !== metricId));
     // Clean up all related state when removing a metric
     setMetricTypes(prev => {
@@ -271,7 +177,6 @@ const Charting = () => {
       delete newVisibility[metricId];
       return newVisibility;
     });
-    // NEW: Clean up label visibility
     setMetricLabels(prev => {
       const newLabels = { ...prev };
       delete newLabels[metricId];
@@ -284,37 +189,36 @@ const Charting = () => {
     });
   };
 
-  const handleCompanySelect = (company: any) => {
+  const handleCompanySelect = (company) => {
     setSelectedCompany(company);
   };
 
-  const handleSliderChange = (value: number[]) => {
+  const handleSliderChange = (value) => {
     setSliderValue(value);
   };
 
-  const handleMetricTypeChange = (metric: string, type: 'bar' | 'line') => {
+  const handleMetricTypeChange = (metric, type) => {
     setMetricTypes(prev => ({
       ...prev,
       [metric]: type
     }));
   };
 
-  const handleToggleVisibility = (metricId: string) => {
+  const handleToggleVisibility = (metricId) => {
     setMetricVisibility(prev => ({ 
       ...prev, 
       [metricId]: !prev[metricId] 
     }));
   };
 
-  // NEW: Handler for toggling data labels
-  const handleToggleLabels = (metricId: string) => {
+  const handleToggleLabels = (metricId) => {
     setMetricLabels(prev => ({
       ...prev,
-      [metricId]: prev[metricId] === false // If false, make true, otherwise make false
+      [metricId]: !prev[metricId]
     }));
   };
 
-  const handleMetricSettingChange = (metricId: string, setting: string, value: boolean) => {
+  const handleMetricSettingChange = (metricId, setting, value) => {
     setMetricSettings(prev => ({
       ...prev,
       [metricId]: {
@@ -324,16 +228,25 @@ const Charting = () => {
     }));
   };
 
-  const handleCategorySelect = (categoryId: string) => {
+  const handleCategorySelect = (categoryId) => {
     setSelectedCategory(categoryId);
   };
 
-  const handlePeriodChange = (newPeriod: 'annual' | 'quarter') => {
+  const handlePeriodChange = (newPeriod) => {
+    // Clear existing data when switching period types
+    setMetricData([]);
     setPeriod(newPeriod);
+    
+    // Reset time periods to defaults for the new period type
+    const defaultPeriods = getDefaultTimePeriods(newPeriod);
+    setTimePeriods(defaultPeriods);
+    
+    // Reset slider to show all periods
+    setSliderValue([0, defaultPeriods.length - 1]);
   };
 
   // Initialize chart type for new metrics
-  React.useEffect(() => {
+  useEffect(() => {
     const newMetricTypes = { ...metricTypes };
     selectedMetrics.forEach(metric => {
       if (!newMetricTypes[metric.id]) {
@@ -362,6 +275,11 @@ const Charting = () => {
         }
         
         const data = await response.json();
+        
+        if (debug) {
+          console.log(`Fetched data for ${metric.id}:`, data);
+        }
+        
         return {
           metricId: metric.id,
           data
@@ -370,33 +288,50 @@ const Charting = () => {
       
       const results = await Promise.all(promises);
       
+      // Debug log all results
+      if (debug) {
+        console.log('All fetched results:', results);
+      }
+      
+      // Extract time periods from the first result that has data
+      let extractedPeriods = [];
+      for (const result of results) {
+        if (result.data && result.data.length > 0) {
+          // Extract and set the time periods dynamically
+          extractedPeriods = extractTimePeriods(result.data, period);
+          if (extractedPeriods.length > 0) {
+            if (debug) {
+              console.log(`Extracted ${extractedPeriods.length} ${period} periods:`, extractedPeriods);
+            }
+            setTimePeriods(extractedPeriods);
+            // Reset slider to show all periods when data changes
+            setSliderValue([0, Math.max(0, extractedPeriods.length - 1)]);
+            break;
+          }
+        }
+      }
+      
+      // If no time periods could be extracted, use default
+      if (extractedPeriods.length === 0) {
+        extractedPeriods = getDefaultTimePeriods(period);
+        setTimePeriods(extractedPeriods);
+        setSliderValue([0, extractedPeriods.length - 1]);
+      }
+      
       // Process and combine the data
       const processedData = [];
       
-      // Get all unique periods across all metrics
-      const allPeriods = new Set();
-      results.forEach(result => {
-        result.data.forEach(item => {
-          // Extract the year from the date for consistent period format
-          const year = new Date(item.date).getFullYear().toString();
-          allPeriods.add(year);
-        });
-      });
-      
-      // Convert to array and sort chronologically
-      const sortedPeriods = Array.from(allPeriods).sort();
-      console.log('Sorted periods:', sortedPeriods);
-      
       // Create data points for each period
-      sortedPeriods.forEach(period => {
-        const dataPoint = { period };
+      extractedPeriods.forEach(periodId => {
+        const dataPoint = { period: periodId };
         const metrics = [];
         
         // Add metrics data for this period
         results.forEach(result => {
           const metricData = result.data.find(item => {
-            const year = new Date(item.date).getFullYear().toString();
-            return year === period;
+            // Get period identifier from date
+            const itemPeriodId = getPeriodIdentifier(item.date, period);
+            return itemPeriodId === periodId;
           });
           
           if (metricData) {
@@ -411,7 +346,10 @@ const Charting = () => {
         processedData.push(dataPoint);
       });
       
-      console.log('Processed data:', processedData);
+      if (debug) {
+        console.log('Processed data:', processedData);
+      }
+      
       setMetricData(processedData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -422,7 +360,7 @@ const Charting = () => {
   };
 
   // Call fetchMetricData when company, metrics, or period changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedCompany?.ticker && selectedMetrics.length > 0) {
       fetchMetricData();
     }
@@ -434,19 +372,21 @@ const Charting = () => {
       return null;
     }
     
-    // Get the years we want to display
-    const years = timePeriods.slice(sliderValue[0], sliderValue[1] + 1);
-    console.log('Selected years:', years);
+    // Get the periods we want to display based on slider
+    const selectedPeriods = timePeriods.slice(sliderValue[0], sliderValue[1] + 1);
+    
+    if (debug) {
+      console.log('Selected periods:', selectedPeriods);
+    }
     
     // Filter data based on the selected time range
-    console.log('Periods in data:', metricData.map(item => item.period));
-    
     const filteredData = metricData.filter(item => {
-      // This should match the period format in your data
-      return years.includes(item.period);
+      return selectedPeriods.includes(item.period);
     });
     
-    console.log('Filtered data length:', filteredData.length);
+    if (debug) {
+      console.log('Filtered data:', filteredData);
+    }
     
     return filteredData;
   };
@@ -456,6 +396,11 @@ const Charting = () => {
     return selectedMetrics
       .filter(metric => metricVisibility[metric.id] !== false)
       .map(metric => metric.id);
+  };
+
+  // Toggle debug mode (for troubleshooting)
+  const toggleDebug = () => {
+    setDebug(!debug);
   };
 
   return (
@@ -497,7 +442,7 @@ const Charting = () => {
             </div>
           </div>
           
-          {/* Selected Metrics - Updated with label toggles */}
+          {/* Selected Metrics */}
           {selectedMetrics.length > 0 && (
             <div className="mt-4">
               <h2 className="text-sm font-medium mb-2 text-gray-600">Selected Metrics</h2>
@@ -518,6 +463,16 @@ const Charting = () => {
               </div>
             </div>
           )}
+          
+          {/* Debug toggle (hidden in UI) */}
+          <div className="mt-4 text-right">
+            <button 
+              onClick={toggleDebug} 
+              className="text-xs text-gray-400 hover:text-gray-600"
+            >
+              {debug ? "Disable Debug" : "Enable Debug"}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -550,7 +505,7 @@ const Charting = () => {
               </div>
             )}
 
-            {selectedCompany && selectedMetrics.length > 0 && getChartData() && (
+            {selectedCompany && selectedMetrics.length > 0 && (
               <>
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
@@ -567,26 +522,44 @@ const Charting = () => {
                 </div>
                 
                 <TimeRangePanel
-                  startDate={`December 31, 20${19 + sliderValue[0]}`}
-                  endDate={`December 31, 20${19 + sliderValue[1]}`}
                   sliderValue={sliderValue}
                   onSliderChange={handleSliderChange}
                   timePeriods={timePeriods}
                   timeFrame={period === 'quarter' ? 'quarterly' : 'annual'}
                 />
                 
+                {/* Debug info */}
+                {debug && (
+                  <div className="bg-gray-100 p-4 rounded-md mb-4 text-xs font-mono">
+                    <h4 className="font-bold mb-2">Debug Info:</h4>
+                    <p>Period type: {period}</p>
+                    <p>Time periods: {timePeriods.join(', ')}</p>
+                    <p>Slider value: [{sliderValue.join(', ')}]</p>
+                    <p>Selected time range: {timePeriods.slice(sliderValue[0], sliderValue[1] + 1).join(', ')}</p>
+                    <p>Data points: {metricData.length}</p>
+                    <p>Visible metrics: {getVisibleMetrics().join(', ')}</p>
+                    {getChartData() && <p>Chart data points: {getChartData().length}</p>}
+                  </div>
+                )}
+                
                 <div className="h-[800px]" ref={chartContainerRef}>
-                  <MetricChart 
-                    data={getChartData() || []}
-                    metrics={getVisibleMetrics()}
-                    ticker={selectedCompany.ticker}
-                    metricTypes={metricTypes}
-                    onMetricTypeChange={handleMetricTypeChange}
-                    companyName={selectedCompany.name}
-                    title={chartTitle || `${selectedCompany.name} (${selectedCompany.ticker})`}
-                    metricSettings={metricSettings}
-                    metricLabels={metricLabels} // NEW: Pass label visibility to chart
-                  />
+                  {getChartData() && getChartData().length > 0 ? (
+                    <MetricChart 
+                      data={getChartData()}
+                      metrics={getVisibleMetrics()}
+                      ticker={selectedCompany.ticker}
+                      metricTypes={metricTypes}
+                      onMetricTypeChange={handleMetricTypeChange}
+                      companyName={selectedCompany.name}
+                      title={chartTitle || `${selectedCompany.name} (${selectedCompany.ticker})`}
+                      metricSettings={metricSettings}
+                      metricLabels={metricLabels}
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-gray-500">No data available for the selected time period.</p>
+                    </div>
+                  )}
                 </div>
               </>
             )}

@@ -1,3 +1,5 @@
+// Enhanced TimeRangePanel with better handling of quarterly dates
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -46,7 +48,7 @@ export const TimeRangePanel = ({
   // Get preset configurations based on timeFrame
   const getPresetButtons = () => {
     if (timeFrame === 'quarterly') {
-      // Quarterly presets - 1Y (4 quarters), 2Y (8 quarters), 3Y (12 quarters)
+      // Quarterly presets - 1Y (4 quarters), 3Y (12 quarters), 5Y (20 quarters)
       return [
         { 
           label: "1Y", 
@@ -60,7 +62,7 @@ export const TimeRangePanel = ({
           label: "3Y", 
           handler: () => {
             const endIndex = timePeriods.length - 1;
-            const startIndex = Math.max(0, endIndex - 11); // 8 quarters = 2 years
+            const startIndex = Math.max(0, endIndex - 11); // 12 quarters = 3 years
             handleLocalSliderChange([startIndex, endIndex]);
           }
         },
@@ -68,7 +70,7 @@ export const TimeRangePanel = ({
           label: "5Y", 
           handler: () => {
             const endIndex = timePeriods.length - 1;
-            const startIndex = Math.max(0, endIndex - 19); // 12 quarters = 3 years
+            const startIndex = Math.max(0, endIndex - 19); // 20 quarters = 5 years
             handleLocalSliderChange([startIndex, endIndex]);
           }
         },
@@ -133,6 +135,22 @@ export const TimeRangePanel = ({
     Math.min(actualSliderValue[0], actualSliderValue[1]),
     Math.max(actualSliderValue[0], actualSliderValue[1]) + 1
   );
+
+  // Format the time period display nicely based on type
+  const formatPeriodRange = (periods: string[]): string => {
+    if (!periods.length) return "No periods selected";
+    
+    const first = periods[0];
+    const last = periods[periods.length - 1];
+    
+    if (timeFrame === 'quarterly') {
+      // For quarterly data, show full format (e.g., "Q1 2023 to Q4 2023")
+      return `${first} to ${last}`;
+    } else {
+      // For annual data, just show the years (e.g., "2019 to 2023")
+      return `${first} to ${last}`;
+    }
+  };
 
   return (
     <div className="space-y-6 mt-6">
@@ -201,7 +219,7 @@ export const TimeRangePanel = ({
         <div className="text-sm text-gray-500">
           {visiblePeriods.length > 0 ? (
             <span>
-              Showing {visiblePeriods.length} periods: {visiblePeriods[0]} to {visiblePeriods[visiblePeriods.length - 1]}
+              Showing {visiblePeriods.length} periods: {formatPeriodRange(visiblePeriods)}
             </span>
           ) : (
             <span>No periods selected</span>

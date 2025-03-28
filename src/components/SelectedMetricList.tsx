@@ -1,10 +1,10 @@
 import React from "react";
 import { 
-  X, BarChart3, LineChart, Cog, Eye, EyeOff, Move, Pencil, PencilOff
+  X, BarChart3, LineChart, Eye, EyeOff, Move, Pencil, PencilOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getMetricDisplayName } from "@/utils/metricDefinitions";
-import { MetricSettingsPopover } from "./MetricSettingsPopover"; // Assuming you've moved this to a separate file
+import { MetricSettingsPopover } from "./MetricSettingsPopover";
 
 interface SelectedMetricsListProps {
   metrics: any[]; // Array of metric objects
