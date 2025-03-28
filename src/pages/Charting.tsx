@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CategoryMetricsPanel, Metric } from"@/components/CategoryMetricsPanel";
 import { metricCategories } from '@/data/metricCategories';
 import { Button } from "@/components/ui/button";
-import { X, BarChart3, LineChart, Cog, Eye, EyeOff, Move } from "lucide-react";
+import { X, BarChart3, LineChart, Cog, Eye, EyeOff, Move, Pencil, PencilOff } from "lucide-react";
 import { useRef } from "react";
 import { ChartExport } from "@/components/financials/ChartExport";
 import { getMetricDisplayName } from "@/utils/metricDefinitions";
@@ -97,7 +97,9 @@ const SelectedMetricsList = ({
   onMetricTypeChange, 
   onRemoveMetric,
   onToggleVisibility,
+  onToggleLabels,
   metricVisibility = {},
+  metricLabels = {},
   metricSettings = {},
   onMetricSettingChange
 }) => {
@@ -114,6 +116,7 @@ const SelectedMetricsList = ({
       {metrics.map((metric) => {
         const displayName = metric.name || getMetricDisplayName(metric.id);
         const isVisible = metricVisibility[metric.id] !== false; // Default to visible
+        const showLabels = metricLabels[metric.id] !== false; // Default to showing labels
 
         return (
           <div 
@@ -154,18 +157,27 @@ const SelectedMetricsList = ({
                 onSettingChange={onMetricSettingChange}
               />
               
-              {/* Visibility Toggle (if handler provided) */}
-              {onToggleVisibility && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => onToggleVisibility(metric.id)}
-                  className="h-8 w-8"
-                  title={isVisible ? "Hide Metric" : "Show Metric"}
-                >
-                  {isVisible ? <Eye size={16} /> : <EyeOff size={16} />}
-                </Button>
-              )}
+              {/* Data Label Toggle (NEW) */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => onToggleLabels(metric.id)}
+                className="h-8 w-8"
+                title={showLabels ? "Hide Data Labels" : "Show Data Labels"}
+              >
+                {showLabels ? <Pencil size={16} /> : <PencilOff size={16} />}
+              </Button>
+              
+              {/* Visibility Toggle */}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => onToggleVisibility(metric.id)}
+                className="h-8 w-8"
+                title={isVisible ? "Hide Metric" : "Show Metric"}
+              >
+                {isVisible ? <Eye size={16} /> : <EyeOff size={16} />}
+              </Button>
               
               {/* Remove Button */}
               <Button
@@ -196,6 +208,9 @@ const Charting = () => {
   // State for metric visibility
   const [metricVisibility, setMetricVisibility] = useState<Record<string, boolean>>({});
   
+  // NEW: State for metric data labels
+  const [metricLabels, setMetricLabels] = useState<Record<string, boolean>>({});
+  
   // State for metric statistics settings
   const [metricSettings, setMetricSettings] = useState<Record<string, {
     average?: boolean;
@@ -225,6 +240,11 @@ const Charting = () => {
         ...prev,
         [metric.id]: true
       }));
+      // NEW: Set default label visibility to true for new metrics
+      setMetricLabels(prev => ({
+        ...prev,
+        [metric.id]: true
+      }));
       // Initialize settings for new metric
       setMetricSettings(prev => ({
         ...prev,
@@ -240,7 +260,7 @@ const Charting = () => {
 
   const handleRemoveMetric = (metricId: string) => {
     setSelectedMetrics(prev => prev.filter(m => m.id !== metricId));
-    // Clean up metricTypes and visibility when removing a metric
+    // Clean up all related state when removing a metric
     setMetricTypes(prev => {
       const newTypes = { ...prev };
       delete newTypes[metricId];
@@ -250,6 +270,12 @@ const Charting = () => {
       const newVisibility = { ...prev };
       delete newVisibility[metricId];
       return newVisibility;
+    });
+    // NEW: Clean up label visibility
+    setMetricLabels(prev => {
+      const newLabels = { ...prev };
+      delete newLabels[metricId];
+      return newLabels;
     });
     setMetricSettings(prev => {
       const newSettings = { ...prev };
@@ -277,6 +303,14 @@ const Charting = () => {
     setMetricVisibility(prev => ({ 
       ...prev, 
       [metricId]: !prev[metricId] 
+    }));
+  };
+
+  // NEW: Handler for toggling data labels
+  const handleToggleLabels = (metricId: string) => {
+    setMetricLabels(prev => ({
+      ...prev,
+      [metricId]: prev[metricId] === false // If false, make true, otherwise make false
     }));
   };
 
@@ -414,55 +448,7 @@ const Charting = () => {
     
     console.log('Filtered data length:', filteredData.length);
     
-    // Add statistics if enabled in settings
-    const enhancedData = [...filteredData];
-    
-    // Calculate statistics for each metric if enabled
-    selectedMetrics.forEach(metric => {
-      const settings = metricSettings[metric.id];
-      if (!settings) return;
-      
-      // Only process if any statistics are enabled
-      if (settings.average || settings.median || settings.min || settings.max) {
-        // Extract values for this metric across all periods
-        const values = filteredData
-          .map(item => {
-            const metricItem = item.metrics.find(m => m.name === metric.id);
-            return metricItem ? metricItem.value : null;
-          })
-          .filter(val => val !== null && !isNaN(val));
-        
-        if (values.length === 0) return;
-        
-        // Calculate statistics
-        const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
-        
-        // Sort for median and min/max
-        const sortedValues = [...values].sort((a, b) => a - b);
-        const min = sortedValues[0];
-        const max = sortedValues[sortedValues.length - 1];
-        
-        // Calculate median
-        const mid = Math.floor(sortedValues.length / 2);
-        const median = sortedValues.length % 2 === 0
-          ? (sortedValues[mid - 1] + sortedValues[mid]) / 2
-          : sortedValues[mid];
-        
-        // Add reference lines to chart data
-        // This would be processed by the chart component
-        enhancedData.forEach(dataPoint => {
-          if (!dataPoint.statistics) dataPoint.statistics = {};
-          if (!dataPoint.statistics[metric.id]) dataPoint.statistics[metric.id] = {};
-          
-          if (settings.average) dataPoint.statistics[metric.id].average = avg;
-          if (settings.median) dataPoint.statistics[metric.id].median = median;
-          if (settings.min) dataPoint.statistics[metric.id].min = min;
-          if (settings.max) dataPoint.statistics[metric.id].max = max;
-        });
-      }
-    });
-    
-    return enhancedData;
+    return filteredData;
   };
 
   // Get only visible metrics for chart
@@ -511,7 +497,7 @@ const Charting = () => {
             </div>
           </div>
           
-          {/* Selected Metrics - New Layout */}
+          {/* Selected Metrics - Updated with label toggles */}
           {selectedMetrics.length > 0 && (
             <div className="mt-4">
               <h2 className="text-sm font-medium mb-2 text-gray-600">Selected Metrics</h2>
@@ -523,7 +509,9 @@ const Charting = () => {
                   onMetricTypeChange={handleMetricTypeChange}
                   onRemoveMetric={handleRemoveMetric}
                   onToggleVisibility={handleToggleVisibility}
+                  onToggleLabels={handleToggleLabels}
                   metricVisibility={metricVisibility}
+                  metricLabels={metricLabels}
                   metricSettings={metricSettings}
                   onMetricSettingChange={handleMetricSettingChange}
                 />
@@ -597,6 +585,7 @@ const Charting = () => {
                     companyName={selectedCompany.name}
                     title={chartTitle || `${selectedCompany.name} (${selectedCompany.ticker})`}
                     metricSettings={metricSettings}
+                    metricLabels={metricLabels} // NEW: Pass label visibility to chart
                   />
                 </div>
               </>

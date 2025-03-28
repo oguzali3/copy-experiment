@@ -7,7 +7,7 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
   import React, { useRef, useMemo } from 'react';
   import { 
     ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, 
-    CartesianGrid, Tooltip, Legend, TooltipProps, ReferenceLine
+    CartesianGrid, Tooltip, Legend, TooltipProps, ReferenceLine, LabelList
   } from 'recharts';
   import { metricCategories } from '@/data/metricCategories';
   import { getMetricDisplayName, getMetricFormat } from '@/utils/metricDefinitions';
@@ -83,6 +83,18 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
       .trim();
   };
   
+  // Helper to format values for data labels and reference lines
+  const formatValue = (value: number): string => {
+    if (Math.abs(value) >= 1e9) {
+      return `${(value / 1e9).toFixed(2)}B`;
+    } else if (Math.abs(value) >= 1e6) {
+      return `${(value / 1e6).toFixed(2)}M`;
+    } else if (Math.abs(value) >= 1e3) {
+      return `${(value / 1e3).toFixed(2)}K`;
+    }
+    return value.toFixed(2);
+  };
+  
   interface MetricChartProps {
     data: any[]; // Your processed data array
     metrics: string[]; // Array of metric IDs
@@ -97,6 +109,7 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
       min?: boolean;
       max?: boolean;
     }>;
+    metricLabels?: Record<string, boolean>; // Control data label visibility
   }
   
   export const MetricChart: React.FC<MetricChartProps> = ({ 
@@ -107,12 +120,18 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
     onMetricTypeChange,
     companyName,
     title,
-    metricSettings = {}
+    metricSettings = {},
+    metricLabels = {} // Default all labels visible
   }) => {
     const chartRef = useRef<HTMLDivElement>(null);
     
     // Console logs for debugging
     console.log("MetricSettings received:", metricSettings);
+    console.log("MetricLabels received:", metricLabels);
+    
+    // Split metrics by chart type for proper rendering order
+    const barMetrics = metrics.filter(metric => (metricTypes[metric] || 'bar') === 'bar');
+    const lineMetrics = metrics.filter(metric => metricTypes[metric] === 'line');
     
     // Generate default title if none provided
     const chartTitle = title || `${companyName || ticker} - Financial Metrics`;
@@ -377,22 +396,6 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
       
       console.log("Generating reference lines for metrics:", metrics);
       
-      // Add a test reference line for debugging
-      // referenceLines.push(
-      //   <ReferenceLine 
-      //     key="test-line"
-      //     y={100} // Hardcoded value that should be visible
-      //     stroke="red" 
-      //     strokeWidth={2}
-      //     strokeDasharray="3 3"
-      //     label={{
-      //       value: "Test Line",
-      //       position: 'right',
-      //       fill: 'red',
-      //     }} 
-      //   />
-      // );
-      
       metrics.forEach(metricId => {
         const stats = metricStatValues[metricId];
         if (!stats) {
@@ -404,41 +407,29 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
         
         const color = colorMap[metricId];
         
-        // Helper to format large numbers as B, M, K
-        const formatStatValue = (value: number): string => {
-            if (Math.abs(value) >= 1e9) {
-            return `${(value / 1e9).toFixed(2)}B`;
-            } else if (Math.abs(value) >= 1e6) {
-            return `${(value / 1e6).toFixed(2)}M`;
-            } else if (Math.abs(value) >= 1e3) {
-            return `${(value / 1e3).toFixed(2)}K`;
-            }
-            return value.toFixed(2);
-        };
-        
-        // Update the addReferenceLine function in renderReferenceLines()
+        // Helper to add a reference line with proper styling
         const addReferenceLine = (value: number, label: string, dash: string = '3 3') => {
-            // Format the value with appropriate abbreviation
-            const formattedValue = formatStatValue(value);
-            
-            referenceLines.push(
+          // Format the value with appropriate abbreviation
+          const formattedValue = formatValue(value);
+          
+          referenceLines.push(
             <ReferenceLine 
-                key={`${metricId}-${label}`}
-                y={value} 
-                stroke={color} 
-                strokeWidth={1.5}
-                strokeDasharray={dash}
-                ifOverflow="extendDomain"
-                label={{
-                value: `${label}: ${formattedValue}`,
+              key={`${metricId}-${label}`}
+              y={value} 
+              stroke={color} 
+              strokeWidth={1.5}
+              strokeDasharray={dash}
+              ifOverflow="extendDomain"
+              label={{
+                value: `${label}:${formattedValue}`,
                 position: 'right',
                 fill: color,
-                fontSize: 11,
-                offset: 10
-                }} 
-                style={{ zIndex: 1000 }}
+                fontSize: 10,
+                offset: 5
+              }} 
+              style={{ zIndex: 1000 }}
             />
-            );
+          );
         };
         
         // Add reference lines for each enabled statistic
@@ -463,6 +454,38 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
       return referenceLines;
     };
   
+    // Format data label value to be consistent with chart formatting
+    const formatDataLabel = (value: any) => {
+      if (value === null || value === undefined || isNaN(value)) {
+        return '';
+      }
+      return formatValue(Number(value));
+    };
+  
+    // Calculate optimal bar size based on data length
+    const calculateBarSize = () => {
+      if (!data) return 30; // Default size
+      
+      const barMetricsCount = barMetrics.length;
+      
+      // Calculate total number of bars (data points × number of bar metrics)
+      const totalBars = data.length * barMetricsCount;
+      if (totalBars <= 6) return 200; // Very thick for 1-3 data points
+      if (totalBars <= 12) return 130; // Very thick for 1-3 data points
+      if (totalBars <= 20) return 70; // Thick for 4-5 data points
+      if (totalBars <= 35) return 40; // Medium for 6-8 data points
+      if (totalBars <= 45) return 30; // Thinner for 9-12 data points
+      return 25; // Very thin for 13+ data points
+    };
+    
+    // The common data accessor function for chart components
+    const getDataAccessor = (metric: string) => {
+      return (entry: any) => {
+        const foundMetric = entry.metrics?.find((m: any) => m.name === metric);
+        return foundMetric ? foundMetric.value : null;
+      };
+    };
+  
     return (
       <div className="h-full flex flex-col relative" ref={chartRef}>
         {/* Chart Title - This will be visible in the PNG export */}
@@ -475,7 +498,7 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={data}
-              margin={{ top: 10, right: 120, left: 20, bottom: 120 }}
+              margin={{ top: 20, right: 120, left: 20, bottom: 120 }}
               barGap={10} // Increase space between bars in the same category
               barCategoryGap={200}
             >
@@ -509,56 +532,65 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
               {/* Statistical reference lines */}
               {renderReferenceLines()}
               
-              {/* Render each metric */}
-              {metrics.map((metric) => {
-                // Determine if this metric should be a bar or line
-                const chartType = metricTypes[metric] || 'bar';
-                
-                // Create the appropriate chart element
-                // Calculate optimal bar size based on data length
-                // Fewer data points = thicker bars, more data points = thinner bars
-                const calculateBarSize = () => {
-                  if (!data) return 30; // Default size
-                  
-                  const barMetricsCount = metrics.filter(m => metricTypes[m] === 'bar' || !metricTypes[m]).length;
-                  
-                  // Calculate total number of bars (data points × number of bar metrics)
-                  const totalBars = data.length * barMetricsCount;
-                  if (totalBars <= 6) return 200; // Very thick for 1-3 data points
-                  if (totalBars <= 12) return 130; // Very thick for 1-3 data points
-                  if (totalBars <= 20) return 70; // Thick for 4-5 data points
-                  if (totalBars <= 35) return 40; // Medium for 6-8 data points
-                  if (totalBars <= 45) return 30; // Thinner for 9-12 data points
-                  return 25; // Very thin for 13+ data points
-                };
-                
+              {/* Render BAR metrics first (lower z-index) */}
+              {barMetrics.map((metric) => {
+                const color = colorMap[metric];
+                const showLabels = metricLabels[metric] !== false;
                 const barSize = calculateBarSize();
+                const dataAccessor = getDataAccessor(metric);
                 
-                return chartType === 'bar' ? (
+                return (
                   <Bar 
                     key={metric} 
-                    dataKey={(entry) => {
-                      const foundMetric = entry.metrics.find(m => m.name === metric);
-                      return foundMetric ? foundMetric.value : null;
-                    }}
+                    dataKey={dataAccessor}
                     name={metric}
-                    fill={colorMap[metric]}
+                    fill={color}
                     barSize={barSize}
-                  />
-                ) : (
+                    zIndex={1} // Ensure bars have lower z-index
+                  >
+                    {/* Conditionally add labels if enabled */}
+                    {showLabels && (
+                      <LabelList 
+                        dataKey={dataAccessor}
+                        position="top"
+                        fill={"black"}
+                        fontSize={12}
+                        formatter={formatDataLabel}
+                      />
+                    )}
+                  </Bar>
+                );
+              })}
+              
+              {/* Render LINE metrics second (higher z-index) */}
+              {lineMetrics.map((metric) => {
+                const color = colorMap[metric];
+                const showLabels = metricLabels[metric] !== false;
+                const dataAccessor = getDataAccessor(metric);
+                
+                return (
                   <Line 
                     key={metric} 
                     type="linear" 
-                    dataKey={(entry) => {
-                      const foundMetric = entry.metrics.find(m => m.name === metric);
-                      return foundMetric ? foundMetric.value : null;
-                    }}
+                    dataKey={dataAccessor}
                     name={metric}
-                    stroke={colorMap[metric]}
+                    stroke={color}
                     strokeWidth={2}
                     dot={{ r: 4 }}
                     activeDot={{ r: 6 }}
-                  />
+                    zIndex={10} // Ensure lines have higher z-index
+                  >
+                    {/* Conditionally add labels if enabled */}
+                    {showLabels && (
+                      <LabelList 
+                        dataKey={dataAccessor}
+                        position="top"
+                        fill={"black"}
+                        fontSize={12}
+                        formatter={formatDataLabel}
+                      />
+                    )}
+                  </Line>
                 );
               })}
             </ComposedChart>
