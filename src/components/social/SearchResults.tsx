@@ -1,4 +1,3 @@
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +20,16 @@ export const SearchResults = ({ query, profiles, posts, onClose }: SearchResults
   const handleProfileClick = (userId: string) => {
     navigate(`/profile?id=${userId}`);
     onClose();
+  };
+  
+  const handlePostClick = (postId: string) => {
+    console.log('Navigating to post with ID:', postId);
+    navigate(`/post/${postId}`);
+    
+    // Check if URL change worked
+    setTimeout(() => {
+      console.log('Current URL after navigation:', window.location.href);
+    }, 100);
   };
 
   return (
@@ -56,7 +65,13 @@ export const SearchResults = ({ query, profiles, posts, onClose }: SearchResults
           <h3 className="font-semibold text-lg mb-3">Posts</h3>
           <div className="space-y-4">
             {posts.map((post) => (
-              <Post key={post.id} {...post} />
+              <div 
+                key={post.id}
+                className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors" 
+                onClick={() => handlePostClick(post.id)}
+              >
+                <Post {...post} />
+              </div>
             ))}
           </div>
         </div>

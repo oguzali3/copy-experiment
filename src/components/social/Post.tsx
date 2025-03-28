@@ -26,6 +26,7 @@ interface PostProps {
   post: ExtendedPostType;
   onPostUpdated?: () => void;
   alwaysShowComments?: boolean;
+  onClick?: () => void; // Add onClick prop
 }
 
 const formatContentWithTickers = (content: string) => {
@@ -64,7 +65,7 @@ const formatContentWithTickers = (content: string) => {
   return parts;
 };
 
-export const Post = ({ post, onPostUpdated, alwaysShowComments }: PostProps) => {
+export const Post = ({ post, onPostUpdated, alwaysShowComments, onClick }: PostProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -102,7 +103,10 @@ export const Post = ({ post, onPostUpdated, alwaysShowComments }: PostProps) => 
     }
   }, [alwaysShowComments, location.pathname, post.comments]);
 
-  const handleLike = async () => {
+  const handleLike = async (e: React.MouseEvent) => {
+    // Stop event propagation to prevent post click when clicking the like button
+    e.stopPropagation();
+    
     if (!user || isLiking) return;
     
     // Set local state IMMEDIATELY for instant UI update
@@ -131,36 +135,20 @@ export const Post = ({ post, onPostUpdated, alwaysShowComments }: PostProps) => 
     }
   };
 
-  const toggleComments = () => {
+  const toggleComments = (e: React.MouseEvent) => {
+    // Stop event propagation to prevent post click when toggling comments
+    e.stopPropagation();
     setShowComments(!showComments);
   };
 
-  const handleUserClick = () => {
+  const handleUserClick = (e: React.MouseEvent) => {
+    // Stop event propagation to prevent post click when clicking on user
+    e.stopPropagation();
+    
     if (post.author.id === user?.id) {
       navigate('/profile');
     } else {
       navigate(`/profile?id=${post.author.id}`);
-    }
-  };
-  
-  const updateCommentsCount = (increment = true) => {
-    // Create a copy of the post to avoid modifying the original object directly
-    // This fixes the "Cannot assign to read only property" error
-    const updatedPost = { ...post };
-    
-    // Update the comment count on the copy
-    if (increment) {
-      updatedPost.commentsCount += 1;
-    } else {
-      updatedPost.commentsCount = Math.max(0, updatedPost.commentsCount - 1);
-    }
-    
-    // Since we can't directly modify the original post, we can use the copied values
-    // for UI updates only
-    
-    // Ensure the comments section is visible when a new comment is added
-    if (increment && !showComments) {
-      setShowComments(true);
     }
   };
   
@@ -177,11 +165,28 @@ export const Post = ({ post, onPostUpdated, alwaysShowComments }: PostProps) => 
     // Increment the version to force remounting of the Comments component
     setCommentsVersion(prev => prev + 1);
   };
+  
+  // Add a handler for clicking on the post itself
+  const handlePostClick = () => {
+    // Only navigate if an onClick handler is provided
+    if (onClick) {
+      onClick();
+    } else {
+      // If no onClick provided but we're not on a post detail page already,
+      // navigate to the post detail page
+      if (!location.pathname.includes(`/post/${post.id}`)) {
+        navigate(`/post/${post.id}`);
+      }
+    }
+  };
 
   return (
-    <Card className="p-4">
+    <Card 
+      className={`p-4 ${onClick ? 'cursor-pointer' : ''}`}
+      onClick={handlePostClick}
+    >
       <div className="flex gap-3">
-        <Avatar className="w-10 h-10 flex-shrink-0">
+        <Avatar className="w-10 h-10 flex-shrink-0" onClick={handleUserClick}>
           <AvatarImage src={post.author.avatarUrl || undefined} />
           <AvatarFallback>
             <User className="w-6 h-6" />
@@ -252,7 +257,10 @@ export const Post = ({ post, onPostUpdated, alwaysShowComments }: PostProps) => 
           </div>
 
           {showComments && (
-            <div className="mt-4 border-t border-gray-200 dark:border-gray-800 pt-4">
+            <div 
+              className="mt-4 border-t border-gray-200 dark:border-gray-800 pt-4"
+              onClick={(e) => e.stopPropagation()} // Prevent post click when interacting with comments
+            >
               <Comments 
                 key={`comments-${post.id}-${commentsVersion}`}
                 postId={post.id} 

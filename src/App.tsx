@@ -25,6 +25,7 @@ import Feed from "./pages/Feed";
 import Search from "./pages/Search";
 import Profile from "./pages/Profile";
 import { apolloClient } from "./lib/graphql/client";
+import PostDetail from "./components/social/PostDetail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,7 +63,8 @@ const App = () => {
                   <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                   <Route path="/activity" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-                  
+                  <Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
+
                   {/* Protected Dashboard Layout Routes */}
                   <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                     <Route path="/dashboard" element={<Dashboard />} />

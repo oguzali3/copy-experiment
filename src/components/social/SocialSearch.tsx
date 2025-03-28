@@ -106,6 +106,16 @@ export const SocialSearch = () => {
     navigate(`/?q=${encodeURIComponent('$' + symbol)}`);
   };
   
+  const handlePostClick = (postId: string) => {
+    console.log('Navigating to post with ID:', postId);
+    setShowResults(false);
+    navigate(`/post/${postId}`);
+    
+    // Check if URL change worked
+    setTimeout(() => {
+      console.log('Current URL after navigation:', window.location.href);
+    }, 100);
+  };
   const handleClearSearch = () => {
     setSearchTerm('');
     setShowResults(false);
@@ -249,7 +259,7 @@ export const SocialSearch = () => {
                 </div>
               )}
               
-              {/* Posts Preview */}
+              {/* Posts Preview - UPDATED to use handlePostClick */}
               {data.posts.length > 0 && (
                 <div className="p-2">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
@@ -259,10 +269,7 @@ export const SocialSearch = () => {
                     <button
                       key={post.id}
                       className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md w-full text-left"
-                      onClick={() => {
-                        setShowResults(false);
-                        navigate(`/?q=${encodeURIComponent(searchTerm)}`);
-                      }}
+                      onClick={() => handlePostClick(post.id)}
                     >
                       <div className="flex-shrink-0 bg-purple-100 dark:bg-purple-900 p-2 rounded-full">
                         <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400" />
