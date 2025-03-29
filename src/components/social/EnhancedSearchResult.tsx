@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// src/components/social/EnhancedSearchResult.tsx
 import React, { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DollarSign, FileText, Hash, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Post } from "./Post";
 
 interface EnhancedSearchResultsProps {
   query: string;
@@ -89,6 +89,7 @@ export const EnhancedSearchResults = ({
 
   return (
     <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border rounded-lg shadow-lg mt-2 max-h-[80vh] overflow-y-auto z-50">
+      {/* Users Section */}
       {users.length > 0 && (
         <div className="p-4 border-b dark:border-gray-700">
           <div className="flex justify-between items-center mb-3">
@@ -142,6 +143,7 @@ export const EnhancedSearchResults = ({
         </div>
       )}
 
+      {/* Hashtags Section */}
       {hashtags.length > 0 && (
         <div className="p-4 border-b dark:border-gray-700">
           <div className="flex justify-between items-center mb-3">
@@ -187,6 +189,7 @@ export const EnhancedSearchResults = ({
         </div>
       )}
 
+      {/* Tickers Section */}
       {tickers.length > 0 && (
         <div className="p-4 border-b dark:border-gray-700">
           <div className="flex justify-between items-center mb-3">
@@ -238,6 +241,7 @@ export const EnhancedSearchResults = ({
         </div>
       )}
 
+      {/* Posts Section */}
       {posts.length > 0 && (
         <div className="p-4 border-b dark:border-gray-700">
           <div className="flex justify-between items-center mb-3">
@@ -287,12 +291,14 @@ export const EnhancedSearchResults = ({
         </div>
       )}
 
+      {/* No Results Message */}
       {!hasAnyResults && (
         <div className="p-8 text-center text-gray-500 dark:text-gray-400">
           No results found for "{query}"
         </div>
       )}
 
+      {/* See All Results Button */}
       {hasMoreResults && (
         <div className="p-4">
           <Button
