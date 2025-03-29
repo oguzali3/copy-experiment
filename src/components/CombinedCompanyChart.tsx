@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, 
   CartesianGrid, Tooltip, Legend, TooltipProps, ReferenceLine
@@ -7,8 +7,102 @@ import { ChartType } from '@/types/chartTypes';
 import { getMetricDisplayName } from '@/utils/metricDefinitions';
 import { calculateCAGR } from './financials/chartUtils';
 
+// Calculate responsive bar sizing based on chart width and data
+// Calculate responsive bar sizing based on chart width and data
+const calculateResponsiveBarSizing = (containerWidth, dataLength, barMetricCount) => {
+    // Calculate available width for bars (subtract margins)
+    const availableWidth = containerWidth - 140; // Subtract left and right margins
+    
+    // Base calculations
+    let barCategoryGap = 0;
+    let barGap = 0;
+    let barSize = 0;
+    
+    // Minimum spacing between categories
+    const minCategoryGap = 20;
+    // Maximum percentage of available width to use for category gaps
+    const maxCategoryGapPercentage = 0.3;
+    
+    if (dataLength <= 1) {
+      // Special case for single data point
+      barCategoryGap = 0;
+      barGap = 10;
+      barSize = Math.min(200, availableWidth / (barMetricCount || 1));
+    } else {
+      // For multiple data points
+      
+      // Calculate base category gap (space between groups of bars)
+      barCategoryGap = Math.max(
+        minCategoryGap,
+        Math.min(
+          availableWidth * maxCategoryGapPercentage / (dataLength - 1),
+          80 // Cap maximum category gap
+        )
+      );
+      
+      // Bar gap is 1/4 of category gap
+      barGap = barCategoryGap / 4;
+      
+      // Calculate how much width is available for actual bars
+      // Available width minus all gaps between categories
+      const categoryGapsTotal = barCategoryGap * (dataLength - 1);
+      // Minus all gaps between bars within categories (for multiple metrics)
+      const barGapsTotal = barMetricCount > 1 ? barGap * (barMetricCount - 1) * dataLength : 0;
+      
+      const availableBarSpace = availableWidth - categoryGapsTotal - barGapsTotal;
+      
+      // Calculate bar size based on available space and total number of bars
+      barSize = Math.max(10, availableBarSpace / (dataLength * barMetricCount));
+      
+      // Cap bar size to reasonable maximum
+      barSize = Math.min(barSize, 200);
+    }
+  
+  return {
+    barSize: Math.floor(barSize),
+    barGap: Math.floor(barGap),
+    barCategoryGap: Math.floor(barCategoryGap)
+  };
+};
+
+// Calculate responsive typography based on container width
+const calculateResponsiveTypography = (containerWidth) => {
+  // Base sizes for a reference width (e.g., 1000px wide container)
+  const baseWidth = 1000;
+  
+  // Base font sizes
+  const baseTitleSize = 18;
+  const baseSubtitleSize = 14;
+  const baseLegendSize = 12;
+  const baseLabelSize = 11;
+  const baseTickSize = 10;
+  const baseTooltipSize = 12;
+  
+  // Calculate scaling factor based on current width vs base width
+  // Using a sqrt to make scaling less aggressive (more balanced)
+  const scaleFactor = Math.sqrt(containerWidth / baseWidth);
+  
+  // Calculate new sizes with constraints to prevent too small or too large fonts
+  const titleSize = Math.max(14, Math.min(24, Math.round(baseTitleSize * scaleFactor)));
+  const subtitleSize = Math.max(12, Math.min(18, Math.round(baseSubtitleSize * scaleFactor)));
+  const legendSize = Math.max(10, Math.min(16, Math.round(baseLegendSize * scaleFactor)));
+  const labelSize = Math.max(8, Math.min(14, Math.round(baseLabelSize * scaleFactor)));
+  const tickSize = Math.max(8, Math.min(12, Math.round(baseTickSize * scaleFactor)));
+  const tooltipSize = Math.max(10, Math.min(14, Math.round(baseTooltipSize * scaleFactor)));
+  
+  return {
+    titleSize,
+    subtitleSize,
+    legendSize,
+    labelSize,
+    tickSize,
+    tooltipSize,
+    iconSize: Math.max(8, Math.min(16, Math.round(10 * scaleFactor))) // Legend icon size
+  };
+};
+
 // Custom tooltip component for multi-company chart
-const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+const CustomTooltip = ({ active, payload, label, fontSize }: TooltipProps<number, string> & { fontSize: number }) => {
   if (!active || !payload || payload.length === 0) return null;
   
   // Group metrics by company
@@ -34,7 +128,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
   });
   
   return (
-    <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md">
+    <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md" style={{ fontSize: `${fontSize}px` }}>
       <p className="font-medium text-gray-800">{label}</p>
       <div className="mt-2">
         {Object.entries(companiesData).map(([ticker, company]) => (
@@ -61,7 +155,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
                 return (
                   <p 
                     key={`${ticker}-metric-${idx}`} 
-                    className="flex justify-between gap-4 text-sm"
+                    className="flex justify-between gap-4"
                   >
                     <span>{metric.name}: </span>
                     <span className="font-semibold">{formattedValue}{suffix}</span>
@@ -164,6 +258,23 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
   metricLabels,
   metricSettings
 }) => {
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [chartDimensions, setChartDimensions] = useState({
+    barSize: 30,
+    barGap: 4,
+    barCategoryGap: 20
+  });
+  
+  const [typography, setTypography] = useState({
+    titleSize: 18,
+    subtitleSize: 14,
+    legendSize: 12,
+    labelSize: 11,
+    tickSize: 10,
+    tooltipSize: 12,
+    iconSize: 10
+  });
+  
   // Generate colors for companies and metrics
   const colorMap: Record<string, string> = {};
   const baseColors = [
@@ -182,6 +293,51 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
       colorMap[key] = baseColors[colorIndex];
     });
   });
+
+  // Count total bar metrics for sizing calculation
+  const getBarMetricCount = () => {
+    let count = 0;
+    companies.forEach(company => {
+      metrics.forEach(metric => {
+        if (metricTypes[metric] === 'bar') {
+          count++;
+        }
+      });
+    });
+    return Math.max(1, count); // Ensure at least 1 to avoid division by zero
+  };
+  
+  // Update dimensions and typography when component mounts, window resizes, or data changes
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (chartRef.current) {
+        const containerWidth = chartRef.current.offsetWidth;
+        const totalBarCount = getBarMetricCount();
+        
+        // Update bar sizing
+        const barSizing = calculateResponsiveBarSizing(
+          containerWidth,
+          data?.length || 0,
+          totalBarCount
+        );
+        
+        // Update typography
+        const typo = calculateResponsiveTypography(containerWidth);
+        
+        setChartDimensions(barSizing);
+        setTypography(typo);
+      }
+    };
+    
+    // Initial calculation
+    updateDimensions();
+    
+    // Add resize listener
+    window.addEventListener('resize', updateDimensions);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, [data, companies, metrics, metricTypes]);
   
   // Custom legend formatter to show company and metric name with stats
   const legendFormatter = (value: string) => {
@@ -191,7 +347,6 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
     
     // Get company name and data
     const company = companies.find(c => c.ticker === ticker);
-    const companyName = company ? company.name : ticker;
     
     // Get metric display name
     const metricDisplayName = getMetricDisplayName(metricId);
@@ -223,30 +378,14 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
     return <span style={{ color: '#000000' }}>{result}</span>;
   };
   
-  // Calculate optimal bar width based on data and number of metrics
-  const calculateBarSize = () => {
-    if (!data || !data.length) return 30;
-    
-    const barMetricCount = metrics.filter(m => metricTypes[m] === 'bar').length;
-    const totalCompanies = companies.length;
-    
-    // Total number of bars = data points × companies × bar metrics
-    const totalBars = data.length * totalCompanies * (barMetricCount || 1);
-    
-    if (totalBars <= 10) return 70; // Very thick for few bars
-    if (totalBars <= 20) return 50; // Thick for moderate number
-    if (totalBars <= 40) return 30; // Medium for more bars
-    return 20; // Thin for many bars
-  };
-  
   return (
-    <div className="h-full w-full flex flex-col relative">
+    <div className="h-full w-full flex flex-col relative" ref={chartRef}>
       {/* Chart Title */}
       <div className="text-center mb-2">
-        <h3 className="text-lg font-medium text-gray-800">
+        <h3 style={{ fontSize: `${typography.titleSize}px` }} className="font-medium text-gray-800">
           {companies.map(c => c.name).join(' vs. ')} - Comparison
         </h3>
-        <p className="text-sm text-gray-500">
+        <p style={{ fontSize: `${typography.subtitleSize}px` }} className="text-gray-500">
           {metrics.map(m => getMetricDisplayName(m)).join(', ')}
         </p>
       </div>
@@ -255,9 +394,14 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={data}
-            margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
-            barGap={4}
-            barCategoryGap={20}
+            margin={{ 
+              top: 20, 
+              right: 30, 
+              left: 20, 
+              bottom: 120 + (typography.legendSize - 12) * 5 // Adjust bottom margin based on legend size
+            }}
+            barGap={chartDimensions.barGap}
+            barCategoryGap={chartDimensions.barCategoryGap}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
@@ -266,11 +410,34 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
               textAnchor="end" 
               height={60}
               tickMargin={10}
+              tick={{ fontSize: typography.tickSize }}
             />
-            <YAxis tickFormatter={formatYAxis} />
-            <Tooltip content={<CustomTooltip />} />
+            <YAxis 
+              tickFormatter={formatYAxis} 
+              tick={{ fontSize: typography.tickSize }}
+            />
+            <Tooltip 
+              content={<CustomTooltip fontSize={typography.tooltipSize} />} 
+            />
 
-            <Legend formatter={legendFormatter} wrapperStyle={{ paddingTop: 10, left: 70, bottom: 100 }} layout="vertical" align="center" verticalAlign="bottom" iconType="circle" iconSize={10} />
+            <Legend 
+              formatter={(value) => (
+                <span style={{ fontSize: `${typography.legendSize}px` }}>
+                  {legendFormatter(value)}
+                </span>
+              )}
+              wrapperStyle={{ 
+                paddingTop: 10, 
+                left: 70, 
+                bottom: 100 + (typography.legendSize - 12) * 3 // Adjust based on font size
+              }} 
+              layout="vertical" 
+              align="center" 
+              verticalAlign="bottom" 
+              iconType="circle" 
+              iconSize={typography.iconSize}
+            />
+            
             {/* Reference line at y=0 */}
             <ReferenceLine y={0} stroke="#777" strokeDasharray="3 3" />
             
@@ -280,7 +447,6 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
                 const dataKey = `${company.ticker}_${metric}`;
                 const color = colorMap[dataKey];
                 const chartType = metricTypes[metric] || 'bar';
-                const barSize = calculateBarSize();
                 
                 if (chartType === 'line') {
                   return (
@@ -304,7 +470,7 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
                               y={y}
                               dy={-10}
                               fill={color}
-                              fontSize={10}
+                              fontSize={typography.labelSize}
                               textAnchor="middle"
                             >
                               {typeof value === 'number' ? formatYAxis(value) : ''}
@@ -322,7 +488,7 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
                       dataKey={dataKey}
                       name={dataKey}
                       fill={color}
-                      barSize={barSize}
+                      barSize={chartDimensions.barSize}
                       label={(props) => {
                         const { x, y, width, height, value } = props;
                         return (
@@ -330,7 +496,7 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
                             x={x + width / 2}
                             y={y - 5}
                             fill="black"
-                            fontSize={10}
+                            fontSize={typography.labelSize}
                             textAnchor="middle"
                           >
                             {typeof value === 'number' ? formatYAxis(value) : ''}
@@ -347,7 +513,9 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
         
         {/* Logo in the bottom right corner */}
         <div className="absolute bottom-0 right-0 flex items-center">
-          <p className="text-gray-600 font-medium mr-2">Powered by</p>
+          <p className="text-gray-600 font-medium mr-2" style={{ fontSize: `${typography.subtitleSize}px` }}>
+            Powered by
+          </p>
           <img 
             src="/mngrlogo.png" 
             alt="MNGR Logo" 

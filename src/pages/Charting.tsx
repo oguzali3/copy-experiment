@@ -9,7 +9,7 @@ import { FinancialDataTable } from "@/components/FinancialDataTable";
 import { CategoryMetricsPanel, Metric } from"@/components/CategoryMetricsPanel";
 import { metricCategories } from '@/data/metricCategories';
 import { Button } from "@/components/ui/button";
-import { ChartExport } from "@/components/financials/ChartExport";
+import  ChartExport  from "@/components/financials/ChartExport";
 import { getMetricDisplayName } from "@/utils/metricDefinitions";
 import { ChartType } from '@/types/chartTypes';
 import { X, BarChart3, LineChart, Cog, Eye, EyeOff, Move, Pencil, PencilOff } from "lucide-react";
@@ -23,6 +23,7 @@ extractTimePeriods,
 getDefaultTimePeriods, 
 getPeriodIdentifier 
 } from '@/utils/timeUtils';
+import SimplifiedChartExport from "@/components/financials/SimplifiedChartExport";
 
 // API base URL
 const API_BASE_URL = "http://localhost:4000/api/analysis";
@@ -728,6 +729,10 @@ return (
                 <div className="flex flex-col">
                   <span className="text-sm text-gray-600">
                     {getVisibleMetrics().length} of {selectedMetrics.length} metrics visible
+                    <SimplifiedChartExport 
+    chartRef={chartContainerRef}
+    fileName="alcoa-financial-metrics"
+  />
                   </span>
                   {hasStackedMetrics() && (
                     <span className="text-sm text-green-600">
@@ -736,11 +741,11 @@ return (
                   )}
                 </div>
                 <ChartExport 
-                  chartRef={fullExportRef}
-                  fileName="multi-company-metrics"
-                  companyName={selectedCompanies.map(c => c.name).join('-vs-')}
-                  metrics={selectedMetrics.map(m => m.name)}
-                />
+                chartRef={chartContainerRef}
+                fileName={`${selectedCompanies.map(c => c.ticker).join('-')}-metrics`}
+                companyName={selectedCompanies.map(c => c.name).join(' vs ')}
+                metrics={selectedMetrics.map(m => m.name)}
+              />
               </div>
               
               <TimeRangePanel
@@ -802,7 +807,7 @@ return (
                   )}
                   
                   {/* Combined Chart */}
-                  <div className="h-[600px] w-full">
+                  <div className="h-[750px] w-[full]">
                     {getCombinedChartData() && getCombinedChartData().length > 0 ? (
                       <CombinedCompanyChart 
                         data={getCombinedChartData()}
@@ -859,8 +864,23 @@ return (
                     <p>{company.error}</p>
                   </div>
                 )}
-                
-                <div className="h-[600px] w-full" ref={index === 0 ? chartContainerRef : undefined}>
+                    <div className="flex justify-end mb-2">
+                  {getChartData(company.metricData) && getChartData(company.metricData).length > 0 && (
+                    <ChartExport 
+                      data={getChartData(company.metricData)}
+                      metrics={getVisibleMetrics()}
+                      ticker={company.ticker}
+                      metricTypes={metricTypes}
+                      stackedMetrics={hasStackedMetrics() ? getStackedMetrics() : []}
+                      companyName={company.name}
+                      title={`${company.name} (${company.ticker})`}
+                      metricSettings={metricSettings}
+                      metricLabels={metricLabels}
+                      fileName={`${company.ticker}-financial-metrics`}
+                    />
+                  )}
+                </div>
+                <div className="h-[750px] w-[full]" ref={index === 0 ? chartContainerRef : undefined}>
                   {getChartData(company.metricData) && getChartData(company.metricData).length > 0 ? (
                     <MetricChart 
                       data={getChartData(company.metricData)}

@@ -1,221 +1,252 @@
-import React from 'react';
-import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import React, { useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Download, X, Loader } from 'lucide-react';
+import { MetricChart } from '@/components/financials/MetricChartforCharting';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { adjustExportChartMargins } from '@/utils/chartExportUtils';
 
 interface ChartExportProps {
-  chartRef: React.RefObject<HTMLDivElement>;
-  fileName?: string;
+  data: any[]; // The processed data for the chart
+  metrics: string[]; // Metrics to display
+  ticker: string;
+  metricTypes: Record<string, string>;
+  stackedMetrics?: string[];
   companyName?: string;
-  metrics?: string[];
+  title?: string;
+  metricSettings?: Record<string, any>;
+  metricLabels?: Record<string, boolean>;
+  fileName?: string;
 }
 
-/**
- * Component for exporting chart as image or PDF with fixed dimensions
- */
-export const ChartExport: React.FC<ChartExportProps> = ({
-  chartRef,
-  fileName = 'financial-chart',
+const ChartExport: React.FC<ChartExportProps> = ({
+  data,
+  metrics,
+  ticker,
+  metricTypes,
+  stackedMetrics = [],
   companyName = '',
-  metrics = [],
+  title = '',
+  metricSettings = {},
+  metricLabels = {},
+  fileName = 'chart-export'
 }) => {
-  // Generate a descriptive file name
-  const getFileName = (extension: string) => {
-    const timestamp = new Date().toISOString().split('T')[0];
-    const company = companyName ? `-${companyName}` : '';
-    const metricsText = metrics.length > 0 
-      ? `-${metrics.slice(0, 2).join('-')}${metrics.length > 2 ? '-etc' : ''}`
-      : '';
-    
-    return `${fileName}${company}${metricsText}-${timestamp}.${extension}`;
-  };
-
-  // Export chart as PNG image with fixed dimensions
-  const exportAsPNG = async () => {
-    if (!chartRef.current) return;
-    
-    try {
-      // Show loading state
-      const originalButtonText = document.activeElement?.textContent;
-      if (document.activeElement instanceof HTMLButtonElement) {
-        document.activeElement.textContent = 'Exporting...';
-        document.activeElement.disabled = true;
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const exportChartRef = useRef<HTMLDivElement>(null);
+  
+  // Cleanup URL when component unmounts or dialog closes
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
       }
+    };
+  }, [previewUrl]);
+
+  // When dialog opens, we'll prepare to capture the chart
+  useEffect(() => {
+    if (!open) {
+      // Clean up the preview URL when dialog closes
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
+    } else {
+      // When dialog opens, start the capture process after a short delay
+      // to ensure the chart is fully rendered
+      const timer = setTimeout(() => {
+        // First adjust chart margins to ensure axes are visible
+        if (exportChartRef.current) {
+          adjustExportChartMargins(exportChartRef.current);
+        }
+        
+        // Then capture the chart
+        captureChart();
+      }, 1000); // Longer delay to ensure chart is fully rendered
       
-      // Store original dimensions
-      const originalWidth = chartRef.current.style.width;
-      const originalHeight = chartRef.current.style.height;
-      const originalPosition = chartRef.current.style.position;
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
+  const captureChart = async () => {
+    if (!exportChartRef.current) return;
+    
+    setLoading(true);
+    try {
+      // Wait a bit longer to ensure chart rendering is fully complete
+      // This is important for proper axis alignment
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Set fixed dimensions for export (800x567)
-      chartRef.current.style.width = '1600px';
-      chartRef.current.style.height = '1134px';
-      chartRef.current.style.position = 'relative';
-      
-      // Small delay to ensure rendering is complete with new dimensions
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const canvas = await html2canvas(chartRef.current, {
-        width: 1600,
-        height: 1134,
-        scale: 1, // No scaling needed since we're setting exact dimensions
-        backgroundColor: '#FFFFFF',
-        logging: false,
+      // Use html2canvas to capture the newly rendered chart
+      const canvas = await html2canvas(exportChartRef.current, {
+        scale: 2, // Higher scale for better quality
         useCORS: true,
-        allowTaint: true
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        // These settings help with alignment issues
+        imageTimeout: 0,
+        windowWidth: 800,
+        windowHeight: 567,
+        // Ensure we capture all content properly
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.querySelector('[data-testid="export-chart-container"]') as HTMLElement;
+          if (clonedElement) {
+            clonedElement.style.width = '800px';
+            clonedElement.style.height = '567px';
+            clonedElement.style.overflow = 'visible';
+          }
+        }
       });
       
-      // Restore original dimensions
-      chartRef.current.style.width = originalWidth;
-      chartRef.current.style.height = originalHeight;
-      chartRef.current.style.position = originalPosition;
-      
+      // Convert canvas to data URL
       const dataUrl = canvas.toDataURL('image/png');
+      setPreviewUrl(dataUrl);
+    } catch (error) {
+      console.error('Error generating chart preview:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadChart = () => {
+    if (!previewUrl && exportChartRef.current) {
+      // If previewUrl doesn't exist yet but the chart ref does, 
+      // capture the chart immediately and then download
+      setLoading(true);
+      html2canvas(exportChartRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+      }).then(canvas => {
+        const dataUrl = canvas.toDataURL('image/png');
+        
+        // Create a download link and trigger click
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = `${fileName || 'chart-export'}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Also update preview for future downloads
+        setPreviewUrl(dataUrl);
+        setLoading(false);
+      }).catch(err => {
+        console.error('Error capturing chart for direct download:', err);
+        setLoading(false);
+      });
+      
+      return;
+    }
+    
+    if (previewUrl) {
+      // Use existing preview URL if available
       const link = document.createElement('a');
-      link.download = getFileName('png');
-      link.href = dataUrl;
+      link.href = previewUrl;
+      link.download = `${fileName || 'chart-export'}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      // Restore button state
-      if (document.activeElement instanceof HTMLButtonElement) {
-        document.activeElement.textContent = originalButtonText;
-        document.activeElement.disabled = false;
-      }
-    } catch (error) {
-      console.error('Error exporting chart as PNG:', error);
-      alert('Failed to export as PNG. Please try again.');
-      
-      // Restore dimensions in case of error
-      if (chartRef.current) {
-        chartRef.current.style.width = '';
-        chartRef.current.style.height = '';
-        chartRef.current.style.position = '';
-      }
-      
-      // Restore button state on error
-      if (document.activeElement instanceof HTMLButtonElement) {
-        document.activeElement.textContent = 'PNG';
-        document.activeElement.disabled = false;
-      }
     }
   };
 
-  // Export chart as PDF with fixed dimensions
-  const exportAsPDF = async () => {
-    if (!chartRef.current) return;
-    
-    try {
-      // Show loading state
-      const originalButtonText = document.activeElement?.textContent;
-      if (document.activeElement instanceof HTMLButtonElement) {
-        document.activeElement.textContent = 'Exporting...';
-        document.activeElement.disabled = true;
-      }
-      
-      // Store original dimensions
-      const originalWidth = chartRef.current.style.width;
-      const originalHeight = chartRef.current.style.height;
-      const originalPosition = chartRef.current.style.position;
-      
-      // Set fixed dimensions for export (800x567)
-      chartRef.current.style.width = '800px';
-      chartRef.current.style.height = '567px';
-      chartRef.current.style.position = 'relative';
-      
-      // Small delay to ensure rendering is complete with new dimensions
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const canvas = await html2canvas(chartRef.current, {
-        width: 800,
-        height: 567,
-        scale: 1,
-        backgroundColor: '#FFFFFF',
-        logging: false,
-        useCORS: true,
-        allowTaint: true
-      });
-      
-      // Restore original dimensions
-      chartRef.current.style.width = originalWidth;
-      chartRef.current.style.height = originalHeight;
-      chartRef.current.style.position = originalPosition;
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: [297, 210] // A4 landscape
-      });
-      
-      // Add metadata to PDF
-      const width = pdf.internal.pageSize.getWidth();
-      const height = pdf.internal.pageSize.getHeight();
-      
-      // Calculate image dimensions to fit the page while maintaining aspect ratio
-      const ratio = 800 / 567; // Aspect ratio of our image
-      const pdfWidth = width - 40; // Add some margins
-      const pdfHeight = pdfWidth / ratio;
-      const imgX = (width - pdfWidth) / 2;
-      const imgY = (height - pdfHeight) / 2;
-      
-      // Add the chart image
-      pdf.addImage(imgData, 'PNG', imgX, imgY, pdfWidth, pdfHeight);
-      
-      // Add footer with date
-      pdf.setFontSize(8);
-      const date = new Date().toLocaleDateString();
-      pdf.text(`Generated on ${date} | ${companyName} | ${metrics.join(', ')}`, width / 2, height - 10, { align: 'center' });
-      
-      pdf.save(getFileName('pdf'));
-      
-      // Restore button state
-      if (document.activeElement instanceof HTMLButtonElement) {
-        document.activeElement.textContent = originalButtonText;
-        document.activeElement.disabled = false;
-      }
-    } catch (error) {
-      console.error('Error exporting chart as PDF:', error);
-      alert('Failed to export as PDF. Please try again.');
-      
-      // Restore dimensions in case of error
-      if (chartRef.current) {
-        chartRef.current.style.width = '';
-        chartRef.current.style.height = '';
-        chartRef.current.style.position = '';
-      }
-      
-      // Restore button state on error
-      if (document.activeElement instanceof HTMLButtonElement) {
-        document.activeElement.textContent = 'PDF';
-        document.activeElement.disabled = false;
-      }
-    }
+  const handleMetricTypeChange = () => {
+    // This is a no-op function as we don't need to change metric types in the export
+    // but MetricChart requires this prop
   };
 
   return (
-    <div className="flex gap-2">
+    <>
       <Button 
         variant="outline" 
         size="sm" 
-        onClick={exportAsPNG}
         className="flex items-center gap-1"
+        onClick={() => setOpen(true)}
       >
         <Download size={16} />
-        PNG
+        <span>Export Chart</span>
       </Button>
-      <Button 
-        variant="outline" 
-        size="sm" 
-        onClick={exportAsPDF}
-        className="flex items-center gap-1"
-      >
-        <Download size={16} />
-        PDF
-      </Button>
-    </div>
+      
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Export Chart</DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {loading ? (
+              <div className="h-[400px] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader className="animate-spin text-blue-500" size={32} />
+                  <p className="text-sm text-gray-500">Generating preview...</p>
+                </div>
+              </div>
+            ) : previewUrl ? (
+              <div className="flex flex-col items-center">
+                <img 
+                  src={previewUrl} 
+                  alt="Chart Preview" 
+                  className="w-full max-h-[500px] object-contain border border-gray-200 rounded-md"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  {title || `${companyName} ${metrics?.join(', ')}`}
+                </p>
+                <p className="text-xs text-blue-500 mt-1">
+                  PNG image size: 1600 × 1134px (2× resolution for better quality)
+                </p>
+              </div>
+            ) : (
+              <div className="relative" style={{ width: '800px', height: '567px', overflow: 'hidden' }} ref={exportChartRef} data-testid="export-chart-container">
+                {/* Add margin to ensure axes are fully visible */}
+                <div style={{ width: '100%', height: '100%', padding: '1px 1px 2px 1px' }}>
+                  <MetricChart
+                    data={data}
+                    metrics={metrics}
+                    ticker={ticker}
+                    metricTypes={metricTypes}
+                    stackedMetrics={stackedMetrics}
+                    onMetricTypeChange={handleMetricTypeChange}
+                    companyName={companyName}
+                    title={title}
+                    metricSettings={metricSettings}
+                    metricLabels={metricLabels}
+                    exportMode={true} // Enable export mode
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="flex justify-between">
+            <div>
+              <p className="text-xs text-gray-500">
+                Chart will be exported as a high-quality PNG image
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
+                <X size={16} className="mr-1" />
+                Close
+              </Button>
+              
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={downloadChart}
+                disabled={loading} // Enable as long as not loading
+              >
+                <Download size={16} className="mr-1" />
+                Download PNG
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

@@ -1,6 +1,4 @@
-
-  // Update the MetricChart component to handle stacked bars
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { 
   ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, 
   CartesianGrid, Tooltip, Legend, TooltipProps, ReferenceLine, LabelList
@@ -9,12 +7,105 @@ import { metricCategories } from '@/data/metricCategories';
 import { getMetricDisplayName, getMetricFormat } from '@/utils/metricDefinitions';
 import { ChartType } from '@/types/chartTypes';
 
+// Calculate responsive bar sizing based on chart width and data
+const calculateResponsiveBarSizing = (containerWidth, dataLength, barMetricCount) => {
+  // Calculate available width for bars (subtract margins)
+  const availableWidth = containerWidth - 140; // Subtract left and right margins
+  
+  // Base calculations
+  let barCategoryGap = 0;
+  let barGap = 0;
+  let barSize = 0;
+  
+  // Minimum spacing between categories
+  const minCategoryGap = 20;
+  // Maximum percentage of available width to use for category gaps
+  const maxCategoryGapPercentage = 0.15;
+  
+  if (dataLength <= 1) {
+    // Special case for single data point
+    barCategoryGap = 0;
+    barGap = 10;
+    barSize = Math.min(200, availableWidth / (barMetricCount || 1));
+  } else {
+    // For multiple data points
+    
+    // Calculate base category gap (space between groups of bars)
+    barCategoryGap = Math.max(
+      minCategoryGap,
+      Math.min(
+        availableWidth * maxCategoryGapPercentage / (dataLength - 1),
+        80 // Cap maximum category gap
+      )
+    );
+    
+    // Bar gap is 1/4 of category gap
+    barGap = barCategoryGap / 4;
+    
+    // Calculate how much width is available for actual bars
+    // Available width minus all gaps between categories
+    const categoryGapsTotal = barCategoryGap * (dataLength - 1);
+    // Minus all gaps between bars within categories (for multiple metrics)
+    const barGapsTotal = barMetricCount > 1 ? barGap * (barMetricCount - 1) * dataLength : 0;
+    
+    const availableBarSpace = availableWidth - categoryGapsTotal - barGapsTotal;
+    
+    // Calculate bar size based on available space and total number of bars
+    barSize = Math.max(10, availableBarSpace / (dataLength * barMetricCount));
+    
+    // Cap bar size to reasonable maximum
+    barSize = Math.min(barSize, 200);
+  }
+  
+  return {
+    barSize: Math.floor(barSize),
+    barGap: Math.floor(barGap),
+    barCategoryGap: Math.floor(barCategoryGap)
+  };
+};
+
+// Calculate responsive typography based on container width
+const calculateResponsiveTypography = (containerWidth) => {
+  // Base sizes for a reference width (e.g., 1000px wide container)
+  const baseWidth = 1000;
+  
+  // Base font sizes
+  const baseTitleSize = 18;
+  const baseSubtitleSize = 14;
+  const baseLegendSize = 12;
+  const baseLabelSize = 11;
+  const baseTickSize = 10;
+  const baseTooltipSize = 12;
+  
+  // Calculate scaling factor based on current width vs base width
+  // Using a sqrt to make scaling less aggressive (more balanced)
+  const scaleFactor = Math.sqrt(containerWidth / baseWidth);
+  
+  // Calculate new sizes with constraints to prevent too small or too large fonts
+  const titleSize = Math.max(14, Math.min(24, Math.round(baseTitleSize * scaleFactor)));
+  const subtitleSize = Math.max(12, Math.min(18, Math.round(baseSubtitleSize * scaleFactor)));
+  const legendSize = Math.max(10, Math.min(16, Math.round(baseLegendSize * scaleFactor)));
+  const labelSize = Math.max(8, Math.min(14, Math.round(baseLabelSize * scaleFactor)));
+  const tickSize = Math.max(8, Math.min(12, Math.round(baseTickSize * scaleFactor)));
+  const tooltipSize = Math.max(10, Math.min(14, Math.round(baseTooltipSize * scaleFactor)));
+  
+  return {
+    titleSize,
+    subtitleSize,
+    legendSize,
+    labelSize,
+    tickSize,
+    tooltipSize,
+    iconSize: Math.max(8, Math.min(16, Math.round(10 * scaleFactor))) // Legend icon size
+  };
+};
+
 // Custom tooltip component
-const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+const CustomTooltip = ({ active, payload, label, fontSize }: TooltipProps<number, string> & { fontSize: number }) => {
   if (!active || !payload || payload.length === 0) return null;
   
   return (
-    <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md">
+    <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md" style={{ fontSize: `${fontSize}px` }}>
       <p className="font-medium text-gray-800">{label}</p>
       <div className="mt-2 space-y-1">
         {payload.map((entry, index) => {
@@ -170,6 +261,24 @@ export const MetricChart: React.FC<MetricChartProps> = ({
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   
+  // State for responsive sizing
+  const [chartDimensions, setChartDimensions] = useState({
+    barSize: 30,
+    barGap: 4,
+    barCategoryGap: 20
+  });
+  
+  // State for responsive typography
+  const [typography, setTypography] = useState({
+    titleSize: 18,
+    subtitleSize: 14,
+    legendSize: 12,
+    labelSize: 11,
+    tickSize: 10,
+    tooltipSize: 12,
+    iconSize: 14
+  });
+  
   // Console logs for debugging
   console.log("MetricSettings received:", metricSettings);
   console.log("MetricLabels received:", metricLabels);
@@ -201,6 +310,40 @@ export const MetricChart: React.FC<MetricChartProps> = ({
   metrics.forEach((metric, index) => {
     colorMap[metric] = baseColors[index % baseColors.length];
   });
+  
+  // Update dimensions and typography when component mounts, window resizes, or data changes
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (chartRef.current) {
+        const containerWidth = chartRef.current.offsetWidth;
+        
+        // Calculate bar metrics count for sizing
+        const barMetricCount = barMetrics.length + (effectiveStackedMetrics.length > 0 ? 1 : 0);
+        
+        // Update bar sizing
+        const barSizing = calculateResponsiveBarSizing(
+          containerWidth,
+          data?.length || 0,
+          barMetricCount
+        );
+        
+        // Update typography
+        const typo = calculateResponsiveTypography(containerWidth);
+        
+        setChartDimensions(barSizing);
+        setTypography(typo);
+      }
+    };
+    
+    // Initial calculation
+    updateDimensions();
+    
+    // Add resize listener
+    window.addEventListener('resize', updateDimensions);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, [data, barMetrics.length, effectiveStackedMetrics.length]);
   
   // Calculate metrics stats for total change and CAGR
   const metricsStats = useMemo(() => {
@@ -397,8 +540,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({
       result += ` (CAGR: ${stats.cagr.toFixed(2)}%)`;
     }
     
-    // Return the text without applying color
-    return <span style={{ color: '#000000' }}>{result}</span>;
+    // Return the text
+    return result;
   };
 
   // Get metric display names for the subtitle
@@ -437,9 +580,9 @@ export const MetricChart: React.FC<MetricChartProps> = ({
             ifOverflow="extendDomain"
             label={{
               value: `${label}:${formattedValue}`,
-              position: 'right',
-              fill: color,
-              fontSize: 10,
+              position: 'insideBottomRight',
+              fill: "black",
+              fontSize: typography.labelSize,
               offset: 5
             }} 
             style={{ zIndex: 1000 }}
@@ -476,22 +619,6 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     }
     return formatValue(Number(value));
   };
-
-  // Calculate optimal bar size based on data length
-  const calculateBarSize = () => {
-    if (!data) return 30; // Default size
-    
-    const barMetricsCount = barMetrics.length + (effectiveStackedMetrics.length > 0 ? 1 : 0);
-    
-    // Calculate total number of bars (data points × number of bar metrics)
-    const totalBars = data.length * barMetricsCount;
-    if (totalBars <= 6) return 200; // Very thick for 1-3 data points
-    if (totalBars <= 12) return 130; // Very thick for 1-3 data points
-    if (totalBars <= 20) return 70; // Thick for 4-5 data points
-    if (totalBars <= 35) return 40; // Medium for 6-8 data points
-    if (totalBars <= 45) return 30; // Thinner for 9-12 data points
-    return 25; // Very thin for 13+ data points
-  };
   
   // The common data accessor function for chart components
   const getDataAccessor = (metric: string) => {
@@ -505,10 +632,14 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     <div className="h-full flex flex-col relative" ref={chartRef}>
       {/* Chart Title - This will be visible in the PNG export */}
       <div className="text-center mb-2">
-        <h3 className="text-lg font-medium text-gray-800">{chartTitle}</h3>
-        <p className="text-sm text-gray-500">{metricsSubtitle}</p>
+        <h3 style={{ fontSize: `${typography.titleSize}px` }} className="font-medium text-gray-800">
+          {chartTitle}
+        </h3>
+        <p style={{ fontSize: `${typography.subtitleSize}px` }} className="text-gray-500">
+          {metricsSubtitle}
+        </p>
         {effectiveStackedMetrics.length > 0 && (
-          <p className="text-xs text-blue-600 mt-1">
+          <p style={{ fontSize: `${typography.subtitleSize - 2}px` }} className="text-blue-600 mt-1">
             Showing stacked bars for: {effectiveStackedMetrics.map(m => getLocalMetricDisplayName(m)).join(', ')}
           </p>
         )}
@@ -518,47 +649,61 @@ export const MetricChart: React.FC<MetricChartProps> = ({
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={data}
-            margin={{ top: 20, right: 120, left: 20, bottom: 120 }}
-            barGap={10} // Increase space between bars in the same category
-            barCategoryGap={200}
+            margin={{ 
+              top: 20, 
+              right: 10, 
+              left: 1, 
+              bottom: 20 + (typography.legendSize - 12) * 5 // Adjust bottom margin based on legend size
+            }}
+            barGap={chartDimensions.barGap}
+            barCategoryGap={chartDimensions.barCategoryGap}
           >
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid stroke="#e0e0e0" strokeWidth={0.1}  />
             <XAxis 
               dataKey="period" 
-              angle={-45} 
+              angle={0} 
               textAnchor="end" 
               height={60}
               tickMargin={10}
+              stroke="#666"
+              strokeWidth={1}
+              tick={{ fontSize: typography.tickSize }}
             />
-            <YAxis tickFormatter={formatYAxis} />
-            <Tooltip content={<CustomTooltip />} />
+            <YAxis 
+              axisLine={false}
+              tickFormatter={formatYAxis} 
+              tick={{ fontSize: typography.tickSize }}
+            />
+            <Tooltip content={<CustomTooltip fontSize={typography.tooltipSize} />} />
             <Legend 
-              formatter={legendFormatter}
+              formatter={(value) => (
+                <span style={{ fontSize: `${typography.legendSize}px`, color: '#000000' }}>
+                  {legendFormatter(value)}
+                </span>
+              )}
               wrapperStyle={{ 
-                paddingTop: 10,
+                paddingTop: 0,
                 left: 70,
-                bottom: 100
+                bottom: 30 + (typography.legendSize - 12) * 3 // Adjust based on font size
               }}
               layout="vertical"
               align="center"
               verticalAlign="bottom"
               iconType="circle"
-              iconSize={12}
+              iconSize={typography.iconSize}
             />
             
             {/* Reference line at y=0 if any metrics might have negative values */}
             <ReferenceLine y={0} stroke="#777" strokeDasharray="3 3" />
             
             {/* Statistical reference lines */}
-            {renderReferenceLines()}
             
             {/* Render Stacked BAR metrics first (if any) */}
             {effectiveStackedMetrics.length >= 2 && effectiveStackedMetrics.map((metric, index) => {
               const color = colorMap[metric];
               const showLabels = metricLabels[metric] !== false;
-              const barSize = calculateBarSize();
               const dataAccessor = getDataAccessor(metric);
-              
+
               return (
                 <Bar 
                   key={metric} 
@@ -566,7 +711,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
                   name={metric}
                   fill={color}
                   stackId="stack1"
-                  barSize={barSize}
+                  barSize={chartDimensions.barSize}
                   zIndex={1} // Ensure bars have lower z-index
                 >
                   {/* Conditionally add labels if enabled */}
@@ -575,19 +720,18 @@ export const MetricChart: React.FC<MetricChartProps> = ({
                       dataKey={dataAccessor}
                       position="inside"
                       fill="#ffffff"
-                      fontSize={10}
+                      fontSize={typography.labelSize}
                       formatter={formatDataLabel}
                     />
                   )}
                 </Bar>
               );
             })}
-            
+
             {/* Render regular BAR metrics (non-stacked) */}
             {barMetrics.map((metric) => {
               const color = colorMap[metric];
               const showLabels = metricLabels[metric] !== false;
-              const barSize = calculateBarSize();
               const dataAccessor = getDataAccessor(metric);
               
               return (
@@ -596,7 +740,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
                   dataKey={dataAccessor}
                   name={metric}
                   fill={color}
-                  barSize={barSize}
+                  barSize={chartDimensions.barSize}
                   zIndex={1} // Ensure bars have lower z-index
                 >
                   {/* Conditionally add labels if enabled */}
@@ -605,7 +749,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
                       dataKey={dataAccessor}
                       position="top"
                       fill={"black"}
-                      fontSize={12}
+                      fontSize={typography.labelSize}
                       formatter={formatDataLabel}
                     />
                   )}
@@ -637,18 +781,19 @@ export const MetricChart: React.FC<MetricChartProps> = ({
                       dataKey={dataAccessor}
                       position="top"
                       fill={"black"}
-                      fontSize={12}
+                      fontSize={typography.labelSize}
                       formatter={formatDataLabel}
                     />
                   )}
                 </Line>
               );
             })}
+            {renderReferenceLines() }
+
           </ComposedChart>
         </ResponsiveContainer>
-        
-        {/* Logo in the bottom right corner with text */}
-        <div className="absolute bottom-0 right-0 flex items-center">
+        {/* Logo in the bottom right corner with text 
+        <div className="absolute bottom-20 right-20 flex items-center">
           <p className="text-gray-600 font-medium mr-2">Powered by</p>
           <img 
             src="/mngrlogo.png" 
@@ -656,7 +801,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
             className="h-32 w-auto" 
             style={{ opacity: 0.8 }}
           />
-        </div>
+        </div>*/}
       </div>
     </div>
   );
