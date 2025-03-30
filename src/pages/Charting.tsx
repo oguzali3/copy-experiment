@@ -729,10 +729,7 @@ return (
                 <div className="flex flex-col">
                   <span className="text-sm text-gray-600">
                     {getVisibleMetrics().length} of {selectedMetrics.length} metrics visible
-                    <SimplifiedChartExport 
-    chartRef={chartContainerRef}
-    fileName="alcoa-financial-metrics"
-  />
+
                   </span>
                   {hasStackedMetrics() && (
                     <span className="text-sm text-green-600">
@@ -740,12 +737,7 @@ return (
                     </span>
                   )}
                 </div>
-                <ChartExport 
-                chartRef={chartContainerRef}
-                fileName={`${selectedCompanies.map(c => c.ticker).join('-')}-metrics`}
-                companyName={selectedCompanies.map(c => c.name).join(' vs ')}
-                metrics={selectedMetrics.map(m => m.name)}
-              />
+
               </div>
               
               <TimeRangePanel

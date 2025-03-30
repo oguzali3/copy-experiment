@@ -683,7 +683,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
               )}
               wrapperStyle={{ 
                 paddingTop: 0,
-                left: 70,
+                left: 30,
                 bottom: 30 + (typography.legendSize - 12) * 3 // Adjust based on font size
               }}
               layout="vertical"
