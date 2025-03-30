@@ -6,6 +6,9 @@ import { MetricChart } from '@/components/financials/MetricChartforCharting';
 // @ts-ignore
 import { toPng } from 'html-to-image';
 import { adjustExportChartMargins } from '@/utils/chartExportUtils';
+import Logo from '@/components/Logo';
+import logoPath from '/biggr.svg';
+
 
 interface ChartExportProps {
   data: any[]; // The processed data for the chart
@@ -689,25 +692,30 @@ const ChartExport: React.FC<ChartExportProps> = ({
                 </p>
               </div>
             ) : (
-              <div className="relative" style={{ width: '800px', height: '567px', overflow: 'hidden' }} ref={exportChartRef} data-testid="export-chart-container">
-                {/* Add margin to ensure axes are fully visible */}
-                <div style={{ width: '100%', height: '100%', padding: '20px 5px 5px 5px' }}>
-                  <MetricChart
-                    data={data}
-                    metrics={metrics}
-                    ticker={ticker}
-                    metricTypes={metricTypes}
-                    stackedMetrics={stackedMetrics}
-                    onMetricTypeChange={handleMetricTypeChange}
-                    companyName={companyName}
-                    title={title}
-                    metricSettings={metricSettings}
-                    metricLabels={metricLabels}
-                    exportMode={true} // Enable export mode
-                  />
-                </div>
-              </div>
+<div className="relative" style={{ width: '800px', height: '567px', overflow: 'hidden' }} ref={exportChartRef} data-testid="export-chart-container">
+  <div style={{ width: '100%', height: '100%', padding: '20px 5px 20px 5px' }}>
+    <MetricChart
+      data={data}
+      metrics={metrics}
+      ticker={ticker}
+      metricTypes={metricTypes}
+      stackedMetrics={stackedMetrics}
+      onMetricTypeChange={handleMetricTypeChange}
+      companyName={companyName}
+      title={title}
+      metricSettings={metricSettings}
+      metricLabels={metricLabels}
+      exportMode={true} // Enable export mode
+    />
+  </div>
+  <div className="absolute bottom-10 right-10 z-10" style={{ width: '120px', height: '50px', opacity: 0.9 }}>
+  <img src={logoPath} alt="Logo" style={{ width: '100%', height: '100%' }} />
+</div>
+</div>
             )}
+
+
+            
           </div>
           
           <DialogFooter className="flex justify-between">
