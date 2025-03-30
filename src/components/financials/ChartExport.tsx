@@ -77,6 +77,22 @@ const ChartExport: React.FC<ChartExportProps> = ({
             });
           }
           
+          // Make sure the legend displays properly without wrapping
+          const legendItems = container.querySelectorAll('.recharts-legend-item');
+          legendItems.forEach(item => {
+            // Fix legend item width to prevent wrapping
+            (item as HTMLElement).style.display = 'inline-block';
+            (item as HTMLElement).style.whiteSpace = 'nowrap';
+            (item as HTMLElement).style.overflow = 'visible';
+            (item as HTMLElement).style.marginRight = '15px';
+          });
+          
+          // Make sure legend text doesn't wrap
+          const legendTexts = container.querySelectorAll('.recharts-legend-item-text');
+          legendTexts.forEach(text => {
+            (text as HTMLElement).style.whiteSpace = 'nowrap';
+          });
+          
           // Make sure all chart layers are visible
           Array.from(container.querySelectorAll('.recharts-layer')).forEach(layer => {
             (layer as HTMLElement).style.visibility = 'visible';
