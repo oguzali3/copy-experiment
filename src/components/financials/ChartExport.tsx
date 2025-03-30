@@ -170,7 +170,7 @@ const ChartExport: React.FC<ChartExportProps> = ({
         (legendContainer as HTMLElement).style.marginTop = '30px';
         (legendContainer as HTMLElement).style.paddingTop = '15px';
         (legendContainer as HTMLElement).style.textAlign = 'left';
-        (legendContainer as HTMLElement).style.left = '0';
+        (legendContainer as HTMLElement).style.left = '40px';
         (legendContainer as HTMLElement).style.width = '100%';
         
         // Force vertical layout for legends
