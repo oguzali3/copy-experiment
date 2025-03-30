@@ -62,6 +62,27 @@ const ChartExport: React.FC<ChartExportProps> = ({
           // First ensure the container and its contents are fully visible
           const container = exportChartRef.current;
           
+          // Add more space between chart and legend
+          const legendContainer = container.querySelector('.recharts-legend-wrapper');
+          if (legendContainer) {
+            // Add margin top to create space between chart and legend
+            (legendContainer as HTMLElement).style.marginTop = '30px';
+            (legendContainer as HTMLElement).style.paddingTop = '15px';
+            (legendContainer as HTMLElement).style.textAlign = 'left';
+            (legendContainer as HTMLElement).style.left = '0';
+            (legendContainer as HTMLElement).style.width = '100%';
+            
+            // Force vertical layout for legends
+            const legendItems = container.querySelectorAll('.recharts-legend-item');
+            legendItems.forEach((item, index) => {
+              // Set display block to force vertical stacking
+              (item as HTMLElement).style.display = 'block';
+              (item as HTMLElement).style.marginBottom = '4px';
+              (item as HTMLElement).style.whiteSpace = 'nowrap';
+              (item as HTMLElement).style.clear = 'both';
+            });
+          }
+          
           // Make sure all SVG elements are properly sized
           const svg = container.querySelector('svg');
           if (svg) {
@@ -76,16 +97,6 @@ const ChartExport: React.FC<ChartExportProps> = ({
               text.style.display = 'block';
             });
           }
-          
-          // Make sure the legend displays properly without wrapping
-          const legendItems = container.querySelectorAll('.recharts-legend-item');
-          legendItems.forEach(item => {
-            // Fix legend item width to prevent wrapping
-            (item as HTMLElement).style.display = 'inline-block';
-            (item as HTMLElement).style.whiteSpace = 'nowrap';
-            (item as HTMLElement).style.overflow = 'visible';
-            (item as HTMLElement).style.marginRight = '15px';
-          });
           
           // Make sure legend text doesn't wrap
           const legendTexts = container.querySelectorAll('.recharts-legend-item-text');
@@ -152,10 +163,72 @@ const ChartExport: React.FC<ChartExportProps> = ({
         scrollHeight: chartContainer.scrollHeight
       });
       
-      // Add some additional padding to ensure all content is captured
+      // Add more space between chart and legend
+      const legendContainer = chartContainer.querySelector('.recharts-legend-wrapper');
+      if (legendContainer) {
+        // Add margin top to create space between chart and legend
+        (legendContainer as HTMLElement).style.marginTop = '30px';
+        (legendContainer as HTMLElement).style.paddingTop = '15px';
+        (legendContainer as HTMLElement).style.textAlign = 'left';
+        (legendContainer as HTMLElement).style.left = '0';
+        (legendContainer as HTMLElement).style.width = '100%';
+        
+        // Force vertical layout for legends
+        const legendItems = chartContainer.querySelectorAll('.recharts-legend-item');
+        legendItems.forEach((item, index) => {
+          // Set display block to force vertical stacking
+          (item as HTMLElement).style.display = 'block';
+          (item as HTMLElement).style.marginBottom = '4px';
+          (item as HTMLElement).style.whiteSpace = 'nowrap';
+          (item as HTMLElement).style.clear = 'both';
+        });
+      }
+      
+      // Fix for chart scaling - make the chart fill the available width
+      // and reduce left/right margins to minimum
+      const chartWrapper = chartContainer.querySelector('.recharts-wrapper');
+      if (chartWrapper) {
+        // Set the chart to fill the container width
+        chartWrapper.style.width = '100%';
+        chartWrapper.style.maxWidth = 'none';
+        // Reduce side margins to minimum
+        chartWrapper.style.marginLeft = '0';
+        chartWrapper.style.marginRight = '0';
+        chartWrapper.style.display = 'block';
+        // Add bottom margin to create space for legend
+        chartWrapper.style.marginBottom = '25px';
+      }
+      
+      // Fix SVG viewBox if it has extra left space and scale it to fill width
+      const svg = chartContainer.querySelector('svg');
+      if (svg) {
+        // Make SVG fill the container
+        svg.style.width = '100%';
+        svg.style.height = 'auto';
+        svg.style.display = 'block';
+        svg.style.maxWidth = 'none';
+        
+        // Adjust viewBox if needed
+        const viewBox = svg.getAttribute('viewBox')?.split(' ').map(Number);
+        if (viewBox && viewBox.length === 4) {
+          // If there's negative space on the left (first value), reduce it
+          if (viewBox[0] < 0) {
+            // Set left edge to 0 or very minimal negative value
+            viewBox[0] = Math.max(viewBox[0], -2);
+            svg.setAttribute('viewBox', viewBox.join(' '));
+          }
+          
+          // Make sure preserveAspectRatio is set to scale appropriately
+          svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        }
+      }
+      
+      // Add some additional padding to ensure all content is captured, but don't add too much horizontal padding
       const paddingElement = chartContainer.querySelector('div');
       if (paddingElement) {
-        paddingElement.style.padding = '20px 20px 40px 20px'; // Extra padding for bottom axis
+        // Use minimal horizontal padding to maximize chart width
+        // Add more bottom padding to give space for the legend
+        paddingElement.style.padding = '20px 5px 20px 5px'; // More bottom padding
       }
       
       // FIRST ATTEMPT: html-to-image with optimized settings for SVG/dots
@@ -196,7 +269,7 @@ const ChartExport: React.FC<ChartExportProps> = ({
           // Include custom styles to ensure everything is captured
           style: {
             margin: '0',
-            padding: '20px',
+            padding: '5px',
             // Force SVG elements to render properly
             '.recharts-surface': {
               overflow: 'visible'
@@ -205,6 +278,36 @@ const ChartExport: React.FC<ChartExportProps> = ({
             '.recharts-dot, .recharts-line-dot': {
               visibility: 'visible !important',
               opacity: '1 !important'
+            },
+            // Make chart fill available width
+            '.recharts-wrapper': {
+              width: '100% !important',
+              maxWidth: 'none !important',
+              marginLeft: '0 !important',
+              marginRight: '0 !important',
+              marginBottom: '5px !important',
+              display: 'block !important'
+            },
+            // Make SVG fill the wrapper
+            'svg': {
+              width: '100% !important',
+              height: 'auto !important',
+              display: 'block !important',
+              maxWidth: 'none !important'
+            },
+            // Force legend to display vertically with spacing from chart
+            '.recharts-legend-wrapper': {
+              textAlign: 'left !important',
+              left: '0 !important',
+              width: '100% !important',
+              marginTop: '5px !important',
+              paddingTop: '1px !important'
+            },
+            '.recharts-legend-item': {
+              display: 'block !important',
+              marginBottom: '8px !important',
+              whiteSpace: 'nowrap !important',
+              clear: 'both !important'
             }
           },
           // Custom filter to ensure dots and text render properly
@@ -240,20 +343,48 @@ const ChartExport: React.FC<ChartExportProps> = ({
           onclone: (clonedDoc) => {
             const clonedElement = clonedDoc.querySelector('[data-testid="export-chart-container"]');
             if (clonedElement) {
-              // Ensure all dots are visible in the clone
-              clonedElement.querySelectorAll('.recharts-dot, .recharts-line-dot').forEach(dot => {
-                if (dot instanceof Element) {
-                  (dot as HTMLElement).style.visibility = 'visible';
-                  (dot as HTMLElement).style.opacity = '1';
-                }
-              });
+              // Fix legend layout in the clone with more spacing
+              const legendContainer = clonedElement.querySelector('.recharts-legend-wrapper');
+              if (legendContainer) {
+                (legendContainer as HTMLElement).style.textAlign = 'left';
+                (legendContainer as HTMLElement).style.left = '0';
+                (legendContainer as HTMLElement).style.marginTop = '30px';
+                (legendContainer as HTMLElement).style.paddingTop = '15px';
+                
+                // Force vertical layout for legends
+                const legendItems = clonedElement.querySelectorAll('.recharts-legend-item');
+                legendItems.forEach(item => {
+                  (item as HTMLElement).style.display = 'block';
+                  (item as HTMLElement).style.marginBottom = '4px';
+                  (item as HTMLElement).style.clear = 'both';
+                });
+              }
               
-              // Ensure all text elements are visible
-              clonedElement.querySelectorAll('text').forEach(text => {
-                if (text instanceof Element) {
-                  (text as HTMLElement).style.visibility = 'visible';
-                }
-              });
+              // Make chart fill available width in the clone
+              const chartWrapper = clonedElement.querySelector('.recharts-wrapper');
+              if (chartWrapper) {
+                (chartWrapper as HTMLElement).style.width = '100%';
+                (chartWrapper as HTMLElement).style.maxWidth = 'none';
+                (chartWrapper as HTMLElement).style.marginLeft = '0';
+                (chartWrapper as HTMLElement).style.marginRight = '0';
+                (chartWrapper as HTMLElement).style.marginBottom = '25px';
+                (chartWrapper as HTMLElement).style.display = 'block';
+              }
+              
+              // Make SVG fill the wrapper in the clone
+              const svg = clonedElement.querySelector('svg');
+              if (svg) {
+                (svg as SVGElement).style.width = '100%';
+                (svg as SVGElement).style.height = 'auto';
+                (svg as SVGElement).style.display = 'block';
+                (svg as SVGElement).style.maxWidth = 'none';
+              }
+              
+              // Add more bottom padding
+              const paddingElement = clonedElement.querySelector('div');
+              if (paddingElement) {
+                (paddingElement as HTMLElement).style.padding = '20px 5px 60px 5px';
+              }
             }
           }
         });
@@ -287,13 +418,70 @@ const ChartExport: React.FC<ChartExportProps> = ({
       // Use the same html-to-image approach for download as in captureChart
       const chartContainer = exportChartRef.current.querySelector('[data-testid="export-chart-container"]') || exportChartRef.current;
       
-      // Pre-process the SVG elements for better dot alignment
+      // Add more space between chart and legend
+      const legendContainer = chartContainer.querySelector('.recharts-legend-wrapper');
+      if (legendContainer) {
+        // Add margin top to create space between chart and legend
+        (legendContainer as HTMLElement).style.marginTop = '30px';
+        (legendContainer as HTMLElement).style.paddingTop = '15px';
+        (legendContainer as HTMLElement).style.textAlign = 'left';
+        (legendContainer as HTMLElement).style.left = '0';
+        (legendContainer as HTMLElement).style.width = '100%';
+        
+        // Force vertical layout for legends
+        const legendItems = chartContainer.querySelectorAll('.recharts-legend-item');
+        legendItems.forEach((item, index) => {
+          // Set display block to force vertical stacking
+          (item as HTMLElement).style.display = 'block';
+          (item as HTMLElement).style.marginBottom = '8px';
+          (item as HTMLElement).style.whiteSpace = 'nowrap';
+          (item as HTMLElement).style.clear = 'both';
+        });
+      }
+      
+      // Fix for extra left space and make chart fill available width
+      const chartWrapper = chartContainer.querySelector('.recharts-wrapper');
+      if (chartWrapper) {
+        // Set the chart to fill the container width
+        chartWrapper.style.width = '100%';
+        chartWrapper.style.maxWidth = 'none';
+        // Reduce side margins to minimum
+        chartWrapper.style.marginLeft = '0';
+        chartWrapper.style.marginRight = '0';
+        chartWrapper.style.display = 'block';
+        // Add bottom margin to create space for legend
+        chartWrapper.style.marginBottom = '25px';
+      }
+      
+      // Make SVG fill the wrapper
       const svgElement = chartContainer.querySelector('svg');
       if (svgElement) {
+        svgElement.style.width = '100%';
+        svgElement.style.height = 'auto';
+        svgElement.style.display = 'block';
+        svgElement.style.maxWidth = 'none';
+        
+        // Ensure dots are visible
         const dots = svgElement.querySelectorAll('.recharts-dot, .recharts-line-dot');
         dots.forEach(dot => {
           (dot as SVGElement).style.visibility = 'visible';
         });
+        
+        // Fix SVG viewBox if it has extra left space
+        const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number);
+        if (viewBox && viewBox.length === 4 && viewBox[0] < 0) {
+          viewBox[0] = Math.max(viewBox[0], -2); // Limit negative space to bare minimum
+          svgElement.setAttribute('viewBox', viewBox.join(' '));
+        }
+        
+        // Make sure preserveAspectRatio is set to scale appropriately
+        svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      }
+      
+      // Add more bottom padding for legend
+      const paddingElement = chartContainer.querySelector('div');
+      if (paddingElement) {
+        paddingElement.style.padding = '20px 5px 60px 5px'; // More bottom padding
       }
       
       // Use html-to-image for better SVG rendering
@@ -305,13 +493,43 @@ const ChartExport: React.FC<ChartExportProps> = ({
           cacheBust: true,
           style: {
             margin: '0',
-            padding: '20px',
+            padding: '5px', // Minimal padding
             '.recharts-surface': {
               overflow: 'visible'
             },
             '.recharts-dot, .recharts-line-dot': {
               visibility: 'visible !important',
               opacity: '1 !important'
+            },
+            // Make chart fill available width
+            '.recharts-wrapper': {
+              width: '100% !important',
+              maxWidth: 'none !important',
+              marginLeft: '0 !important',
+              marginRight: '0 !important',
+              marginBottom: '25px !important',
+              display: 'block !important'
+            },
+            // Make SVG fill the wrapper
+            'svg': {
+              width: '100% !important',
+              height: 'auto !important',
+              display: 'block !important',
+              maxWidth: 'none !important'
+            },
+            // Force legend to display vertically with spacing from chart
+            '.recharts-legend-wrapper': {
+              textAlign: 'left !important',
+              left: '0 !important',
+              width: '100% !important',
+              marginTop: '30px !important',
+              paddingTop: '15px !important'
+            },
+            '.recharts-legend-item': {
+              display: 'block !important',
+              marginBottom: '4px !important',
+              whiteSpace: 'nowrap !important',
+              clear: 'both !important'
             }
           }
         }).then(dataUrl => {
@@ -337,7 +555,54 @@ const ChartExport: React.FC<ChartExportProps> = ({
               scale: 2,
               useCORS: true,
               allowTaint: true,
-              backgroundColor: '#ffffff'
+              backgroundColor: '#ffffff',
+              onclone: (clonedDoc) => {
+                const clonedElement = clonedDoc.querySelector('[data-testid="export-chart-container"]');
+                if (clonedElement) {
+                  // Fix legend layout in the clone with more spacing
+                  const legendContainer = clonedElement.querySelector('.recharts-legend-wrapper');
+                  if (legendContainer) {
+                    (legendContainer as HTMLElement).style.textAlign = 'left';
+                    (legendContainer as HTMLElement).style.left = '0';
+                    (legendContainer as HTMLElement).style.marginTop = '30px';
+                    (legendContainer as HTMLElement).style.paddingTop = '15px';
+                    
+                    // Force vertical layout for legends
+                    const legendItems = clonedElement.querySelectorAll('.recharts-legend-item');
+                    legendItems.forEach(item => {
+                      (item as HTMLElement).style.display = 'block';
+                      (item as HTMLElement).style.marginBottom = '8px';
+                      (item as HTMLElement).style.clear = 'both';
+                    });
+                  }
+                  
+                  // Make chart fill available width in the clone
+                  const chartWrapper = clonedElement.querySelector('.recharts-wrapper');
+                  if (chartWrapper) {
+                    (chartWrapper as HTMLElement).style.width = '100%';
+                    (chartWrapper as HTMLElement).style.maxWidth = 'none';
+                    (chartWrapper as HTMLElement).style.marginLeft = '0';
+                    (chartWrapper as HTMLElement).style.marginRight = '0';
+                    (chartWrapper as HTMLElement).style.marginBottom = '25px';
+                    (chartWrapper as HTMLElement).style.display = 'block';
+                  }
+                  
+                  // Make SVG fill the wrapper in the clone
+                  const svg = clonedElement.querySelector('svg');
+                  if (svg) {
+                    (svg as SVGElement).style.width = '100%';
+                    (svg as SVGElement).style.height = 'auto';
+                    (svg as SVGElement).style.display = 'block';
+                    (svg as SVGElement).style.maxWidth = 'none';
+                  }
+                  
+                  // Add more bottom padding
+                  const paddingElement = clonedElement.querySelector('div');
+                  if (paddingElement) {
+                    (paddingElement as HTMLElement).style.padding = '20px 5px 60px 5px';
+                  }
+                }
+              }
             }).then(canvas => {
               const dataUrl = canvas.toDataURL('image/png');
               
@@ -426,7 +691,7 @@ const ChartExport: React.FC<ChartExportProps> = ({
             ) : (
               <div className="relative" style={{ width: '800px', height: '567px', overflow: 'hidden' }} ref={exportChartRef} data-testid="export-chart-container">
                 {/* Add margin to ensure axes are fully visible */}
-                <div style={{ width: '100%', height: '100%', padding: '1px 1px 2px 1px' }}>
+                <div style={{ width: '100%', height: '100%', padding: '20px 5px 5px 5px' }}>
                   <MetricChart
                     data={data}
                     metrics={metrics}
