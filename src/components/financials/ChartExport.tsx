@@ -708,7 +708,7 @@ const ChartExport: React.FC<ChartExportProps> = ({
       exportMode={true} // Enable export mode
     />
   </div>
-  <div className="absolute bottom-10 right-10 z-10" style={{ width: '120px', height: '50px', opacity: 0.9 }}>
+  <div className="absolute bottom-10 right-10 z-10" style={{ width: '150px', height: '70px', opacity: 0.9 }}>
   <img src={logoPath} alt="Logo" style={{ width: '100%', height: '100%' }} />
 </div>
 </div>
