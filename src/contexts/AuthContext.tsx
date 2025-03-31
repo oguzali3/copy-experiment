@@ -3,7 +3,28 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { AuthService, isAuthenticated, getAuthToken } from '@/services/auth.service';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
+import { gql, useQuery } from '@apollo/client';
 
+export const GET_SSO_USER_PROFILE = gql`
+  query GetSsoUserProfile {
+    getSsoUserProfile {
+      id
+      displayName
+      avatarUrl
+      email
+      isVerified
+      followersCount
+      followingCount
+      bio
+      avatarVariants {
+        original
+        thumbnail
+        medium
+        optimized
+      }
+    }
+  }
+`;
 // Define user type
 interface User {
   id: string;
@@ -11,6 +32,15 @@ interface User {
   displayName?: string;
   avatarUrl?: string;
   isVerified?: boolean;
+  followersCount?: number;
+  followingCount?: number;
+  bio?: string;
+  avatarVariants?: {
+    original?: string;
+    thumbnail?: string;
+    medium?: string;
+    optimized?: string;
+  };
 }
 
 // JWT payload type
@@ -29,6 +59,7 @@ interface AuthContextType {
   signUpWithEmail: (email: string, password: string, displayName: string, avatarUrl?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  refreshUserProfile: () => Promise<void>; // New method to refresh user profile
 }
 
 // Create context
@@ -43,6 +74,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(getAuthToken());
+  const [basicUserInfo, setBasicUserInfo] = useState<User | null>(null);
   
   // Extract basic user info from token
   const getUserFromToken = (token: string): User | null => {
@@ -64,32 +97,90 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Set basic user info from token
+  useEffect(() => {
+    if (token) {
+      const basicUser = getUserFromToken(token);
+      setBasicUserInfo(basicUser);
+    } else {
+      setBasicUserInfo(null);
+    }
+  }, [token]);
+
+
+  const { data: ssoProfileData, loading: ssoProfileLoading, error: ssoProfileError, refetch: refetchSsoProfile } =
+    useQuery(GET_SSO_USER_PROFILE, {
+      skip: !basicUserInfo?.id,
+      fetchPolicy: 'network-only',
+      onCompleted: (data) => {
+        if (data?.getSsoUserProfile) {
+          const fullUser = {
+            ...basicUserInfo,
+            ...data.getSsoUserProfile
+          };
+          console.log("SSO user profile fetched successfully:", fullUser);
+          setUser(fullUser);
+          setIsLoading(false);
+        }
+      }
+    });
+
+  // Handle profile fetch errors by falling back to basic user info
+  useEffect(() => {
+    if (!ssoProfileLoading && ssoProfileError && basicUserInfo) {
+      console.error("Failed to fetch user profile:", ssoProfileError);
+      setUser(basicUserInfo);
+      setIsLoading(false);
+    }
+  }, [ssoProfileLoading, ssoProfileError, basicUserInfo]);
+
+  // Method to refresh user profile
+  const refreshUserProfile = async () => {
+    if (basicUserInfo?.id) {
+      try {
+        setIsLoading(true);
+        await refetchSsoProfile();
+      } catch (error) {
+        console.error('Error refreshing user profile:', error);
+        // Fall back to basic info
+        setUser(basicUserInfo);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
   // Initial auth check
   useEffect(() => {
     const checkAuth = async () => {
       try {
         setIsLoading(true);
-        const token = getAuthToken();
+        const currentToken = getAuthToken();
         
-        if (token) {
-          const basicUser = getUserFromToken(token);
+        if (currentToken) {
+          const basicUser = getUserFromToken(currentToken);
           
           if (basicUser) {
-            // In a real app, you might want to fetch additional user details here
-            // For example: const fullUserDetails = await AuthService.getCurrentUser();
-            setUser(basicUser);
+            setToken(currentToken);
+            setBasicUserInfo(basicUser);
+            // Full profile will be loaded by the GraphQL queries
           } else {
             // Token is invalid or expired
-            AuthService.signOut();
+            await AuthService.signOut();
             setUser(null);
+            setToken(null);
+            setBasicUserInfo(null);
+            setIsLoading(false);
           }
         } else {
           setUser(null);
+          setToken(null);
+          setBasicUserInfo(null);
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('Error checking authentication:', error);
         setUser(null);
-      } finally {
         setIsLoading(false);
       }
     };
@@ -103,13 +194,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setIsLoading(true);
       const data = await AuthService.signInWithEmail(email, password);
       if (data?.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email || '',
-          displayName: data.user.displayName || data.user.email?.split('@')[0] || '',
-          avatarUrl: data.user.avatarUrl,
-          isVerified: data.user.isVerified,
-        });
+        // Store full user data immediately if available from sign-in response
+        setUser(data.user);
+        setToken(data.token);
         navigate('/dashboard');
       }
     } catch (error) {
@@ -126,13 +213,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setIsLoading(true);
       const data = await AuthService.signUpWithEmail(email, password, displayName, avatarUrl);
       if (data?.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email || '',
-          displayName: displayName || data.user.email?.split('@')[0] || '',
-          avatarUrl,
-          isVerified: data.user.isVerified,
-        });
+        // Store full user data immediately if available from sign-up response
+        setUser(data.user);
+        setToken(data.token);
         navigate('/dashboard');
       }
     } catch (error) {
@@ -160,6 +243,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setIsLoading(true);
       await AuthService.signOut();
       setUser(null);
+      setToken(null);
+      setBasicUserInfo(null);
       navigate('/');
     } catch (error) {
       console.error('Sign out error:', error);
@@ -178,6 +263,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signUpWithEmail,
     signInWithGoogle,
     signOut,
+    refreshUserProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

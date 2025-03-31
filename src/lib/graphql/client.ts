@@ -71,18 +71,170 @@ export const apolloClient = new ApolloClient({
     typePolicies: {
       Query: {
         fields: {
+          // Standard feed query
           feed: {
             // Don't merge arrays, use cache-and-network to get fresh data when needed
             merge(existing, incoming) {
               return incoming;
             }
           },
+          
+          // Connection-based feed types
+          homeFeed: {
+            keyArgs: false,
+            merge(existing = { edges: [], pageInfo: {} }, incoming) {
+              if (!incoming) return existing;
+              
+              // If this is a refresh (no existing data or clearing cache), just return incoming
+              if (!existing.edges || existing.edges.length === 0) {
+                return incoming;
+              }
+              
+              // Create a set of existing IDs for efficient lookup
+              const existingIds = new Set(
+                existing.edges.map(edge => edge.node.id)
+              );
+              
+              // Filter incoming edges to only include new unique ones
+              const newUniqueEdges = incoming.edges.filter(
+                edge => !existingIds.has(edge.node.id)
+              );
+              
+              console.log(`[Apollo Cache] Merging homeFeed: found ${newUniqueEdges.length} new edges`);
+              
+              return {
+                __typename: incoming.__typename,
+                edges: [...existing.edges, ...newUniqueEdges],
+                pageInfo: incoming.pageInfo,
+              };
+            }
+          },
+          
+          exploreFeed: {
+            keyArgs: false,
+            merge(existing = { edges: [], pageInfo: {} }, incoming) {
+              if (!incoming) return existing;
+              
+              // If this is a refresh (no existing data or clearing cache), just return incoming
+              if (!existing.edges || existing.edges.length === 0) {
+                return incoming;
+              }
+              
+              // Create a set of existing IDs for efficient lookup
+              const existingIds = new Set(
+                existing.edges.map(edge => edge.node.id)
+              );
+              
+              // Filter incoming edges to only include new unique ones
+              const newUniqueEdges = incoming.edges.filter(
+                edge => !existingIds.has(edge.node.id)
+              );
+              
+              console.log(`[Apollo Cache] Merging exploreFeed: found ${newUniqueEdges.length} new edges`);
+              
+              // CRITICAL FIX: Create a new object for Apollo cache to properly detect the change
+              const result = {
+                __typename: incoming.__typename,
+                edges: [...existing.edges, ...newUniqueEdges],
+                pageInfo: incoming.pageInfo,
+              };
+              
+              console.log(`[Apollo Cache] Final exploreFeed edges count: ${result.edges.length}`);
+              
+              return result;
+            }
+          },
+          
+          followingFeed: {
+            keyArgs: false,
+            merge(existing = { edges: [], pageInfo: {} }, incoming) {
+              if (!incoming) return existing;
+              
+              if (!existing.edges || existing.edges.length === 0) {
+                return incoming;
+              }
+              
+              const existingIds = new Set(
+                existing.edges.map(edge => edge.node.id)
+              );
+              
+              const newUniqueEdges = incoming.edges.filter(
+                edge => !existingIds.has(edge.node.id)
+              );
+              
+              console.log(`[Apollo Cache] Merging followingFeed: found ${newUniqueEdges.length} new edges`);
+              
+              return {
+                __typename: incoming.__typename,
+                edges: [...existing.edges, ...newUniqueEdges],
+                pageInfo: incoming.pageInfo,
+              };
+            }
+          },
+          
+          popularFeed: {
+            keyArgs: false,
+            merge(existing = { edges: [], pageInfo: {} }, incoming) {
+              if (!incoming) return existing;
+              
+              if (!existing.edges || existing.edges.length === 0) {
+                return incoming;
+              }
+              
+              const existingIds = new Set(
+                existing.edges.map(edge => edge.node.id)
+              );
+              
+              const newUniqueEdges = incoming.edges.filter(
+                edge => !existingIds.has(edge.node.id)
+              );
+              
+              console.log(`[Apollo Cache] Merging popularFeed: found ${newUniqueEdges.length} new edges`);
+              
+              return {
+                __typename: incoming.__typename,
+                edges: [...existing.edges, ...newUniqueEdges],
+                pageInfo: incoming.pageInfo,
+              };
+            }
+          },
+          
+          filteredFeed: {
+            // For filteredFeed, we need to consider filters as key args
+            keyArgs: ['filters'],
+            merge(existing = { edges: [], pageInfo: {} }, incoming, { args }) {
+              if (!incoming) return existing;
+              
+              if (!existing.edges || existing.edges.length === 0) {
+                return incoming;
+              }
+              
+              const existingIds = new Set(
+                existing.edges.map(edge => edge.node.id)
+              );
+              
+              const newUniqueEdges = incoming.edges.filter(
+                edge => !existingIds.has(edge.node.id)
+              );
+              
+              console.log(`[Apollo Cache] Merging filteredFeed: found ${newUniqueEdges.length} new edges`);
+              
+              return {
+                __typename: incoming.__typename,
+                edges: [...existing.edges, ...newUniqueEdges],
+                pageInfo: incoming.pageInfo,
+              };
+            }
+          },
+          
+          // Other pagination-based fields
           postComments: {
             // Merge function for paginated comments
             merge(existing = [], incoming) {
               return [...existing, ...incoming];
             }
           },
+          
           getFollowers: {
             // Custom merge for followers connection
             merge(existing, incoming) {
@@ -93,6 +245,7 @@ export const apolloClient = new ApolloClient({
               };
             }
           },
+          
           getFollowing: {
             // Custom merge for following connection
             merge(existing, incoming) {
@@ -105,6 +258,7 @@ export const apolloClient = new ApolloClient({
           }
         }
       },
+      
       // Add specific type policies for Post
       Post: {
         fields: {
@@ -126,12 +280,13 @@ export const apolloClient = new ApolloClient({
   }),
   defaultOptions: {
     watchQuery: {
-      // Use cache-first for better performance, with network updates when needed
-      fetchPolicy: 'cache-first',
+      // Disable caching for all queries
+      fetchPolicy: 'network-only', // Changed from 'cache-and-network'
+      nextFetchPolicy: 'network-only',
       errorPolicy: 'all',
     },
     query: {
-      fetchPolicy: 'cache-first',
+      fetchPolicy: 'network-only', // Changed from 'cache-first'
       errorPolicy: 'all',
     },
     mutate: {

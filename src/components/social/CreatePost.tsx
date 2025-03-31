@@ -9,7 +9,7 @@ import { User, ImagePlus, X } from "lucide-react";
 import { usePostsApi } from "@/hooks/usePostsApi";
 import { useMutation } from "@apollo/client";
 import { UPLOAD_IMAGE } from "@/lib/graphql/operations/upload";
-import { AvatarDisplay } from "./AvatarDisplay"; // Import AvatarDisplay component
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Define the input type to match your GraphQL schema
 interface CreatePostVariables {
@@ -25,11 +25,15 @@ interface CreatePostVariables {
   }
 }
 
+// Storage key for saving avatarUrl in localStorage
+const AVATAR_STORAGE_KEY = 'user_avatar_url';
+
 export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) => {
   const [content, setContent] = useState("");
   const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [savedAvatarUrl, setSavedAvatarUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Use GraphQL hooks
@@ -42,10 +46,21 @@ export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) =>
   // Combined loading state
   const isSubmitting = createPostLoading || uploadLoading;
   
-  // Debug user state to console - remove in production
+  // Load saved avatarUrl from localStorage on mount
   useEffect(() => {
-    console.log("User in CreatePost:", user);
-  }, [user]);
+    const savedUrl = localStorage.getItem(AVATAR_STORAGE_KEY);
+    if (savedUrl) {
+      setSavedAvatarUrl(savedUrl);
+    }
+  }, []);
+
+  // Save avatar URL to localStorage when the user logs in and has an avatarUrl
+  useEffect(() => {
+    if (user?.avatarUrl) {
+      localStorage.setItem(AVATAR_STORAGE_KEY, user.avatarUrl);
+      setSavedAvatarUrl(user.avatarUrl);
+    }
+  }, [user?.avatarUrl]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -138,34 +153,70 @@ export const CreatePost = ({ onPostCreated }: { onPostCreated?: () => void }) =>
     }
   };
 
-  // Determine whether to show AvatarDisplay or a fallback
-  const renderUserAvatar = () => {
-    if (user && user.avatarUrl) {
-      // If we have an authenticated user with an avatar URL
-      return (
-        <AvatarDisplay 
-          avatarUrl={user.avatarUrl}
-          username={user.displayName}
-          size="md"
-          interactive={true}
-          className="w-10 h-10 flex-shrink-0"
-          onClick={() => window.location.href = '/profile'}
-        />
-      );
-    } else {
-      // Fallback to using the standard Avatar component
-      return (
-        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-          <User className="h-5 w-5 text-gray-500" />
-        </div>
-      );
+  // Handle navigation to profile
+  const handleUserClick = () => {
+    window.location.href = '/profile';
+  };
+
+  // Use user.avatarUrl, savedAvatarUrl, or generate a color based on user ID
+  const getUserColor = () => {
+    if (!user?.id) return 'bg-gray-500';
+    
+    // Generate a deterministic color based on the user ID
+    const colors = [
+      'bg-blue-500', 'bg-green-500', 'bg-purple-500', 
+      'bg-pink-500', 'bg-yellow-500', 'bg-red-500', 
+      'bg-indigo-500', 'bg-teal-500'
+    ];
+    
+    // Simple hash function to get consistent color for same user ID
+    let hash = 0;
+    for (let i = 0; i < user.id.length; i++) {
+      hash = user.id.charCodeAt(i) + ((hash << 5) - hash);
     }
+    
+    // Get positive value and mod by number of colors
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+
+  // Get user initial based on available data
+  const getUserInitial = () => {
+    if (user?.displayName && user.displayName.length > 0) {
+      return user.displayName.charAt(0).toUpperCase();
+    } else if (user?.email && user.email.length > 0) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    return <User className="w-5 h-5 text-white" />;
+  };
+
+  // Determine the avatar URL to use
+  const getAvatarUrl = () => {
+    if (user?.avatarUrl) {
+      return user.avatarUrl;
+    }
+    
+    if (savedAvatarUrl) {
+      return savedAvatarUrl;
+    }
+    
+    return null;
   };
 
   return (
     <Card className="p-4">
       <div className="flex gap-4">
-        {renderUserAvatar()}
+        {/* Avatar with user's actual avatar URL or colored fallback */}
+        <Avatar 
+          className="w-10 h-10 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-blue-500"
+          onClick={handleUserClick}
+        >
+          <AvatarImage src={getAvatarUrl()} alt={user?.displayName || 'User'} />
+          <AvatarFallback className={getUserColor()}>
+            {getUserInitial()}
+          </AvatarFallback>
+        </Avatar>
+
         <div className="flex-1">
           <Textarea
             placeholder="What's on your mind?"

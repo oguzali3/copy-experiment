@@ -1,5 +1,6 @@
-// src/components/social/EnhancedFeed.tsx - Fixed pagination for non-standard cursor API
-import { useState, useEffect, useRef, useCallback } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/components/social/EnhancedFeed.tsx
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,25 +8,13 @@ import { Post } from "@/components/social/Post";
 import { Button } from "@/components/ui/button";
 import { RefreshCcw } from "lucide-react";
 import { useImagePreloader } from '@/hooks/useImagePreloader';
-import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { Spinner, Skeleton, LoadingState, RetryMessage } from "@/components/ui/loaders";
 import { 
-  useFeed, 
+  useEnhancedFeed, 
   FeedType, 
   FeedFilterInput,
 } from '@/hooks/useFeed';
-import { Post as PostType } from "@/lib/graphql/types";
 import { SocialPaginationInput } from "./types";
-
-// Extended PostType interface to include imageVariants
-interface ExtendedPostType extends PostType {
-  imageVariants?: {
-    original: string;
-    thumbnail: string;
-    medium: string;
-    optimized: string;
-  };
-}
 
 interface EnhancedFeedProps {
   feedType: FeedType;
@@ -46,10 +35,10 @@ export const EnhancedFeed: React.FC<EnhancedFeedProps> = ({
 }) => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  const [posts, setPosts] = useState<ExtendedPostType[]>([]);
+  const [posts, setPosts] = useState<any[]>([]);
   const [loadedPages, setLoadedPages] = useState<number>(1);
   
-  // Initialize pagination with correct parameters matching server expectations
+  // Initialize pagination with correct parameters
   const [pagination, setPagination] = useState<SocialPaginationInput>({
     first: itemsPerPage,
     after: undefined
@@ -58,27 +47,24 @@ export const EnhancedFeed: React.FC<EnhancedFeedProps> = ({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
-  
-  // Track if we've reached the end of available posts
   const [reachedEnd, setReachedEnd] = useState(false);
-  
-  // Add a debounce flag for loadMore to prevent duplicate calls
   const isLoadingMoreRef = useRef(false);
+  const loadMoreTriggerTimestamp = useRef(0);
   
-  // Ref for infinite scrolling
+  // Create ref for the load more sentinel
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
-  // Create intersection observer for infinite scrolling
-  const { isVisible } = useIntersectionObserver(
-    loadMoreRef,
-    {
-      root: null,
-      rootMargin: '200px', // Increased for better responsiveness
-      threshold: 0.1
-    }
-  );
+  // Track component mount state
+  const componentIsMounted = useRef(true);
   
-  // Fetch feed data with the custom hook with correct pagination
+  useEffect(() => {
+    componentIsMounted.current = true;
+    return () => {
+      componentIsMounted.current = false;
+    };
+  }, []);
+  
+  // Use the enhanced feed hook
   const { 
     loading: feedLoading, 
     error: feedError,
@@ -87,113 +73,174 @@ export const EnhancedFeed: React.FC<EnhancedFeedProps> = ({
     refetch: refetchFeed,
     refreshFeed,
     isRefreshing
-  } = useFeed(feedType, {
+  } = useEnhancedFeed(feedType, {
     pagination,
     filters,
     skip: !isAuthenticated
   });
   
+  // Set hasInitialized after first data load
+  useEffect(() => {
+    if (feedData && !hasInitialized) {
+      console.log('[EnhancedFeed] Feed initialized');
+      setHasInitialized(true);
+    }
+  }, [feedData, hasInitialized]);
+
   // Extract posts from the received feedData
   useEffect(() => {
     if (!feedData) return;
-
-    console.log('[EnhancedFeed] Feed data received:', feedData);
+  
+    console.log(`[EnhancedFeed] ${feedType} feed data received:`, feedData);
+    
+    // Log pageInfo specifically for debugging
+    if (feedData.pageInfo) {
+      console.log(`[EnhancedFeed] pageInfo:`, {
+        hasNextPage: feedData.pageInfo.hasNextPage,
+        endCursor: feedData.pageInfo.endCursor,
+        edges: feedData.edges?.length || 0
+      });
+    }
     
     // Handle different response formats from the API
-    let extractedPosts: ExtendedPostType[] = [];
+    let extractedPosts: any[] = [];
     
     if (Array.isArray(feedData)) {
-      // Direct array format
-      extractedPosts = feedData as ExtendedPostType[];
+      // Direct array format (old feed endpoint)
+      extractedPosts = feedData;
     } else if (feedData.edges && Array.isArray(feedData.edges)) {
-      // Connection pattern with edges and nodes
-      extractedPosts = feedData.edges.map(edge => edge.node as ExtendedPostType);
-    } else if (feedData.feed && Array.isArray(feedData.feed)) {
-      // Nested feed array
-      extractedPosts = feedData.feed as ExtendedPostType[];
-    } else {
-      console.error('[EnhancedFeed] Unexpected feed data format:', feedData);
+      // Connection pattern with edges and nodes (new feed endpoints)
+      extractedPosts = feedData.edges.map(edge => edge.node);
+      
+      // Check if we've reached the end based on pageInfo
+      if (feedData.pageInfo && feedData.pageInfo.hasNextPage === false) {
+        console.log('[EnhancedFeed] Server indicates no more pages');
+        setReachedEnd(true);
+      }
     }
     
     if (extractedPosts.length > 0) {
       console.log('[EnhancedFeed] Extracted posts:', extractedPosts.length);
       
-      // If this is a fresh load (not loading more), replace all posts
+      // Only update posts for initial loads, not when loading more
+      // This prevents the useEffect from conflicting with the direct updates in loadMorePosts
       if (!isLoadingMore) {
+        console.log('[EnhancedFeed] Setting initial posts');
         setPosts(extractedPosts);
-      } else {
-        // When loading more, append new posts while avoiding duplicates
-        setPosts(prevPosts => {
-          const existingIds = new Set(prevPosts.map(post => post.id));
-          const uniqueNewPosts = extractedPosts.filter(post => !existingIds.has(post.id));
-          
-          console.log('[EnhancedFeed] Unique new posts to add:', uniqueNewPosts.length);
-          
-          if (uniqueNewPosts.length === 0) {
-            // No new posts means we've reached the end
-            setTimeout(() => {
-              setReachedEnd(true);
-            }, 0);
-            return prevPosts;
-          }
-          
-          return [...prevPosts, ...uniqueNewPosts];
-        });
+        
+        // If received fewer posts than requested, we've likely reached the end
+        if (extractedPosts.length < itemsPerPage) {
+          console.log('[EnhancedFeed] Fewer posts than requested - likely end of feed');
+          setReachedEnd(true);
+        }
       }
-      
-      // If received fewer posts than requested, we've likely reached the end
-      if (extractedPosts.length < itemsPerPage) {
-        console.log('[EnhancedFeed] Fewer posts than requested - likely end of feed');
-        setReachedEnd(true);
-      }
-    } else if (isLoadingMore) {
-      // No posts returned when loading more = end of feed
-      console.log('[EnhancedFeed] No posts returned during loadMore - end of feed');
-      setReachedEnd(true);
+    } else if (!isLoadingMore) {
+      // Only show empty state for initial loads
+      console.log('[EnhancedFeed] No posts returned for initial load');
+      setPosts([]);
     }
     
-    // Mark as initialized after first data load
-    if (!hasInitialized && !feedLoading) {
-      setHasInitialized(true);
+    // Reset loading flags for initial loads only
+    // For "load more" operations, this is handled in the loadMorePosts function
+    if (!isLoadingMore) {
+      setTimeout(() => {
+        if (componentIsMounted.current) {
+          isLoadingMoreRef.current = false;
+        }
+      }, 100);
     }
     
-    // Reset loading more flag
-    setIsLoadingMore(false);
-    isLoadingMoreRef.current = false;
-    
-  }, [feedData, feedLoading, isLoadingMore, itemsPerPage, hasInitialized]);
+  }, [feedData, feedType, isLoadingMore, itemsPerPage]);
   
-  // Properly use the image preloader hook at component level with stable dependency list
+  // Preload images for better UX
   const postsToPreload = useCallback(() => {
     return posts.slice(0, 5);
   }, [posts]);
   
   useImagePreloader(postsToPreload(), 5);
   
-  // Handle infinite scrolling with improved debouncing logic
+  // SIMPLE APPROACH: Use direct scroll event listening instead of Intersection Observer
   useEffect(() => {
-    // Only proceed if we should load more and aren't already loading
-    if (
-      isVisible && 
-      !isLoadingMoreRef.current && 
-      !feedLoading && 
-      hasInitialized && 
-      !reachedEnd && 
-      posts.length > 0
-    ) {
-      // Use a ref to track loading state to prevent duplicate calls
-      if (!isLoadingMoreRef.current) {
-        console.log('[EnhancedFeed] IntersectionObserver triggered loadMorePosts');
-        isLoadingMoreRef.current = true;
-        loadMorePosts();
+    // Find the scrollable container - usually a parent with overflow-y: auto
+    const findScrollContainer = () => {
+      // Try to find the closest scrollable parent
+      let element: HTMLElement | null = loadMoreRef.current;
+      while (element) {
+        // Check if this element or its parent is scrollable
+        const style = window.getComputedStyle(element);
+        if (style && (style.overflowY === 'auto' || style.overflowY === 'scroll')) {
+          return element;
+        }
+        
+        // Move up to parent
+        element = element.parentElement;
       }
+      
+      // If no scrollable parent found, use document
+      return document;
+    };
+    
+    // The handler for scroll events
+    const handleScroll = () => {
+      if (
+        !isLoadingMoreRef.current && 
+        !feedLoading && 
+        hasInitialized && 
+        !reachedEnd && 
+        posts.length > 0 &&
+        loadMoreRef.current
+      ) {
+        const now = Date.now();
+        
+        // Only check if we're not throttled
+        if (now - loadMoreTriggerTimestamp.current >= 1000) {
+          // Get the position of our load-more element
+          const rect = loadMoreRef.current.getBoundingClientRect();
+          
+          // Get the height of the viewport
+          const viewportHeight = window.innerHeight;
+          
+          // Calculate buffer as a percentage of viewport height
+          // 70% of viewport height means we'll start loading when the user is 70% of the way down
+          const bufferPercentage = 0.7;
+          const bufferDistance = viewportHeight * bufferPercentage;
+          
+          // If element is within our buffer distance of entering the viewport
+          if (rect.top - viewportHeight < bufferDistance) {
+            console.log('[EnhancedFeed] Scroll position triggered loadMorePosts');
+            loadMoreTriggerTimestamp.current = now;
+            
+            if (componentIsMounted.current) {
+              loadMorePosts();
+            }
+          }
+        }
+      }
+    };
+    
+    // Find the scrollable container to attach our listener to
+    const scrollContainer = findScrollContainer();
+    
+    // Add the scroll event listener
+    if (scrollContainer === document) {
+      window.addEventListener('scroll', handleScroll, { passive: true });
+    } else {
+      scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
     }
     
-  }, [isVisible, feedLoading, hasInitialized, posts.length, reachedEnd]);
+    // Cleanup the event listener when component unmounts
+    return () => {
+      if (scrollContainer === document) {
+        window.removeEventListener('scroll', handleScroll);
+      } else {
+        scrollContainer.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [feedLoading, hasInitialized, posts.length, reachedEnd]);
   
-  // Load more posts function with improved cursor handling
+  // Improved loadMorePosts function
   const loadMorePosts = async () => {
-    // Extra protection against duplicate calls
+    // Prevent duplicate loading
     if (isLoadingMoreRef.current || isLoadingMore || reachedEnd || feedLoading) {
       console.log('[EnhancedFeed] Skipping loadMorePosts - already in progress or conditions not met');
       return;
@@ -201,33 +248,33 @@ export const EnhancedFeed: React.FC<EnhancedFeedProps> = ({
     
     if (posts.length === 0) {
       console.log('[EnhancedFeed] No posts to paginate from');
-      isLoadingMoreRef.current = false;
       return;
     }
     
-    // Set loading flags
+    // Set loading state
     setIsLoadingMore(true);
     isLoadingMoreRef.current = true;
     
     console.log('[EnhancedFeed] Loading more posts - page', loadedPages + 1);
     
     try {
-      // Get the last post's ID to use as cursor
-      const lastPost = posts[posts.length - 1];
-      const lastPostId = lastPost?.id;
-      
-      if (!lastPostId) {
+      // Get cursor directly from feedData.pageInfo
+      const endCursor = feedData?.pageInfo?.endCursor;
+    
+      if (!endCursor) {
         console.warn('[EnhancedFeed] No valid cursor found, cannot fetch more posts');
         setReachedEnd(true);
+        setIsLoadingMore(false);
+        isLoadingMoreRef.current = false;
         return;
       }
       
-      console.log('[EnhancedFeed] Using cursor:', lastPostId);
+      console.log('[EnhancedFeed] Using endCursor:', endCursor);
       
       // Create pagination parameters for the next page
       const nextPagination: SocialPaginationInput = {
         first: itemsPerPage,
-        after: lastPostId
+        after: endCursor
       };
       
       // Use fetchMore to get the next page
@@ -235,49 +282,68 @@ export const EnhancedFeed: React.FC<EnhancedFeedProps> = ({
         pagination: nextPagination
       });
       
-      console.log('[EnhancedFeed] fetchMore result:', result);
+      // Safety check to make sure component is still mounted
+      if (!componentIsMounted.current) return;
       
-      // Check if we got valid data back
-      const hasNewData = validateFetchMoreResult(result);
+      // Extract the new posts from the response and update component state
+      const feedResponse = result.data?.[`${feedType}Feed`];
       
-      if (hasNewData) {
-        // Increment the loaded pages counter
-        setLoadedPages(prev => prev + 1);
+      if (feedResponse?.edges?.length > 0) {
+        // Extract posts from edges
+        const newPosts = feedResponse.edges.map(edge => edge.node);
+        console.log('[EnhancedFeed] New posts found:', newPosts.length);
+        
+        // Directly update posts state to ensure the UI updates
+        setPosts(prevPosts => {
+          // Create a set of existing post IDs for efficient lookup
+          const existingPostIds = new Set(prevPosts.map(post => post.id));
+          
+          // Filter to keep only posts with IDs not already in our list
+          const uniqueNewPosts = newPosts.filter(post => !existingPostIds.has(post.id));
+          
+          console.log('[EnhancedFeed] Unique new posts found:', uniqueNewPosts.length);
+          
+          if (uniqueNewPosts.length === 0) {
+            console.log('[EnhancedFeed] No unique new posts found, likely reached end');
+            setTimeout(() => {
+              if (componentIsMounted.current) {
+                setReachedEnd(true);
+              }
+            }, 0);
+            return prevPosts;
+          }
+          
+          // Update loaded pages count
+          setLoadedPages(prev => prev + 1);
+          
+          // Return combined array of existing posts plus new unique posts
+          return [...prevPosts, ...uniqueNewPosts];
+        });
       } else {
-        console.log('[EnhancedFeed] No more posts returned, end of feed reached');
+        console.log('[EnhancedFeed] No new posts returned');
+        setReachedEnd(true);
+      }
+      
+      // Update the reached end flag based on pageInfo
+      if (feedResponse?.pageInfo?.hasNextPage === false) {
+        console.log('[EnhancedFeed] Server indicates end of feed reached');
         setReachedEnd(true);
       }
     } catch (error) {
       console.error('[EnhancedFeed] Error loading more posts:', error);
-      toast.error("Couldn't load more posts. Please try again.");
+      if (componentIsMounted.current) {
+        toast.error("Couldn't load more posts. Please try again.");
+      }
     } finally {
-      // Reset loading state
-      setIsLoadingMore(false);
-      // Small delay before allowing another load
+      // Ensure flags are reset even if an error occurs
       setTimeout(() => {
-        isLoadingMoreRef.current = false;
+        // Only update state if the component is still mounted
+        if (componentIsMounted.current) {
+          setIsLoadingMore(false);
+          isLoadingMoreRef.current = false;
+        }
       }, 300);
     }
-  };
-  
-  // Helper function to validate the fetchMore result
-  const validateFetchMoreResult = (result: any): boolean => {
-    if (!result.data) return false;
-    
-    // Handle different data structures
-    if (Array.isArray(result.data)) {
-      return result.data.length > 0;
-    } else if (result.data.edges && Array.isArray(result.data.edges)) {
-      return result.data.edges.length > 0;
-    } else if (result.data.feed) {
-      if (Array.isArray(result.data.feed)) {
-        return result.data.feed.length > 0;
-      } else if (result.data.feed.edges && Array.isArray(result.data.feed.edges)) {
-        return result.data.feed.edges.length > 0;
-      }
-    }
-    
-    return false;
   };
   
   // Handle retry for feed loading
@@ -288,12 +354,16 @@ export const EnhancedFeed: React.FC<EnhancedFeedProps> = ({
     } catch (error) {
       console.error('Error retrying feed load:', error);
     } finally {
-      setIsRetrying(false);
+      if (componentIsMounted.current) {
+        setIsRetrying(false);
+      }
     }
   };
   
-  // Handle refresh button click with properly reset state
+  // Handle refresh button click with better state management
   const handleRefreshFeed = async () => {
+    console.log('[EnhancedFeed] Refreshing feed...');
+    
     // Reset all pagination state
     setPagination({
       first: itemsPerPage,
@@ -303,19 +373,39 @@ export const EnhancedFeed: React.FC<EnhancedFeedProps> = ({
     // Clear posts to force a full refresh
     setPosts([]);
     
-    // Reset pagination state
+    // Reset all pagination-related state
     setLoadedPages(1);
     setReachedEnd(false);
     isLoadingMoreRef.current = false;
+    setIsLoadingMore(false);
+    loadMoreTriggerTimestamp.current = 0;
+    
+    // Also reset the hasInitialized flag to ensure proper synchronization
+    setHasInitialized(false);
     
     try {
+      console.log('[EnhancedFeed] Calling refreshFeed() API...');
       const refreshed = await refreshFeed();
-      if (refreshed) {
-        toast.success("Feed refreshed successfully");
+      
+      if (refreshed && componentIsMounted.current) {
+        // Add a delay to ensure state updates have settled
+        setTimeout(() => {
+          if (componentIsMounted.current) {
+            console.log('[EnhancedFeed] Feed successfully refreshed');
+            toast.success("Feed refreshed");
+            
+            // Set hasInitialized after a successful refresh
+            setHasInitialized(true);
+          }
+        }, 100);
+      } else {
+        console.warn('[EnhancedFeed] refreshFeed() returned false');
       }
     } catch (error) {
-      console.error('Error refreshing feed:', error);
-      toast.error("Couldn't refresh feed. Please try again.");
+      console.error('[EnhancedFeed] Error refreshing feed:', error);
+      if (componentIsMounted.current) {
+        toast.error("Couldn't refresh feed. Please try again.");
+      }
     }
   };
   
@@ -331,6 +421,12 @@ export const EnhancedFeed: React.FC<EnhancedFeedProps> = ({
     switch (feedType) {
       case 'home':
         return 'Home Feed';
+      case 'explore':
+        return 'Explore';
+      case 'following':
+        return 'Following';
+      case 'popular':
+        return 'Popular';
       case 'filtered':
         return 'Search Results';
       default:
@@ -380,17 +476,42 @@ export const EnhancedFeed: React.FC<EnhancedFeedProps> = ({
           </div>
         }
       >
-        <div className="space-y-6">
+        <div className="space-y-6 relative">
           {/* Show posts */}
           {posts.length > 0 ? (
-            posts.map(post => (
-              <Post
-                key={post.id}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                post={post as any}
-                onPostUpdated={handlePostUpdated}
-              />
-            ))
+            <>
+              {posts.map((post) => (
+                <Post
+                  key={post.id}
+                  post={post}
+                  onPostUpdated={handlePostUpdated}
+                />
+              ))}
+              
+              {/* Load more indicator */}
+              {!reachedEnd && (
+                <div 
+                  ref={loadMoreRef} 
+                  className="py-4 w-full"
+                  data-testid="load-more-trigger"
+                >
+                  {isLoadingMore ? (
+                    <div className="text-center">
+                      <Spinner size="sm" label="Loading more posts..." />
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={loadMorePosts}
+                      disabled={isLoadingMore || feedLoading}
+                      className="mx-auto block"
+                    >
+                      Load more
+                    </Button>
+                  )}
+                </div>
+              )}
+            </>
           ) : (
             // Empty state
             !feedLoading && (
@@ -398,26 +519,6 @@ export const EnhancedFeed: React.FC<EnhancedFeedProps> = ({
                 {emptyMessage}
               </div>
             )
-          )}
-          
-          {/* "Load more" indicator */}
-          {!reachedEnd && posts.length > 0 && (
-            <div 
-              ref={loadMoreRef} 
-              className="py-4 text-center"
-            >
-              {isLoadingMore ? (
-                <Spinner size="sm" label="Loading more posts..." />
-              ) : (
-                <Button
-                  variant="outline"
-                  onClick={loadMorePosts}
-                  disabled={isLoadingMore || feedLoading}
-                >
-                  Load more
-                </Button>
-              )}
-            </div>
           )}
           
           {/* End of feed indicator */}

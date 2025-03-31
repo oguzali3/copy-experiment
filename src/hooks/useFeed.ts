@@ -1,10 +1,10 @@
-// src/hooks/useFeed.ts - Fixed hook for proper pagination
-import { useState, useEffect, useCallback } from 'react';
+// src/hooks/useFeed.ts
+import { useState, useCallback } from 'react';
 import { gql, useQuery } from '@apollo/client';
 import { SocialPaginationInput } from '@/components/social/types';
 
-// Define the feed types
-export type FeedType = 'home' | 'filtered';
+// Define all the feed types your resolver supports
+export type FeedType = 'home' | 'explore' | 'following' | 'popular' | 'filtered';
 
 // Define the filter input for filtered feeds
 export interface FeedFilterInput {
@@ -12,14 +12,137 @@ export interface FeedFilterInput {
   hashtags?: string[];
   timeRange?: string;
   contentType?: string;
-  sortBy?: string;
-  includeFollowing?: boolean;
-  includeUserPosts?: boolean;
 }
 
-// GraphQL query for home feed
+// GraphQL fragment for post fields
+const POST_FIELDS = `
+  fragment PostFields on PostType {
+    id
+    content
+    mentionedTickers
+    imageUrl
+    likesCount
+    commentsCount
+    isLiked
+    isLikedByMe
+    createdAt
+    author {
+      id
+      displayName
+      avatarUrl
+      isVerified
+      isFollowing
+      followersCount
+      followingCount
+    }
+    imageVariants {
+      original
+      thumbnail
+      medium
+      optimized
+    }
+  }
+`;
+
+// GraphQL queries for different feed types
 const GET_HOME_FEED = gql`
+  ${POST_FIELDS}
   query GetHomeFeed($pagination: SocialPaginationInput!) {
+    homeFeed(pagination: $pagination) {
+      edges {
+        node {
+          ...PostFields
+        }
+        cursor
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+        hasPreviousPage
+      }
+    }
+  }
+`;
+
+const GET_EXPLORE_FEED = gql`
+  ${POST_FIELDS}
+  query GetExploreFeed($pagination: SocialPaginationInput!) {
+    exploreFeed(pagination: $pagination) {
+      edges {
+        node {
+          ...PostFields
+        }
+        cursor
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+        hasPreviousPage
+      }
+    }
+  }
+`;
+
+const GET_FOLLOWING_FEED = gql`
+  ${POST_FIELDS}
+  query GetFollowingFeed($pagination: SocialPaginationInput!) {
+    followingFeed(pagination: $pagination) {
+      edges {
+        node {
+          ...PostFields
+        }
+        cursor
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+        hasPreviousPage
+      }
+    }
+  }
+`;
+
+const GET_POPULAR_FEED = gql`
+  ${POST_FIELDS}
+  query GetPopularFeed($pagination: SocialPaginationInput!) {
+    popularFeed(pagination: $pagination) {
+      edges {
+        node {
+          ...PostFields
+        }
+        cursor
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+        hasPreviousPage
+      }
+    }
+  }
+`;
+
+const GET_FILTERED_FEED = gql`
+  ${POST_FIELDS}
+  query GetFilteredFeed($pagination: SocialPaginationInput!, $filters: FeedFilterInput!) {
+    filteredFeed(pagination: $pagination, filters: $filters) {
+      edges {
+        node {
+          ...PostFields
+        }
+        cursor
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+        hasPreviousPage
+      }
+    }
+  }
+`;
+
+// For backward compatibility - use the current feed query
+const GET_FEED = gql`
+  query GetFeed($pagination: SocialPaginationInput!) {
     feed(pagination: $pagination) {
       id
       content
@@ -49,49 +172,19 @@ const GET_HOME_FEED = gql`
   }
 `;
 
-// GraphQL query for filtered feed
-const GET_FILTERED_FEED = gql`
-  query GetFilteredFeed($pagination: SocialPaginationInput!, $filters: FeedFilterInput!) {
-    filteredFeed(pagination: $pagination, filters: $filters) {
-      id
-      content
-      mentionedTickers
-      imageUrl
-      likesCount
-      commentsCount
-      isLiked
-      isLikedByMe
-      createdAt
-      author {
-        id
-        displayName
-        avatarUrl
-        isVerified
-        isFollowing
-      }
-      imageVariants {
-        original
-        thumbnail
-        medium
-        optimized
-      }
-    }
-  }
-`;
-
 // Hook options interface
-interface UseFeedOptions {
+interface UseEnhancedFeedOptions {
   pagination?: SocialPaginationInput;
   filters?: FeedFilterInput;
   skip?: boolean;
 }
 
 /**
- * Hook for fetching feed data with pagination support
+ * Enhanced hook for fetching feed data with support for all feed types
  */
-export const useFeed = (
-  feedType: FeedType,
-  options: UseFeedOptions = {}
+export const useEnhancedFeed = (
+  feedType: FeedType = 'home',
+  options: UseEnhancedFeedOptions = {}
 ) => {
   const { pagination = { first: 10 }, filters = {}, skip = false } = options;
   
@@ -99,12 +192,29 @@ export const useFeed = (
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Determine which query to use based on feed type
-  const query = feedType === 'home' ? GET_HOME_FEED : GET_FILTERED_FEED;
+  const getQueryForFeedType = useCallback(() => {
+    switch (feedType) {
+      case 'home':
+        return GET_HOME_FEED;
+      case 'explore':
+        return GET_EXPLORE_FEED;
+      case 'following':
+        return GET_FOLLOWING_FEED;
+      case 'popular':
+        return GET_POPULAR_FEED;
+      case 'filtered':
+        return GET_FILTERED_FEED;
+      default:
+        return GET_FEED; // Fallback to basic feed
+    }
+  }, [feedType]);
+  
+  const query = getQueryForFeedType();
   
   // Prepare query variables based on feed type
-  const variables = feedType === 'home' 
-    ? { pagination }
-    : { pagination, filters };
+  const variables = feedType === 'filtered' 
+    ? { pagination, filters }
+    : { pagination };
   
   // Use Apollo's useQuery hook
   const { 
@@ -116,8 +226,8 @@ export const useFeed = (
   } = useQuery(query, {
     variables,
     skip,
-    fetchPolicy: 'network-only',  // Always fetch from network first
-    nextFetchPolicy: 'cache-first', // Then use cache for subsequent requests
+    fetchPolicy: 'no-cache',
+    nextFetchPolicy: 'no-cache',
     notifyOnNetworkStatusChange: true,
   });
   
@@ -130,7 +240,7 @@ export const useFeed = (
       const result = await apolloRefetch();
       return result.data;
     } catch (error) {
-      console.error(`[useFeed] Error refetching ${feedType} feed:`, error);
+      console.error(`[useEnhancedFeed] Error refetching ${feedType} feed:`, error);
       throw error;
     }
   }, [apolloRefetch, feedType]);
@@ -142,7 +252,7 @@ export const useFeed = (
       const result = await apolloRefetch();
       return !!result.data;
     } catch (error) {
-      console.error(`[useFeed] Error refreshing ${feedType} feed:`, error);
+      console.error(`[useEnhancedFeed] Error refreshing ${feedType} feed:`, error);
       return false;
     } finally {
       setIsRefreshing(false);
@@ -151,31 +261,68 @@ export const useFeed = (
   
   // Function to fetch more feed data (pagination)
   const fetchMore = useCallback(async ({ pagination: newPagination }) => {
-    console.log(`[useFeed] Fetching more ${feedType} feed data with pagination:`, newPagination);
+    console.log(`[useEnhancedFeed] Fetching more ${feedType} feed data with pagination:`, newPagination);
     
     try {
       // Prepare new variables based on feed type
-      const newVariables = feedType === 'home'
-        ? { pagination: newPagination }
-        : { pagination: newPagination, filters };
+      const newVariables = feedType === 'filtered'
+        ? { pagination: newPagination, filters }
+        : { pagination: newPagination };
       
-      // Log key information for debugging
-      console.log(`[useFeed] fetchMore variables:`, newVariables);
-      
-      // Call Apollo's fetchMore
+      // Call Apollo's fetchMore with proper options
       const result = await apolloFetchMore({
         variables: newVariables,
+        updateQuery: (prev, { fetchMoreResult }) => {
+          if (!fetchMoreResult) return prev;
+          
+          console.log('[useEnhancedFeed] Received more data:', fetchMoreResult);
+          
+          const feedKey = `${feedType}Feed`;
+          if (!fetchMoreResult[feedKey]) {
+            console.warn('[useEnhancedFeed] No feed data in result');
+            return prev;
+          }
+          
+          // Get the response
+          const feedResponse = fetchMoreResult[feedKey];
+          
+          // No edges or empty edges
+          if (!feedResponse.edges || !Array.isArray(feedResponse.edges) || feedResponse.edges.length === 0) {
+            console.log('[useEnhancedFeed] No edges found in fetchMoreResult');
+            return prev;
+          }
+          
+          // Check if prev has the expected structure
+          if (!prev[feedKey] || !prev[feedKey].edges) {
+            console.warn('[useEnhancedFeed] Previous data missing expected structure');
+            return fetchMoreResult; // Return new result if prev is malformed
+          }
+          
+          // Create a *new* merged result that Apollo can safely cache
+          const mergedResult = {
+            ...prev,
+            [feedKey]: {
+              ...feedResponse,
+              __typename: feedResponse.__typename,
+              edges: [
+                ...prev[feedKey].edges,
+                ...feedResponse.edges
+              ],
+              pageInfo: feedResponse.pageInfo
+            }
+          };
+          
+          console.log(`[useEnhancedFeed] Combined result has ${mergedResult[feedKey].edges.length} total edges`);
+          
+          return mergedResult;
+        }
       });
       
-      // Log result structure for debugging
-      console.log(`[useFeed] fetchMore result structure:`, {
-        hasData: !!result.data,
-        dataKeys: result.data ? Object.keys(result.data) : []
-      });
+      console.log(`[useEnhancedFeed] fetchMore result:`, result.data);
       
       return result;
     } catch (error) {
-      console.error(`[useFeed] Error fetching more ${feedType} feed data:`, error);
+      console.error(`[useEnhancedFeed] Error fetching more ${feedType} feed data:`, error);
       throw error;
     }
   }, [apolloFetchMore, feedType, filters]);
@@ -192,26 +339,63 @@ export const useFeed = (
 };
 
 /**
- * Helper hook to extract and format feed data from different response formats
+ * Helper function to extract and format feed data from different response formats
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const useFeedData = (feedType: FeedType, data: any) => {
-  // Process and return the appropriate data based on feed type
   if (!data) return null;
   
+  console.log(`[useFeedData] Processing data for ${feedType}:`, data);
+  
+  // Handle different feed response formats
   switch (feedType) {
     case 'home':
-      // Home feed is directly in data.feed
-      return data.feed || [];
+      if (data.homeFeed) {
+        // Connection pattern with edges and nodes
+        return data.homeFeed;
+      }
+      break;
+    
+    case 'explore':
+      if (data.exploreFeed) {
+        // Connection pattern with edges and nodes
+        return data.exploreFeed;
+      }
+      break;
+    
+    case 'following':
+      if (data.followingFeed) {
+        // Connection pattern with edges and nodes
+        return data.followingFeed;
+      }
+      break;
+    
+    case 'popular':
+      if (data.popularFeed) {
+        // Connection pattern with edges and nodes
+        return data.popularFeed;
+      }
+      break;
     
     case 'filtered':
-      // Filtered feed is in data.filteredFeed
-      return data.filteredFeed || [];
+      if (data.filteredFeed) {
+        // Connection pattern with edges and nodes
+        return data.filteredFeed;
+      }
+      break;
     
     default:
-      console.warn(`[useFeedData] Unknown feed type: ${feedType}`);
-      return [];
+      // Backward compatibility with the old feed format
+      if (data.feed) {
+        return data.feed;
+      }
+      break;
   }
+  
+  return null;
 };
+
+// Additional hooks for related queries
 
 /**
  * Hook for fetching trending hashtags

@@ -13,7 +13,7 @@ interface IntersectionResult {
 }
 
 /**
- * Hook to observe when an element intersects the viewport
+ * Hook to observe when an element intersects the viewport or a specified container
  * @param elementRef Reference to the element to observe
  * @param options IntersectionObserver options
  * @param initialValue Optional initial visibility value
@@ -27,17 +27,37 @@ export const useIntersectionObserver = (
   const [isVisible, setIsVisible] = useState<boolean>(initialValue);
   const [entry, setEntry] = useState<IntersectionObserverEntry>();
 
-  const { root = null, rootMargin = '0px', threshold = 0 } = options;
-
   useEffect(() => {
+    // If element ref is empty, don't do anything
     if (!elementRef?.current) return;
+
+    // Try to get the custom scroll container if available
+    let root = options.root;
+    try {
+      // @ts-expect-error - Custom property may exist on window
+      const customContainer = window.feedScrollContainer;
+      if (customContainer && !options.root) {
+        root = customContainer;
+      }
+    } catch (e) {
+      // If there's an error, use the default root
+      console.warn('Error accessing custom scroll container:', e);
+    }
+
+    const observerOptions = {
+      rootMargin: options.rootMargin || '0px',
+      threshold: options.threshold || 0,
+      root
+    };
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-        setEntry(entry);
+        if (entry) {
+          setIsVisible(entry.isIntersecting);
+          setEntry(entry);
+        }
       },
-      { root, rootMargin, threshold }
+      observerOptions
     );
 
     observer.observe(elementRef.current);
@@ -46,8 +66,9 @@ export const useIntersectionObserver = (
       if (elementRef.current) {
         observer.unobserve(elementRef.current);
       }
+      observer.disconnect();
     };
-  }, [elementRef, root, rootMargin, threshold]);
+  }, [elementRef, options.rootMargin, options.threshold, options.root]);
 
   return { isVisible, entry };
 };
