@@ -112,7 +112,16 @@ const CustomTooltip = ({ active, payload, label, fontSize }: TooltipProps<number
           let formattedValue = entry.value as number;
           let suffix = '';
           
-          if (Math.abs(formattedValue) >= 1e9) {
+          // Check if this is a percentage metric (use the payload's metadata)
+          const isPercentage = entry.payload?.isPercentage?.[entry.dataKey] || 
+                              (String(entry.name).toLowerCase().includes('percent') || 
+                               String(entry.name).toLowerCase().includes('margin'));
+          
+          if (isPercentage) {
+            // Format as percentage
+            formattedValue = +(formattedValue).toFixed(2);
+            suffix = '%';
+          } else if (Math.abs(formattedValue) >= 1e9) {
             formattedValue = +(formattedValue / 1e9).toFixed(2);
             suffix = 'B';
           } else if (Math.abs(formattedValue) >= 1e6) {
@@ -172,8 +181,10 @@ const formatRawMetricId = (id: string): string => {
 };
 
 // Helper to format values for data labels and reference lines
-const formatValue = (value: number): string => {
-  if (Math.abs(value) >= 1e9) {
+const formatValue = (value: number, isPercentage: boolean = false): string => {
+  if (isPercentage) {
+    return `${value.toFixed(2)}%`;
+  } else if (Math.abs(value) >= 1e9) {
     return `${(value / 1e9).toFixed(2)}B`;
   } else if (Math.abs(value) >= 1e6) {
     return `${(value / 1e6).toFixed(2)}M`;
@@ -211,7 +222,7 @@ const getLocalMetricDisplayName = (metricId: string): string => {
   }
 };
 
-// Format Y-axis values
+// Format primary Y-axis values
 const formatYAxis = (value: number) => {
   if (Math.abs(value) >= 1e9) {
     return `${(value / 1e9).toFixed(1)}B`;
@@ -221,6 +232,21 @@ const formatYAxis = (value: number) => {
     return `${(value / 1e3).toFixed(1)}K`;
   }
   return value.toFixed(1);
+};
+
+// Format secondary Y-axis values (percentages)
+const formatPercentageYAxis = (value: number) => {
+  return `${value.toFixed(1)}%`;
+};
+
+// Check if a metric name suggests it's a percentage
+const isPercentageMetric = (metricId: string): boolean => {
+  const lowerMetricId = metricId.toLowerCase();
+  return lowerMetricId.includes('percent') || 
+         lowerMetricId.includes('margin') || 
+         lowerMetricId.includes('ratio') ||
+         lowerMetricId.includes('growth') ||
+         lowerMetricId.includes('rate');
 };
 
 // Calculate CAGR - Compound Annual Growth Rate
@@ -296,6 +322,10 @@ export const MetricChart: React.FC<MetricChartProps> = ({
   
   // Get metrics that should be rendered as stacked bars
   const effectiveStackedMetrics = stackedMetrics.length >= 2 ? stackedMetrics : [];
+  
+  // Identify percentage metrics for secondary Y-axis
+  const percentageMetrics = metrics.filter(metric => isPercentageMetric(metric));
+  const normalMetrics = metrics.filter(metric => !isPercentageMetric(metric));
   
   // Generate default title if none provided
   const chartTitle = title || `${companyName || ticker} - Financial Metrics`;
@@ -510,6 +540,13 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     
     let result = `${ticker} - ${displayName}`;
     
+    // Add axis indicator for dual-axis chart
+    if (percentageMetrics.includes(value) && percentageMetrics.length > 0 && normalMetrics.length > 0) {
+      result += ' (right axis)';
+    } else if (normalMetrics.includes(value) && percentageMetrics.length > 0 && normalMetrics.length > 0) {
+      result += ' (left axis)';
+    }
+    
     // Determine if the metric is quarterly or annual
     const frequency = 
       data && data.length > 0 && data[0].period ? 
@@ -522,7 +559,9 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     
     // Get the unit for display (Millions, etc.)
     let unit = '';
-    if (value === 'revenue' || value === 'netIncome' || value.includes('liabilities')) {
+    if (isPercentageMetric(value)) {
+      unit = '(%)';
+    } else if (value === 'revenue' || value === 'netIncome' || value.includes('liabilities')) {
       unit = '(Millions)';
     }
     
@@ -564,11 +603,17 @@ export const MetricChart: React.FC<MetricChartProps> = ({
       console.log(`Adding reference lines for: ${metricId}`, stats);
       
       const color = colorMap[metricId];
+      const isPercent = isPercentageMetric(metricId);
+      
+      // Determine which axis to use for reference lines
+      // If only percentage metrics, everything goes on normal axis
+      // If dual axes, put percentages on percentage axis
+      const axisId = needsDualAxes && isPercent ? "percentage" : "normal";
       
       // Helper to add a reference line with proper styling
       const addReferenceLine = (value: number, label: string, dash: string = '3 3') => {
         // Format the value with appropriate abbreviation
-        const formattedValue = formatValue(value);
+        const formattedValue = formatValue(value, isPercent);
         
         referenceLines.push(
           <ReferenceLine 
@@ -578,6 +623,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
             strokeWidth={1.5}
             strokeDasharray={dash}
             ifOverflow="extendDomain"
+            yAxisId={axisId}
             label={{
               value: `${label}:${formattedValue}`,
               position: 'insideBottomRight',
@@ -617,7 +663,15 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     if (value === null || value === undefined || isNaN(value)) {
       return '';
     }
-    return formatValue(Number(value));
+    return formatValue(Number(value), false);
+  };
+  
+  // Format percentage data label
+  const formatPercentageDataLabel = (value: any) => {
+    if (value === null || value === undefined || isNaN(value)) {
+      return '';
+    }
+    return formatValue(Number(value), true);
   };
   
   // The common data accessor function for chart components
@@ -627,6 +681,71 @@ export const MetricChart: React.FC<MetricChartProps> = ({
       return foundMetric ? foundMetric.value : null;
     };
   };
+
+  // Get domain for percentage axis
+  const getPercentageDomain = () => {
+    // If no percentage metrics, return default range
+    if (percentageMetrics.length === 0) return [0, 100];
+    
+    // Find min and max values for all percentage metrics
+    let min = Infinity;
+    let max = -Infinity;
+    
+    data.forEach(entry => {
+      percentageMetrics.forEach(metric => {
+        let value;
+        if (entry.metrics) {
+          const metricData = entry.metrics.find(m => m.name === metric);
+          value = metricData ? parseFloat(metricData.value) : null;
+        } else {
+          value = entry[metric] !== undefined ? parseFloat(entry[metric]) : null;
+        }
+        
+        if (value !== null && !isNaN(value)) {
+          min = Math.min(min, value);
+          max = Math.max(max, value);
+        }
+      });
+    });
+    
+    // If no valid data found, return default
+    if (min === Infinity || max === -Infinity) return [0, 100];
+    
+    // Add padding (10% of the range)
+    const range = max - min;
+    const padding = range * 0.1;
+    
+    return [Math.max(0, min - padding), max + padding];
+  };
+
+  // Calculate if we need dual axes (if we have both percentage and non-percentage metrics)
+  const needsDualAxes = percentageMetrics.length > 0 && normalMetrics.length > 0;
+
+  // Add metadata to data for tooltip
+  const enhancedData = useMemo(() => {
+    return data.map(item => {
+      // Create shallow copy of the item
+      const enhancedItem = { ...item };
+      
+      // Add isPercentage map to help tooltip
+      enhancedItem.isPercentage = {};
+      
+      if (item.metrics) {
+        item.metrics.forEach(metric => {
+          enhancedItem.isPercentage[metric.name] = isPercentageMetric(metric.name);
+        });
+      } else {
+        // For flattened data structure
+        metrics.forEach(metricId => {
+          if (item[metricId] !== undefined) {
+            enhancedItem.isPercentage[metricId] = isPercentageMetric(metricId);
+          }
+        });
+      }
+      
+      return enhancedItem;
+    });
+  }, [data, metrics]);
 
   return (
     <div className="h-full flex flex-col relative" ref={chartRef}>
@@ -638,6 +757,11 @@ export const MetricChart: React.FC<MetricChartProps> = ({
         <p style={{ fontSize: `${typography.subtitleSize}px` }} className="text-gray-500">
           {metricsSubtitle}
         </p>
+        {needsDualAxes && (
+          <p style={{ fontSize: `${typography.subtitleSize - 2}px` }} className="text-blue-600 mt-1">
+            Dual Y-axes: Left axis (regular values) | Right axis (percentages)
+          </p>
+        )}
         {effectiveStackedMetrics.length > 0 && (
           <p style={{ fontSize: `${typography.subtitleSize - 2}px` }} className="text-blue-600 mt-1">
             Showing stacked bars for: {effectiveStackedMetrics.map(m => getLocalMetricDisplayName(m)).join(', ')}
@@ -648,17 +772,17 @@ export const MetricChart: React.FC<MetricChartProps> = ({
       <div className="flex-grow relative">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
-            data={data}
+            data={enhancedData}
             margin={{ 
               top: 20, 
-              right: 10, 
+              right: needsDualAxes ? 60 : 10, // Add more right margin for dual axes
               left: 1, 
               bottom: 20 + (typography.legendSize - 12) * 5 // Adjust bottom margin based on legend size
             }}
             barGap={chartDimensions.barGap}
             barCategoryGap={chartDimensions.barCategoryGap}
           >
-            <CartesianGrid stroke="#e0e0e0" strokeWidth={0.1}  />
+            <CartesianGrid stroke="#e0e0e0" strokeWidth={0.1} />
             <XAxis 
               dataKey="period" 
               angle={0} 
@@ -669,11 +793,29 @@ export const MetricChart: React.FC<MetricChartProps> = ({
               strokeWidth={1}
               tick={{ fontSize: typography.tickSize }}
             />
+            
+            {/* Primary Y-axis - shows either normal values or percentages depending on what's selected */}
             <YAxis 
               axisLine={false}
-              tickFormatter={formatYAxis} 
+              tickFormatter={normalMetrics.length > 0 ? formatYAxis : formatPercentageYAxis}
               tick={{ fontSize: typography.tickSize }}
+              yAxisId="normal"
+              orientation="left"
+              domain={normalMetrics.length > 0 ? undefined : getPercentageDomain()}
             />
+            
+            {/* Secondary Y-axis for percentages (only render if both types of metrics are present) */}
+            {needsDualAxes && (
+              <YAxis 
+                yAxisId="percentage"
+                orientation="right"
+                axisLine={false}
+                tickFormatter={formatPercentageYAxis}
+                tick={{ fontSize: typography.tickSize }}
+                domain={getPercentageDomain()}
+              />
+            )}
+            
             <Tooltip content={<CustomTooltip fontSize={typography.tooltipSize} />} />
             <Legend 
               formatter={(value) => (
@@ -694,15 +836,18 @@ export const MetricChart: React.FC<MetricChartProps> = ({
             />
             
             {/* Reference line at y=0 if any metrics might have negative values */}
-            <ReferenceLine y={0} stroke="#777" strokeDasharray="3 3" />
-            
-            {/* Statistical reference lines */}
+            <ReferenceLine y={0} stroke="#777" strokeDasharray="3 3" yAxisId="normal" />
             
             {/* Render Stacked BAR metrics first (if any) */}
             {effectiveStackedMetrics.length >= 2 && effectiveStackedMetrics.map((metric, index) => {
               const color = colorMap[metric];
               const showLabels = metricLabels[metric] !== false;
               const dataAccessor = getDataAccessor(metric);
+              const isPercent = isPercentageMetric(metric);
+              
+              // If only percentage metrics exist, everything goes on the "normal" axis
+              // If dual axes, then percentages go on "percentage" axis
+              const axisId = needsDualAxes && isPercent ? "percentage" : "normal";
 
               return (
                 <Bar 
@@ -713,6 +858,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
                   stackId="stack1"
                   barSize={chartDimensions.barSize}
                   zIndex={1} // Ensure bars have lower z-index
+                  yAxisId={axisId}
                 >
                   {/* Conditionally add labels if enabled */}
                   {showLabels && (
@@ -721,7 +867,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
                       position="inside"
                       fill="#ffffff"
                       fontSize={typography.labelSize}
-                      formatter={formatDataLabel}
+                      formatter={isPercent ? formatPercentageDataLabel : formatDataLabel}
                     />
                   )}
                 </Bar>
@@ -733,6 +879,11 @@ export const MetricChart: React.FC<MetricChartProps> = ({
               const color = colorMap[metric];
               const showLabels = metricLabels[metric] !== false;
               const dataAccessor = getDataAccessor(metric);
+              const isPercent = isPercentageMetric(metric);
+              
+              // If only percentage metrics exist, everything goes on the "normal" axis
+              // If dual axes, then percentages go on "percentage" axis
+              const axisId = needsDualAxes && isPercent ? "percentage" : "normal";
               
               return (
                 <Bar 
@@ -742,6 +893,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
                   fill={color}
                   barSize={chartDimensions.barSize}
                   zIndex={1} // Ensure bars have lower z-index
+                  yAxisId={axisId}
                 >
                   {/* Conditionally add labels if enabled */}
                   {showLabels && (
@@ -750,7 +902,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
                       position="top"
                       fill={"black"}
                       fontSize={typography.labelSize}
-                      formatter={formatDataLabel}
+                      formatter={isPercent ? formatPercentageDataLabel : formatDataLabel}
                     />
                   )}
                 </Bar>
@@ -762,6 +914,11 @@ export const MetricChart: React.FC<MetricChartProps> = ({
               const color = colorMap[metric];
               const showLabels = metricLabels[metric] !== false;
               const dataAccessor = getDataAccessor(metric);
+              const isPercent = isPercentageMetric(metric);
+              
+              // If only percentage metrics exist, everything goes on the "normal" axis
+              // If dual axes, then percentages go on "percentage" axis
+              const axisId = needsDualAxes && isPercent ? "percentage" : "normal";
               
               return (
                 <Line 
@@ -774,6 +931,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
                   dot={{ r: 4 }}
                   activeDot={{ r: 6 }}
                   zIndex={10} // Ensure lines have higher z-index
+                  yAxisId={axisId}
                 >
                   {/* Conditionally add labels if enabled */}
                   {showLabels && (
@@ -782,26 +940,16 @@ export const MetricChart: React.FC<MetricChartProps> = ({
                       position="top"
                       fill={"black"}
                       fontSize={typography.labelSize}
-                      formatter={formatDataLabel}
+                      formatter={isPercent ? formatPercentageDataLabel : formatDataLabel}
                     />
                   )}
                 </Line>
               );
             })}
-            {renderReferenceLines() }
-
+            
+            {renderReferenceLines()}
           </ComposedChart>
         </ResponsiveContainer>
-        {/* Logo in the bottom right corner with text 
-        <div className="absolute bottom-20 right-20 flex items-center">
-          <p className="text-gray-600 font-medium mr-2">Powered by</p>
-          <img 
-            src="/mngrlogo.png" 
-            alt="MNGR Logo" 
-            className="h-32 w-auto" 
-            style={{ opacity: 0.8 }}
-          />
-        </div>*/}
       </div>
     </div>
   );
