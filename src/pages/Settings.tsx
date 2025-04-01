@@ -1,74 +1,187 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+// src/pages/Settings.tsx
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { UserSettings } from "@/components/settings/UserSettings";
-import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
-import { VisibilitySettings } from "@/components/settings/VisibilitySettings";
-import { SubscriptionSettings } from "@/components/settings/SubscriptionSettings";
-import { BillingSettings } from "@/components/settings/BillingSettings";
-import { HelpSettings } from "@/components/settings/HelpSettings";
-import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/AuthContext";
+import ManageSubscriptionComponent from "@/components/settings/ManageSubscriptionComponent";
 
 const Settings = () => {
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("account");
+  
+  // Example settings states
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  // Initialize dark mode state based on system preference or previous setting
-  useEffect(() => {
-    const isDark = document.documentElement.classList.contains('dark');
-    setDarkMode(isDark);
-  }, []);
   
-  const handleDarkModeToggle = (checked: boolean) => {
-    setDarkMode(checked);
-    if (checked) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+  // Profile settings
+  const [username, setUsername] = useState(user?.displayName || "");
+  const [bio, setBio] = useState("");
+  const [email, setEmail] = useState(user?.email || "");
+  
+  const handleSaveGeneral = () => {
+    toast.success("Settings saved successfully");
   };
   
-  const handleLogout = async () => {
-    try {
-      setIsLoggingOut(true);
-      await signOut();
-      toast.success("You have been logged out successfully");
-      // The navigation to home page will be handled in the AuthContext's signOut method
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.error("Logout error:", error);
-      toast.error(error.message || "There was a problem logging out");
-      setIsLoggingOut(false);
-    }
+  const handleSaveProfile = () => {
+    toast.success("Profile updated successfully");
   };
-
+  
+  const handleSaveNotifications = () => {
+    toast.success("Notification preferences updated");
+  };
+  
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-bold">Account Settings</h1>
+    <div className="container mx-auto py-6">
+      <h1 className="text-3xl font-bold mb-8">Settings</h1>
       
-      <div className="space-y-8">
-        <UserSettings />
-        <AppearanceSettings 
-          darkMode={darkMode}
-          onDarkModeToggle={handleDarkModeToggle}
-        />
-        <VisibilitySettings />
-        <SubscriptionSettings />
-        <BillingSettings />
-        <HelpSettings />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="account">Account</TabsTrigger>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="subscription">Subscription</TabsTrigger>
+        </TabsList>
         
-        <Button
-          variant="destructive"
-          className="w-full"
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-        >
-          {isLoggingOut ? "LOGGING OUT..." : "LOGOUT"}
-        </Button>
-      </div>
+        {/* Account Settings */}
+        <TabsContent value="account">
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Settings</CardTitle>
+              <CardDescription>
+                Manage your account preferences and settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="theme">Theme</Label>
+                <div className="flex items-center justify-between">
+                  <span>Dark Mode</span>
+                  <Switch 
+                    checked={darkMode} 
+                    onCheckedChange={setDarkMode} 
+                    id="theme"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="language">Language</Label>
+                <select 
+                  id="language" 
+                  className="w-full p-2 border rounded-md"
+                  defaultValue="en"
+                >
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="de">German</option>
+                </select>
+              </div>
+              
+              <Button onClick={handleSaveGeneral}>Save Changes</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Profile Settings */}
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle>Profile Settings</CardTitle>
+              <CardDescription>
+                Update your personal information and public profile
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input 
+                  id="username" 
+                  value={username} 
+                  onChange={(e) => setUsername(e.target.value)} 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="bio">Bio</Label>
+                <Textarea 
+                  id="bio" 
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Tell us about yourself"
+                />
+              </div>
+              
+              <Button onClick={handleSaveProfile}>Update Profile</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Notification Settings */}
+        <TabsContent value="notifications">
+          <Card>
+            <CardHeader>
+              <CardTitle>Notification Settings</CardTitle>
+              <CardDescription>
+                Manage how you receive notifications and alerts
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="emailNotifs">Email Notifications</Label>
+                  <Switch 
+                    id="emailNotifs" 
+                    checked={emailNotifications} 
+                    onCheckedChange={setEmailNotifications} 
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Receive notifications about your account activity via email
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="pushNotifs">Push Notifications</Label>
+                  <Switch 
+                    id="pushNotifs" 
+                    checked={pushNotifications} 
+                    onCheckedChange={setPushNotifications} 
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Receive push notifications on your devices
+                </p>
+              </div>
+              
+              <Button onClick={handleSaveNotifications}>Save Preferences</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Subscription Settings */}
+        <TabsContent value="subscription">
+          <ManageSubscriptionComponent />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

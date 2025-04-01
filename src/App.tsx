@@ -26,6 +26,19 @@ import Search from "./pages/Search";
 import Profile from "./pages/Profile";
 import { apolloClient } from "./lib/graphql/client";
 import PostDetail from "./components/social/PostDetail";
+// Import new pages for subscription and payment
+import SubscriptionPage from "./pages/SubscriptionPage";
+import PaymentPage from "./pages/PaymentPage";
+import SubscriptionSuccessPage from "./pages/SubscriptionSuccessPage";
+import PortfolioSubscriptions from "./pages/PortfolioSubscriptions";
+import PortfolioPricing from "./pages/PortfolioPricing";
+// For Stripe
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
+
+// Initialize Stripe for entire app
+// Near the top of PaymentPage.tsx and ManageSubscriptionComponent.tsx
+const stripePromise = loadStripe('pk_test_51R7ffjP03K9QaBZcwxbAeRRzovFMa6kq1MlOZSDRSX76mPfadRRKvGxTIlPMx0AokZUDcq2tFa4tgGS2fSVbdgee00oedNBEHg');
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,41 +58,51 @@ const App = () => {
           <AuthProvider>
             <TooltipProvider>
               <SidebarProvider>
-                <Toaster />
-                <Sonner />
-                <Routes>
-                  <Route path="/" element={<Navigate to="/feed" replace />} />
-                  <Route path="/signin" element={<SignIn />} />
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/auth/sso/callback" element={<SsoCallback />} />
-                  
-                  {/* Social Routes - Direct components without layout wrapper */}
-                  <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-                  <Route path="/feed/explore" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-                  <Route path="/feed/notifications" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-                  <Route path="/feed/messages" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-                  <Route path="/feed/create" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-                  <Route path="/feed/*" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-                  <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
-                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                  <Route path="/activity" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-                  <Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
+                <Elements stripe={stripePromise}>
+                  <Toaster />
+                  <Sonner />
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/feed" replace />} />
+                    <Route path="/signin" element={<SignIn />} />
+                    <Route path="/signup" element={<SignUp />} />
+                    <Route path="/auth/sso/callback" element={<SsoCallback />} />
+                    
+                    {/* Social Routes - Direct components without layout wrapper */}
+                    <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                    <Route path="/feed/explore" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                    <Route path="/feed/notifications" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                    <Route path="/feed/messages" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                    <Route path="/feed/create" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                    <Route path="/feed/*" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                    <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+                    <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                    <Route path="/activity" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+                    <Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
 
-                  {/* Protected Dashboard Layout Routes */}
-                  <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/analysis" element={<Analysis />} />
-                    <Route path="/company/:ticker/news" element={<CompanyNews />} />
-                    <Route path="/charting" element={<Charting />} />
-                    <Route path="/screening" element={<Screening />} />
-                    <Route path="/watchlists" element={<Watchlists />} />
-                    <Route path="/portfolio" element={<Portfolio />} />
-                    <Route path="/settings" element={<Settings />} />
+                    {/* Subscription Routes */}
+                    <Route path="/subscriptions" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
+                    <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
+                    <Route path="/subscription-success" element={<ProtectedRoute><SubscriptionSuccessPage /></ProtectedRoute>} />
+                    <Route path="/portfolio-subscriptions" element={<ProtectedRoute><PortfolioSubscriptions /></ProtectedRoute>} />
+                    <Route path="/portfolio-pricing" element={<ProtectedRoute><PortfolioPricing /></ProtectedRoute>} />
 
-                    {/* Catch all route */}
-                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                  </Route>
-                </Routes>
+                    {/* Protected Dashboard Layout Routes */}
+                    <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/analysis" element={<Analysis />} />
+                      <Route path="/company/:ticker/news" element={<CompanyNews />} />
+                      <Route path="/charting" element={<Charting />} />
+                      <Route path="/screening" element={<Screening />} />
+                      <Route path="/watchlists" element={<Watchlists />} />
+                      <Route path="/portfolio" element={<Portfolio />} />
+                      <Route path="/portfolio/:id" element={<Portfolio />} />
+                      <Route path="/settings" element={<Settings />} />
+
+                      {/* Catch all route */}
+                      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                    </Route>
+                  </Routes>
+                </Elements>
               </SidebarProvider>
             </TooltipProvider>
           </AuthProvider>
