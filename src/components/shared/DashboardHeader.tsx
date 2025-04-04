@@ -8,7 +8,7 @@ export const DashboardHeader = () => {
   const handleStockSelect = (stock: any) => {
     navigate(`/analysis?ticker=${stock.ticker}`);
   };
-  return <div className="h-16 flex items-center px-6 gap-4 flex-shrink-0 bg-zinc-500">
+  return <div className="h-16 flex items-center px-6 gap-4 flex-shrink-0 bg-[#f9f8f6]">
       <div className="w-[600px]">
         <SearchBar onStockSelect={handleStockSelect} />
       </div>
