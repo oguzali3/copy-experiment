@@ -81,7 +81,7 @@ export const DashboardSidebar = () => {
     }
   };
   return <Sidebar className="bg-[#191d25] border-r-0 transition-all duration-300 dark:bg-[#1c1c20]" collapsible="icon">
-      <div onClick={toggleSidebar} className="p-4 flex items-center cursor-pointer bg-zinc-500">
+      <div onClick={toggleSidebar} className="p-4 flex items-center cursor-pointer bg-[#f9f8f6]">
         <Building className="h-8 w-8 text-white shrink-0" />
         <span className={`ml-2 text-lg font-semibold text-white transition-opacity duration-300 ${state === 'collapsed' ? 'opacity-0' : 'opacity-100'}`}>
           TradePro
