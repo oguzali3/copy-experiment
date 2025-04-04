@@ -87,7 +87,7 @@ export const DashboardSidebar = () => {
           TradePro
         </span>
       </div>
-      <SidebarContent className="bg-zinc-500">
+      <SidebarContent className="bg-[#f9f8f6]">
         <SidebarGroup>
           <SidebarGroupLabel className={`text-white/70 transition-opacity duration-300 ${state === 'collapsed' ? 'opacity-0' : 'opacity-100'}`}>
             Menu
