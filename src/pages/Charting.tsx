@@ -48,7 +48,7 @@ const [selectedCompanies, setSelectedCompanies] = useState<CompanyData[]>([]);
 const [viewMode, setViewMode] = useState<'byCompany' | 'single'>('byCompany');
 
 const [metricTypes, setMetricTypes] = useState<Record<string, ChartType>>({});
-const [selectedCategory, setSelectedCategory] = useState<string>("popular");
+const [selectedCategory, setSelectedCategory] = useState<string>("");
 
 // State for metric visibility
 const [metricVisibility, setMetricVisibility] = useState<Record<string, boolean>>({});
@@ -196,7 +196,9 @@ const handleMetricSettingChange = (metricId: string, setting: string, value: boo
 const handleCategorySelect = (categoryId: string) => {
   setSelectedCategory(categoryId);
 };
-
+const handleReorderMetrics = (reorderedMetrics: Metric[]) => {
+  setSelectedMetrics(reorderedMetrics);
+};
 const handlePeriodChange = (newPeriod: 'annual' | 'quarter') => {
   // Clear existing data when switching period types
   setSelectedCompanies(prev => prev.map(company => ({
@@ -679,19 +681,20 @@ return (
           <div className="mt-4">
             <h2 className="text-sm font-medium mb-2 text-gray-600">Selected Metrics</h2>
             <div className="bg-gray-50 rounded-lg p-3">
-              <SelectedMetricsList
-                metrics={selectedMetrics}
-                ticker={selectedCompanies[0]?.ticker || ''}
-                metricTypes={metricTypes}
-                onMetricTypeChange={handleMetricTypeChange}
-                onRemoveMetric={handleRemoveMetric}
-                onToggleVisibility={handleToggleVisibility}
-                onToggleLabels={handleToggleLabels}
-                metricVisibility={metricVisibility}
-                metricLabels={metricLabels}
-                metricSettings={metricSettings}
-                onMetricSettingChange={handleMetricSettingChange}
-              />
+            <SelectedMetricsList
+              metrics={selectedMetrics}
+              ticker={selectedCompanies[0]?.ticker || ''}
+              metricTypes={metricTypes}
+              onMetricTypeChange={handleMetricTypeChange}
+              onRemoveMetric={handleRemoveMetric}
+              onToggleVisibility={handleToggleVisibility}
+              onToggleLabels={handleToggleLabels}
+              metricVisibility={metricVisibility}
+              metricLabels={metricLabels}
+              metricSettings={metricSettings}
+              onMetricSettingChange={handleMetricSettingChange}
+              onReorderMetrics={handleReorderMetrics}
+            />
             </div>
             
             {/* Stacked metrics info message */}

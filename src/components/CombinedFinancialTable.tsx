@@ -110,23 +110,129 @@ const CombinedFinancialTable: React.FC<CombinedFinancialTableProps> = ({
     });
   });
   
-  // Sort data chronologically (oldest to newest)
-  const sortedData = [...data].sort((a, b) => {
-    // Handle TTM as the most recent
-    if (a.period === 'TTM') return 1;
-    if (b.period === 'TTM') return -1;
+  // *** MODIFIED: Combine all company data into one dataset for the table ***
+  const getAllPeriodsFromCompanies = () => {
+    // Collect all unique periods from all companies' data
+    const allPeriods = new Set<string>();
     
-    // Try to parse as years for annual data
-    const yearA = parseInt(a.period);
-    const yearB = parseInt(b.period);
+    companies.forEach(company => {
+      if (company.metricData && company.metricData.length > 0) {
+        company.metricData.forEach(item => {
+          if (item.period) {
+            allPeriods.add(item.period);
+          }
+        });
+      }
+    });
     
-    if (!isNaN(yearA) && !isNaN(yearB)) {
-      return yearA - yearB;
+    return Array.from(allPeriods);
+  };
+  
+  // Create table data from all companies' full data (not limited by slider)
+  const createFullTableData = () => {
+    // Get all unique periods
+    const allPeriods = getAllPeriodsFromCompanies();
+    if (allPeriods.length === 0) return [];
+    
+    // Create a map of periods to table rows
+    const tableDataMap: Record<string, any> = {};
+    
+    // Initialize table data structure with all periods
+    allPeriods.forEach(period => {
+      tableDataMap[period] = { period };
+    });
+    
+    // Populate the table data with values from all companies
+    companies.forEach(company => {
+      if (!company.metricData || company.metricData.length === 0) return;
+      
+      // For each period in this company's data
+      company.metricData.forEach(dataPoint => {
+        const period = dataPoint.period;
+        
+        // Skip if period doesn't exist (shouldn't happen)
+        if (!tableDataMap[period]) return;
+        
+        // For each metric in this period
+        dataPoint.metrics?.forEach((metric: any) => {
+          // Only include visible metrics
+          if (metrics.includes(metric.name) && metricVisibility[metric.name] !== false) {
+            // Create a company-specific metric ID
+            const companyMetricKey = `${company.ticker}_${metric.name}`;
+            tableDataMap[period][companyMetricKey] = metric.value;
+          }
+        });
+      });
+    });
+    
+    // Convert the map to an array
+    const tableData = Object.values(tableDataMap);
+    
+    return tableData;
+  };
+  
+  // Process the full table data to show last 9 years + TTM
+  const getTableData = () => {
+    const allTableData = createFullTableData();
+    if (!allTableData || allTableData.length === 0) return [];
+    
+    // Define how many periods to show
+    const maxPeriods = 10; // 9 years + TTM
+    
+    // Create a copy to avoid modifying the original data
+    let tableData = [...allTableData];
+    
+    // Check if there's TTM data
+    const hasTTM = tableData.some(item => item.period === 'TTM');
+    
+    // Special handling for TTM - remove it temporarily for sorting
+    let ttmData = null;
+    if (hasTTM) {
+      ttmData = tableData.find(item => item.period === 'TTM');
+      tableData = tableData.filter(item => item.period !== 'TTM');
     }
     
-    // Fallback to string comparison
-    return a.period.localeCompare(b.period);
-  });
+    // Sort chronologically (oldest to newest)
+    tableData.sort((a, b) => {
+      // Try to parse as years for annual data
+      const yearA = parseInt(a.period);
+      const yearB = parseInt(b.period);
+      
+      if (!isNaN(yearA) && !isNaN(yearB)) {
+        return yearA - yearB;
+      }
+      
+      // For quarterly data with format like "Mar 23"
+      try {
+        const [monthA, yearA] = a.period.split(' ');
+        const [monthB, yearB] = b.period.split(' ');
+        
+        // Compare years first
+        const yearDiff = parseInt(yearA) - parseInt(yearB);
+        if (yearDiff !== 0) return yearDiff;
+        
+        // If years are the same, compare months
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return months.indexOf(monthA) - months.indexOf(monthB);
+      } catch (e) {
+        // Fallback to string comparison
+        return a.period.localeCompare(b.period);
+      }
+    });
+    
+    // Take only the most recent data points (excluding TTM)
+    const recentData = tableData.slice(-Math.min(maxPeriods - (hasTTM ? 1 : 0), tableData.length));
+    
+    // Add TTM back at the end if it exists
+    if (ttmData) {
+      recentData.push(ttmData);
+    }
+    
+    return recentData;
+  };
+  
+  // Get the table data with consistent display (last 9 years + TTM)
+  const tableData = getTableData();
   
   return (
     <div className="mt-8 overflow-x-auto">
@@ -136,11 +242,11 @@ const CombinedFinancialTable: React.FC<CombinedFinancialTableProps> = ({
             <th className="px-3 py-2 text-left font-medium text-gray-500 border-b border-r border-gray-200" style={{ width: '250px', minWidth: '250px' }}>
               Metric
             </th>
-            {sortedData.map((dataPoint) => (
+            {tableData.map((dataPoint) => (
               <th 
                 key={dataPoint.period} 
                 className="px-3 py-2 text-right font-medium text-gray-500 border-b border-gray-200" 
-                style={{ width: `${100 / sortedData.length}%` }}
+                style={{ width: `${100 / tableData.length}%` }}
               >
                 {dataPoint.period}
               </th>
@@ -170,7 +276,7 @@ const CombinedFinancialTable: React.FC<CombinedFinancialTableProps> = ({
                     </div>
                   </td>
                   
-                  {sortedData.map((dataPoint) => {
+                  {tableData.map((dataPoint) => {
                     // Get value from combined data using the dataKey
                     const value = dataPoint[dataKey];
                     
@@ -178,7 +284,7 @@ const CombinedFinancialTable: React.FC<CombinedFinancialTableProps> = ({
                       <td 
                         key={`${dataPoint.period}-${dataKey}`} 
                         className="px-3 py-2 text-right font-medium text-gray-600 border-gray-100"
-                        style={{ width: `${100 / sortedData.length}%` }}
+                        style={{ width: `${100 / tableData.length}%` }}
                       >
                         {formatDisplayValue(value)}
                       </td>

@@ -21,8 +21,10 @@ interface ChartExportProps {
   metricSettings?: Record<string, any>;
   metricLabels?: Record<string, boolean>;
   fileName?: string;
+  directLegends?: string[]; // Add this line
 }
 
+// Update the component props:
 const ChartExport: React.FC<ChartExportProps> = ({
   data,
   metrics,
@@ -33,7 +35,8 @@ const ChartExport: React.FC<ChartExportProps> = ({
   title = '',
   metricSettings = {},
   metricLabels = {},
-  fileName = 'chart-export'
+  fileName = 'chart-export',
+  directLegends= [] 
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -225,7 +228,7 @@ const ChartExport: React.FC<ChartExportProps> = ({
           svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         }
       }
-      
+
       // Add some additional padding to ensure all content is captured, but don't add too much horizontal padding
       const paddingElement = chartContainer.querySelector('div');
       if (paddingElement) {
@@ -645,6 +648,10 @@ const ChartExport: React.FC<ChartExportProps> = ({
       document.body.removeChild(link);
     }
   };
+  const customLegendFormatter = (value: string) => {
+
+    return formattedLegends[value] || value;
+  };
 
   const handleMetricTypeChange = () => {
     // This is a no-op function as we don't need to change metric types in the export
@@ -694,19 +701,22 @@ const ChartExport: React.FC<ChartExportProps> = ({
             ) : (
 <div className="relative" style={{ width: '800px', height: '567px', overflow: 'hidden' }} ref={exportChartRef} data-testid="export-chart-container">
   <div style={{ width: '100%', height: '100%', padding: '20px 5px 20px 5px' }}>
-    <MetricChart
-      data={data}
-      metrics={metrics}
-      ticker={ticker}
-      metricTypes={metricTypes}
-      stackedMetrics={stackedMetrics}
-      onMetricTypeChange={handleMetricTypeChange}
-      companyName={companyName}
-      title={title}
-      metricSettings={metricSettings}
-      metricLabels={metricLabels}
-      exportMode={true} // Enable export mode
-    />
+  
+          <MetricChart
+    data={data}
+    metrics={metrics}
+    ticker={ticker}
+    metricTypes={metricTypes}
+    stackedMetrics={stackedMetrics}
+    onMetricTypeChange={handleMetricTypeChange}
+    companyName={companyName}
+    title={title}
+    metricSettings={metricSettings}
+    metricLabels={metricLabels}
+    exportMode={true}
+    directLegends={directLegends} // Add this line
+  />
+        
   </div>
   <div className="absolute bottom-10 right-10 z-10" style={{ width: '150px', height: '70px', opacity: 0.9 }}>
   <img src={logoPath} alt="Logo" style={{ width: '100%', height: '100%' }} />

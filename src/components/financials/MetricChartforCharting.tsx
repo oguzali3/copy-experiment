@@ -271,6 +271,8 @@ interface MetricChartProps {
     max?: boolean;
   }>;
   metricLabels?: Record<string, boolean>; // Control data label visibility
+  directLegends?: string[]; // Pass pre-formatted legend texts directly
+
 }
 
 export const MetricChart: React.FC<MetricChartProps> = ({ 
@@ -283,7 +285,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({
   companyName,
   title,
   metricSettings = {},
-  metricLabels = {} // Default all labels visible
+  metricLabels = {}, // Default all labels visible
+  directLegends
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   
@@ -582,7 +585,27 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     // Return the text
     return result;
   };
-
+  const getSubtitle = () => {
+    // If directLegends are provided, extract just the metric portions for the subtitle
+    if (directLegends && directLegends.length > 0) {
+      // Extract just the metric name portion from each legend
+      // Typically formats are like "AAPL - Revenue (Millions) (Total Change: X%) (CAGR: Y%)"
+      // We want to extract just "Revenue" parts
+      const extractedNames = directLegends.map(legend => {
+        // Extract the part after " - " and before any parentheses
+        const match = legend.match(/- ([^(]+)/);
+        return match ? match[1].trim() : legend;
+      });
+      
+      // Remove duplicates (same metric name might appear for different companies)
+      const uniqueNames = [...new Set(extractedNames)];
+      return uniqueNames.join(', ');
+    }
+    
+    // Default behavior - use local metric display names
+    const metricNames = metrics.map(metricId => getLocalMetricDisplayName(metricId));
+    return metricNames.join(', ');
+  };
   // Get metric display names for the subtitle
   const metricNames = metrics.map(metricId => getLocalMetricDisplayName(metricId));
   const metricsSubtitle = metricNames.join(', ');
@@ -755,7 +778,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
           {chartTitle}
         </h3>
         <p style={{ fontSize: `${typography.subtitleSize}px` }} className="text-gray-500">
-          {metricsSubtitle}
+        {getSubtitle()}
         </p>
         {needsDualAxes && (
           <p style={{ fontSize: `${typography.subtitleSize - 2}px` }} className="text-blue-600 mt-1">
@@ -818,11 +841,15 @@ export const MetricChart: React.FC<MetricChartProps> = ({
             
             <Tooltip content={<CustomTooltip fontSize={typography.tooltipSize} />} />
             <Legend 
-              formatter={(value) => (
-                <span style={{ fontSize: `${typography.legendSize}px`, color: '#000000' }}>
-                  {legendFormatter(value)}
-                </span>
-              )}
+              formatter={(value, entry, index) => {
+                return (
+                  <span style={{ fontSize: `${typography.legendSize}px`, color: '#000000' }}>
+                    {directLegends && index !== undefined && index < directLegends.length ? 
+                      directLegends[index] : 
+                      legendFormatter(value)}
+                  </span>
+                );
+  }}
               wrapperStyle={{ 
                 paddingTop: 0,
                 left: 30,

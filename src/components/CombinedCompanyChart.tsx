@@ -1,13 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { 
   ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, 
-  CartesianGrid, Tooltip, Legend, TooltipProps, ReferenceLine
+  CartesianGrid, Tooltip, Legend, TooltipProps, ReferenceLine, LabelList
 } from 'recharts';
 import { ChartType } from '@/types/chartTypes';
 import { getMetricDisplayName } from '@/utils/metricDefinitions';
 import { calculateCAGR } from './financials/chartUtils';
+import ChartExport from '@/components/financials/ChartExport';
 
-// Calculate responsive bar sizing based on chart width and data
 // Calculate responsive bar sizing based on chart width and data
 const calculateResponsiveBarSizing = (containerWidth, dataLength, barMetricCount) => {
     // Calculate available width for bars (subtract margins)
@@ -101,6 +101,20 @@ const calculateResponsiveTypography = (containerWidth) => {
   };
 };
 
+// Helper to format values for data labels and reference lines
+const formatValue = (value: number, isPercentage: boolean = false): string => {
+  if (isPercentage) {
+    return `${value.toFixed(2)}%`;
+  } else if (Math.abs(value) >= 1e9) {
+    return `${(value / 1e9).toFixed(2)}B`;
+  } else if (Math.abs(value) >= 1e6) {
+    return `${(value / 1e6).toFixed(2)}M`;
+  } else if (Math.abs(value) >= 1e3) {
+    return `${(value / 1e3).toFixed(2)}K`;
+  }
+  return value.toFixed(2);
+};
+
 // Custom tooltip component for multi-company chart
 const CustomTooltip = ({ active, payload, label, fontSize }: TooltipProps<number, string> & { fontSize: number }) => {
   if (!active || !payload || payload.length === 0) return null;
@@ -126,7 +140,50 @@ const CustomTooltip = ({ active, payload, label, fontSize }: TooltipProps<number
       value: entry.value as number
     });
   });
-  
+  const getFormattedLegends = () => {
+    const legends: Record<string, string> = {};
+    
+    companies.forEach(company => {
+      metrics.forEach(metric => {
+        const key = `${company.ticker}_${metric}`;
+        
+        // Get proper display name for the metric
+        const displayName = getMetricDisplayName(metric);
+        
+        // Get stats for this metric
+        const stats = calculateMetricStats(company.metricData, metric);
+        
+        // Determine if the metric is related to money
+        const isMoneyMetric = metric === 'revenue' || metric === 'netIncome' || 
+                             metric.includes('income') || metric.includes('cash') || 
+                             metric.includes('liabilities');
+        
+        // Construct legend text
+        let legend = `${company.ticker} - ${displayName}`;
+        
+        // Add units
+        if (isMoneyMetric) {
+          legend += ` (Millions)`;
+        } else if (isPercentageMetric(metric)) {
+          legend += ` (%)`;
+        }
+        
+        // Add total change if available
+        if (stats.totalChange !== null) {
+          legend += ` (Total Change: ${stats.totalChange.toFixed(2)}%)`;
+        }
+        
+        // Add CAGR if available
+        if (stats.cagr !== null) {
+          legend += ` (CAGR: ${stats.cagr.toFixed(2)}%)`;
+        }
+        
+        legends[key] = legend;
+      });
+    });
+    
+    return legends;
+  };
   return (
     <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md" style={{ fontSize: `${fontSize}px` }}>
       <p className="font-medium text-gray-800">{label}</p>
@@ -191,18 +248,20 @@ interface CompanyData {
 }
 
 interface CombinedCompanyChartProps {
-  data: any[]; // Combined data array
-  companies: CompanyData[]; // List of companies
-  metrics: string[]; // Array of metric IDs
-  metricTypes: Record<string, ChartType>; // Chart type for each metric
-  metricLabels: Record<string, boolean>; // Control data label visibility
+  data: any[];
+  companies: CompanyData[];
+  metrics: string[];
+  metricTypes: Record<string, ChartType>;
+  metricLabels: Record<string, boolean>;
   metricSettings: Record<string, {
     average?: boolean;
     median?: boolean;
     min?: boolean;
     max?: boolean;
   }>;
+  exportMode?: boolean; // Add this flag
 }
+
 
 // Calculate statistics for a company's metric
 const calculateMetricStats = (companyData: any[], metricId: string) => {
@@ -248,6 +307,16 @@ const calculateMetricStats = (companyData: any[], metricId: string) => {
     calculateCAGR(startValue, endValue, years) : null;
   
   return { totalChange, cagr };
+};
+
+// Function to check if a metric name suggests it's a percentage
+const isPercentageMetric = (metricId: string): boolean => {
+  const lowerMetricId = metricId.toLowerCase();
+  return lowerMetricId.includes('percent') || 
+         lowerMetricId.includes('margin') || 
+         lowerMetricId.includes('ratio') ||
+         lowerMetricId.includes('growth') ||
+         lowerMetricId.includes('rate');
 };
 
 const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({ 
@@ -363,6 +432,8 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
     // Add units (Millions) for money metrics
     if (isMoneyMetric) {
       result += ` (Millions)`;
+    } else if (isPercentageMetric(metricId)) {
+      result += ` (%)`;
     }
     
     // Add total change if available
@@ -377,9 +448,319 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
     
     return <span style={{ color: '#000000' }}>{result}</span>;
   };
+
+  // Calculate statistics for each metric-company combination
+  const calculateMetricStatValues = () => {
+    const statValues: Record<string, Record<string, number>> = {};
+    
+    companies.forEach(company => {
+      if (!company.metricData || !company.metricData.length) return;
+      
+      metrics.forEach(metric => {
+        const key = `${company.ticker}_${metric}`;
+        
+        // Skip if no settings enabled for this metric
+        const settings = metricSettings[metric];
+        if (!settings) return;
+        
+        // Only proceed if any statistic is enabled
+        if (settings.average || settings.median || settings.min || settings.max) {
+          const values: number[] = [];
+          
+          // Extract values for this metric from company data
+          company.metricData.forEach(item => {
+            const metricData = item.metrics?.find((m: any) => m.name === metric);
+            if (metricData && !isNaN(metricData.value)) {
+              values.push(typeof metricData.value === 'number' ? 
+                metricData.value : parseFloat(metricData.value));
+            }
+          });
+          
+          // Skip if no valid values found
+          if (values.length === 0) return;
+          
+          statValues[key] = {};
+          
+          // Calculate statistics
+          if (settings.average) {
+            statValues[key].average = values.reduce((sum, val) => sum + val, 0) / values.length;
+          }
+          
+          if (settings.median || settings.min || settings.max) {
+            const sortedValues = [...values].sort((a, b) => a - b);
+            
+            if (settings.min) {
+              statValues[key].min = sortedValues[0];
+            }
+            
+            if (settings.max) {
+              statValues[key].max = sortedValues[sortedValues.length - 1];
+            }
+            
+            if (settings.median) {
+              const mid = Math.floor(sortedValues.length / 2);
+              statValues[key].median = sortedValues.length % 2 === 0
+                ? (sortedValues[mid - 1] + sortedValues[mid]) / 2
+                : sortedValues[mid];
+            }
+          }
+        }
+      });
+    });
+    
+    return statValues;
+  };
+
+  // Generate reference lines for statistics
+  const renderReferenceLines = () => {
+    const referenceLines = [];
+    const statValues = calculateMetricStatValues();
+    
+    Object.keys(statValues).forEach(key => {
+      const [ticker, ...metricParts] = key.split('_');
+      const metricId = metricParts.join('_');
+      const stats = statValues[key];
+      const color = colorMap[key];
+      
+      // Helper to add a reference line with proper styling
+      const addReferenceLine = (value: number, label: string, dash: string = '3 3') => {
+        // Format the value with appropriate abbreviation
+        const formattedValue = formatValue(value, isPercentageMetric(metricId));
+        
+        referenceLines.push(
+          <ReferenceLine 
+            key={`${key}-${label}`}
+            y={value} 
+            stroke={color} 
+            strokeWidth={1.5}
+            strokeDasharray={dash}
+            ifOverflow="extendDomain"
+            label={{
+              value: `${ticker} ${label}:${formattedValue}`,
+              position: 'insideBottomRight',
+              fill: "black",
+              fontSize: typography.labelSize,
+              offset: 5
+            }} 
+          />
+        );
+      };
+      
+      // Add reference lines for each enabled statistic
+      if (stats.average !== undefined) {
+        addReferenceLine(stats.average, 'Avg');
+      }
+      
+      if (stats.median !== undefined) {
+        addReferenceLine(stats.median, 'Median', '5 5');
+      }
+      
+      if (stats.min !== undefined) {
+        addReferenceLine(stats.min, 'Min', '2 2');
+      }
+      
+      if (stats.max !== undefined) {
+        addReferenceLine(stats.max, 'Max', '2 2');
+      }
+    });
+    
+    return referenceLines;
+  };
+  const getExportData = () => {
+    if (!data || data.length === 0) return [];
+    
+    // Transform the data to match the format expected by ChartExport
+    const exportData = data.map(item => {
+      const exportItem = {
+        period: item.period,
+        metrics: []
+      };
+      
+      // Extract metrics from company-metric combinations with proper formatting
+      companies.forEach(company => {
+        metrics.forEach(metric => {
+          const key = `${company.ticker}_${metric}`;
+          if (item[key] !== undefined) {
+            // Create a well-formatted metric name that will display properly in the legend
+            // This matches how the metric names are formatted in the main chart
+            const metricDisplayName = getMetricDisplayName(metric);
+            const formattedName = `${company.ticker} - ${metricDisplayName}`;
+            
+            // Add the metric with formatted name
+            exportItem.metrics.push({
+              name: formattedName, // Use formatted name instead of raw key
+              value: item[key]
+            });
+          }
+        });
+      });
+      
+      return exportItem;
+    });
+    
+    return exportData;
+  };
   
+  // Get combined metrics for export with proper formatting
+  const getCombinedMetrics = () => {
+    const combinedMetrics = [];
+    
+    companies.forEach(company => {
+      metrics.forEach(metric => {
+        // Use the same formatting as in the main chart's legend
+        const metricDisplayName = getMetricDisplayName(metric);
+        const formattedName = `${company.ticker} - ${metricDisplayName}`;
+        combinedMetrics.push(formattedName);
+      });
+    });
+    
+    return combinedMetrics;
+  };
+  
+  // Transform metricTypes for export to match formatted metric names
+  const getExportMetricTypes = () => {
+    const exportMetricTypes = {};
+    
+    companies.forEach(company => {
+      metrics.forEach(metric => {
+        // Use the same formatted metric name that we use in getCombinedMetrics
+        const metricDisplayName = getMetricDisplayName(metric);
+        const formattedName = `${company.ticker} - ${metricDisplayName}`;
+        
+        // Apply the original metric's chart type to the formatted name
+        exportMetricTypes[formattedName] = metricTypes[metric] || 'bar';
+      });
+    });
+    
+    return exportMetricTypes;
+  };
+  const getLegendText = (value: string): string => {
+    // Split the value to get company ticker and metric ID
+    const [ticker, ...metricParts] = value.split('_');
+    const metricId = metricParts.join('_'); // Rejoin in case metric name contains underscores
+    
+    // Get company and data
+    const company = companies.find(c => c.ticker === ticker);
+    
+    // Get metric display name
+    const metricDisplayName = getMetricDisplayName(metricId);
+    
+    // Calculate stats for this company's metric
+    const stats = company ? calculateMetricStats(company.metricData, metricId) : { totalChange: null, cagr: null };
+    
+    // Determine if the metric is related to money (for millions label)
+    const isMoneyMetric = metricId === 'revenue' || metricId === 'netIncome' || metricId.includes('income') || metricId.includes('cash') || metricId.includes('liabilities');
+    
+    // Construct legend text
+    let result = `${ticker} - ${metricDisplayName}`;
+    
+    // Add units (Millions) for money metrics
+    if (isMoneyMetric) {
+      result += ` (Millions)`;
+    } else if (isPercentageMetric(metricId)) {
+      result += ` (%)`;
+    }
+    
+    // Add total change if available
+    if (stats.totalChange !== null) {
+      result += ` (Total Change: ${stats.totalChange.toFixed(2)}%)`;
+    }
+    
+    // Add CAGR if available
+    if (stats.cagr !== null) {
+      result += ` (CAGR: ${stats.cagr.toFixed(2)}%)`;
+    }
+    
+    return result;
+  };
+  const getPreFormattedLegends = () => {
+    const legends: Record<string, string> = {};
+    
+    companies.forEach(company => {
+      metrics.forEach(metric => {
+        const key = `${company.ticker}_${metric}`;
+        // Use the text-only formatter
+        legends[key] = getLegendText(key);
+      });
+    });
+    console.log("legends")
+    console.log(legends)
+
+    return legends;
+  };
+  
+  // Prepare the filename for export
+  const getExportFileName = () => {
+    const tickers = companies.map(c => c.ticker).join('-');
+    const date = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    return `${tickers}-comparison-${date}`;
+  };
+  const getDirectLegendTexts = () => {
+    const legends: string[] = [];
+    
+    // Generate legends in the same order as metrics appear in the chart
+    companies.forEach(company => {
+      metrics.forEach(metric => {
+        const key = `${company.ticker}_${metric}`;
+        
+        // Get proper display name for the metric
+        const metricDisplayName = getMetricDisplayName(metric);
+        
+        // Get statistics for this company's metric
+        const stats = calculateMetricStats(company.metricData, metric);
+        
+        // Determine if the metric is related to money
+        const isMoneyMetric = metric === 'revenue' || metric === 'netIncome' || 
+                             metric.includes('income') || metric.includes('cash') || 
+                             metric.includes('liabilities');
+        
+        // Format the name as in the main chart's legend
+        let legendText = `${company.ticker} - ${metricDisplayName}`;
+        
+        // Add units for money metrics
+        if (isMoneyMetric) {
+          legendText += ' (Millions)';
+        } else if (isPercentageMetric(metric)) {
+          legendText += ' (%)';
+        }
+        
+        // Add total change if available
+        if (stats.totalChange !== null) {
+          legendText += ` (Total Change: ${stats.totalChange.toFixed(2)}%)`;
+        }
+        
+        // Add CAGR if available
+        if (stats.cagr !== null) {
+          legendText += ` (CAGR: ${stats.cagr.toFixed(2)}%)`;
+        }
+        
+        legends.push(legendText);
+      });
+    });
+    
+    return legends;
+  };
   return (
     <div className="h-full w-full flex flex-col relative" ref={chartRef}>
+      {/* Export Button */}
+      <div className="flex justify-end mb-2">
+      {data && data.length > 0 && (
+        <ChartExport 
+  data={getExportData()}
+  metrics={getCombinedMetrics()}
+  ticker={companies.map(c => c.ticker).join('_')}
+  metricTypes={getExportMetricTypes()}
+  stackedMetrics={[]}
+  companyName={companies.map(c => c.name).join(' vs ')}
+  title={`${companies.map(c => c.name).join(' vs. ')} - Comparison`}
+  metricSettings={metricSettings}
+  metricLabels={metricLabels}
+  fileName={getExportFileName()}
+  directLegends={getDirectLegendTexts()} // Pass legends directly as an array
+/>
+  )}
+      </div>
+      
       {/* Chart Title */}
       <div className="text-center mb-2">
         <h3 style={{ fontSize: `${typography.titleSize}px` }} className="font-medium text-gray-800">
@@ -441,12 +822,16 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
             {/* Reference line at y=0 */}
             <ReferenceLine y={0} stroke="#777" strokeDasharray="3 3" />
             
+            {/* Add reference lines for statistics */}
+            {renderReferenceLines()}
+            
             {/* Generate chart elements for each company-metric combination */}
             {companies.map(company => (
               metrics.map(metric => {
                 const dataKey = `${company.ticker}_${metric}`;
                 const color = colorMap[dataKey];
                 const chartType = metricTypes[metric] || 'bar';
+                const showLabels = metricLabels[metric] !== false;
                 
                 if (chartType === 'line') {
                   return (
@@ -460,26 +845,17 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
                       dot={{ r: 4, fill: color }}
                       activeDot={{ r: 6 }}
                       connectNulls
-                      label={(props) => {
-                        const { x, y, value } = props;
-                        // Only show labels for the last data point
-                        if (props.index === data.length - 1) {
-                          return (
-                            <text
-                              x={x}
-                              y={y}
-                              dy={-10}
-                              fill={color}
-                              fontSize={typography.labelSize}
-                              textAnchor="middle"
-                            >
-                              {typeof value === 'number' ? formatYAxis(value) : ''}
-                            </text>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
+                    >
+                      {showLabels && (
+                        <LabelList 
+                          dataKey={dataKey}
+                          position="top"
+                          fill={"black"}
+                          fontSize={typography.labelSize}
+                          formatter={(value) => formatYAxis(value)}
+                        />
+                      )}
+                    </Line>
                   );
                 } else {
                   return (
@@ -489,21 +865,17 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
                       name={dataKey}
                       fill={color}
                       barSize={chartDimensions.barSize}
-                      label={(props) => {
-                        const { x, y, width, height, value } = props;
-                        return (
-                          <text
-                            x={x + width / 2}
-                            y={y - 5}
-                            fill="black"
-                            fontSize={typography.labelSize}
-                            textAnchor="middle"
-                          >
-                            {typeof value === 'number' ? formatYAxis(value) : ''}
-                          </text>
-                        );
-                      }}
-                    />
+                    >
+                      {showLabels && (
+                        <LabelList 
+                          dataKey={dataKey}
+                          position="top"
+                          fill={"black"}
+                          fontSize={typography.labelSize}
+                          formatter={(value) => formatYAxis(value)}
+                        />
+                      )}
+                    </Bar>
                   );
                 }
               })
