@@ -9,7 +9,12 @@ import { adjustExportChartMargins } from '@/utils/chartExportUtils';
 import Logo from '@/components/Logo';
 import logoPath from '/biggr.svg';
 
-
+interface StatisticReferenceLine {
+  companyTicker: string;
+  metricId: string;
+  statType: 'average' | 'median' | 'min' | 'max';
+  value: number;
+}
 interface ChartExportProps {
   data: any[]; // The processed data for the chart
   metrics: string[]; // Metrics to display
@@ -22,6 +27,9 @@ interface ChartExportProps {
   metricLabels?: Record<string, boolean>;
   fileName?: string;
   directLegends?: string[]; // Add this line
+  statisticalLines?: StatisticReferenceLine[]; // New prop
+  labelVisibilityArray?: boolean[]; // New prop: array of visibility flags
+
 }
 
 // Update the component props:
@@ -35,8 +43,11 @@ const ChartExport: React.FC<ChartExportProps> = ({
   title = '',
   metricSettings = {},
   metricLabels = {},
+  labelVisibilityArray = [], // Default to empty array
   fileName = 'chart-export',
-  directLegends= [] 
+  directLegends= [],
+  statisticalLines = [] // Default to empty array
+ 
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -713,8 +724,11 @@ const ChartExport: React.FC<ChartExportProps> = ({
     title={title}
     metricSettings={metricSettings}
     metricLabels={metricLabels}
+    labelVisibilityArray={labelVisibilityArray} // Pass the visibility array
     exportMode={true}
     directLegends={directLegends} // Add this line
+    statisticalLines={statisticalLines} // Pass the statistical lines
+
   />
         
   </div>

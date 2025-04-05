@@ -19,8 +19,11 @@ import CombinedFinancialTable from "@/components/CombinedFinancialTable";
 
 // Import updated time utilities
 import { 
+  calculatePercentageFromRange,
+  calculateRangeFromPercentage,
 extractTimePeriods, 
 getDefaultTimePeriods, 
+getDefaultTimeRange, 
 getPeriodIdentifier 
 } from '@/utils/timeUtils';
 import SimplifiedChartExport from "@/components/financials/SimplifiedChartExport";
@@ -70,13 +73,16 @@ const [period, setPeriod] = useState<'annual' | 'quarter'>('annual');
 // Dynamic time periods
 const [timePeriods, setTimePeriods] = useState<string[]>(getDefaultTimePeriods('annual'));
 // Use computed default for slider value
-const [sliderValue, setSliderValue] = useState<[number, number]>([0, getDefaultTimePeriods('annual').length - 1]);
+const defaultPeriods = getDefaultTimePeriods('annual');
+const [sliderValue, setSliderValue] = useState<[number, number]>(getDefaultTimeRange(defaultPeriods));
 
 // Refs for chart and table
 const chartContainerRef = useRef<HTMLDivElement>(null);
 const fullExportRef = useRef<HTMLDivElement>(null);
 
 const [chartTitle, setChartTitle] = useState<string>("");
+const [userModifiedTimeRange, setUserModifiedTimeRange] = useState<boolean>(false);
+const [timeRangePercentage, setTimeRangePercentage] = useState<[number, number]>([0, 100]);
 
 // Debug flag to help troubleshooting
 const [debug, setDebug] = useState<boolean>(false);
@@ -160,6 +166,12 @@ const handleRemoveCompany = (ticker: string) => {
 
 const handleSliderChange = (value: [number, number]) => {
   setSliderValue(value);
+  setUserModifiedTimeRange(true);
+  
+  // Calculate and store the percentage values relative to the total range
+  if (timePeriods.length > 1) {
+    setTimeRangePercentage(calculatePercentageFromRange(value, timePeriods.length));
+  }
 };
 
 const handleMetricTypeChange = (metric: string, type: ChartType) => {
@@ -212,8 +224,11 @@ const handlePeriodChange = (newPeriod: 'annual' | 'quarter') => {
   const defaultPeriods = getDefaultTimePeriods(newPeriod);
   setTimePeriods(defaultPeriods);
   
-  // Reset slider to show all periods
-  setSliderValue([0, defaultPeriods.length - 1]);
+  // Set slider to show the default time range (5 years)
+  setSliderValue(getDefaultTimeRange(defaultPeriods));
+  
+  // Reset user modification flag since we're explicitly changing the period type
+  setUserModifiedTimeRange(false);
 };
 
 // Initialize chart type for new metrics
@@ -285,9 +300,23 @@ const fetchMetricData = async (companyIndex: number) => {
           if (debug) {
             console.log(`Extracted ${extractedPeriods.length} ${period} periods:`, extractedPeriods);
           }
-          setTimePeriods(extractedPeriods);
-          // Reset slider to show all periods when data changes
-          setSliderValue([0, Math.max(0, extractedPeriods.length - 1)]);
+          
+          // Check if the array content actually changed before updating
+          const periodsChanged = 
+            timePeriods.length !== extractedPeriods.length ||
+            !timePeriods.every((p, i) => p === extractedPeriods[i]);
+          
+          if (periodsChanged) {
+            setTimePeriods(extractedPeriods);
+            
+            // If the user hasn't modified the time range yet, use the default range (5 years)
+            if (!userModifiedTimeRange || timePeriods.length === 0) {
+              setSliderValue(getDefaultTimeRange(extractedPeriods));
+            } else {
+              // Apply the saved percentage range to the new periods array
+              setSliderValue(calculateRangeFromPercentage(timeRangePercentage, extractedPeriods));
+            }
+          }
           break;
         }
       }

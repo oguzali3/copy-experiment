@@ -616,7 +616,59 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
     
     return combinedMetrics;
   };
-  
+  const getExportLabelVisibilityArray = () => {
+    // Get the formatted metrics array
+    const combinedMetrics = getCombinedMetrics();
+    const visibilityArray = [];
+    
+    // For each formatted metric, figure out its visibility setting
+    combinedMetrics.forEach((formattedMetric) => {
+      // Extract company ticker and metric display name
+      const parts = formattedMetric.split(' - ');
+      if (parts.length >= 2) {
+        const ticker = parts[0];
+        const displayName = parts[1].split('(')[0].trim();
+        
+        // Find the original metric ID that matches this display name
+        let found = false;
+        for (const metricId of metrics) {
+          if (getMetricDisplayName(metricId) === displayName) {
+            // Found the match - use its visibility setting
+            visibilityArray.push(metricLabels[metricId] !== false);
+            found = true;
+            break;
+          }
+        }
+        
+        if (!found) {
+          // Default to showing labels if no match found
+          visibilityArray.push(true);
+        }
+      } else {
+        // Default for malformed metrics
+        visibilityArray.push(true);
+      }
+    });
+    
+    return visibilityArray;
+  };
+  const getExportMetricLabels = () => {
+    const exportLabels = {};
+    
+    // For each company and metric
+    companies.forEach(company => {
+      metrics.forEach(metric => {
+        // Format the metric name the same way getCombinedMetrics does
+        const metricDisplayName = getMetricDisplayName(metric);
+        const formattedName = `${company.ticker} - ${metricDisplayName}`;
+        
+        // Use the original metric label setting for this formatted name
+        exportLabels[formattedName] = metricLabels[metric];
+      });
+    });
+    
+    return exportLabels;
+  };
   // Transform metricTypes for export to match formatted metric names
   const getExportMetricTypes = () => {
     const exportMetricTypes = {};
@@ -688,7 +740,55 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
 
     return legends;
   };
-  
+  const getStatisticalLines = () => {
+    const statisticalLines = [];
+    const statValues = calculateMetricStatValues();
+    
+    Object.keys(statValues).forEach(key => {
+      const [ticker, ...metricParts] = key.split('_');
+      const metricId = metricParts.join('_');
+      const stats = statValues[key];
+      
+      // Add each enabled statistic to the array
+      if (stats.average !== undefined) {
+        statisticalLines.push({
+          companyTicker: ticker,
+          metricId,
+          statType: 'average',
+          value: stats.average
+        });
+      }
+      
+      if (stats.median !== undefined) {
+        statisticalLines.push({
+          companyTicker: ticker,
+          metricId,
+          statType: 'median',
+          value: stats.median
+        });
+      }
+      
+      if (stats.min !== undefined) {
+        statisticalLines.push({
+          companyTicker: ticker,
+          metricId,
+          statType: 'min',
+          value: stats.min
+        });
+      }
+      
+      if (stats.max !== undefined) {
+        statisticalLines.push({
+          companyTicker: ticker,
+          metricId,
+          statType: 'max',
+          value: stats.max
+        });
+      }
+    });
+    
+    return statisticalLines;
+  };
   // Prepare the filename for export
   const getExportFileName = () => {
     const tickers = companies.map(c => c.ticker).join('-');
@@ -754,9 +854,13 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
   companyName={companies.map(c => c.name).join(' vs ')}
   title={`${companies.map(c => c.name).join(' vs. ')} - Comparison`}
   metricSettings={metricSettings}
-  metricLabels={metricLabels}
+  metricLabels={getExportMetricLabels}
+  labelVisibilityArray={getExportLabelVisibilityArray()} // Pass the new array
+
   fileName={getExportFileName()}
   directLegends={getDirectLegendTexts()} // Pass legends directly as an array
+  statisticalLines={getStatisticalLines()} // Pass the statistical lines
+
 />
   )}
       </div>
@@ -784,17 +888,20 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
             barGap={chartDimensions.barGap}
             barCategoryGap={chartDimensions.barCategoryGap}
           >
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid stroke="#e0e0e0" strokeWidth={0.1} />
             <XAxis 
               dataKey="period" 
-              angle={-45} 
+              angle={0} 
               textAnchor="end" 
               height={60}
               tickMargin={10}
+              stroke="#666"
+              strokeWidth={1}
               tick={{ fontSize: typography.tickSize }}
             />
             <YAxis 
               tickFormatter={formatYAxis} 
+              axisLine={false}
               tick={{ fontSize: typography.tickSize }}
             />
             <Tooltip 
@@ -822,8 +929,7 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
             {/* Reference line at y=0 */}
             <ReferenceLine y={0} stroke="#777" strokeDasharray="3 3" />
             
-            {/* Add reference lines for statistics */}
-            {renderReferenceLines()}
+
             
             {/* Generate chart elements for each company-metric combination */}
             {companies.map(company => (
@@ -880,6 +986,8 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
                 }
               })
             ))}
+                        {/* Add reference lines for statistics */}
+                        {renderReferenceLines()}
           </ComposedChart>
         </ResponsiveContainer>
         

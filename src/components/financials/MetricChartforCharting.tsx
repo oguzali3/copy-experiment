@@ -254,7 +254,12 @@ const calculateCAGR = (startValue: number, endValue: number, years: number): num
   if (startValue <= 0 || endValue <= 0 || years <= 0) return 0;
   return ((Math.pow(endValue / startValue, 1 / years) - 1) * 100);
 };
-
+interface StatisticReferenceLine {
+  companyTicker: string;
+  metricId: string;
+  statType: 'average' | 'median' | 'min' | 'max';
+  value: number;
+}
 interface MetricChartProps {
   data: any[]; // Your processed data array
   metrics: string[]; // Array of metric IDs
@@ -263,6 +268,7 @@ interface MetricChartProps {
   stackedMetrics?: string[]; // New prop for metrics that should be stacked
   onMetricTypeChange: (metric: string, type: ChartType) => void;
   companyName?: string;
+  labelVisibilityArray?: boolean[]; // New prop: array of visibility flags
   title?: string; // Optional custom title
   metricSettings?: Record<string, {
     average?: boolean;
@@ -272,6 +278,7 @@ interface MetricChartProps {
   }>;
   metricLabels?: Record<string, boolean>; // Control data label visibility
   directLegends?: string[]; // Pass pre-formatted legend texts directly
+  statisticalLines?: StatisticReferenceLine[]; // New prop
 
 }
 
@@ -286,10 +293,67 @@ export const MetricChart: React.FC<MetricChartProps> = ({
   title,
   metricSettings = {},
   metricLabels = {}, // Default all labels visible
-  directLegends
+  labelVisibilityArray = [], // Default to empty array
+  directLegends,
+  statisticalLines = [] // Default to empty array
+
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
-  
+  const renderExternalReferenceLines = () => {
+    if (!statisticalLines || statisticalLines.length === 0) {
+      return null;
+    }
+    
+    return statisticalLines.map((statLine, index) => {
+      // For external reference lines, determine color dynamically
+      let color = colorMap[statLine.metricId];
+      
+      // If not found, use a color from the baseColors array
+      if (!color) {
+        // Create a deterministic color based on company and metric
+        const combinedKey = `${statLine.companyTicker}-${statLine.metricId}`;
+        const hashCode = combinedKey.split('').reduce((acc, char) => {
+          return char.charCodeAt(0) + ((acc << 5) - acc);
+        }, 0);
+        const colorIndex = Math.abs(hashCode) % baseColors.length;
+        color = baseColors[colorIndex];
+      }
+      
+      // Determine if this is a percentage metric
+      const isPercent = isPercentageMetric(statLine.metricId);
+      
+      // Determine which axis to use
+      const axisId = needsDualAxes && isPercent ? "percentage" : "normal";
+      
+      // Set dash pattern based on stat type
+      let dash = '3 3'; // Default for average
+      if (statLine.statType === 'median') dash = '5 5';
+      else if (statLine.statType === 'min' || statLine.statType === 'max') dash = '2 2';
+      
+      // Format the label based on the type of metric
+      const formattedValue = formatValue(statLine.value, isPercent);
+      
+      return (
+        <ReferenceLine 
+          key={`ext-${statLine.companyTicker}-${statLine.metricId}-${statLine.statType}-${index}`}
+          y={statLine.value} 
+          stroke={color} 
+          strokeWidth={1.5}
+          strokeDasharray={dash}
+          ifOverflow="extendDomain"
+          yAxisId={axisId}
+          label={{
+            value: `${statLine.companyTicker} ${statLine.statType}:${formattedValue}`,
+            position: 'insideBottomRight',
+            fill: "black",
+            fontSize: typography.labelSize,
+            offset: 5
+          }} 
+          style={{ zIndex: 1000 }}
+        />
+      );
+    });
+  };
   // State for responsive sizing
   const [chartDimensions, setChartDimensions] = useState({
     barSize: 30,
@@ -455,7 +519,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     
     return stats;
   }, [data, metrics]);
-  
+
   // Calculate statistics for each metric (average, median, min, max)
   const metricStatValues = useMemo(() => {
     const stats: Record<string, {
@@ -902,9 +966,11 @@ export const MetricChart: React.FC<MetricChartProps> = ({
             })}
 
             {/* Render regular BAR metrics (non-stacked) */}
-            {barMetrics.map((metric) => {
+            {barMetrics.map((metric,index) => {
               const color = colorMap[metric];
-              const showLabels = metricLabels[metric] !== false;
+              const showLabels = labelVisibilityArray.length > index
+              ? labelVisibilityArray[index]
+              : metricLabels[metric] !== false;              
               const dataAccessor = getDataAccessor(metric);
               const isPercent = isPercentageMetric(metric);
               
@@ -937,10 +1003,15 @@ export const MetricChart: React.FC<MetricChartProps> = ({
             })}
             
             {/* Render LINE metrics second (higher z-index) */}
-            {lineMetrics.map((metric) => {
+            {lineMetrics.map((metric,index) => {
               const color = colorMap[metric];
-              const showLabels = metricLabels[metric] !== false;
-              const dataAccessor = getDataAccessor(metric);
+              const visibilityIndex = barMetrics.length + index;
+    
+              // Use the visibility array if available and has this index
+              const showLabels = labelVisibilityArray.length > visibilityIndex
+                ? labelVisibilityArray[visibilityIndex]
+                : metricLabels[metric] !== false;
+                              const dataAccessor = getDataAccessor(metric);
               const isPercent = isPercentageMetric(metric);
               
               // If only percentage metrics exist, everything goes on the "normal" axis
@@ -975,6 +1046,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({
             })}
             
             {renderReferenceLines()}
+            {renderExternalReferenceLines()}
+
           </ComposedChart>
         </ResponsiveContainer>
       </div>
