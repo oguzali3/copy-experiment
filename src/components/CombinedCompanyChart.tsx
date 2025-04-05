@@ -140,50 +140,7 @@ const CustomTooltip = ({ active, payload, label, fontSize }: TooltipProps<number
       value: entry.value as number
     });
   });
-  const getFormattedLegends = () => {
-    const legends: Record<string, string> = {};
-    
-    companies.forEach(company => {
-      metrics.forEach(metric => {
-        const key = `${company.ticker}_${metric}`;
-        
-        // Get proper display name for the metric
-        const displayName = getMetricDisplayName(metric);
-        
-        // Get stats for this metric
-        const stats = calculateMetricStats(company.metricData, metric);
-        
-        // Determine if the metric is related to money
-        const isMoneyMetric = metric === 'revenue' || metric === 'netIncome' || 
-                             metric.includes('income') || metric.includes('cash') || 
-                             metric.includes('liabilities');
-        
-        // Construct legend text
-        let legend = `${company.ticker} - ${displayName}`;
-        
-        // Add units
-        if (isMoneyMetric) {
-          legend += ` (Millions)`;
-        } else if (isPercentageMetric(metric)) {
-          legend += ` (%)`;
-        }
-        
-        // Add total change if available
-        if (stats.totalChange !== null) {
-          legend += ` (Total Change: ${stats.totalChange.toFixed(2)}%)`;
-        }
-        
-        // Add CAGR if available
-        if (stats.cagr !== null) {
-          legend += ` (CAGR: ${stats.cagr.toFixed(2)}%)`;
-        }
-        
-        legends[key] = legend;
-      });
-    });
-    
-    return legends;
-  };
+  
   return (
     <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md" style={{ fontSize: `${fontSize}px` }}>
       <p className="font-medium text-gray-800">{label}</p>
@@ -259,9 +216,9 @@ interface CombinedCompanyChartProps {
     min?: boolean;
     max?: boolean;
   }>;
-  exportMode?: boolean; // Add this flag
+  stackedMetrics?: string[]; // Add this prop to support stacked metrics
+  exportMode?: boolean;
 }
-
 
 // Calculate statistics for a company's metric
 const calculateMetricStats = (companyData: any[], metricId: string) => {
@@ -325,7 +282,8 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
   metrics, 
   metricTypes,
   metricLabels,
-  metricSettings
+  metricSettings,
+  stackedMetrics = [] // Default to empty array if not provided
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const [chartDimensions, setChartDimensions] = useState({
@@ -368,11 +326,18 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
     let count = 0;
     companies.forEach(company => {
       metrics.forEach(metric => {
-        if (metricTypes[metric] === 'bar') {
+        // Only count regular bars, not stacked bars
+        if (metricTypes[metric] === 'bar' && !stackedMetrics.includes(metric)) {
           count++;
         }
       });
     });
+    
+    // Add count for stacked metric groups (each company gets one stacked bar group)
+    if (stackedMetrics.length >= 2) {
+      count += companies.length;
+    }
+    
     return Math.max(1, count); // Ensure at least 1 to avoid division by zero
   };
   
@@ -406,7 +371,7 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
     
     // Cleanup
     return () => window.removeEventListener('resize', updateDimensions);
-  }, [data, companies, metrics, metricTypes]);
+  }, [data, companies, metrics, metricTypes, stackedMetrics]);
   
   // Custom legend formatter to show company and metric name with stats
   const legendFormatter = (value: string) => {
@@ -566,6 +531,7 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
     
     return referenceLines;
   };
+  
   const getExportData = () => {
     if (!data || data.length === 0) return [];
     
@@ -616,6 +582,7 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
     
     return combinedMetrics;
   };
+  
   const getExportLabelVisibilityArray = () => {
     // Get the formatted metrics array
     const combinedMetrics = getCombinedMetrics();
@@ -652,6 +619,7 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
     
     return visibilityArray;
   };
+  
   const getExportMetricLabels = () => {
     const exportLabels = {};
     
@@ -669,6 +637,7 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
     
     return exportLabels;
   };
+  
   // Transform metricTypes for export to match formatted metric names
   const getExportMetricTypes = () => {
     const exportMetricTypes = {};
@@ -686,6 +655,7 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
     
     return exportMetricTypes;
   };
+  
   const getLegendText = (value: string): string => {
     // Split the value to get company ticker and metric ID
     const [ticker, ...metricParts] = value.split('_');
@@ -725,6 +695,7 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
     
     return result;
   };
+  
   const getPreFormattedLegends = () => {
     const legends: Record<string, string> = {};
     
@@ -735,11 +706,10 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
         legends[key] = getLegendText(key);
       });
     });
-    console.log("legends")
-    console.log(legends)
-
+    
     return legends;
   };
+  
   const getStatisticalLines = () => {
     const statisticalLines = [];
     const statValues = calculateMetricStatValues();
@@ -789,12 +759,14 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
     
     return statisticalLines;
   };
+  
   // Prepare the filename for export
   const getExportFileName = () => {
     const tickers = companies.map(c => c.ticker).join('-');
     const date = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
     return `${tickers}-comparison-${date}`;
   };
+  
   const getDirectLegendTexts = () => {
     const legends: string[] = [];
     
@@ -843,28 +815,7 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
   return (
     <div className="h-full w-full flex flex-col relative" ref={chartRef}>
       {/* Export Button */}
-      <div className="flex justify-end mb-2">
-      {data && data.length > 0 && (
-        <ChartExport 
-  data={getExportData()}
-  metrics={getCombinedMetrics()}
-  ticker={companies.map(c => c.ticker).join('_')}
-  metricTypes={getExportMetricTypes()}
-  stackedMetrics={[]}
-  companyName={companies.map(c => c.name).join(' vs ')}
-  title={`${companies.map(c => c.name).join(' vs. ')} - Comparison`}
-  metricSettings={metricSettings}
-  metricLabels={getExportMetricLabels}
-  labelVisibilityArray={getExportLabelVisibilityArray()} // Pass the new array
 
-  fileName={getExportFileName()}
-  directLegends={getDirectLegendTexts()} // Pass legends directly as an array
-  statisticalLines={getStatisticalLines()} // Pass the statistical lines
-
-/>
-  )}
-      </div>
-      
       {/* Chart Title */}
       <div className="text-center mb-2">
         <h3 style={{ fontSize: `${typography.titleSize}px` }} className="font-medium text-gray-800">
@@ -873,6 +824,13 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
         <p style={{ fontSize: `${typography.subtitleSize}px` }} className="text-gray-500">
           {metrics.map(m => getMetricDisplayName(m)).join(', ')}
         </p>
+        
+        {/* Show stacked metrics message if applicable */}
+        {stackedMetrics && stackedMetrics.length >= 2 && (
+          <p style={{ fontSize: `${typography.subtitleSize - 2}px` }} className="text-blue-600 mt-1">
+            Showing stacked bars for: {stackedMetrics.map(m => getMetricDisplayName(m)).join(', ')}
+          </p>
+        )}
       </div>
       
       <div className="flex-grow w-full">
@@ -881,9 +839,9 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
             data={data}
             margin={{ 
               top: 20, 
-              right: 30, 
-              left: 20, 
-              bottom: 120 + (typography.legendSize - 12) * 5 // Adjust bottom margin based on legend size
+              right: 10, // Add more right margin for dual axes
+              left: 1, 
+              bottom: 20 + (typography.legendSize - 12) * 5 // Adjust bottom margin based on legend size
             }}
             barGap={chartDimensions.barGap}
             barCategoryGap={chartDimensions.barCategoryGap}
@@ -907,7 +865,7 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
             <Tooltip 
               content={<CustomTooltip fontSize={typography.tooltipSize} />} 
             />
-
+  
             <Legend 
               formatter={(value) => (
                 <span style={{ fontSize: `${typography.legendSize}px` }}>
@@ -917,7 +875,7 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
               wrapperStyle={{ 
                 paddingTop: 10, 
                 left: 70, 
-                bottom: 100 + (typography.legendSize - 12) * 3 // Adjust based on font size
+                bottom: 30 + (typography.legendSize - 12) * 3 // Adjust based on font size
               }} 
               layout="vertical" 
               align="center" 
@@ -929,80 +887,108 @@ const CombinedCompanyChart: React.FC<CombinedCompanyChartProps> = ({
             {/* Reference line at y=0 */}
             <ReferenceLine y={0} stroke="#777" strokeDasharray="3 3" />
             
-
-            
-            {/* Generate chart elements for each company-metric combination */}
-            {companies.map(company => (
-              metrics.map(metric => {
+            {/* First render stacked bars by company if we have stackable metrics */}
+            {stackedMetrics && stackedMetrics.length >= 2 && companies.map(company => (
+              stackedMetrics.map(metric => {
                 const dataKey = `${company.ticker}_${metric}`;
                 const color = colorMap[dataKey];
-                const chartType = metricTypes[metric] || 'bar';
                 const showLabels = metricLabels[metric] !== false;
                 
-                if (chartType === 'line') {
-                  return (
-                    <Line 
-                      key={dataKey}
-                      type="linear"
-                      dataKey={dataKey}
-                      name={dataKey}
-                      stroke={color}
-                      strokeWidth={2}
-                      dot={{ r: 4, fill: color }}
-                      activeDot={{ r: 6 }}
-                      connectNulls
-                    >
-                      {showLabels && (
-                        <LabelList 
-                          dataKey={dataKey}
-                          position="top"
-                          fill={"black"}
-                          fontSize={typography.labelSize}
-                          formatter={(value) => formatYAxis(value)}
-                        />
-                      )}
-                    </Line>
-                  );
-                } else {
-                  return (
-                    <Bar 
-                      key={dataKey}
-                      dataKey={dataKey}
-                      name={dataKey}
-                      fill={color}
-                      barSize={chartDimensions.barSize}
-                    >
-                      {showLabels && (
-                        <LabelList 
-                          dataKey={dataKey}
-                          position="top"
-                          fill={"black"}
-                          fontSize={typography.labelSize}
-                          formatter={(value) => formatYAxis(value)}
-                        />
-                      )}
-                    </Bar>
-                  );
-                }
+                return (
+                  <Bar 
+                    key={dataKey}
+                    dataKey={dataKey}
+                    name={dataKey}
+                    fill={color}
+                    stackId={`stack-${company.ticker}`} // Stack ID based on company ticker
+                    barSize={chartDimensions.barSize}
+                  >
+                    {showLabels && (
+                      <LabelList 
+                        dataKey={dataKey}
+                        position="inside"
+                        fill="white"
+                        fontSize={typography.labelSize}
+                        formatter={(value) => formatYAxis(value)}
+                      />
+                    )}
+                  </Bar>
+                );
               })
             ))}
-                        {/* Add reference lines for statistics */}
-                        {renderReferenceLines()}
+            
+            {/* Then render non-stacked bars and lines */}
+            {companies.map(company => (
+              metrics
+                // Filter out metrics that are already rendered as stacked
+                .filter(metric => 
+                  !(stackedMetrics && stackedMetrics.length >= 2 && stackedMetrics.includes(metric))
+                )
+                .map(metric => {
+                  const dataKey = `${company.ticker}_${metric}`;
+                  const color = colorMap[dataKey];
+                  const chartType = metricTypes[metric] || 'bar';
+                  const showLabels = metricLabels[metric] !== false;
+                  
+                  if (chartType === 'line') {
+                    return (
+                      <Line 
+                        key={dataKey}
+                        type="linear"
+                        dataKey={dataKey}
+                        name={dataKey}
+                        stroke={color}
+                        strokeWidth={2}
+                        dot={{ r: 4, fill: color }}
+                        activeDot={{ r: 6 }}
+                        connectNulls
+                      >
+                        {showLabels && (
+                          <LabelList 
+                            dataKey={dataKey}
+                            position="top"
+                            fill="black"
+                            fontSize={typography.labelSize}
+                            formatter={(value) => formatYAxis(value)}
+                          />
+                        )}
+                      </Line>
+                    );
+                  } else if (chartType === 'bar' || chartType === 'stacked') {
+                    // If it's a stacked metric but we don't have enough for stacking,
+                    // or if it's just a regular bar
+                    return (
+                      <Bar 
+                        key={dataKey}
+                        dataKey={dataKey}
+                        name={dataKey}
+                        fill={color}
+                        barSize={chartDimensions.barSize}
+                      >
+                        {showLabels && (
+                          <LabelList 
+                            dataKey={dataKey}
+                            position="top"
+                            fill="black"
+                            fontSize={typography.labelSize}
+                            formatter={(value) => formatYAxis(value)}
+                          />
+                        )}
+                      </Bar>
+                    );
+                  }
+                  
+                  return null; // For type safety
+                })
+            ))}
+            
+            {/* Add reference lines for statistics */}
+            {renderReferenceLines()}
           </ComposedChart>
         </ResponsiveContainer>
         
         {/* Logo in the bottom right corner */}
-        <div className="absolute bottom-0 right-0 flex items-center">
-          <p className="text-gray-600 font-medium mr-2" style={{ fontSize: `${typography.subtitleSize}px` }}>
-            Powered by
-          </p>
-          <img 
-            src="/mngrlogo.png" 
-            alt="MNGR Logo" 
-            className="h-32 w-auto" 
-            style={{ opacity: 0.8 }}
-          />
-        </div>
+
       </div>
     </div>
   );

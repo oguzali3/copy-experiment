@@ -16,6 +16,7 @@ import { X, BarChart3, LineChart, Cog, Eye, EyeOff, Move, Pencil, PencilOff } fr
 import SelectedMetricsList from "@/components/SelectedMetricList";
 import CombinedCompanyChart from "@/components/CombinedCompanyChart";
 import CombinedFinancialTable from "@/components/CombinedFinancialTable";
+import CombinedChartExport from "@/components/financials/CombinedChartExport";
 
 // Import updated time utilities
 import { 
@@ -799,73 +800,90 @@ return (
           {/* Render charts based on view mode */}
           {viewMode === 'single' ? (
             // Single Panel View - Combined chart with all companies
-            <div className="border-t pt-8 first:border-t-0 first:pt-0">
-              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg mb-4">
-                <div>
-                  <p className="font-medium">{selectedCompanies.map(c => c.name).join(' vs. ')}</p>
-                  <p className="text-sm text-gray-500">Comparison</p>
-                </div>
-              </div>
-              
-              {selectedCompanies.length > 0 && selectedMetrics.length > 0 ? (
-                <>
-                  {/* Show loading indicator if any company is still loading */}
-                  {selectedCompanies.some(company => company.isLoading) && (
-                    <div className="text-center py-2 mb-2 bg-blue-50 rounded">
-                      <p className="text-blue-500">Loading data...</p>
-                    </div>
-                  )}
-                  
-                  {/* Show errors if any company has an error */}
-                  {selectedCompanies.some(company => company.error) && (
-                    <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
-                      <p>There were errors loading data for some companies:</p>
-                      <ul className="list-disc pl-5 mt-1">
-                        {selectedCompanies
-                          .filter(company => company.error)
-                          .map(company => (
-                            <li key={company.ticker}>{company.ticker}: {company.error}</li>
-                          ))}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {/* Combined Chart */}
-                  <div className="h-[750px] w-[full]">
-                    {getCombinedChartData() && getCombinedChartData().length > 0 ? (
-                      <CombinedCompanyChart 
-                        data={getCombinedChartData()}
-                        companies={selectedCompanies}
-                        metrics={getVisibleMetrics()}
-                        metricTypes={metricTypes}
-                        metricLabels={metricLabels}
-                        metricSettings={metricSettings}
-                      />
-                    ) : (
-                      <div className="h-full flex items-center justify-center">
-                        <p className="text-gray-500">No data available for the selected companies and time period.</p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Combined Financial Data Table */}
-                  {getCombinedChartData() && getCombinedChartData().length > 0 && (
-                    <div className="mt-8">
-                      <CombinedFinancialTable 
-                        data={getCombinedChartData()}
-                        companies={selectedCompanies}
-                        metrics={getVisibleMetrics()}
-                        metricVisibility={metricVisibility}
-                      />
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <p className="text-gray-500">Select at least one company and metric to display data</p>
+        <div className="border-t pt-8 first:border-t-0 first:pt-0">
+          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg mb-4">
+            <div>
+              <p className="font-medium">{selectedCompanies.map(c => c.name).join(' vs. ')}</p>
+              <p className="text-sm text-gray-500">Comparison</p>
+            </div>
+          </div>
+          
+          {selectedCompanies.length > 0 && selectedMetrics.length > 0 ? (
+            <>
+              {/* Show loading indicator if any company is still loading */}
+              {selectedCompanies.some(company => company.isLoading) && (
+                <div className="text-center py-2 mb-2 bg-blue-50 rounded">
+                  <p className="text-blue-500">Loading data...</p>
                 </div>
               )}
+              
+              {/* Show errors if any company has an error */}
+              {selectedCompanies.some(company => company.error) && (
+                <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
+                  <p>There were errors loading data for some companies:</p>
+                  <ul className="list-disc pl-5 mt-1">
+                    {selectedCompanies
+                      .filter(company => company.error)
+                      .map(company => (
+                        <li key={company.ticker}>{company.ticker}: {company.error}</li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+              
+              {/* Add this line to include the CombinedChartExport */}
+              <div className="flex justify-end mb-2">
+                {getCombinedChartData() && getCombinedChartData().length > 0 && (
+                  <CombinedChartExport
+                    data={getCombinedChartData()}
+                    companies={selectedCompanies}
+                    metrics={getVisibleMetrics()}
+                    metricTypes={metricTypes}
+                    metricLabels={metricLabels}
+                    metricSettings={metricSettings}
+                    stackedMetrics={hasStackedMetrics() ? getStackedMetrics() : []}
+                    fileName={`${selectedCompanies.map(c => c.ticker).join('-')}-comparison`}
+                  />
+                )}
+              </div>
+              
+              {/* Combined Chart */}
+              <div className="h-[750px] w-[full]">
+                {getCombinedChartData() && getCombinedChartData().length > 0 ? (
+                  <CombinedCompanyChart 
+                    data={getCombinedChartData()}
+                    companies={selectedCompanies}
+                    metrics={getVisibleMetrics()}
+                    metricTypes={metricTypes}
+                    metricLabels={metricLabels}
+                    metricSettings={metricSettings}
+                    stackedMetrics={hasStackedMetrics() ? getStackedMetrics() : []}
+                  />
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <p className="text-gray-500">No data available for the selected companies and time period.</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Combined Financial Data Table */}
+              {getCombinedChartData() && getCombinedChartData().length > 0 && (
+                <div className="mt-8">
+                  <CombinedFinancialTable 
+                    data={getCombinedChartData()}
+                    companies={selectedCompanies}
+                    metrics={getVisibleMetrics()}
+                    metricVisibility={metricVisibility}
+                  />
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <p className="text-gray-500">Select at least one company and metric to display data</p>
             </div>
+          )}
+        </div>
           ) : (
             // By Company View - Separate chart for each company
             selectedCompanies.map((company, index) => (
