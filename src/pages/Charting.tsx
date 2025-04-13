@@ -88,6 +88,10 @@ const [timeRangePercentage, setTimeRangePercentage] = useState<[number, number]>
 // Debug flag to help troubleshooting
 const [debug, setDebug] = useState<boolean>(false);
 
+useEffect(() => {
+  loadChartStateFromSession();
+}, []);
+
 const handleMetricSelect = (metric: Metric) => {
   if (!selectedMetrics.some(m => m.id === metric.id)) {
     setSelectedMetrics(prev => [...prev, metric]);
@@ -231,7 +235,72 @@ const handlePeriodChange = (newPeriod: 'annual' | 'quarter') => {
   // Reset user modification flag since we're explicitly changing the period type
   setUserModifiedTimeRange(false);
 };
+// Function to save the current chart state to session storage
+const saveChartStateToSession = () => {
+  // Create an object with all the state you want to preserve
+  const chartState = {
+    selectedCompanies,
+    selectedMetrics,
+    metricTypes,
+    metricVisibility,
+    metricLabels,
+    metricSettings,
+    period,
+    sliderValue,
+    viewMode
+  };
+  
+  // Save it to session storage
+  sessionStorage.setItem('chartingState', JSON.stringify(chartState));
+};
 
+// Function to load the chart state from session storage
+const loadChartStateFromSession = () => {
+  try {
+    // Get the saved state from session storage
+    const savedState = sessionStorage.getItem('chartingState');
+    
+    // If there's saved state, parse it and restore all state variables
+    if (savedState) {
+      const parsedState = JSON.parse(savedState);
+      
+      // Restore your state variables
+      setSelectedCompanies(parsedState.selectedCompanies || []);
+      setSelectedMetrics(parsedState.selectedMetrics || []);
+      setMetricTypes(parsedState.metricTypes || {});
+      setMetricVisibility(parsedState.metricVisibility || {});
+      setMetricLabels(parsedState.metricLabels || {});
+      setMetricSettings(parsedState.metricSettings || {});
+      setPeriod(parsedState.period || 'annual');
+      setSliderValue(parsedState.sliderValue || [0, 4]);
+      setViewMode(parsedState.viewMode || 'byCompany');
+      
+      return true; // Indicate successful loading
+    }
+    
+    return false; // No saved state found
+  } catch (error) {
+    console.error('Error loading chart state:', error);
+    return false;
+  }
+};
+// Add an effect to save the state when it changes
+useEffect(() => {
+  // Only save if there's meaningful data
+  if (selectedCompanies.length > 0 || selectedMetrics.length > 0) {
+    saveChartStateToSession();
+  }
+}, [
+  selectedCompanies, 
+  selectedMetrics, 
+  metricTypes, 
+  metricVisibility, 
+  metricLabels, 
+  metricSettings, 
+  period, 
+  sliderValue,
+  viewMode
+]);
 // Initialize chart type for new metrics
 useEffect(() => {
   const newMetricTypes = { ...metricTypes };

@@ -1,5 +1,6 @@
 import React from 'react';
 import { getMetricDisplayName } from "@/utils/metricDefinitions";
+import { PlusCircle } from "lucide-react";
 
 interface CompanyData {
   ticker: string;
@@ -269,7 +270,7 @@ const CombinedFinancialTable: React.FC<CombinedFinancialTableProps> = ({
                 >
                   <td className="px-3 py-2 text-left font-medium border-r border-gray-200" style={{ width: '250px', minWidth: '250px' }}>
                     <div className="flex items-center">
-                      <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: color }}></span>
+                    <PlusCircle size={16} className="text-gray-400 mr-2 flex-shrink-0" />
                       <span className="text-gray-800">
                         {company.ticker} - {getMetricDisplayName(metric)}
                       </span>
