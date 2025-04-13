@@ -1,17 +1,27 @@
 // src/components/settings/ManageSubscriptionComponent.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/loaders";
-import { AlertCircle, CreditCard, Calendar, ExternalLink, CheckCircle, XCircle } from "lucide-react";
+import { 
+  AlertCircle, 
+  CreditCard, 
+  Calendar, 
+  ExternalLink, 
+  CheckCircle, 
+  XCircle,
+  RefreshCw
+} from "lucide-react";
 import SubscriptionAPI from "@/services/subscriptionApi";
 import PaymentAPI from "@/services/paymentApi";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { CardElement, useStripe, useElements, Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
 import { useAuth } from "@/contexts/AuthContext";
+import AddPaymentMethodForm from "./AddPaymentMethodForm";
+import SwitchPlanDialog from "../payment/SwitchPlanDialog";
 
 // Initialize Stripe with your publishable key
 const stripePromise = loadStripe('pk_test_51R7ffjP03K9QaBZcwxbAeRRzovFMa6kq1MlOZSDRSX76mPfadRRKvGxTIlPMx0AokZUDcq2tFa4tgGS2fSVbdgee00oedNBEHg');
@@ -28,151 +38,38 @@ interface PaymentMethod {
 
 interface Subscription {
   id: string;
+  name: string;
+  tier: string;
+  price: number;
+  currency: string;
+  billingPeriod: string;
+  stripePriceId: string;
+  features: string[];
+}
+
+interface UserSubscription {
+  id: string;
+  userId: string;
+  subscriptionId: string;
   status: string;
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
   currentPeriodStart: string;
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
-  subscription: {
-    id: string;
-    name: string;
-    tier: string;
-    price: number;
-    currency: string;
-    billingPeriod: string;
-  };
+  subscription: Subscription;
 }
-
-
-const AddPaymentMethodForm = ({ onSuccess, user }: { 
-    onSuccess: () => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    user?: any;
-  }) => {
-    const stripe = useStripe();
-    const elements = useElements();
-    const [error, setError] = useState<string | null>(null);
-    const [processing, setProcessing] = useState(false);
-  
-    // Add debug logging
-    console.log('Stripe object loaded:', !!stripe);
-    console.log('Card Element rendered');
-    console.log('Current user:', user);
-  
-    const handleSubmit = async (event: React.FormEvent) => {
-      event.preventDefault();
-    
-      if (!stripe || !elements) {
-        console.log('Stripe not initialized properly');
-        setError('Stripe is not initialized properly');
-        return;
-      }
-    
-      setProcessing(true);
-      setError(null);
-    
-      try {
-        // Create the payment method with Stripe
-        const cardElement = elements.getElement(CardElement);
-        
-        if (!cardElement) {
-          throw new Error('Card element not found');
-        }
-    
-        console.log('Creating payment method...');
-        const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
-          type: 'card',
-          card: cardElement,
-        });
-    
-        if (stripeError) {
-          console.error('Stripe error creating payment method:', stripeError);
-          throw new Error(stripeError.message);
-        }
-    
-        console.log('Payment method created:', paymentMethod);
-        
-        // Get or create a Stripe customer ID
-        const { stripeCustomerId } = await PaymentAPI.getOrCreateStripeCustomer();
-        
-        // Add payment method with the customer ID
-        const response = await PaymentAPI.addPaymentMethod({
-          paymentToken: paymentMethod.id,
-          type: 'CREDIT_CARD',
-          stripeCustomerId: stripeCustomerId,
-          userId: user?.id // Include userId explicitly
-        });
-        
-        console.log('Payment method added successfully:', response);
-        toast.success('Payment method added successfully');
-        onSuccess();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        console.error('Error adding payment method:', err);
-        setError(err.message || 'An error occurred while adding your payment method');
-        toast.error('Failed to add payment method');
-      } finally {
-        setProcessing(false);
-      }
-    };
-  
-    return (
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="p-4 border rounded-lg" style={{ minHeight: '60px' }}>
-          <CardElement
-            options={{
-              style: {
-                base: {
-                  fontSize: '16px',
-                  color: '#424770',
-                  fontFamily: 'Arial, sans-serif',
-                  '::placeholder': {
-                    color: '#aab7c4',
-                  },
-                  ':-webkit-autofill': {
-                    color: '#424770',
-                  },
-                  padding: '10px',
-                },
-                invalid: {
-                  color: '#9e2146',
-                },
-              },
-              hidePostalCode: true,
-            }}
-            onChange={(e) => {
-              console.log('Card element change:', e);
-              if (e.error) console.error('Card element error:', e.error);
-            }}
-            onFocus={() => console.log('Card element focus')}
-            onBlur={() => console.log('Card element blur')}
-            onReady={() => console.log('Card element ready')}
-          />
-        </div>
-  
-        {error && (
-          <div className="text-red-500 text-sm">{error}</div>
-        )}
-  
-        <Button 
-          type="submit" 
-          disabled={!stripe || processing} 
-          className="w-full"
-        >
-          {processing ? <Spinner size="sm" /> : 'Add Payment Method'}
-        </Button>
-      </form>
-    );
-  };
 
 const ManageSubscriptionComponent = () => {
   const navigate = useNavigate();
   // Get user from AuthContext
   const { user } = useAuth();
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingAction, setProcessingAction] = useState(false);
   const [addPaymentDialogOpen, setAddPaymentDialogOpen] = useState(false);
+  const [switchPlanDialogOpen, setSwitchPlanDialogOpen] = useState(false);
 
   // Log current user
   useEffect(() => {
@@ -285,6 +182,12 @@ const ManageSubscriptionComponent = () => {
     setAddPaymentDialogOpen(false);
     loadSubscriptionData();
   };
+  
+  const handleSwitchPlanSuccess = () => {
+    setSwitchPlanDialogOpen(false);
+    loadSubscriptionData();
+    toast.success('Your subscription plan has been updated successfully');
+  };
 
   if (loading) {
     return (
@@ -354,13 +257,25 @@ const ManageSubscriptionComponent = () => {
                     {processingAction ? <Spinner size="sm" /> : 'Resume Subscription'}
                   </Button>
                 ) : (
-                  <Button variant="destructive" onClick={handleCancelSubscription} disabled={processingAction}>
-                    {processingAction ? <Spinner size="sm" /> : 'Cancel Subscription'}
-                  </Button>
+                  <>
+                    <Button 
+                      variant="outline" 
+                      className="flex items-center gap-2"
+                      onClick={() => setSwitchPlanDialogOpen(true)}
+                      disabled={processingAction}
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Switch Plan
+                    </Button>
+                    
+                    <Button variant="destructive" onClick={handleCancelSubscription} disabled={processingAction}>
+                      {processingAction ? <Spinner size="sm" /> : 'Cancel Subscription'}
+                    </Button>
+                  </>
                 )}
                 
                 <Button variant="outline" onClick={() => navigate('/subscriptions')}>
-                  Change Plan
+                  View All Plans
                 </Button>
               </div>
             </div>
@@ -394,7 +309,6 @@ const ManageSubscriptionComponent = () => {
                             Enter your card details to add a new payment method.
                         </DialogDescription>
                         </DialogHeader>
-                        {/* Remove all options, just use the basic setup */}
                         <Elements stripe={stripePromise}>
                         <AddPaymentMethodForm 
                             onSuccess={handleAddPaymentMethodSuccess} 
@@ -467,7 +381,6 @@ const ManageSubscriptionComponent = () => {
                             Enter your card details to add a new payment method.
                         </DialogDescription>
                         </DialogHeader>
-                        {/* Remove all options, just use the basic setup */}
                         <Elements stripe={stripePromise}>
                         <AddPaymentMethodForm 
                             onSuccess={handleAddPaymentMethodSuccess} 
@@ -499,6 +412,19 @@ const ManageSubscriptionComponent = () => {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Switch Plan Dialog */}
+      {subscription && (
+        <Elements stripe={stripePromise}>
+          <SwitchPlanDialog
+            open={switchPlanDialogOpen}
+            onOpenChange={setSwitchPlanDialogOpen}
+            currentSubscription={subscription}
+            paymentMethods={paymentMethods}
+            onSuccess={handleSwitchPlanSuccess}
+          />
+        </Elements>
+      )}
     </div>
   );
 };

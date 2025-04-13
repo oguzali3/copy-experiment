@@ -1,6 +1,6 @@
 // src/pages/SignIn.tsx
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -14,13 +14,15 @@ const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [signingIn, setSigningIn] = useState(false);
-
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/dashboard";
+  
   useEffect(() => {
     // Redirect if already authenticated
     if (isAuthenticated) {
-      navigate("/dashboard");
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, from]);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

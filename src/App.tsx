@@ -20,24 +20,27 @@ import Watchlists from "./pages/Watchlists";
 import Portfolio from "./pages/Portfolio";
 import Settings from "./pages/Settings";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import PublicRoute from "./components/auth/PublicRoute"; // Create this component
 import SsoCallback from "./pages/SsoCallback";
 import Feed from "./pages/Feed";
 import Search from "./pages/Search";
 import Profile from "./pages/Profile";
 import { apolloClient } from "./lib/graphql/client";
 import PostDetail from "./components/social/PostDetail";
-// Import new pages for subscription and payment
-import SubscriptionPage from "./pages/SubscriptionPage";
-import PaymentPage from "./pages/PaymentPage";
-import SubscriptionSuccessPage from "./pages/SubscriptionSuccessPage";
-import PortfolioSubscriptions from "./pages/PortfolioSubscriptions";
-import PortfolioPricing from "./pages/PortfolioPricing";
+
 // For Stripe
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
+import PaymentPage from "./components/payment/PaymentPage";
+import SubscriptionPage from "./components/payment/SubscriptionPage";
+import SubscriptionSuccessPage from "./components/payment/SubscriptionSuccessPage";
+import CreatorPaymentsPage from "./components/payment/CreatorPaymentsPage";
+import PortfolioPricingManager from "./components/payment/PortfolioPricingManager";
+import PortfolioSubscriptionPage from "./components/payment/PortfolioSubscriptionPage";
+import PortfolioAccessView from "./components/portfolio/PortfolioAccessView";
+import PortfolioBrowser from "./components/portfolio/PortfolioBrowser";
 
 // Initialize Stripe for entire app
-// Near the top of PaymentPage.tsx and ManageSubscriptionComponent.tsx
 const stripePromise = loadStripe('pk_test_51R7ffjP03K9QaBZcwxbAeRRzovFMa6kq1MlOZSDRSX76mPfadRRKvGxTIlPMx0AokZUDcq2tFa4tgGS2fSVbdgee00oedNBEHg');
 
 const queryClient = new QueryClient({
@@ -62,6 +65,7 @@ const App = () => {
                   <Toaster />
                   <Sonner />
                   <Routes>
+                    {/* Public routes that don't require authentication */}
                     <Route path="/" element={<Navigate to="/feed" replace />} />
                     <Route path="/signin" element={<SignIn />} />
                     <Route path="/signup" element={<SignUp />} />
@@ -78,14 +82,7 @@ const App = () => {
                     <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                     <Route path="/activity" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
                     <Route path="/post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
-
-                    {/* Subscription Routes */}
-                    <Route path="/subscriptions" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
-                    <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
-                    <Route path="/subscription-success" element={<ProtectedRoute><SubscriptionSuccessPage /></ProtectedRoute>} />
-                    <Route path="/portfolio-subscriptions" element={<ProtectedRoute><PortfolioSubscriptions /></ProtectedRoute>} />
-                    <Route path="/portfolio-pricing" element={<ProtectedRoute><PortfolioPricing /></ProtectedRoute>} />
-
+                
                     {/* Protected Dashboard Layout Routes */}
                     <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                       <Route path="/dashboard" element={<Dashboard />} />
@@ -94,10 +91,28 @@ const App = () => {
                       <Route path="/charting" element={<Charting />} />
                       <Route path="/screening" element={<Screening />} />
                       <Route path="/watchlists" element={<Watchlists />} />
+                      
+
+                      <Route path="/portfolios/public" element={<PortfolioBrowser />} />
+                      <Route path="/portfolio/view/:portfolioId" element={<PortfolioAccessView />} />
+
+                      {/* Portfolio management (requires auth) */}
                       <Route path="/portfolio" element={<Portfolio />} />
                       <Route path="/portfolio/:id" element={<Portfolio />} />
+                      
+                      <Route path="/portfolio-subscriptions" element={<PortfolioSubscriptionPage />} />
+                      <Route path="/portfolio-pricing" element={<PortfolioPricingManager />} />
                       <Route path="/settings" element={<Settings />} />
-
+                      
+                      {/* Payment and Subscription Routes */}
+                      <Route path="/payment" element={<PaymentPage />} />
+                      <Route path="/subscriptions" element={<SubscriptionPage />} />
+                      <Route path="/subscription-success" element={<SubscriptionSuccessPage />} />
+                      
+                      {/* Creator Dashboard Routes */}
+                      <Route path="/creator/payments" element={<CreatorPaymentsPage />} />
+                      <Route path="/creator/connect" element={<CreatorPaymentsPage />} />
+                      
                       {/* Catch all route */}
                       <Route path="*" element={<Navigate to="/dashboard" replace />} />
                     </Route>

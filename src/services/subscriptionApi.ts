@@ -24,6 +24,8 @@ interface UserSubscription {
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
   subscription: Subscription;
+  paymentMethodId?: string;
+
 }
 
 interface SubscribeDto {
@@ -31,7 +33,12 @@ interface SubscribeDto {
     paymentMethodId: string;
     userId: string;
     stripeCustomerId?: string;
-  }
+}
+interface SwitchPlanDto {
+    newSubscriptionId: string;
+    paymentMethodId?: string;
+    prorate?: boolean;
+}
 
 // Cache for subscription data
 const cache = {
@@ -160,6 +167,56 @@ const SubscriptionAPI = {
       throw error;
     }
   },
+  /**
+ * Switch to a different subscription plan
+ * Workaround implementation that uses existing endpoints
+ */
+    switchPlan: async (switchPlanDto: SwitchPlanDto): Promise<UserSubscription> => {
+        try {
+        console.log('Switch plan request data:', switchPlanDto);
+        
+        // Validate input
+        if (!switchPlanDto.newSubscriptionId) {
+            throw new Error('New subscription ID is required');
+        }
+        
+        // Get current subscription
+        const currentSubscription = await SubscriptionAPI.getCurrentSubscription();
+        
+        if (!currentSubscription) {
+            throw new Error('No active subscription found to switch from');
+        }
+        
+        // Instead of calling the non-existent switch-plan endpoint, we'll:
+        // 1. Cancel the existing subscription (but continue to end of billing period)
+        // 2. Create a new subscription with the new plan
+        
+        // Step 1: Cancel the existing subscription
+        console.log(`Cancelling existing subscription: ${currentSubscription.id}`);
+        await apiClient.delete(`/subscriptions/${currentSubscription.id}`);
+        
+        // Step 2: Create a new subscription with the new plan
+        const subscribeData: SubscribeDto = {
+            subscriptionId: switchPlanDto.newSubscriptionId,
+            paymentMethodId: switchPlanDto.paymentMethodId || currentSubscription.paymentMethodId,
+            userId: currentSubscription.userId,
+            stripeCustomerId: currentSubscription.stripeCustomerId
+        };
+        
+        console.log('Creating new subscription with data:', subscribeData);
+        const response = await apiClient.post<UserSubscription>('/subscriptions', subscribeData);
+        
+        console.log('New subscription created successfully:', response.status, response.statusText);
+        
+        // Invalidate cache
+        cache.currentSubscription = null;
+        
+        return response.data;
+        } catch (error) {
+        console.error('Error switching subscription plan:', error);
+        throw error;
+        }
+    },
   
   /**
    * Cancel a subscription with improved error handling

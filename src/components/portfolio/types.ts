@@ -1,3 +1,5 @@
+import { PortfolioVisibility } from "@/constants/portfolioVisibility";
+
 export type Stock = {
   ticker: string;
   name: string;
@@ -21,4 +23,7 @@ export type Portfolio = {
   dayChange: number;
   dayChangePercent: number;
   lastPriceUpdate: Date | null;
+  visibility: PortfolioVisibility;
+  description: string;
+  userId?: string;
 };

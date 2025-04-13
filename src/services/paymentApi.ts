@@ -9,6 +9,7 @@ interface PaymentMethod {
   expiryMonth: string;
   expiryYear: string;
   isDefault: boolean;
+  stripePaymentMethodId?: string;
 }
 
 interface AddPaymentMethodDto {
@@ -188,6 +189,17 @@ async addPaymentMethod(dto: AddPaymentMethodDto): Promise<PaymentMethod> {
       throw error;
     }
   },
+  attachPaymentMethod: async (paymentMethodId: string): Promise<boolean> => {
+    try {
+      const response = await apiClient.post<{ success: boolean }>('/payments/attach-payment-method', {
+        paymentMethodId
+      });
+      return response.data.success;
+    } catch (error) {
+      console.error('Error attaching payment method:', error);
+      throw error;
+    }
+  }
 };
 
 export default PaymentAPI;

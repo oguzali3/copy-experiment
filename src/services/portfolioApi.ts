@@ -4,6 +4,25 @@ import { Portfolio, Stock } from '@/components/portfolio/types';
 import apiClient from '@/utils/apiClient';
 import { AuthService, getUserData } from '@/services/auth.service';
 import { standardizePortfolioData } from '@/utils/portfolioDataUtils';
+import { PortfolioVisibility } from '@/constants/portfolioVisibility';
+
+interface CreatorInfoDto {
+  displayName?: string;
+  avatarUrl?: string;
+}
+interface PortfolioBasicInfoDto {
+  id: string;
+  name: string;
+  description?: string;
+  visibility: PortfolioVisibility;
+  userId: string;
+  createdAt: Date;
+  lastDayChange: number;
+  lastMonthChange: number;
+  lastYearChange: number;
+  totalValue: number;
+  creator: CreatorInfoDto;
+}
 
 // Request deduplication system
 // Store ongoing promises to deduplicate in-flight identical requests
@@ -99,6 +118,8 @@ interface PortfolioResponseDto {
   dayChange: number;
   dayChangePercent: number;
   lastPriceUpdate: Date | null;
+  visibility: PortfolioVisibility;
+  description?: string;
 }
 
 interface StockPositionResponseDto {
@@ -210,7 +231,8 @@ const mapToPortfolio = (dto: PortfolioResponseDto): Portfolio => {
       ? ((totalValue - ensureNumber(dto.previousDayValue)) / ensureNumber(dto.previousDayValue)) * 100 
       : 0,
     lastPriceUpdate: dto.lastPriceUpdate ? new Date(dto.lastPriceUpdate) : null,
-    stocks: stocks
+    stocks: stocks,
+    visibility: dto.visibility
   };
   
   // Standardize the portfolio data to ensure all values are proper numbers
@@ -476,10 +498,13 @@ const portfolioApi = {
   },
 
   // Update portfolio
-  updatePortfolio: async (id: string, name: string): Promise<Portfolio> => {
+  updatePortfolio: async (id: string, data: { name: string; visibility?: PortfolioVisibility }): Promise<Portfolio> => {
     // Queue this request to prevent race conditions
     return requestQueue.add(async () => {
-      const response = await apiClient.put<PortfolioResponseDto>(`/portfolios/${id}`, { name });
+      console.log(`Updating portfolio ${id} with data:`, data);
+      
+      const response = await apiClient.put<PortfolioResponseDto>(`/portfolios/${id}`, data);
+      
       // Invalidate cached data for this portfolio
       invalidatePortfolioCache(id);
       
@@ -817,7 +842,130 @@ const portfolioApi = {
       console.error('Error fetching portfolio history:', error);
       throw error;
     }
+  },
+
+
+  // Helper to normalize visibility enum values from API
+  normalizeVisibility(visibility: string): PortfolioVisibility {
+    if (visibility === 'public') return PortfolioVisibility.PUBLIC;
+    if (visibility === 'paid') return PortfolioVisibility.PAID;
+    return PortfolioVisibility.PRIVATE;
+  },
+
+  normalizePortfolio(portfolio: any): Portfolio {
+    return {
+      ...portfolio,
+      visibility: this.normalizeVisibility(portfolio.visibility)
+    };
+  },
+  getPortfolioBasicInfo: async (portfolioId: string): Promise<PortfolioBasicInfoDto | null> => {
+    try {
+      const response = await apiClient.get<PortfolioBasicInfoDto>(
+        `/portfolios/${portfolioId}/basic-info`,
+        {
+          params: { _t: Date.now() },
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching portfolio basic info:', error);
+      return null;
+    }
+  },
+  
+  // Get all portfolios with specific visibility using basic info endpoint
+  getBasicPortfoliosByVisibility: async (visibility: 'public' | 'paid'): Promise<PortfolioBasicInfoDto[]> => {
+    try {
+      const response = await apiClient.get<PortfolioBasicInfoDto[]>(
+        `/portfolios/by-visibility/${visibility}/basic-info`,
+        {
+          params: { _t: Date.now() },
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching basic portfolios with visibility ${visibility}:`, error);
+      return [];
+    }
+  },
+  // In portfolioApi.ts
+  getPortfolioById: async (portfolioId: string): Promise<Portfolio | null> => {
+    try {
+      // Use the light-refresh endpoint which works for authenticated users
+      const response = await apiClient.get<PortfolioResponseDto>(
+        `/portfolios/${portfolioId}/light-refresh`,
+        { 
+          params: { _t: Date.now() },
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        }
+      );
+      
+      if (response.data) {
+        return mapToPortfolio(response.data);
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`Error fetching portfolio ${portfolioId}:`, error);
+      return null;
+    }
+  },
+  // Fix for portfolioApi.ts
+// Add these methods to the portfolioApi object instead of using them as separate functions
+
+getPortfoliosByVisibility: async (visibility: PortfolioVisibility): Promise<Portfolio[]> => {
+  try {
+    // Use the correct endpoint
+    const response = await apiClient.get<PortfolioResponseDto[]>(
+      `/portfolios/by-visibility/${visibility.toLowerCase()}`
+    );
+    
+    return response.data.map(dto => mapToPortfolio(dto));
+  } catch (error) {
+    console.error(`Error getting portfolios by visibility ${visibility}:`, error);
+    return [];
   }
+},
+
+getPublicPortfolios: async (): Promise<Portfolio[]> => {
+  try {
+    // Use the dedicated endpoint for public portfolios
+    const response = await apiClient.get<PortfolioResponseDto[]>('/portfolios/public');
+    return response.data.map(dto => mapToPortfolio(dto));
+  } catch (error) {
+    console.error('Error getting public portfolios:', error);
+    return [];
+  }
+},
+
+
+updatePortfolioVisibility: async (portfolioId: string, visibility: PortfolioVisibility): Promise<Portfolio> => {
+  try {
+    const response = await apiClient.put<PortfolioResponseDto>(
+      `/portfolios/${portfolioId}`, 
+      { visibility }
+    );
+    
+    return mapToPortfolio(response.data);
+  } catch (error) {
+    console.error(`Error updating portfolio visibility:`, error);
+    throw error;
+  }
+}
 };
 
 export default portfolioApi;

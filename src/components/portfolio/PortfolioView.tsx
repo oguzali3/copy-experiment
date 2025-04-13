@@ -14,19 +14,21 @@ import { DeletePortfolioDialog } from "./PortfolioDelete";
 import { PortfolioValueChart } from "./PortfolioValueChart";
 import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
 import portfolioApi from "@/services/portfolioApi";
+import { PortfolioVisibility } from "@/constants/portfolioVisibility";
 
 interface PortfolioViewProps {
   portfolio: Portfolio;
   onAddPortfolio: () => void;
-  onDeletePortfolio: (id: string) => void;
+  onDeletePortfolio: (id: string) => void | Promise<void>; // Allow both void and Promise<void>
   onUpdatePortfolio: (portfolio: Portfolio) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onAddPosition: (company: any, shares: string, avgPrice: string) => void;
-  onUpdatePosition: (ticker: string, shares: number, avgPrice: number) => void;
+  onAddPosition: (company: any, shares: string, avgPrice: string) => void | Promise<void>;
+  onUpdatePosition: (ticker: string, shares: number, avgPrice: number) => void | Promise<void>;
   onRefreshPrices: (portfolioId: string) => Promise<void>;
   lastRefreshTime?: Date | null;
-  onDeletePosition: (ticker: string) => void;
+  onDeletePosition: (ticker: string) => void | Promise<void>;
   marketStatus: 'open' | 'closed' | 'pre-market' | 'after-hours';
+  isViewOnly?: boolean;
 }
 
 export const PortfolioView = ({
@@ -40,6 +42,7 @@ export const PortfolioView = ({
   lastRefreshTime,
   onDeletePosition,
   marketStatus,
+  isViewOnly = false,
 }: PortfolioViewProps) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddingTicker, setIsAddingTicker] = useState(false);
@@ -183,21 +186,25 @@ export const PortfolioView = ({
               Last updated: {lastRefreshTime.toLocaleTimeString()}
             </span>
           )}
-          <Button 
-            variant="outline" 
-            className="text-blue-600 border-blue-600"
-            onClick={onAddPortfolio}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            New Portfolio
-          </Button>
-          <Button 
-            variant="outline" 
-            className="text-green-600 border-green-600"
-            onClick={() => setIsAddingTicker(true)}
-          >
-            Add a New Position
-          </Button>
+           {!isViewOnly && (
+            <>
+              <Button 
+                variant="outline" 
+                className="text-blue-600 border-blue-600"
+                onClick={onAddPortfolio}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                New Portfolio
+              </Button>
+              <Button 
+                variant="outline" 
+                className="text-green-600 border-green-600"
+                onClick={() => setIsAddingTicker(true)}
+              >
+                Add a New Position
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -252,7 +259,7 @@ export const PortfolioView = ({
           </div>
         )}
       </div>
-
+      {!isViewOnly && (
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <p className="text-sm text-gray-600 italic">
@@ -284,75 +291,80 @@ export const PortfolioView = ({
           </div>
         )}
       </div>
-
-      <div className="flex justify-end gap-4">
-        <Button 
-          variant="outline"
-          onClick={() => setIsSettingsOpen(true)}
-        >
-          <Settings className="mr-2 h-4 w-4" />
-          Portfolio Settings
-        </Button>
-        <div className="flex items-center gap-2">
-          <span 
-            className={`inline-flex h-2 w-2 rounded-full ${
-              marketStatus === 'open' ? 'bg-green-500' :
-              marketStatus === 'pre-market' || marketStatus === 'after-hours' ? 'bg-yellow-500' :
-              'bg-gray-500'
-            }`}
-          ></span>
-          <span className="text-xs text-gray-600">
-            {marketStatus === 'open' ? 'Market Open' :
-            marketStatus === 'pre-market' ? 'Pre-Market' :
-            marketStatus === 'after-hours' ? 'After-Hours' :
-            'Market Closed'}
-          </span>
+      )}
+      {!isViewOnly && (
+        <div className="flex justify-end gap-4">
+          <Button 
+            variant="outline"
+            onClick={() => setIsSettingsOpen(true)}
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            Portfolio Settings
+          </Button>
+          <div className="flex items-center gap-2">
+            <span 
+              className={`inline-flex h-2 w-2 rounded-full ${
+                marketStatus === 'open' ? 'bg-green-500' :
+                marketStatus === 'pre-market' || marketStatus === 'after-hours' ? 'bg-yellow-500' :
+                'bg-gray-500'
+              }`}
+            ></span>
+            <span className="text-xs text-gray-600">
+              {marketStatus === 'open' ? 'Market Open' :
+              marketStatus === 'pre-market' ? 'Pre-Market' :
+              marketStatus === 'after-hours' ? 'After-Hours' :
+              'Market Closed'}
+            </span>
+          </div>
+          <Button 
+            variant="outline" 
+            className="text-red-600 border-red-600"
+            onClick={async () => {
+              try {
+                // Clear caches first
+                await portfolioApi.clearAllCaches();
+                // Then do a full refresh
+                await handleRefreshPrices();
+                toast.success("Forced complete refresh successful");
+              } catch (error) {
+                toast.error("Force refresh failed");
+              }
+            }}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Force Complete Refresh
+          </Button>
+          <Button 
+            variant="destructive"
+            onClick={() => setIsDeleteDialogOpen(true)}
+          >
+            Delete Portfolio
+          </Button>
         </div>
-        <Button 
-          variant="outline" 
-          className="text-red-600 border-red-600"
-          onClick={async () => {
-            try {
-              // Clear caches first
-              await portfolioApi.clearAllCaches();
-              // Then do a full refresh
-              await handleRefreshPrices();
-              toast.success("Forced complete refresh successful");
-            } catch (error) {
-              toast.error("Force refresh failed");
-            }
-          }}
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Force Complete Refresh
-        </Button>
-        <Button 
-          variant="destructive"
-          onClick={() => setIsDeleteDialogOpen(true)}
-        >
-          Delete Portfolio
-        </Button>
-      </div>
+      )}
       
-      <DeletePortfolioDialog
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        portfolioName={portfolioState.name}
-        onConfirmDelete={handleDeletePortfolio}
-        isDeleting={isDeleting}
-      />
-      <PortfolioSettingsDialog
-        isOpen={isSettingsOpen}
-        onOpenChange={setIsSettingsOpen}
-        portfolioName={portfolioState.name}
-        onUpdateName={handleUpdatePortfolioName}
-      />
-
-      <AddPositionDialog
-        isOpen={isAddingTicker}
-        onOpenChange={setIsAddingTicker}
-        onAddPosition={handleAddPosition}
-      />
+      {!isViewOnly && (
+        <>
+          <DeletePortfolioDialog
+            isOpen={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+            portfolioName={portfolioState.name}
+            onConfirmDelete={handleDeletePortfolio}
+            isDeleting={isDeleting}
+          />
+          <PortfolioSettingsDialog
+            isOpen={isSettingsOpen}
+            onOpenChange={setIsSettingsOpen}
+            portfolioName={portfolioState.name}
+            onUpdateName={handleUpdatePortfolioName} 
+            portfolioVisibility={PortfolioVisibility.PRIVATE} portfolioId={""}          />
+          <AddPositionDialog
+            isOpen={isAddingTicker}
+            onOpenChange={setIsAddingTicker}
+            onAddPosition={handleAddPosition}
+          />
+        </>
+      )}
     </div>
   );
 };
