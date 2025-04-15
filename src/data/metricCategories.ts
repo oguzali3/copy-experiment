@@ -293,5 +293,20 @@ export const metricCategories: MetricCategory[] = [
       { id: "inventoryTurnover", name: "Inventory Turnover", table: "key_metrics" },
       { id: "roe", name: "Return on Equity (ROE)", table: "key_metrics" },
     ]
+  },
+  {
+    id: 'market-data',
+    name: 'Market Data',
+    icon: 'bi bi-graph-up', // Use appropriate icon
+    metrics: [
+      { id: 'price', name: 'Daily Price', table: 'market-data' },
+      { id: 'marketCap', name: 'Market Cap', table: 'market-data' },
+      { id: 'peRatio', name: 'P/E Ratio', table: 'market-data' },
+      { id: 'psRatio', name: 'P/S Ratio', table: 'market-data' },
+      { id: 'pfcfRatio', name: 'P/FCF Ratio', table: 'market-data' },
+      { id: 'pcfRatio', name: 'P/CF Ratio', table: 'market-data' },
+      { id: 'pbRatio', name: 'P/B Ratio', table: 'market-data' },
+      { id: 'fcfYield', name: 'Free Cash Flow Yield', table: 'market-data' },
+    ],
   }
 ];
