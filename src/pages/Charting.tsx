@@ -17,6 +17,7 @@ import SelectedMetricsList from "@/components/SelectedMetricList";
 import CombinedCompanyChart from "@/components/CombinedCompanyChart";
 import CombinedFinancialTable from "@/components/CombinedFinancialTable";
 import CombinedChartExport from "@/components/financials/CombinedChartExport";
+import { supabase } from "@/integrations/supabase/client";
 
 // Import updated time utilities
 import { 
@@ -34,12 +35,14 @@ const API_BASE_URL = "http://localhost:4000/api/analysis";
 
 // Define a new interface for company data
 interface CompanyData {
-ticker: string;
-name: string;
-metricData: any[];
-isLoading: boolean;
-error: string | null;
+  ticker: string;
+  name: string;
+  metricData: any[];
+  priceData?: any[]; // Add this new property
+  isLoading: boolean;
+  error: string | null;
 }
+
 
 const Charting = () => {
 // State for selected metrics
@@ -70,6 +73,9 @@ const [metricSettings, setMetricSettings] = useState<Record<string, {
 
 // State for period and time selection
 const [period, setPeriod] = useState<'annual' | 'quarter'>('annual');
+const hasPriceMetric = () => {
+  return selectedMetrics.some(metric => metric.id === "price");
+};
 
 // Dynamic time periods
 const [timePeriods, setTimePeriods] = useState<string[]>(getDefaultTimePeriods('annual'));
@@ -312,6 +318,118 @@ useEffect(() => {
   setMetricTypes(newMetricTypes);
 }, [selectedMetrics]);
 
+// Add this function to fetch price data
+const fetchPriceData = async (ticker: string) => {
+  // Update loading state for this company
+  const companyIndex = selectedCompanies.findIndex(c => c.ticker === ticker);
+  if (companyIndex === -1) return;
+  
+  setSelectedCompanies(prev => {
+    const updatedCompanies = [...prev];
+    updatedCompanies[companyIndex] = {
+      ...updatedCompanies[companyIndex],
+      isLoading: true
+    };
+    return updatedCompanies;
+  });
+  
+  try {
+    // Determine timeframe based on the selected periods
+    let timeframe = "1Y"; // Default
+    
+    if (sliderValue && timePeriods.length > 0) {
+      // Calculate the number of years/periods selected
+      const selectedPeriodCount = sliderValue[1] - sliderValue[0] + 1;
+      
+      if (selectedPeriodCount <= 1) timeframe = "1Y";
+      else if (selectedPeriodCount <= 3) timeframe = "3Y";
+      else if (selectedPeriodCount <= 5) timeframe = "5Y";
+      else timeframe = "MAX";
+      
+      if (debug) {
+        console.log(`Selected ${selectedPeriodCount} periods, using timeframe: ${timeframe}`);
+      }
+    }
+    
+    // Call your API endpoint similar to StockChart.tsx
+    const { data, error } = await supabase.functions.invoke('fetch-stock-chart', {
+      body: { symbol: ticker, timeframe }
+    });
+    
+    if (error) throw error;
+    
+    if (debug) {
+      console.log(`Fetched ${data.length} price data points for ${ticker}`);
+    }
+    
+    // Store the price data in the company object
+    setSelectedCompanies(prev => {
+      const updatedCompanies = [...prev];
+      const companyIndex = updatedCompanies.findIndex(c => c.ticker === ticker);
+      
+      if (companyIndex !== -1) {
+        updatedCompanies[companyIndex] = {
+          ...updatedCompanies[companyIndex],
+          priceData: data,
+          isLoading: false
+        };
+      }
+      
+      return updatedCompanies;
+    });
+    
+    return data;
+  } catch (err) {
+    console.error(`Error fetching price data for ${ticker}:`, err);
+    
+    // Update error state for this company
+    setSelectedCompanies(prev => {
+      const updatedCompanies = [...prev];
+      const companyIndex = updatedCompanies.findIndex(c => c.ticker === ticker);
+      
+      if (companyIndex !== -1) {
+        updatedCompanies[companyIndex] = {
+          ...updatedCompanies[companyIndex],
+          isLoading: false,
+          error: `Failed to fetch price data: ${err.message}`
+        };
+      }
+      
+      return updatedCompanies;
+    });
+    
+    return null;
+  }
+};
+
+// Modify the useEffect that fetches data to include price data
+useEffect(() => {
+  if (selectedCompanies.length > 0 && selectedMetrics.length > 0) {
+    // Fetch data for each company
+    selectedCompanies.forEach((company, index) => {
+      fetchMetricData(index);
+      
+      // If price metric is selected, fetch price data too
+      if (hasPriceMetric()) {
+        fetchPriceData(company.ticker);
+      }
+    });
+  }
+}, [selectedCompanies.length, selectedMetrics, period]);
+
+// Add an additional effect to fetch price data when price metric is selected
+useEffect(() => {
+  // If price metric is selected and we have companies
+  if (hasPriceMetric() && selectedCompanies.length > 0) {
+    // Fetch price data for each company
+    selectedCompanies.forEach(company => {
+      // Only fetch if we don't already have price data for this company
+      if (!company.priceData) {
+        fetchPriceData(company.ticker);
+      }
+    });
+  }
+}, [hasPriceMetric()]);
 // Modified: Fetch data for all companies
 const fetchMetricData = async (companyIndex: number) => {
   const company = selectedCompanies[companyIndex];
@@ -994,17 +1112,18 @@ return (
                 <div className="h-[750px] w-[full]" ref={index === 0 ? chartContainerRef : undefined}>
                   {getChartData(company.metricData) && getChartData(company.metricData).length > 0 ? (
                     <MetricChart 
-                      data={getChartData(company.metricData)}
-                      metrics={getVisibleMetrics()}
-                      ticker={company.ticker}
-                      metricTypes={metricTypes}
-                      stackedMetrics={hasStackedMetrics() ? getStackedMetrics() : []}
-                      onMetricTypeChange={handleMetricTypeChange}
-                      companyName={company.name}
-                      title={`${company.name} (${company.ticker})`}
-                      metricSettings={metricSettings}
-                      metricLabels={metricLabels}
-                    />
+                  data={getChartData(company.metricData)}
+                  metrics={getVisibleMetrics()}
+                  ticker={company.ticker}
+                  metricTypes={metricTypes}
+                  stackedMetrics={hasStackedMetrics() ? getStackedMetrics() : []}
+                  onMetricTypeChange={handleMetricTypeChange}
+                  companyName={company.name}
+                  title={`${company.name} (${company.ticker})`}
+                  metricSettings={metricSettings}
+                  metricLabels={metricLabels}
+                  dailyPriceData={hasPriceMetric() && company.priceData ? company.priceData : []}
+                />
                   ) : (
                     <div className="h-full flex items-center justify-center">
                       <p className="text-gray-500">No data available for {company.ticker} in the selected time period.</p>
