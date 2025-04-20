@@ -52,8 +52,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import CreatorSubscriptionAPI from '@/services/creatorSubscriptionApi';
 import StripeConnectService from '@/services/stripeConnectApi';
+import CreatorAnalyticsAPI from '@/services/creatorAnalyticsApi';
 
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe'];
+const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 const CreatorDashboard = () => {
   const { user } = useAuth();
@@ -94,16 +95,21 @@ const fetchDashboardData = async () => {
       isActive: false
     };
     
-    // Fetch analytics data
+    // Fetch analytics data from the Creator Analytics API
     try {
-      const analytics = await CreatorSubscriptionAPI.getCreatorAnalytics();
+      const analytics = await CreatorAnalyticsAPI.getCreatorAnalytics();
       if (analytics) {
         analyticsData = {
           totalSubscribers: analytics.totalSubscribers || 0,
           activeSubscribers: analytics.activeSubscribers || 0,
-          monthlyRevenue: analytics.monthlyRevenue || 0,
-          subscriberGrowth: Array.isArray(analytics.subscriberGrowth) ? analytics.subscriberGrowth : [],
-          revenueByPortfolio: Array.isArray(analytics.revenueByPortfolio) ? analytics.revenueByPortfolio : []
+          monthlyRevenue: analytics.totalRevenue || 0,
+          subscriberGrowth: [], // This would need transformation from analytics data
+          revenueByPortfolio: analytics.portfolioAnalytics.map(p => ({
+            portfolioId: p.portfolioId,
+            portfolioName: p.portfolioName,
+            revenue: p.revenue,
+            subscriberCount: p.subscriberCount
+          }))
         };
       }
       setAnalyticsData(analyticsData);
@@ -315,7 +321,7 @@ const fetchDashboardData = async () => {
   const churnRate = calculateChurnRate();
   
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 p-4">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold mb-1">Creator Dashboard</h2>
@@ -361,7 +367,8 @@ const fetchDashboardData = async () => {
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           {/* Stats Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-4"> {/* Reduced gap */}
+
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -590,9 +597,9 @@ const fetchDashboardData = async () => {
                         <tr key={subscriber.id}>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <Avatar className="h-8 w-8 mr-3">
+                              {/* <Avatar className="h-8 w-8 mr-3">
                                 <AvatarFallback>{subscriber.name.slice(0, 2)}</AvatarFallback>
-                              </Avatar>
+                              </Avatar> */}
                               <div className="flex flex-col">
                                 <div className="font-medium text-gray-900 dark:text-white">{subscriber.name}</div>
                                 <div className="text-sm text-gray-500 dark:text-gray-400">{subscriber.email}</div>
@@ -607,9 +614,7 @@ const fetchDashboardData = async () => {
                               {subscriber.status}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            ${subscriber.lifetimeValue.toFixed(2)}
-                          </td>
+                          
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>

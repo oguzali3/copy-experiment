@@ -6,111 +6,12 @@ import { AuthService, getUserData } from '@/services/auth.service';
 import { standardizePortfolioData } from '@/utils/portfolioDataUtils';
 import { PortfolioVisibility } from '@/constants/portfolioVisibility';
 
-interface CreatorInfoDto {
-  displayName?: string;
-  avatarUrl?: string;
-}
-interface PortfolioBasicInfoDto {
-  id: string;
-  name: string;
-  description?: string;
-  visibility: PortfolioVisibility;
-  userId: string;
-  createdAt: Date;
-  lastDayChange: number;
-  lastMonthChange: number;
-  lastYearChange: number;
-  totalValue: number;
-  creator: CreatorInfoDto;
-}
-
-// Request deduplication system
-// Store ongoing promises to deduplicate in-flight identical requests
-const pendingRequests = new Map<string, Promise<any>>();
-// Cache completed responses
-const requestCache = new Map<string, {data: any, timestamp: number}>();
-const CACHE_TTL = 10000; // 10 seconds cache lifetime
-
-// Helper to create cache key from request details
-const createCacheKey = (endpoint: string, params?: any) => {
-  return `${endpoint}${params ? '_' + JSON.stringify(params) : ''}`;
-};
-
-// Deduplicate and cache GET requests
-const dedupGet = async <T>(endpoint: string, params?: any): Promise<T> => {
-  // Add timestamp to prevent browser caching on page refresh
-  const paramsWithTimestamp = { 
-    ...params, 
-    _t: Date.now() // Add timestamp to URL 
-  };
-  
-  const cacheKey = createCacheKey(endpoint, params); // Keep original cache key without timestamp
-  const now = Date.now();
-  
-  // Check if we have a valid cached response
-  const cached = requestCache.get(cacheKey);
-  if (cached && (now - cached.timestamp < CACHE_TTL)) {
-    console.log(`[Cache hit] Using cached response for ${cacheKey}`);
-    return cached.data as T;
-  }
-  
-  // Check if there's already an in-flight request
-  const pendingRequest = pendingRequests.get(cacheKey);
-  if (pendingRequest) {
-    console.log(`[Request dedup] Reusing in-flight request for ${cacheKey}`);
-    return pendingRequest;
-  }
-  
-  // Create a new request with the timestamped params
-  const requestPromise = (async () => {
-    try {
-      const response = await apiClient.get<T>(endpoint, { 
-        params: paramsWithTimestamp,
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
-      });
-      // Cache the response
-      requestCache.set(cacheKey, { data: response.data, timestamp: now });
-      return response.data;
-    } finally {
-      // Remove from pending requests when done
-      pendingRequests.delete(cacheKey);
-    }
-  })();
-  
-  // Store the promise
-  pendingRequests.set(cacheKey, requestPromise);
-  
-  return requestPromise;
-};
-
-// Interface for API request bodies
-interface CreatePortfolioRequest {
-  name: string;
-  positions: {
-    ticker: string;
-    name: string;
-    shares: number;
-    avgPrice: number;
-  }[];
-  userId?: string; // Add userId as an optional field
-}
-
-interface UpdatePositionRequest {
-  ticker: string;
-  shares?: number;
-  avgPrice?: number;
-}
-
-// Add interfaces for backend response types
+// Define interfaces for API responses
 interface PortfolioResponseDto {
   id: string;
   name: string;
   totalValue: number;
-  positions: StockPositionResponseDto[]; // Backend uses 'positions' instead of 'stocks'
+  positions: StockPositionResponseDto[];
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -137,132 +38,128 @@ interface StockPositionResponseDto {
   updatedAt: string;
 }
 
-interface GetPortfoliosOptions {
-  skipRefresh?: boolean;
-  forceRefresh?: boolean;
-  portfolioId?: string;
-}
-
-interface PortfolioHistoryData {
-  date: string;
-  value: number;
-  previousValue: number;
-  dayChange: number;
-  dayChangePercent: number;
+interface PortfolioBasicInfoDto {
+  id: string;
+  name: string;
+  description?: string;
+  visibility: PortfolioVisibility;
+  userId: string;
+  createdAt: Date;
+  lastDayChange: number;
+  lastMonthChange: number;
+  lastYearChange: number;
+  totalValue: number;
+  creator: {
+    displayName?: string;
+    avatarUrl?: string | null;
+  };
 }
 
 interface PortfolioHistoryResponse {
   portfolioId: string;
   interval: 'daily' | 'weekly' | 'monthly';
-  data: PortfolioHistoryData[];
-}
-
-interface PortfolioPerformanceData {
-  dates: string[];
-  portfolioValues: number[];
-  performanceValues: number[];
-  performancePercent: number[];
+  data: Array<{
+    date: string;
+    value: number;
+    previousValue: number;
+    dayChange: number;
+    dayChangePercent: number;
+  }>;
 }
 
 interface PortfolioPerformanceResponse {
   portfolioId: string;
-  data: PortfolioPerformanceData;
-}
-
-interface StockHistoryData {
-  date: string;
-  ticker: string;
-  shares: number;
-  price: number;
-  marketValue: number;
-  percentOfPortfolio: number;
-}
-
-interface StockHistoryResponse {
-  portfolioId: string;
-  ticker: string;
-  data: StockHistoryData[];
-}
-
-const mapToPortfolio = (dto: PortfolioResponseDto): Portfolio => {
-  // Helper function to ensure numbers
-  const ensureNumber = (val: any): number => {
-    if (val === null || val === undefined) return 0;
-    if (typeof val === 'string') return parseFloat(val) || 0;
-    if (typeof val === 'number') return isNaN(val) ? 0 : val;
-    return 0;
+  data: {
+    dates: string[];
+    portfolioValues: number[];
+    performanceValues: number[];
+    performancePercent: number[];
   };
+}
 
-  // First convert positions to standard format for Portfolio type
-  const stocks = dto.positions.map(pos => ({
-    ticker: pos.ticker,
-    name: pos.name,
-    shares: ensureNumber(pos.shares),
-    avgPrice: ensureNumber(pos.avgPrice),
-    currentPrice: ensureNumber(pos.currentPrice),
-    marketValue: ensureNumber(pos.shares) * ensureNumber(pos.currentPrice), // Recalculate for consistency
-    percentOfPortfolio: ensureNumber(pos.percentOfPortfolio),
-    gainLoss: ensureNumber(pos.gainLoss),
-    gainLossPercent: ensureNumber(pos.gainLossPercent)
-  }));
+interface CreatePositionRequest {
+  ticker: string;
+  name?: string;
+  shares: number;
+  avgPrice: number;
+}
+
+interface UpdatePositionRequest {
+  ticker: string;
+  shares?: number;
+  avgPrice?: number;
+}
+
+interface MarketStatusResponse {
+  isMarketOpen: boolean;
+  nextMarketOpenTime: Date;
+  lastMarketCloseTime: Date;
+  marketHours: { open: string; close: string };
+  serverTime: Date;
+}
+
+// Request deduplication and caching system
+const pendingRequests = new Map<string, Promise<any>>();
+const requestCache = new Map<string, {data: any, timestamp: number}>();
+const CACHE_TTL = 10000; // 10 seconds cache lifetime
+
+// Create unique cache keys for requests
+const createCacheKey = (endpoint: string, params?: any) => {
+  return `${endpoint}${params ? '_' + JSON.stringify(params) : ''}`;
+};
+
+// Deduplicate and cache GET requests
+const dedupGet = async <T>(endpoint: string, params?: any): Promise<T> => {
+  // Add timestamp to prevent browser caching
+  const paramsWithTimestamp = { 
+    ...params, 
+    _t: Date.now()
+  };
   
-  // Calculate total value from positions
-  const calculatedTotal = stocks.reduce((sum, stock) => sum + stock.marketValue, 0);
+  const cacheKey = createCacheKey(endpoint, params);
+  const now = Date.now();
   
-  // Get reported total value
-  const reportedTotal = ensureNumber(dto.totalValue);
-  
-  // Use calculated value if there's a significant discrepancy
-  const totalValue = Math.abs(calculatedTotal - reportedTotal) > 0.5 ? calculatedTotal : reportedTotal;
-  
-  // Log if there's a discrepancy
-  if (Math.abs(calculatedTotal - reportedTotal) > 0.5) {
-    console.warn(`Portfolio ${dto.id} total value mismatch - API: ${reportedTotal}, Calculated: ${calculatedTotal}, Using: ${totalValue}`);
+  // Check for cached response
+  const cached = requestCache.get(cacheKey);
+  if (cached && (now - cached.timestamp < CACHE_TTL)) {
+    console.log(`[Cache hit] Using cached response for ${cacheKey}`);
+    return cached.data as T;
   }
   
-  // Create initial portfolio object with the basic data
-  const portfolio = {
-    id: dto.id,
-    name: dto.name,
-    totalValue: totalValue,
-    previousDayValue: ensureNumber(dto.previousDayValue),
-    dayChange: totalValue - ensureNumber(dto.previousDayValue), // Recalculate using consistent total
-    dayChangePercent: ensureNumber(dto.previousDayValue) > 0 
-      ? ((totalValue - ensureNumber(dto.previousDayValue)) / ensureNumber(dto.previousDayValue)) * 100 
-      : 0,
-    lastPriceUpdate: dto.lastPriceUpdate ? new Date(dto.lastPriceUpdate) : null,
-    stocks: stocks,
-    visibility: dto.visibility
-  };
+  // Check for in-flight request
+  const pendingRequest = pendingRequests.get(cacheKey);
+  if (pendingRequest) {
+    console.log(`[Request dedup] Reusing in-flight request for ${cacheKey}`);
+    return pendingRequest;
+  }
   
-  // Standardize the portfolio data to ensure all values are proper numbers
-  return standardizePortfolioData(portfolio);
+  // Create new request
+  const requestPromise = (async () => {
+    try {
+      const response = await apiClient.get<T>(endpoint, { 
+        params: paramsWithTimestamp,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      // Cache response
+      requestCache.set(cacheKey, { data: response.data, timestamp: now });
+      return response.data;
+    } finally {
+      // Remove from pending requests
+      pendingRequests.delete(cacheKey);
+    }
+  })();
+  
+  // Store promise
+  pendingRequests.set(cacheKey, requestPromise);
+  
+  return requestPromise;
 };
 
-// Map position DTO to Stock model
-const mapToStock = (dto: StockPositionResponseDto): Stock => {
-  // Helper function to ensure all values are proper numbers
-  const ensureNumber = (val: any): number => {
-    if (val === null || val === undefined) return 0;
-    if (typeof val === 'string') return parseFloat(val) || 0;
-    if (typeof val === 'number') return isNaN(val) ? 0 : val;
-    return 0;
-  };
-  
-  return {
-    ticker: dto.ticker,
-    name: dto.name,
-    shares: ensureNumber(dto.shares),
-    avgPrice: ensureNumber(dto.avgPrice),
-    currentPrice: ensureNumber(dto.currentPrice),
-    marketValue: ensureNumber(dto.marketValue),
-    percentOfPortfolio: ensureNumber(dto.percentOfPortfolio),
-    gainLoss: ensureNumber(dto.gainLoss),
-    gainLossPercent: ensureNumber(dto.gainLossPercent)
-  };
-};
-
-// Create an API request queue to prevent multiple concurrent requests
+// Request queue for operations that modify data
 class RequestQueue {
   private queue: Array<() => Promise<any>> = [];
   private processing = false;
@@ -304,66 +201,19 @@ class RequestQueue {
 // Create request queue instance
 const requestQueue = new RequestQueue();
 
-// Function to detect and correct data mismatches
-const detectAndCorrectDataMismatch = (portfolio: Portfolio): Portfolio => {
-  // Calculate the expected total value based on stock positions
-  const calculatedTotalValue = portfolio.stocks.reduce(
-    (sum, stock) => sum + stock.marketValue, 
-    0
-  );
-  
-  // Check if there's a significant discrepancy (more than 50 cents)
-  if (Math.abs(calculatedTotalValue - portfolio.totalValue) > 0.5) {
-    console.warn(`Total value mismatch in portfolio ${portfolio.id}: API value = ${portfolio.totalValue}, calculated = ${calculatedTotalValue}`);
-    
-    // Recalculate percentages
-    const updatedStocks = portfolio.stocks.map(stock => ({
-      ...stock,
-      percentOfPortfolio: calculatedTotalValue > 0 
-        ? (stock.marketValue / calculatedTotalValue) * 100 
-        : 0
-    }));
-    
-    // Recalculate day change values
-    const previousDayValue = portfolio.previousDayValue || calculatedTotalValue;
-    const dayChange = calculatedTotalValue - previousDayValue;
-    const dayChangePercent = previousDayValue > 0 
-      ? (dayChange / previousDayValue) * 100 
-      : 0;
-    
-    // Return corrected portfolio
-    return {
-      ...portfolio,
-      totalValue: calculatedTotalValue,
-      dayChange,
-      dayChangePercent,
-      stocks: updatedStocks
-    };
-  }
-  
-  return portfolio;
-};
-
-export function clearAllCaches() {
+// Clear all caches
+function clearAllCaches() {
   console.log('Clearing ALL portfolio-related caches');
-  
-  // Log all keys being cleared for debugging
   console.log('Cache keys being cleared:', Array.from(requestCache.keys()));
-  
-  // Clear the ENTIRE cache
   requestCache.clear();
-  
-  // Clear all in-flight requests too
   console.log('Pending requests being cleared:', Array.from(pendingRequests.keys()));
   pendingRequests.clear();
-  
-  console.log('Cache and pending requests completely cleared');
 }
 
-export function invalidatePortfolioCache(portfolioId: string) {
+// Invalidate cache for specific portfolio
+function invalidatePortfolioCache(portfolioId: string) {
   const keysToInvalidate: string[] = [];
   
-  // Find all cache keys related to this portfolio
   Array.from(requestCache.keys()).forEach(key => {
     if (key.includes(`/portfolios/${portfolioId}/`) || 
         key.includes(`light_refresh_${portfolioId}`) ||
@@ -372,73 +222,141 @@ export function invalidatePortfolioCache(portfolioId: string) {
     }
   });
   
-  // Delete the cached data
   keysToInvalidate.forEach(key => {
     console.log(`[Cache] Invalidating ${key}`);
     requestCache.delete(key);
   });
 }
 
+// Map backend DTOs to frontend model
+const mapToPortfolio = (dto: PortfolioResponseDto): Portfolio => {
+  // Ensure numeric values
+  const ensureNumber = (val: any): number => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === 'string') return parseFloat(val) || 0;
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    return 0;
+  };
 
+  // Map positions to stocks
+  const stocks = dto.positions?.map(pos => ({
+    ticker: pos.ticker,
+    name: pos.name,
+    shares: ensureNumber(pos.shares),
+    avgPrice: ensureNumber(pos.avgPrice),
+    currentPrice: ensureNumber(pos.currentPrice),
+    marketValue: ensureNumber(pos.shares) * ensureNumber(pos.currentPrice),
+    percentOfPortfolio: ensureNumber(pos.percentOfPortfolio),
+    gainLoss: ensureNumber(pos.gainLoss),
+    gainLossPercent: ensureNumber(pos.gainLossPercent)
+  })) || [];
+  
+  // Calculate total from positions
+  const calculatedTotal = stocks.reduce((sum, stock) => sum + stock.marketValue, 0);
+  const reportedTotal = ensureNumber(dto.totalValue);
+  
+  // Use calculated if significant discrepancy
+  const totalValue = Math.abs(calculatedTotal - reportedTotal) > 0.5 ? calculatedTotal : reportedTotal;
+  
+  // Create portfolio object
+  const portfolio: Portfolio = {
+    id: dto.id,
+    name: dto.name,
+    totalValue: totalValue,
+    previousDayValue: ensureNumber(dto.previousDayValue),
+    dayChange: totalValue - ensureNumber(dto.previousDayValue),
+    dayChangePercent: ensureNumber(dto.previousDayValue) > 0 
+      ? ((totalValue - ensureNumber(dto.previousDayValue)) / ensureNumber(dto.previousDayValue)) * 100 
+      : 0,
+    lastPriceUpdate: dto.lastPriceUpdate ? new Date(dto.lastPriceUpdate) : null,
+    stocks: stocks,
+    visibility: dto.visibility,
+    description: dto.description || '',
+    userId: dto.userId
+  };
+  
+  // Standardize to ensure consistency
+  return standardizePortfolioData(portfolio);
+};
+
+// Map position DTO to Stock model
+const mapToStock = (dto: StockPositionResponseDto): Stock => {
+  // Helper function to ensure all values are proper numbers
+  const ensureNumber = (val: any): number => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === 'string') return parseFloat(val) || 0;
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    return 0;
+  };
+  
+  return {
+    ticker: dto.ticker,
+    name: dto.name,
+    shares: ensureNumber(dto.shares),
+    avgPrice: ensureNumber(dto.avgPrice),
+    currentPrice: ensureNumber(dto.currentPrice),
+    marketValue: ensureNumber(dto.marketValue),
+    percentOfPortfolio: ensureNumber(dto.percentOfPortfolio),
+    gainLoss: ensureNumber(dto.gainLoss),
+    gainLossPercent: ensureNumber(dto.gainLossPercent)
+  };
+};
 
 const portfolioApi = {
   clearAllCaches,
-  getPortfolios: async (options?: GetPortfoliosOptions): Promise<Portfolio[]> => {
+  
+  // Get all user portfolios
+  getPortfolios: async (options?: {
+    skipRefresh?: boolean;
+    forceRefresh?: boolean;
+    portfolioId?: string;
+  }): Promise<Portfolio[]> => {
     try {
-      const skipRefresh = options?.skipRefresh === true;
       const forceRefresh = options?.forceRefresh === true;
-      const specificPortfolioId = options?.portfolioId; // Add this parameter
+      const specificPortfolioId = options?.portfolioId;
       
-      // If force refresh is true, clear specific portfolio cache instead of all
+      // Clear cache if requested
       if (forceRefresh && specificPortfolioId) {
         invalidatePortfolioCache(specificPortfolioId);
       } else if (forceRefresh) {
-        // Only clear all if explicitly requested with no specific ID
         clearAllCaches();
       }
       
-      // Add timestamp and other params
+      // Request params
       const params = { 
-        skipRefresh, 
+        skipRefresh: options?.skipRefresh,
         forceRefresh,
-        portfolioId: specificPortfolioId, // Pass to API if specified
-        _t: Date.now() // Add timestamp to prevent browser caching
+        portfolioId: specificPortfolioId,
+        _t: Date.now()
       };
       
-      // Add cache-busting headers to the request
-      const headers = {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      };
-      
-      // Make the request with cache busting
-      const response = await apiClient.get<PortfolioResponseDto[]>(
-        '/portfolios', 
-        { 
-          params,
-          headers
+      // Make request
+      const response = await apiClient.get<PortfolioResponseDto[]>('/portfolios', { 
+        params,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
-      );
+      });
       
-      // Process portfolios with validation
+      // Process portfolios
       let portfolios = response.data.map(dto => {
-        // First check if we have recent light refresh data available
         const lightRefreshCacheKey = `light_refresh_${dto.id}`;
         const lightRefreshData = requestCache.get(lightRefreshCacheKey);
         
-        // Use light refresh data if available and recent (less than 30 seconds old)
+        // Use light refresh data if available and recent
         if (lightRefreshData && (Date.now() - lightRefreshData.timestamp < 30000)) {
           console.log(`Using light refresh data for portfolio ${dto.id}`);
           return lightRefreshData.data as Portfolio;
         }
         
-        // Otherwise process through standard mapping and validation
+        // Otherwise map and standardize
         const portfolio = mapToPortfolio(dto);
         return standardizePortfolioData(portfolio);
       });
       
-      // Filter by portfolioId if specified
+      // Filter by ID if requested
       if (specificPortfolioId) {
         portfolios = portfolios.filter(p => p.id === specificPortfolioId);
       }
@@ -450,41 +368,64 @@ const portfolioApi = {
     }
   },
   
+  // Get portfolio by ID
+  getPortfolioById: async (portfolioId: string): Promise<Portfolio> => {
+    try {
+      // Use light-refresh endpoint for authenticated users
+      const response = await apiClient.get<PortfolioResponseDto>(
+        `/portfolios/${portfolioId}/light-refresh`,
+        { 
+          params: { _t: Date.now() },
+          headers: { 'Cache-Control': 'no-cache' }
+        }
+      );
+      
+      if (response.data) {
+        return mapToPortfolio(response.data);
+      }
+      
+      throw new Error(`Portfolio ${portfolioId} not found`);
+    } catch (error) {
+      console.error(`Error fetching portfolio ${portfolioId}:`, error);
+      throw error;
+    }
+  },
 
   // Create portfolio
-  createPortfolio: async (data: CreatePortfolioRequest): Promise<Portfolio> => {
-    // Queue this request to prevent race conditions
+  createPortfolio: async (data: {
+    name: string;
+    positions: {
+      ticker: string;
+      name: string;
+      shares: number;
+      avgPrice: number;
+    }[];
+  }): Promise<Portfolio> => {
     return requestQueue.add(async () => {
-      // First, try to get user data from localStorage
+      // Get user ID
       let userId = getUserData()?.id;
       
-      // If not available, try to fetch it from the API
       if (!userId) {
         const currentUser = await AuthService.getCurrentUser(true);
         userId = currentUser?.id;
       }
       
       if (!userId) {
-        throw new Error('User ID is required to create a portfolio');
+        throw new Error('User ID required to create portfolio');
       }
       
-      // Include the userId in the request
-      const requestData = {
-        ...data,
-        userId
-      };
+      // Include userId in request
+      const requestData = { ...data, userId };
       
       try {
         const response = await apiClient.post<PortfolioResponseDto>('/portfolios', requestData);
-        // Clear relevant cache entries
         clearAllCaches();
         
-        // Map and validate the response data
         const portfolio = mapToPortfolio(response.data);
-        return detectAndCorrectDataMismatch(portfolio);
+        return standardizePortfolioData(portfolio);
       } catch (error) {
         console.error('Error creating portfolio:', error);
-        // Add better error handling
+        // Extract error message
         if (error.response?.data?.message) {
           const errorMessage = Array.isArray(error.response.data.message) 
             ? error.response.data.message.join(', ') 
@@ -498,40 +439,31 @@ const portfolioApi = {
   },
 
   // Update portfolio
-  updatePortfolio: async (id: string, data: { name: string; visibility?: PortfolioVisibility }): Promise<Portfolio> => {
-    // Queue this request to prevent race conditions
+  updatePortfolio: async (id: string, data: { 
+    name: string; 
+    visibility?: PortfolioVisibility 
+  }): Promise<Portfolio> => {
     return requestQueue.add(async () => {
       console.log(`Updating portfolio ${id} with data:`, data);
       
       const response = await apiClient.put<PortfolioResponseDto>(`/portfolios/${id}`, data);
-      
-      // Invalidate cached data for this portfolio
       invalidatePortfolioCache(id);
       
-      // Map and validate the response data
       const portfolio = mapToPortfolio(response.data);
-      return detectAndCorrectDataMismatch(portfolio);
+      return standardizePortfolioData(portfolio);
     });
   },
 
   // Delete portfolio
   deletePortfolio: async (id: string): Promise<void> => {
-    // Queue this request to prevent race conditions
     return requestQueue.add(async () => {
       await apiClient.delete(`/portfolios/${id}`);
-      // Invalidate cached data for this portfolio
       clearAllCaches();
     });
   },
 
-  // Add position to portfolio
-  addPosition: async (portfolioId: string, position: {
-    ticker: string;
-    name: string;
-    shares: number;
-    avgPrice: number;
-  }): Promise<Stock> => {
-    // Queue this request to prevent race conditions
+  // Add position
+  addPosition: async (portfolioId: string, position: CreatePositionRequest): Promise<Stock> => {
     return requestQueue.add(async () => {
       // Ensure numeric values
       const cleanPosition = {
@@ -552,17 +484,19 @@ const portfolioApi = {
         }
       );
       
-      // Invalidate cached data for this portfolio
       invalidatePortfolioCache(portfolioId);
       
-      // Map and return the processed stock
+      // Map to stock
       return mapToStock(response.data);
     });
   },
 
   // Update position
-  updatePosition: async (portfolioId: string, ticker: string, data: UpdatePositionRequest): Promise<Stock> => {
-    // Queue this request to prevent race conditions
+  updatePosition: async (
+    portfolioId: string, 
+    ticker: string, 
+    data: UpdatePositionRequest
+  ): Promise<Stock> => {
     return requestQueue.add(async () => {
       // Ensure numeric values
       const cleanData = {
@@ -583,17 +517,15 @@ const portfolioApi = {
         }
       );
       
-      // Invalidate cached data for this portfolio
       invalidatePortfolioCache(portfolioId);
       
-      // Map and return the processed stock
+      // Map to stock
       return mapToStock(response.data);
     });
   },
 
   // Delete position
   deletePosition: async (portfolioId: string, ticker: string): Promise<void> => {
-    // Queue this request to prevent race conditions
     return requestQueue.add(async () => {
       await apiClient.delete(`/portfolios/${portfolioId}/positions/${ticker}`,
         {
@@ -604,99 +536,46 @@ const portfolioApi = {
           }
         }
       );
-      // Invalidate cached data for this portfolio
       invalidatePortfolioCache(portfolioId);
     });
   },
 
   // Refresh portfolio prices
-    // Modify refreshPrices to avoid extra refresh calls
-    refreshPrices: async (portfolioId: string): Promise<Portfolio> => {
-      return requestQueue.add(async () => {
-        try {
-          // Only invalidate cache for this specific portfolio
-          invalidatePortfolioCache(portfolioId);
-          
-          // Make the refresh request with cache-busting headers
-          const response = await apiClient.post<PortfolioResponseDto>(
-            `/portfolios/${portfolioId}/refresh`, 
-            {},
-            {
-              headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-              }
-            }
-          );
-          
-          // Process the response data
-          const portfolio = mapToPortfolio(response.data);
-          const correctedPortfolio = detectAndCorrectDataMismatch(portfolio);
-          
-          // IMPORTANT: Don't trigger another portfolios request
-          // This is what's causing the duplicate requests
-          /*
-          setTimeout(() => {
-            apiClient.get('/portfolios', { 
-              params: { 
-                forceRefresh: true,
-                _t: Date.now() 
-              },
-              headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-              }
-            }).catch(err => console.error('Background refresh error:', err));
-          }, 500);
-          */
-          
-          return correctedPortfolio;
-        } catch (error) {
-          console.error('Error refreshing portfolio prices:', error);
-          let errorMessage = 'Failed to refresh portfolio prices';
-          if (error.response?.data?.message) {
-            errorMessage = Array.isArray(error.response.data.message) 
-              ? error.response.data.message.join(', ') 
-              : error.response.data.message;
-          }
-          throw new Error(errorMessage);
-        }
-      });
-    }
-  ,
-
-  // Bulk refresh all portfolios (to be used at app initialization)
-  refreshAllPrices: async (portfolioIds: string[]): Promise<void> => {
-    // Queue in sequence to prevent API rate limit issues
+  refreshPrices: async (portfolioId: string): Promise<Portfolio> => {
     return requestQueue.add(async () => {
-      // Clear all cache before refreshing
-      clearAllCaches();
-      
-      for (const id of portfolioIds) {
-        try {
-          await apiClient.post<PortfolioResponseDto>(
-            `/portfolios/${id}/refresh`, 
-            {},
-            {
-              headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-              }
+      try {
+        invalidatePortfolioCache(portfolioId);
+        
+        const response = await apiClient.post<PortfolioResponseDto>(
+          `/portfolios/${portfolioId}/refresh`, 
+          {},
+          {
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
             }
-          );
-        } catch (error) {
-          console.error(`Error refreshing portfolio ${id}:`, error);
+          }
+        );
+        
+        const portfolio = mapToPortfolio(response.data);
+        return standardizePortfolioData(portfolio);
+      } catch (error) {
+        console.error('Error refreshing portfolio prices:', error);
+        let errorMessage = 'Failed to refresh portfolio prices';
+        if (error.response?.data?.message) {
+          errorMessage = Array.isArray(error.response.data.message) 
+            ? error.response.data.message.join(', ') 
+            : error.response.data.message;
         }
+        throw new Error(errorMessage);
       }
     });
   },
   
+  // Light refresh of portfolio (without DB update)
   getLightRefreshPortfolio: async (portfolioId: string): Promise<Portfolio> => {
     try {
-      // Add cache-busting timestamp and headers
       const params = { _t: Date.now() };
       const headers = {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -706,17 +585,15 @@ const portfolioApi = {
       
       console.log(`Performing light refresh for portfolio ${portfolioId}`);
       
-      // Make the request with cache busting
       const response = await apiClient.get<PortfolioResponseDto>(
         `/portfolios/${portfolioId}/light-refresh`,
         { params, headers }
       );
       
-      // Process portfolio data through our mapping function
       const portfolio = mapToPortfolio(response.data);
       const standardizedPortfolio = standardizePortfolioData(portfolio);
       
-      // Store the light refresh data in a special cache for immediate use
+      // Store in cache
       requestCache.set(`light_refresh_${portfolioId}`, {
         data: standardizedPortfolio,
         timestamp: Date.now()
@@ -726,8 +603,7 @@ const portfolioApi = {
     } catch (error) {
       console.error('Error light refreshing portfolio:', error);
       
-      // Handle the case where the light refresh fails - try to get the portfolio from cache
-      console.log('Attempting to get portfolio from existing data');
+      // Fall back to regular portfolio fetch
       const portfolios = await apiClient.get<PortfolioResponseDto[]>('/portfolios', {
         params: { 
           skipRefresh: true,
@@ -747,25 +623,16 @@ const portfolioApi = {
     }
   },
   
+  // Get portfolio performance data
   getPortfolioPerformance: async (
     portfolioId: string,
     startDate?: string,
     endDate?: string
   ): Promise<PortfolioPerformanceResponse> => {
     try {
-      // Add cache-busting timestamp and params
-      const params = {
-        startDate,
-        endDate,
-        _t: Date.now()
-      };
+      const params = { startDate, endDate, _t: Date.now() };
+      const headers = { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' };
       
-      const headers = {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      };
-      
-      // Make the request with cache busting
       const response = await apiClient.get<PortfolioPerformanceResponse>(
         `/portfolios/${portfolioId}/performance`,
         { params, headers }
@@ -778,39 +645,7 @@ const portfolioApi = {
     }
   },
   
-  // Get stock position history
-  getStockHistory: async (
-    portfolioId: string,
-    ticker: string,
-    startDate?: string,
-    endDate?: string
-  ): Promise<StockHistoryResponse> => {
-    try {
-      // Add cache-busting timestamp and params
-      const params = {
-        startDate,
-        endDate,
-        _t: Date.now()
-      };
-      
-      const headers = {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      };
-      
-      // Make the request with cache busting
-      const response = await apiClient.get<StockHistoryResponse>(
-        `/portfolios/${portfolioId}/positions/${ticker}/history`,
-        { params, headers }
-      );
-      
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching stock history for ${ticker}:`, error);
-      throw error;
-    }
-  },
-  
+  // Get portfolio history
   getPortfolioHistory: async (
     portfolioId: string,
     startDate?: string,
@@ -818,20 +653,9 @@ const portfolioApi = {
     interval: 'daily' | 'weekly' | 'monthly' = 'daily'
   ): Promise<PortfolioHistoryResponse> => {
     try {
-      // Add cache-busting timestamp and params
-      const params = {
-        startDate,
-        endDate,
-        interval,
-        _t: Date.now()
-      };
+      const params = { startDate, endDate, interval, _t: Date.now() };
+      const headers = { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' };
       
-      const headers = {
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      };
-      
-      // Make the request with cache busting
       const response = await apiClient.get<PortfolioHistoryResponse>(
         `/portfolios/${portfolioId}/history`,
         { params, headers }
@@ -843,44 +667,29 @@ const portfolioApi = {
       throw error;
     }
   },
-
-
-  // Helper to normalize visibility enum values from API
-  normalizeVisibility(visibility: string): PortfolioVisibility {
-    if (visibility === 'public') return PortfolioVisibility.PUBLIC;
-    if (visibility === 'paid') return PortfolioVisibility.PAID;
-    return PortfolioVisibility.PRIVATE;
-  },
-
-  normalizePortfolio(portfolio: any): Portfolio {
-    return {
-      ...portfolio,
-      visibility: this.normalizeVisibility(portfolio.visibility)
-    };
-  },
-  getPortfolioBasicInfo: async (portfolioId: string): Promise<PortfolioBasicInfoDto | null> => {
+  
+  // Get market status
+  getMarketStatus: async (): Promise<MarketStatusResponse> => {
     try {
-      const response = await apiClient.get<PortfolioBasicInfoDto>(
-        `/portfolios/${portfolioId}/basic-info`,
-        {
-          params: { _t: Date.now() },
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
-        }
-      );
-      
+      const response = await apiClient.get<MarketStatusResponse>('/portfolios/market/status');
       return response.data;
     } catch (error) {
-      console.error('Error fetching portfolio basic info:', error);
-      return null;
+      console.error('Error fetching market status:', error);
+      // Return default values
+      return {
+        isMarketOpen: false,
+        nextMarketOpenTime: new Date(),
+        lastMarketCloseTime: new Date(),
+        marketHours: { open: '09:30', close: '16:00' },
+        serverTime: new Date()
+      };
     }
   },
   
-  // Get all portfolios with specific visibility using basic info endpoint
-  getBasicPortfoliosByVisibility: async (visibility: 'public' | 'paid'): Promise<PortfolioBasicInfoDto[]> => {
+  // Get basic portfolios by visibility
+  getBasicPortfoliosByVisibility: async (
+    visibility: 'public' | 'paid'
+  ): Promise<PortfolioBasicInfoDto[]> => {
     try {
       const response = await apiClient.get<PortfolioBasicInfoDto[]>(
         `/portfolios/by-visibility/${visibility}/basic-info`,
@@ -900,72 +709,7 @@ const portfolioApi = {
       return [];
     }
   },
-  // In portfolioApi.ts
-  getPortfolioById: async (portfolioId: string): Promise<Portfolio | null> => {
-    try {
-      // Use the light-refresh endpoint which works for authenticated users
-      const response = await apiClient.get<PortfolioResponseDto>(
-        `/portfolios/${portfolioId}/light-refresh`,
-        { 
-          params: { _t: Date.now() },
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
-        }
-      );
-      
-      if (response.data) {
-        return mapToPortfolio(response.data);
-      }
-      
-      return null;
-    } catch (error) {
-      console.error(`Error fetching portfolio ${portfolioId}:`, error);
-      return null;
-    }
-  },
-  // Fix for portfolioApi.ts
-// Add these methods to the portfolioApi object instead of using them as separate functions
-
-getPortfoliosByVisibility: async (visibility: PortfolioVisibility): Promise<Portfolio[]> => {
-  try {
-    // Use the correct endpoint
-    const response = await apiClient.get<PortfolioResponseDto[]>(
-      `/portfolios/by-visibility/${visibility.toLowerCase()}`
-    );
-    
-    return response.data.map(dto => mapToPortfolio(dto));
-  } catch (error) {
-    console.error(`Error getting portfolios by visibility ${visibility}:`, error);
-    return [];
-  }
-},
-
-getPublicPortfolios: async (): Promise<Portfolio[]> => {
-  try {
-    // Use the dedicated endpoint for public portfolios
-    const response = await apiClient.get<PortfolioResponseDto[]>('/portfolios/public');
-    return response.data.map(dto => mapToPortfolio(dto));
-  } catch (error) {
-    console.error('Error getting public portfolios:', error);
-    return [];
-  }
-},
-
-
-updatePortfolioVisibility: async (portfolioId: string, visibility: PortfolioVisibility): Promise<Portfolio> => {
-  try {
-    const response = await apiClient.put<PortfolioResponseDto>(
-      `/portfolios/${portfolioId}`, 
-      { visibility }
-    );
-    
-    return mapToPortfolio(response.data);
-  } catch (error) {
-    console.error(`Error updating portfolio visibility:`, error);
-    throw error;
-  }
-}
+  
 };
 
 export default portfolioApi;

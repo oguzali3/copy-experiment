@@ -1,6 +1,6 @@
 // src/utils/portfolioSubscriptionUtils.ts
 import { PortfolioVisibility } from '@/constants/portfolioVisibility';
-import portfolioApi, { clearAllCaches } from '@/services/portfolioApi';
+import portfolioApi from '@/services/portfolioApi';
 import CreatorSubscriptionAPI from '@/services/creatorSubscriptionApi';
 import StripeConnectService from '@/services/stripeConnectApi';
 import { PortfolioSubscriptionPrice } from '@/types/subscription';
@@ -150,7 +150,7 @@ export async function savePricingSettings(
 export const fetchPortfoliosWithVisibility = async (): Promise<PortfolioWithVisibility[]> => {
     try {
       // Clear portfolio API cache before fetching
-      clearAllCaches();
+      // clearAllCaches();
       
       // Fetch portfolios with cache disabled
       const fetchedPortfolios = await portfolioApi.getPortfolios({ 
@@ -336,7 +336,7 @@ export const savePortfolioVisibility = async (
     console.log(`API response for ${portfolioId} visibility update:`, updatedPortfolio);
     
     // Clear cache for this specific portfolio
-    clearAllCaches();
+    // clearAllCaches();
 
     return true;
   } catch (error) {
@@ -354,7 +354,7 @@ export const initializeSubscriptionSetup = async (): Promise<SubscriptionSetup> 
   console.log('Initializing subscription setup...');
   
   // Clear all caches before initializing
-  clearAllCaches();
+  // clearAllCaches();
   CreatorSubscriptionAPI.clearCache();
   
   // Check Stripe Connect status

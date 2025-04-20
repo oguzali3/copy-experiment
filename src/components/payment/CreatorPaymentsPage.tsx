@@ -21,14 +21,12 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { SocialHeader } from '@/components/social/SocialHeader';
-import { SocialSidebar } from '@/components/social/SocialSidebar';
 import CreatorSubscriptionDashboard from './CreatorSubscriptionDashboard';
 import CreatorStripeConnect from './CreatorStripeConnect';
 import PortfolioPricingManager from './PortfolioPricingManager';
+import CreatorAnalyticsDashboard from './CreatorAnalyticsDashboard';
 
 // Import our custom components
-
 
 const CreatorPaymentsPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -166,103 +164,93 @@ const CreatorPaymentsPage = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="fixed left-0 top-0 h-full w-[68px] border-r border-gray-200 dark:border-gray-800">
-        <SocialSidebar />
-      </div>
-      
-      <div className="fixed left-1/2 transform -translate-x-1/2" style={{
-        width: '680px',
-        marginLeft: '34px'
-      }}>
-        <div className="border-x border-gray-200 dark:border-gray-800 h-screen flex flex-col bg-white dark:bg-gray-900">
-          <SocialHeader />
-          <div className="flex-1 overflow-y-auto">
-            <div className="px-6 py-8">
-              <div className="mb-6">
-                <h1 className="text-2xl font-bold mb-2">Creator Payments</h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Manage your subscription earnings, portfolio pricing, and payment settings
-                </p>
-              </div>
-              
-              {!isStripeConnected && (
-                <Alert className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800">
-                  <AlertTitle>Connect Stripe to receive payments</AlertTitle>
-                  <AlertDescription>
-                    Before you can accept subscription payments, you need to connect your Stripe account.
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid grid-cols-4 w-full">
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="earnings">Earnings</TabsTrigger>
-                  <TabsTrigger value="settings">Pricing</TabsTrigger>
-                  <TabsTrigger value="connect">Connect</TabsTrigger>
-                </TabsList>
-                
-                {/* Overview Tab */}
-                <TabsContent value="overview">
-                  <CreatorSubscriptionDashboard />
-                </TabsContent>
-                
-                {/* Earnings Tab */}
-                <TabsContent value="earnings" className="space-y-6">
-                  {renderCurrentPeriodCard()}
-                  {renderEarningsHistoryTable()}
-                  
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Tax Documents</CardTitle>
-                      <CardDescription>
-                        Access your tax forms and documents
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex justify-between items-center p-3 border rounded-md">
-                        <div className="flex items-center space-x-3">
-                          <FileText className="h-5 w-5 text-gray-500" />
-                          <div>
-                            <div className="font-medium">2023 Form 1099-K</div>
-                            <div className="text-sm text-gray-500">Not yet available</div>
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm" disabled>
-                          Download
-                        </Button>
-                      </div>
-                      
-                      <div className="flex justify-between items-center p-3 border rounded-md">
-                        <div className="flex items-center space-x-3">
-                          <FileText className="h-5 w-5 text-gray-500" />
-                          <div>
-                            <div className="font-medium">2022 Form 1099-K</div>
-                            <div className="text-sm text-gray-500">Added Jan 31, 2023</div>
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm">
-                          Download
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-                
-                {/* Settings Tab */}
-                <TabsContent value="settings">
-                  <PortfolioPricingManager />
-                </TabsContent>
-                
-                {/* Connect Tab */}
-                <TabsContent value="connect">
-                  <CreatorStripeConnect />
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold mb-2">Creator Payments</h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Manage your subscription earnings, portfolio pricing, and payment settings
+          </p>
         </div>
+        
+        {!isStripeConnected && (
+          <Alert className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800">
+            <AlertTitle>Connect Stripe to receive payments</AlertTitle>
+            <AlertDescription>
+              Before you can accept subscription payments, you need to connect your Stripe account.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid grid-cols-5 w-full">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="earnings">Earnings</TabsTrigger>
+            <TabsTrigger value="settings">Pricing</TabsTrigger>
+            <TabsTrigger value="connect">Connect</TabsTrigger>
+          </TabsList>
+          
+          {/* Overview Tab */}
+          <TabsContent value="overview">
+            <CreatorSubscriptionDashboard />
+          </TabsContent>
+          {/* New Analytics Tab */}
+          <TabsContent value="analytics">
+            <CreatorAnalyticsDashboard />
+          </TabsContent>
+          {/* Earnings Tab */}
+          <TabsContent value="earnings" className="space-y-6">
+            {renderCurrentPeriodCard()}
+            {renderEarningsHistoryTable()}
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Tax Documents</CardTitle>
+                <CardDescription>
+                  Access your tax forms and documents
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center p-3 border rounded-md">
+                  <div className="flex items-center space-x-3">
+                    <FileText className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <div className="font-medium">2023 Form 1099-K</div>
+                      <div className="text-sm text-gray-500">Not yet available</div>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" disabled>
+                    Download
+                  </Button>
+                </div>
+                
+                <div className="flex justify-between items-center p-3 border rounded-md">
+                  <div className="flex items-center space-x-3">
+                    <FileText className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <div className="font-medium">2022 Form 1099-K</div>
+                      <div className="text-sm text-gray-500">Added Jan 31, 2023</div>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    Download
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Settings Tab */}
+          <TabsContent value="settings">
+            <PortfolioPricingManager />
+          </TabsContent>
+          
+          {/* Connect Tab */}
+          <TabsContent value="connect">
+            <CreatorStripeConnect />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

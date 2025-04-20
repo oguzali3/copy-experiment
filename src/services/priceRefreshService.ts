@@ -1,139 +1,184 @@
-// src/services/priceRefreshService.ts - optimized version
-import portfolioApi, { invalidatePortfolioCache } from './portfolioApi';
-import { toast } from 'sonner';
+// src/services/priceRefreshService.ts
+import apiClient from '@/utils/apiClient';
 import { Portfolio } from '@/components/portfolio/types';
 
+interface MarketStatus {
+  isMarketOpen: boolean;
+  nextMarketOpenTime: Date;
+  lastMarketCloseTime: Date;
+  marketHours: { open: string; close: string };
+  serverTime: Date;
+}
+
 class PriceRefreshService {
-  private refreshOperations = new Map<string, Promise<Portfolio>>();
-  private lastRefreshTimes = new Map<string, number>();
-  
-  // Minimum time between refreshes to prevent API abuse (5 minutes)
-  private readonly MIN_REFRESH_INTERVAL = 5 * 60 * 1000; 
-  
-  /**
-   * Refresh prices for a specific portfolio with deduplication
-   * @param portfolioId The ID of the portfolio to refresh
-   * @param forceRefresh Whether to force a refresh even if recently refreshed
-   * @returns The updated portfolio with fresh prices
-   */
-  async refreshPortfolioPrices(
-    portfolioId: string, 
-    forceRefresh = false
-  ): Promise<Portfolio> {
-    // If there's already a refresh in progress for this portfolio, return that promise
-    if (this.refreshOperations.has(portfolioId)) {
-      console.log(`Reusing in-flight refresh operation for portfolio ${portfolioId}`);
-      return this.refreshOperations.get(portfolioId)!;
-    }
-    
-    // Check if we've refreshed recently, unless forced
-    if (!forceRefresh) {
-      const lastRefreshTime = this.lastRefreshTimes.get(portfolioId);
-      if (lastRefreshTime) {
-        const timeSinceLastRefresh = Date.now() - lastRefreshTime;
-        if (timeSinceLastRefresh < this.MIN_REFRESH_INTERVAL) {
-          console.log(`Using recently cached data for portfolio ${portfolioId} (${Math.round(timeSinceLastRefresh / 1000)}s ago)`);
-          
-          // Get the cached data instead of refreshing
-          const portfolios = await portfolioApi.getPortfolios({ 
-            skipRefresh: true,
-            portfolioId: portfolioId // Pass specific portfolioId to only get this one
-          });
-          const portfolio = portfolios.find(p => p.id === portfolioId);
-          
-          if (portfolio) {
-            return portfolio;
-          }
-        }
-      }
-    }
-    
-    // Create a refresh operation
-    const refreshOperation = (async () => {
-      try {
-        // IMPORTANT: Only clear cache for THIS portfolio, not all portfolios
-        await invalidatePortfolioCache(portfolioId);
-        
-        // Call the API to refresh prices
-        const refreshedPortfolio = await portfolioApi.refreshPrices(portfolioId);
-        
-        // Update last refresh time
-        this.lastRefreshTimes.set(portfolioId, Date.now());
-        
-        return refreshedPortfolio;
-      } finally {
-        // Remove from operations when done
-        this.refreshOperations.delete(portfolioId);
-      }
-    })();
-    
-    // Store the promise for deduplication
-    this.refreshOperations.set(portfolioId, refreshOperation);
-    
-    return refreshOperation;
+  private lastRefreshTimes = new Map<string, Date>();
+  private marketStatusCache: MarketStatus | null = null;
+  private marketStatusLastChecked: number = 0;
+  private readonly MARKET_STATUS_TTL = 60 * 1000; // 1 minute
+
+  // Track when a portfolio was last refreshed
+  recordRefresh(portfolioId: string): void {
+    this.lastRefreshTimes.set(portfolioId, new Date());
   }
-  
-  /**
-   * Get the last refresh time for a portfolio
-   * @returns The timestamp of the last successful refresh or null if never refreshed
-   */
+
   getLastRefreshTime(portfolioId: string): Date | null {
-    const timestamp = this.lastRefreshTimes.get(portfolioId);
-    return timestamp ? new Date(timestamp) : null;
+    return this.lastRefreshTimes.get(portfolioId) || null;
   }
-  
-  /**
-   * Get the current market status
-   * @returns The current market status
-   */
+
+  clearRefreshCache(portfolioId: string): void {
+    this.lastRefreshTimes.delete(portfolioId);
+  }
+
+  // Refresh a specific portfolio with price updates
+  async refreshPortfolioPrices(portfolioId: string, force: boolean = false): Promise<Portfolio> {
+    try {
+      const endpoint = force 
+        ? `/portfolios/${portfolioId}/force-sync` 
+        : `/portfolios/${portfolioId}/refresh`;
+        
+      interface PortfolioResponseDto {
+        id: string;
+        name: string;
+        totalValue: number;
+        positions: Array<{
+          ticker: string;
+          name: string;
+          shares: number;
+          avgPrice: number;
+          currentPrice: number;
+          marketValue: number;
+          percentOfPortfolio: number;
+          gainLoss: number;
+          gainLossPercent: number;
+        }>;
+        previousDayValue: number;
+        dayChange: number;
+        dayChangePercent: number;
+        lastPriceUpdate: Date | null;
+        visibility: string;
+        description?: string;
+        userId: string;
+      }
+      
+      const response = await apiClient.post<PortfolioResponseDto>(endpoint, {}, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      
+      this.recordRefresh(portfolioId);
+      
+      // Map the response to Portfolio type
+      const stocks = response.data.positions.map(pos => ({
+        ticker: pos.ticker,
+        name: pos.name,
+        shares: Number(pos.shares),
+        avgPrice: Number(pos.avgPrice),
+        currentPrice: Number(pos.currentPrice),
+        marketValue: Number(pos.marketValue),
+        percentOfPortfolio: Number(pos.percentOfPortfolio),
+        gainLoss: Number(pos.gainLoss),
+        gainLossPercent: Number(pos.gainLossPercent)
+      }));
+      
+      const portfolio: Portfolio = {
+        id: response.data.id,
+        name: response.data.name,
+        stocks: stocks,
+        totalValue: Number(response.data.totalValue),
+        previousDayValue: Number(response.data.previousDayValue),
+        dayChange: Number(response.data.dayChange),
+        dayChangePercent: Number(response.data.dayChangePercent),
+        lastPriceUpdate: response.data.lastPriceUpdate,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        visibility: response.data.visibility as any,
+        description: response.data.description || '',
+        userId: response.data.userId
+      };
+      
+      return portfolio;
+    } catch (error) {
+      console.error('Error refreshing portfolio prices:', error);
+      throw error;
+    }
+  }
+
+  // Get market status
+  async getMarketStatusFromAPI(): Promise<MarketStatus> {
+    try {
+      const now = Date.now();
+      
+      // Return cached status if recent
+      if (this.marketStatusCache && now - this.marketStatusLastChecked < this.MARKET_STATUS_TTL) {
+        return this.marketStatusCache;
+      }
+      
+      const response = await apiClient.get<MarketStatus>('/portfolios/market/status');
+      this.marketStatusCache = response.data;
+      this.marketStatusLastChecked = now;
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching market status:', error);
+      
+      // Return default values on error
+      return {
+        isMarketOpen: false,
+        nextMarketOpenTime: new Date(),
+        lastMarketCloseTime: new Date(),
+        marketHours: { open: '09:30', close: '16:00' },
+        serverTime: new Date()
+      };
+    }
+  }
+
+  // Check if market is open
+  async isMarketOpen(): Promise<boolean> {
+    const status = await this.getMarketStatusFromAPI();
+    return status.isMarketOpen;
+  }
+
+  // Get market status as a string
   getMarketStatus(): 'open' | 'closed' | 'pre-market' | 'after-hours' {
-    const now = new Date();
-    const day = now.getDay();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    
-    // Weekend
-    if (day === 0 || day === 6) return 'closed';
-    
-    // Check various market hours
-    const marketMinutes = hours * 60 + minutes;
-    const marketOpenMinutes = 9 * 60 + 30;  // 9:30 AM
-    const marketCloseMinutes = 16 * 60;     // 4:00 PM
-    const preMarketOpenMinutes = 4 * 60;    // 4:00 AM (pre-market)
-    const afterHoursCloseMinutes = 20 * 60; // 8:00 PM (after-hours)
-    
-    if (marketMinutes >= marketOpenMinutes && marketMinutes < marketCloseMinutes) {
-      return 'open';
-    } else if (marketMinutes >= preMarketOpenMinutes && marketMinutes < marketOpenMinutes) {
-      return 'pre-market';
-    } else if (marketMinutes >= marketCloseMinutes && marketMinutes < afterHoursCloseMinutes) {
-      return 'after-hours';
-    } else {
+    if (!this.marketStatusCache) {
       return 'closed';
     }
-  }
-
-  /**
-   * Lightweight check if market is open
-   */
-  isMarketOpen(): boolean {
-    const status = this.getMarketStatus();
-    return status === 'open' || status === 'pre-market' || status === 'after-hours';
-  }
-
-  /**
-   * Clear the refresh cache for a specific portfolio or all portfolios
-   */
-  clearRefreshCache(portfolioId?: string): void {
-    if (portfolioId) {
-      this.lastRefreshTimes.delete(portfolioId);
-    } else {
-      this.lastRefreshTimes.clear();
+    
+    const now = new Date();
+    
+    if (this.marketStatusCache.isMarketOpen) {
+      return 'open';
     }
+    
+    // Check for pre-market (before opening)
+    const today = now.toISOString().split('T')[0];
+    const marketHours = this.marketStatusCache.marketHours;
+    
+    if (!marketHours || !marketHours.open || !marketHours.close) {
+      return 'closed';
+    }
+    
+    const openTimeToday = new Date(`${today}T${marketHours.open}`);
+    const closeTimeToday = new Date(`${today}T${marketHours.close}`);
+    
+    if (now < openTimeToday && now.getDay() >= 1 && now.getDay() <= 5) {
+      return 'pre-market';
+    }
+    
+    if (now > closeTimeToday && now.getDay() >= 1 && now.getDay() <= 5) {
+      // Check if it's within 2 hours after closing
+      const twoHoursAfterClose = new Date(closeTimeToday);
+      twoHoursAfterClose.setHours(twoHoursAfterClose.getHours() + 2);
+      
+      if (now < twoHoursAfterClose) {
+        return 'after-hours';
+      }
+    }
+    
+    return 'closed';
   }
 }
 
-// Create a singleton instance to be used across the app
-const priceRefreshService = new PriceRefreshService();
-
-export default priceRefreshService;
+export default new PriceRefreshService();

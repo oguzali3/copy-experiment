@@ -1,4 +1,4 @@
-// src/components/portfolio/PortfolioContent.tsx - Optimized
+// src/components/portfolio/PortfolioContent.tsx - Updated for new backend
 import { useState, useEffect, useRef, useCallback } from "react";
 import { PortfolioEmpty } from "./PortfolioEmpty";
 import { PortfolioCreate } from "./PortfolioCreate";
@@ -42,6 +42,19 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
   useEffect(() => {
     console.log("Component mounted");
     isMounted.current = true;
+    
+    // Get current market status
+    const updateMarketStatus = async () => {
+      try {
+        const status = priceRefreshService.getMarketStatus();
+        setMarketStatus(status);
+      } catch (error) {
+        console.error("Error getting market status:", error);
+      }
+    };
+    
+    updateMarketStatus();
+    
     return () => {
       console.log("Component unmounting, cleaning up");
       isMounted.current = false;
@@ -60,7 +73,7 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       console.log(`Setting initial portfolio ID from props (ONCE ONLY): ${portfolioId}`);
       setSelectedPortfolioId(portfolioId);
     }
-  }, [portfolioId]);
+  }, [portfolioId, selectedPortfolioId]);
 
   // Initial portfolio data loading - only happens once
   useEffect(() => {
@@ -74,8 +87,8 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       setLoading(true);
       
       try {
-        // Get the portfolio with a light refresh only - avoids multiple heavy refreshes
-        const refreshedPortfolio = await portfolioApi.getLightRefreshPortfolio(selectedPortfolioId);
+        // Use the new API to get portfolio data
+        const refreshedPortfolio = await portfolioApi.getPortfolioById(selectedPortfolioId);
         
         // Only update if component is still mounted
         if (isMounted.current) {
@@ -100,7 +113,24 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       } catch (error) {
         console.error("Error during initial portfolio load:", error);
         if (isMounted.current) {
-          toast.error("Unable to get latest prices. Using cached data.");
+          toast.error("Unable to get latest prices. Retrying...");
+          // Try a different approach if the first one fails
+          try {
+            // Force refresh the portfolio with the new API
+            const forcedRefresh = await portfolioApi.refreshPrices(selectedPortfolioId);
+            if (isMounted.current) {
+              setPortfolios(prevPortfolios => {
+                return prevPortfolios.map(p => 
+                  p.id === selectedPortfolioId ? forcedRefresh : p
+                );
+              });
+              setLastRefreshTime(new Date());
+              hasInitialLoadRef.current = true;
+            }
+          } catch (secondError) {
+            console.error("Second attempt failed:", secondError);
+            toast.error("Failed to refresh portfolio data. Please try again later.");
+          }
         }
       } finally {
         if (isMounted.current) {
@@ -136,6 +166,7 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
     
     handlePortfolioChange();
   }, [selectedPortfolioId, loading, isUpdating]);
+
   const handlePortfolioSelection = async (portfolioId: string) => {
     console.log("=========== SELECTION DEBUG ===========");
     console.log(`Attempting to select portfolio: ${portfolioId}`);
@@ -153,8 +184,7 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       // Set loading state first
       setLoading(true);
       
-      // Update the selectedPortfolioId immediately with direct state updates
-      // to ensure the change is picked up immediately
+      // Update the selectedPortfolioId immediately
       setSelectedPortfolioId(prevId => {
         console.log(`Setting selectedPortfolioId from ${prevId} to ${portfolioId}`);
         return portfolioId;
@@ -163,7 +193,7 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       // Reset the hasInitialLoadRef to force a reload
       hasInitialLoadRef.current = false;
       
-      // Force a portfolio refresh
+      // Get fresh data with the new API
       console.log(`Fetching fresh data for portfolio ${portfolioId}`);
       const refreshedPortfolio = await portfolioApi.getLightRefreshPortfolio(portfolioId);
       
@@ -198,55 +228,8 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
 
   // Portfolio data validation function
   const sanitizePortfolio = useCallback((portfolio: Portfolio): Portfolio => {
-    // Helper to ensure numeric values
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ensureNumber = (val: any): number => {
-      if (val === null || val === undefined) return 0;
-      if (typeof val === 'string') return parseFloat(val) || 0;
-      return typeof val === 'number' && !isNaN(val) ? val : 0;
-    };
-    
-    // Sanitize stocks first
-    const sanitizedStocks = portfolio.stocks.map(stock => ({
-      ...stock,
-      shares: ensureNumber(stock.shares),
-      avgPrice: ensureNumber(stock.avgPrice),
-      currentPrice: ensureNumber(stock.currentPrice),
-      marketValue: ensureNumber(stock.shares) * ensureNumber(stock.currentPrice),
-      percentOfPortfolio: 0, // Recalculate this later
-      gainLoss: ensureNumber(stock.shares) * (ensureNumber(stock.currentPrice) - ensureNumber(stock.avgPrice)),
-      gainLossPercent: ensureNumber(stock.avgPrice) > 0 
-        ? ((ensureNumber(stock.currentPrice) - ensureNumber(stock.avgPrice)) / ensureNumber(stock.avgPrice)) * 100 
-        : 0
-    }));
-    
-    // Calculate total value based on market values
-    const totalValue = sanitizedStocks.reduce((sum, stock) => sum + stock.marketValue, 0);
-    
-    // Add percentage of portfolio
-    const stocksWithPercentages = sanitizedStocks.map(stock => ({
-      ...stock,
-      percentOfPortfolio: totalValue > 0 ? (stock.marketValue / totalValue) * 100 : 0
-    }));
-    
-    // Ensure previous day value makes sense
-    const previousDayValue = ensureNumber(portfolio.previousDayValue);
-    
-    // Calculate day changes based on sanitized values
-    const dayChange = totalValue - previousDayValue;
-    const dayChangePercent = previousDayValue > 0 
-      ? (dayChange / previousDayValue) * 100 
-      : 0;
-    
-    return {
-      ...portfolio,
-      totalValue,
-      previousDayValue,
-      dayChange,
-      dayChangePercent,
-      stocks: stocksWithPercentages,
-      lastPriceUpdate: portfolio.lastPriceUpdate
-    };
+    // Use the utility function for standardization to ensure consistency
+    return standardizePortfolioData(portfolio);
   }, []);
 
   // Optimized light refresh function - with debouncing
@@ -280,23 +263,21 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       
       console.log(`Performing light refresh for portfolio ${portfolioId}`);
       
-      // Get latest data
+      // Get latest data from the new API
       const refreshedPortfolio = await portfolioApi.getLightRefreshPortfolio(portfolioId);
       
       // Only update if component is still mounted
       if (isMounted.current) {
         console.log("Light refresh completed successfully");
         
-        // Import and use the standardizer to ensure consistency
-        const standardizedPortfolio = standardizePortfolioData(refreshedPortfolio);
-        
         // Update the specific portfolio with the standardized data
         setPortfolios(prev => 
-          prev.map(p => p.id === portfolioId ? standardizedPortfolio : p)
+          prev.map(p => p.id === portfolioId ? refreshedPortfolio : p)
         );
         
         // Record the refresh time
         setLastRefreshTime(new Date());
+        priceRefreshService.recordRefresh(portfolioId);
       }
     } catch (error) {
       console.error("Light refresh failed:", error);
@@ -318,7 +299,7 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
     
     if (selectedPortfolioId) {
       // Determine polling interval based on market status
-      const isMarketActive = priceRefreshService.isMarketOpen();
+      const isMarketActive = marketStatus === 'open' || marketStatus === 'pre-market' || marketStatus === 'after-hours';
       const intervalTime = isMarketActive ? 5 * 60 * 1000 : 15 * 60 * 1000; // 5 min during market hours, 15 min otherwise
       
       console.log(`Setting up refresh interval: ${intervalTime/1000}s for portfolio ${selectedPortfolioId}`);
@@ -336,7 +317,7 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
         refreshIntervalRef.current = null;
       }
     };
-  }, [selectedPortfolioId, performLightRefresh]);
+  }, [selectedPortfolioId, performLightRefresh, marketStatus]);
 
   // Update market status periodically
   useEffect(() => {
@@ -365,16 +346,14 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
         }))
       };
       
+      // Use the new API to create the portfolio
       const createdPortfolio = await portfolioApi.createPortfolio(createRequest);
       
-      // Sanitize the returned portfolio
-      const sanitizedPortfolio = sanitizePortfolio(createdPortfolio);
-      
       // Add the new portfolio to the existing list
-      setPortfolios(prev => [...prev, sanitizedPortfolio]);
+      setPortfolios(prev => [...prev, createdPortfolio]);
       
       // Set as selected portfolio
-      setSelectedPortfolioId(sanitizedPortfolio.id);
+      setSelectedPortfolioId(createdPortfolio.id);
       
       setIsCreating(false);
       toast.success("Portfolio created successfully");
@@ -396,19 +375,17 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
     try {
       console.log(`Starting full refresh for portfolio ${portfolioId}`);
       
-      // Use our service for refreshing prices
-      const refreshedPortfolio = await priceRefreshService.refreshPortfolioPrices(portfolioId, true);
-      
-      // Sanitize the returned portfolio
-      const sanitizedPortfolio = sanitizePortfolio(refreshedPortfolio);
+      // Use the new API for refreshing prices
+      const refreshedPortfolio = await portfolioApi.refreshPrices(portfolioId);
       
       // Update the specific portfolio
       setPortfolios(prev => 
-        prev.map(p => p.id === portfolioId ? sanitizedPortfolio : p)
+        prev.map(p => p.id === portfolioId ? refreshedPortfolio : p)
       );
       
       // Update refresh time
       setLastRefreshTime(new Date());
+      priceRefreshService.recordRefresh(portfolioId);
       
       toast.success("Stock prices refreshed successfully");
       
@@ -419,7 +396,7 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
     } finally {
       setIsUpdating(false);
     }
-  }, [isUpdating, setPortfolios, sanitizePortfolio]);
+  }, [isUpdating, setPortfolios]);
 
   const updateLocalPortfolio = useCallback((updatedPortfolio: Portfolio) => {
     // Sanitize the portfolio data first
@@ -434,8 +411,8 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
   const handleUpdatePortfolioName = useCallback(async (id: string, newName: string) => {
     setIsUpdating(true);
     try {
-      const updatedPortfolio = await portfolioApi.updatePortfolio(id, newName);
-      // Sanitize before updating state
+      const updatedPortfolio = await portfolioApi.updatePortfolio(id, { name: newName });
+      // Update local state
       updateLocalPortfolio(updatedPortfolio);
       toast.success("Portfolio name updated successfully");
     } catch (error) {
@@ -454,7 +431,7 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
   }) => {
     setIsUpdating(true);
     try {
-      // Add position to the API
+      // Use the new API to add position
       const newPosition = await portfolioApi.addPosition(portfolioId, position);
       
       // Find current portfolio
@@ -492,6 +469,7 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       
       // Update the refresh time
       setLastRefreshTime(new Date());
+      priceRefreshService.recordRefresh(portfolioId);
       
       toast.success(`Position ${position.ticker} added successfully`);
     } catch (error) {
@@ -500,15 +478,10 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       
       // Get only this portfolio's data - not all portfolios
       try {
-        const refreshedPortfolios = await portfolioApi.getPortfolios({
-          portfolioId: portfolioId
-        });
-        const updatedPortfolio = refreshedPortfolios[0];
-        if (updatedPortfolio) {
-          setPortfolios(prev => 
-            prev.map(p => p.id === portfolioId ? updatedPortfolio : p)
-          );
-        }
+        const refreshedPortfolio = await portfolioApi.getPortfolioById(portfolioId);
+        setPortfolios(prev => 
+          prev.map(p => p.id === portfolioId ? refreshedPortfolio : p)
+        );
       } catch (err) {
         console.error('Error refreshing portfolio data:', err);
       }
@@ -524,7 +497,7 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       const currentPortfolio = portfolios.find(p => p.id === portfolioId);
       if (!currentPortfolio) throw new Error("Portfolio not found");
   
-      // Update position in the API
+      // Update position with the new API
       const updatedPosition = await portfolioApi.updatePosition(portfolioId, ticker, { 
         ticker, 
         shares, 
@@ -550,6 +523,7 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       
       // Update the refresh time
       setLastRefreshTime(new Date());
+      priceRefreshService.recordRefresh(portfolioId);
       
       toast.success(`Position ${ticker} updated successfully`);
     } catch (error) {
@@ -558,12 +532,8 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       
       // Refresh only this portfolio's data
       try {
-        const refreshedPortfolios = await portfolioApi.getPortfolios({
-          portfolioId: portfolioId
-        });
-        if (refreshedPortfolios.length > 0) {
-          updateLocalPortfolio(refreshedPortfolios[0]);
-        }
+        const refreshedPortfolio = await portfolioApi.getPortfolioById(portfolioId);
+        updateLocalPortfolio(refreshedPortfolio);
       } catch (err) {
         console.error('Error refreshing single portfolio data:', err);
       }
@@ -579,7 +549,7 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       const currentPortfolio = portfolios.find(p => p.id === portfolioId);
       if (!currentPortfolio) throw new Error("Portfolio not found");
   
-      // Delete position from the API
+      // Use the new API to delete position
       await portfolioApi.deletePosition(portfolioId, ticker);
       
       // Remove the position from the local state
@@ -604,12 +574,8 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       
       // Refresh only this portfolio
       try {
-        const refreshedPortfolios = await portfolioApi.getPortfolios({
-          portfolioId: portfolioId
-        });
-        if (refreshedPortfolios.length > 0) {
-          updateLocalPortfolio(refreshedPortfolios[0]);
-        }
+        const refreshedPortfolio = await portfolioApi.getPortfolioById(portfolioId);
+        updateLocalPortfolio(refreshedPortfolio);
       } catch (err) {
         console.error('Error refreshing portfolio after delete:', err);
       }
@@ -679,16 +645,12 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
             try {
               // Only load the current portfolio, not all portfolios
               if (selectedPortfolioId) {
-                const refreshedPortfolios = await portfolioApi.getPortfolios({
-                  portfolioId: selectedPortfolioId
-                });
-                if (refreshedPortfolios.length > 0) {
-                  setPortfolios(prevPortfolios => 
-                    prevPortfolios.map(p => 
-                      p.id === selectedPortfolioId ? refreshedPortfolios[0] : p
-                    )
-                  );
-                }
+                const refreshedPortfolio = await portfolioApi.getPortfolioById(selectedPortfolioId);
+                setPortfolios(prevPortfolios => 
+                  prevPortfolios.map(p => 
+                    p.id === selectedPortfolioId ? refreshedPortfolio : p
+                  )
+                );
               } else {
                 // Only get a minimal list if no portfolio is selected
                 const refreshedPortfolios = await portfolioApi.getPortfolios({
