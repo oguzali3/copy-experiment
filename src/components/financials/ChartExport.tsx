@@ -15,6 +15,13 @@ interface StatisticReferenceLine {
   statType: 'average' | 'median' | 'min' | 'max';
   value: number;
 }
+
+// Interface for daily price data
+interface DailyPricePoint {
+  time: string;
+  price: number;
+}
+
 interface ChartExportProps {
   data: any[]; // The processed data for the chart
   metrics: string[]; // Metrics to display
@@ -29,7 +36,10 @@ interface ChartExportProps {
   directLegends?: string[]; // Add this line
   statisticalLines?: StatisticReferenceLine[]; // New prop
   labelVisibilityArray?: boolean[]; // New prop: array of visibility flags
-
+  dailyPriceData?: DailyPricePoint[]; // Add this property for price data
+  selectedPeriods?: string[];
+  sliderValue?: [number, number];
+  timePeriods?: string[];
 }
 
 // Update the component props:
@@ -45,9 +55,12 @@ const ChartExport: React.FC<ChartExportProps> = ({
   metricLabels = {},
   labelVisibilityArray = [], // Default to empty array
   fileName = 'chart-export',
-  directLegends= [],
-  statisticalLines = [] // Default to empty array
- 
+  directLegends = [],
+  statisticalLines = [], // Default to empty array
+  dailyPriceData = [], // Add default empty array for price data
+  selectedPeriods = [],
+  sliderValue = [0, 0],
+  timePeriods = []
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -659,15 +672,14 @@ const ChartExport: React.FC<ChartExportProps> = ({
       document.body.removeChild(link);
     }
   };
-  const customLegendFormatter = (value: string) => {
-
-    return formattedLegends[value] || value;
-  };
 
   const handleMetricTypeChange = () => {
     // This is a no-op function as we don't need to change metric types in the export
     // but MetricChart requires this prop
   };
+
+  // Check if we have price metric
+  const hasPriceMetric = metrics.some(m => m.toLowerCase() === 'price');
 
   return (
     <>
@@ -710,30 +722,30 @@ const ChartExport: React.FC<ChartExportProps> = ({
                 </p>
               </div>
             ) : (
-<div className="relative" style={{ width: '800px', height: '567px', overflow: 'hidden' }} ref={exportChartRef} data-testid="export-chart-container">
-  <div style={{ width: '100%', height: '100%', padding: '20px 5px 20px 5px' }}>
-  
-          <MetricChart
-    data={data}
-    metrics={metrics}
-    ticker={ticker}
-    metricTypes={metricTypes}
-    stackedMetrics={stackedMetrics}
-    onMetricTypeChange={handleMetricTypeChange}
-    companyName={companyName}
-    title={title}
-    metricSettings={metricSettings}
-    metricLabels={metricLabels}
-    labelVisibilityArray={labelVisibilityArray} // Pass the visibility array
-    exportMode={true}
-    directLegends={directLegends} // Add this line
-    statisticalLines={statisticalLines} // Pass the statistical lines
-
-  />
-        
-  </div>
-  <div className="absolute bottom-10 right-10 z-10" style={{ width: '150px', height: '70px', opacity: 0.9 }}>
-  <img src={logoPath} alt="Logo" style={{ width: '100%', height: '100%' }} />
+              <div className="relative" style={{ width: '800px', height: '567px', overflow: 'hidden' }} ref={exportChartRef} data-testid="export-chart-container">
+                <div style={{ width: '100%', height: '100%', padding: '20px 5px 20px 5px' }}>
+                  <MetricChart
+                    data={data}
+                    metrics={metrics}
+                    ticker={ticker}
+                    metricTypes={metricTypes}
+                    stackedMetrics={stackedMetrics}
+                    onMetricTypeChange={handleMetricTypeChange}
+                    companyName={companyName}
+                    title={title}
+                    metricSettings={metricSettings}
+                    metricLabels={metricLabels}
+                    labelVisibilityArray={labelVisibilityArray}
+                    directLegends={directLegends}
+                    statisticalLines={statisticalLines}
+                    dailyPriceData={dailyPriceData}
+                    selectedPeriods={selectedPeriods}
+                    sliderValue={sliderValue}
+                    timePeriods={timePeriods}
+                  />
+                </div>
+                <div className="absolute bottom-10 right-10 z-10" style={{ width: '150px', height: '70px', opacity: 0.9 }}>
+                  <img src={logoPath} alt="Logo" style={{ width: '100%', height: '100%' }} />
 </div>
 </div>
             )}

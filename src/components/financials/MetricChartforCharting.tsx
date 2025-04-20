@@ -338,6 +338,9 @@ interface MetricChartProps {
   statisticalLines?: StatisticReferenceLine[]; // New prop
   // Add daily price data property
   dailyPriceData?: DailyPricePoint[];
+  selectedPeriods?: string[]; // Add this new prop for selected time periods
+  sliderValue?: [number, number];
+  timePeriods?: string[];
 }
 
 export const MetricChart: React.FC<MetricChartProps> = ({ 
@@ -354,7 +357,10 @@ export const MetricChart: React.FC<MetricChartProps> = ({
   labelVisibilityArray = [], // Default to empty array
   directLegends,
   statisticalLines = [], // Default to empty array
-  dailyPriceData = [] // Default to empty array
+  dailyPriceData = [], // Default to empty array
+  selectedPeriods = [],
+  sliderValue = [0, 0],
+  timePeriods = []
 }) => {
   const chartRef = useRef<HTMLDivElement>(null);
 
@@ -622,50 +628,92 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     
     return stats;
   }, [data, metrics, metricSettings]);
-  const prepareAlignedPriceData = useMemo(() => {
-    if (!hasPriceData || !hasPriceMetric) return [];
+  
+  const getSelectedPeriodsFromTimeRange = useMemo(() => {
+    if (!timePeriods || !sliderValue) return [];
     
-    // Extract the years from financial data
-    const financialYears = data.map(item => item.period).filter(period => !isNaN(parseInt(period)));
+    // Get the periods within the slider range
+    const selectedPeriods = timePeriods.slice(sliderValue[0], sliderValue[1] + 1);
+    return selectedPeriods;
+  }, [timePeriods, sliderValue]);
+  
+  const getFilteredPriceData = useMemo(() => {
+    if (!hasPriceData || !hasPriceMetric || dailyPriceData.length === 0) {
+      return [];
+    }
     
-    // Convert to a set for faster lookup
-    const yearSet = new Set(financialYears);
+    // Create a date range from selectedPeriods
+    let startDate = null;
+    let endDate = null;
     
-    // Group price data by year
-    const priceByYear = {};
-    
-    dailyPriceData.forEach(point => {
-      try {
-        // Extract year from date
-        const year = new Date(point.time).getFullYear().toString();
+    // Process the selectedPeriods to determine date range
+    selectedPeriods.forEach(period => {
+      // Try to parse as a year (like "2021")
+      const yearMatch = parseInt(period);
+      if (!isNaN(yearMatch)) {
+        const periodStart = new Date(yearMatch, 0, 1); // Jan 1
+        const periodEnd = new Date(yearMatch, 11, 31); // Dec 31
         
-        // Only include years that match our financial data
-        if (yearSet.has(year)) {
-          if (!priceByYear[year]) {
-            priceByYear[year] = [];
+        if (!startDate || periodStart < startDate) startDate = periodStart;
+        if (!endDate || periodEnd > endDate) endDate = periodEnd;
+      } else {
+        // Try to extract a year from other formats (like "Q1 2021")
+        const yearExtract = period.match(/\b(20\d{2})\b/);
+        if (yearExtract) {
+          const year = parseInt(yearExtract[1]);
+          
+          // For quarters, extract the quarter number
+          const quarterMatch = period.match(/Q(\d)/i);
+          if (quarterMatch) {
+            const quarter = parseInt(quarterMatch[1]);
+            const startMonth = (quarter - 1) * 3; // Q1=0, Q2=3, Q3=6, Q4=9
+            const endMonth = startMonth + 2; // Last month of quarter
+            
+            const periodStart = new Date(year, startMonth, 1);
+            const periodEnd = new Date(year, endMonth, 31);
+            
+            if (!startDate || periodStart < startDate) startDate = periodStart;
+            if (!endDate || periodEnd > endDate) endDate = periodEnd;
+          } else {
+            // If we just have a year, use the whole year
+            const periodStart = new Date(year, 0, 1);
+            const periodEnd = new Date(year, 11, 31);
+            
+            if (!startDate || periodStart < startDate) startDate = periodStart;
+            if (!endDate || periodEnd > endDate) endDate = periodEnd;
           }
-          priceByYear[year].push(point);
         }
-      } catch (e) {
-        // Skip problematic data points
-        console.error("Error processing price point:", e);
       }
     });
     
-    // Create a properly structured dataset for the chart
-    return Object.entries(priceByYear).map(([year, points]) => {
-      // Use the middle or latest point to represent the year
-      const representativePoint = points[Math.floor(points.length / 2)] || points[points.length - 1];
-      
-      return {
-        time: representativePoint.time,
-        period: year, // This matches the period format in financial data
-        price: representativePoint.price,
-        // Include all points for this year for detailed view if needed
-        detailedPoints: points
-      };
-    });
-  }, [dailyPriceData, hasPriceData, hasPriceMetric, data]);
+    // If we couldn't determine date range, show all data
+    if (!startDate || !endDate) {
+      console.log("Could not determine date range from periods:", selectedPeriods);
+      return dailyPriceData.map(point => ({
+        ...point,
+        period: point.time
+      }));
+    }
+    
+    // Filter price data to the date range
+    const filteredData = dailyPriceData.filter(point => {
+      try {
+        const pointDate = new Date(point.time);
+        return pointDate >= startDate && pointDate <= endDate;
+      } catch (e) {
+        console.error("Invalid date in price data:", point.time);
+        return false;
+      }
+    }).map(point => ({
+      ...point,
+      period: point.time
+    }));
+    
+    console.log(`Filtered price data from ${dailyPriceData.length} to ${filteredData.length} points`);
+    return filteredData;
+    
+  }, [dailyPriceData, hasPriceData, hasPriceMetric, selectedPeriods]); // Include selectedPeriods in dependencies
+  
   // Custom legend formatter with total change and CAGR
   const legendFormatter = (value: string) => {
     // Special case for price
@@ -1072,7 +1120,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
           {getSubtitle()}
         </p>
         
-        {/* Show indicator for multiple axes if needed */}
+        {/* Show indicator for multiple axes if needed
         {axesCount > 1 && (
           <p style={{ fontSize: `${typography.subtitleSize - 2}px` }} className="text-blue-600 mt-1">
             Using multiple Y-axes:
@@ -1082,19 +1130,19 @@ export const MetricChart: React.FC<MetricChartProps> = ({
           </p>
         )}
         
-        {/* Show stacked metrics info if needed */}
+        {/* Show stacked metrics info if needed 
         {effectiveStackedMetrics.length > 0 && (
           <p style={{ fontSize: `${typography.subtitleSize - 2}px` }} className="text-blue-600 mt-1">
             Showing stacked bars for: {effectiveStackedMetrics.map(m => getLocalMetricDisplayName(m)).join(', ')}
           </p>
         )}
         
-        {/* Price data info if applicable */}
+        {/* Price data info if applicable 
         {hasPriceMetric && hasPriceData && (
           <p style={{ fontSize: `${typography.subtitleSize - 2}px` }} className="text-orange-600 mt-1">
             Showing daily price data ({dailyPriceData.length} points)
           </p>
-        )}
+        )}*/}
       </div>
       
       <div className="flex-grow relative">
@@ -1131,12 +1179,15 @@ export const MetricChart: React.FC<MetricChartProps> = ({
             }}
           />
             {/* Secondary X-Axis for price data - hidden */}
-          <XAxis 
-            dataKey="time" 
-            xAxisId="price"
-            data={processedPriceData} // Add this line - specify which data to use
-            hide={true} // Make it invisible
-          />
+{
+  //Secondary X-Axis for price data - No longer needed since we're using the financial x-axis
+  <XAxis 
+    dataKey="period" 
+    xAxisId="price"
+    data={processedPriceData}
+    hide={true}
+  />
+}
             {/* Primary Y-axis - normal values */}
             {normalMetrics.length > 0 && (
               <YAxis 
@@ -1330,11 +1381,11 @@ export const MetricChart: React.FC<MetricChartProps> = ({
 
 {/* Render full continuous price line using secondary axis */}
 {hasPriceMetric && hasPriceData && priceMetrics.map((metric) => (
-  <Line 
+    <Line 
     key="price-data"
-    data={processedPriceData}
+    data={getFilteredPriceData}
     dataKey="price"
-    xAxisId="price" // Add this line - specify which x-axis to use
+    xAxisId="price"
     yAxisId="price"
     name={metric}
     stroke={colorMap[metric] || '#ff7300'}

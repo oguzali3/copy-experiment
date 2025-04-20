@@ -317,8 +317,6 @@ useEffect(() => {
   });
   setMetricTypes(newMetricTypes);
 }, [selectedMetrics]);
-
-// Add this function to fetch price data
 const fetchPriceData = async (ticker: string) => {
   // Update loading state for this company
   const companyIndex = selectedCompanies.findIndex(c => c.ticker === ticker);
@@ -334,24 +332,125 @@ const fetchPriceData = async (ticker: string) => {
   });
   
   try {
-    // Determine timeframe based on the selected periods
-    let timeframe = "1Y"; // Default
+    // Determine time range more precisely based on the selected periods
+    const selectedPeriods = timePeriods.slice(sliderValue[0], sliderValue[1] + 1);
     
-    if (sliderValue && timePeriods.length > 0) {
-      // Calculate the number of years/periods selected
-      const selectedPeriodCount = sliderValue[1] - sliderValue[0] + 1;
-      
-      if (selectedPeriodCount <= 1) timeframe = "1Y";
-      else if (selectedPeriodCount <= 3) timeframe = "3Y";
-      else if (selectedPeriodCount <= 5) timeframe = "5Y";
-      else timeframe = "MAX";
-      
-      if (debug) {
-        console.log(`Selected ${selectedPeriodCount} periods, using timeframe: ${timeframe}`);
-      }
+    // Extract years from selected periods
+    const years = selectedPeriods
+      .map(period => {
+        // Try direct year format first (e.g., "2022")
+        const directYear = parseInt(period);
+        if (!isNaN(directYear)) return directYear;
+        
+        // Try to extract year from other formats (e.g., "Q1 2022")
+        const match = period.match(/\b(20\d{2})\b/);
+        return match ? parseInt(match[1]) : null;
+      })
+      .filter(year => year !== null);
+    
+    // If no valid years found, use a default timeframe
+    if (years.length === 0) {
+      console.warn("No valid years found in selected periods, using default timeframe");
+      return fetchPriceDataWithTimeframe(ticker, "5Y");
     }
     
-    // Call your API endpoint similar to StockChart.tsx
+    // Find min and max years
+    const minYear = Math.min(...years);
+    const maxYear = Math.max(...years);
+    const yearRange = maxYear - minYear + 1;
+    
+    if (debug) {
+      console.log(`Detected year range: ${minYear} to ${maxYear} (${yearRange} years)`);
+    }
+    
+    // Determine appropriate timeframe based on year range
+// Determine appropriate timeframe based on year range
+let timeframe: string;
+
+switch (yearRange) {
+  case 1:
+    timeframe = "1Y";
+    break;
+  case 2:
+    timeframe = "2Y";
+    break;
+  case 3:
+    timeframe = "3Y";
+    break;
+  case 4:
+    timeframe = "4Y";
+    break;
+  case 5:
+    timeframe = "5Y";
+    break;
+  case 6:
+    timeframe = "6Y";
+    break;
+  case 7:
+    timeframe = "7Y";
+    break;
+  case 8:
+    timeframe = "8Y";
+    break;
+  case 9:
+    timeframe = "9Y";
+    break;
+  case 10:
+    timeframe = "10Y";
+    break;
+  case 11:
+    timeframe = "11Y";
+    break;
+  case 12:
+    timeframe = "12Y";
+    break;
+  case 13:
+    timeframe = "13Y";
+    break;
+  case 14:
+    timeframe = "14Y";
+    break;
+  case 15:
+    timeframe = "15Y";
+    break;
+  default:
+    // If more than 15 years, use MAX
+    timeframe = "MAX";
+    break;
+}
+    
+    if (debug) {
+      console.log(`Selected timeframe for price data: ${timeframe}`);
+    }
+    
+    return fetchPriceDataWithTimeframe(ticker, timeframe);
+  } catch (err) {
+    console.error(`Error in fetchPriceData for ${ticker}:`, err);
+    
+    // Update error state for this company
+    setSelectedCompanies(prev => {
+      const updatedCompanies = [...prev];
+      const companyIndex = updatedCompanies.findIndex(c => c.ticker === ticker);
+      
+      if (companyIndex !== -1) {
+        updatedCompanies[companyIndex] = {
+          ...updatedCompanies[companyIndex],
+          isLoading: false,
+          error: `Failed to fetch price data: ${err.message}`
+        };
+      }
+      
+      return updatedCompanies;
+    });
+    
+    return null;
+  }
+};
+
+// Helper function to fetch price data with specific timeframe
+const fetchPriceDataWithTimeframe = async (ticker: string, timeframe: string) => {
+  try {
+    // Call your API endpoint
     const { data, error } = await supabase.functions.invoke('fetch-stock-chart', {
       body: { symbol: ticker, timeframe }
     });
@@ -359,7 +458,7 @@ const fetchPriceData = async (ticker: string) => {
     if (error) throw error;
     
     if (debug) {
-      console.log(`Fetched ${data.length} price data points for ${ticker}`);
+      console.log(`Fetched ${data.length} price data points for ${ticker} with timeframe ${timeframe}`);
     }
     
     // Store the price data in the company object
@@ -402,21 +501,16 @@ const fetchPriceData = async (ticker: string) => {
   }
 };
 
-// Modify the useEffect that fetches data to include price data
+// Add this effect to refetch price data when the time range changes
 useEffect(() => {
-  if (selectedCompanies.length > 0 && selectedMetrics.length > 0) {
-    // Fetch data for each company
-    selectedCompanies.forEach((company, index) => {
-      fetchMetricData(index);
-      
-      // If price metric is selected, fetch price data too
-      if (hasPriceMetric()) {
-        fetchPriceData(company.ticker);
-      }
+  // Only refetch if we have companies, price metric is selected, and sliderValue has changed
+  if (selectedCompanies.length > 0 && hasPriceMetric()) {
+    // Re-fetch price data for each company
+    selectedCompanies.forEach(company => {
+      fetchPriceData(company.ticker);
     });
   }
-}, [selectedCompanies.length, selectedMetrics, period]);
-
+}, [sliderValue, timePeriods]);
 // Add an additional effect to fetch price data when price metric is selected
 useEffect(() => {
   // If price metric is selected and we have companies
@@ -448,35 +542,32 @@ const fetchMetricData = async (companyIndex: number) => {
   });
   
   try {
-    // Fetch data for each selected metric
-    const promises = selectedMetrics.map(async (metric) => {
-      const mappedPeriod = period === 'quarter' ? 'quarter' : 'annual';
-      // Add a limit parameter to ensure we get enough years of data
-      const url = `${API_BASE_URL}/metric-data/${company.ticker}?metric=${metric.id}&period=${mappedPeriod}&limit=15`;        
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ${metric.name}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      if (debug) {
-        console.log(`Fetched data for ${company.ticker} - ${metric.id}:`, data);
-      }
-      
-      return {
-        metricId: metric.id,
-        data
-      };
-    });
+    // Fetch data for each selected metric (except price which is handled separately)
+    const promises = selectedMetrics
+      .filter(metric => metric.id !== 'price') // Skip price metric
+      .map(async (metric) => {
+        const mappedPeriod = period === 'quarter' ? 'quarter' : 'annual';
+        // Add a limit parameter to ensure we get enough years of data
+        const url = `${API_BASE_URL}/metric-data/${company.ticker}?metric=${metric.id}&period=${mappedPeriod}&limit=15`;        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ${metric.name}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (debug) {
+          console.log(`Fetched data for ${company.ticker} - ${metric.id}:`, data);
+        }
+        
+        return {
+          metricId: metric.id,
+          data
+        };
+      });
     
     const results = await Promise.all(promises);
-    
-    // Debug log all results
-    if (debug) {
-      console.log(`All fetched results for ${company.ticker}:`, results);
-    }
     
     // Extract time periods from the first result that has data
     let extractedPeriods: string[] = [];
@@ -1106,6 +1197,11 @@ return (
                       metricSettings={metricSettings}
                       metricLabels={metricLabels}
                       fileName={`${company.ticker}-financial-metrics`}
+                      dailyPriceData={hasPriceMetric() && company.priceData ? company.priceData : []}
+
+                      selectedPeriods={getChartData(company.metricData)?.selectedPeriods || []}
+                      sliderValue={sliderValue}
+                      timePeriods={timePeriods}      
                     />
                   )}
                 </div>
@@ -1123,7 +1219,10 @@ return (
                   metricSettings={metricSettings}
                   metricLabels={metricLabels}
                   dailyPriceData={hasPriceMetric() && company.priceData ? company.priceData : []}
-                />
+
+                  selectedPeriods={getChartData(company.metricData)?.selectedPeriods || []}
+                  sliderValue={sliderValue}
+                  timePeriods={timePeriods}                  />
                   ) : (
                     <div className="h-full flex items-center justify-center">
                       <p className="text-gray-500">No data available for {company.ticker} in the selected time period.</p>
