@@ -97,6 +97,15 @@ interface MarketStatusResponse {
   marketHours: { open: string; close: string };
   serverTime: Date;
 }
+interface PortfolioTransaction {
+  id: string;
+  type: string;
+  ticker: string;
+  shares: number;
+  price: number;
+  amount: number;
+  tradeDate: string;
+}
 
 // Request deduplication and caching system
 const pendingRequests = new Map<string, Promise<any>>();
@@ -809,6 +818,84 @@ getPortfolioHistoryWithExclusions: async (
       return [];
     }
   },
+  getPortfolioTransactions: async (portfolioId: string): Promise<PortfolioTransaction[]> => {
+    try {
+      const response = await apiClient.get<PortfolioTransaction[]>(
+        `/portfolios/${portfolioId}/transactions`,
+        {
+          headers: {
+            'Cache-Control': 'no-cache',
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching portfolio transactions:', error);
+      throw error;
+    }
+  },
+  sellPosition: async (
+    portfolioId: string, 
+    ticker: string, 
+    shares: number, 
+    sellPrice: number
+  ): Promise<Stock> => {
+    return requestQueue.add(async () => {
+      console.log(`Selling ${shares} shares of ${ticker} at $${sellPrice}`);
+      
+      try {
+        // First get the current position
+        const currentPortfolio = await apiClient.get<PortfolioResponseDto>(`/portfolios/${portfolioId}`);
+        const currentPosition = currentPortfolio.data.positions.find(p => p.ticker === ticker);
+        
+        if (!currentPosition) {
+          throw new Error(`Position ${ticker} not found`);
+        }
+        
+        const currentShares = 
+          typeof currentPosition.shares === 'string' 
+            ? parseFloat(currentPosition.shares) 
+            : currentPosition.shares;
+        
+        // Calculate new shares
+        const remainingShares = currentShares - shares;
+        
+        if (remainingShares <= 0) {
+          // If selling all shares, use delete endpoint
+          await apiClient.delete(`/portfolios/${portfolioId}/positions/${ticker}`);
+          invalidatePortfolioCache(portfolioId);
+          
+          // Return a blank position since it's been deleted
+          return {
+            ticker,
+            name: currentPosition.name,
+            shares: 0,
+            avgPrice: 0,
+            currentPrice: 0,
+            marketValue: 0,
+            percentOfPortfolio: 0,
+            gainLoss: 0,
+            gainLossPercent: 0
+          };
+        } else {
+          // If selling partial position, update with new share count
+          const response = await apiClient.put<StockPositionResponseDto>(
+            `/portfolios/${portfolioId}/positions/${ticker}`,
+            {
+              ticker,
+              shares: remainingShares
+            }
+          );
+          
+          invalidatePortfolioCache(portfolioId);
+          return mapToStock(response.data);
+        }
+      } catch (error) {
+        console.error('Error selling position:', error);
+        throw error;
+      }
+    });
+  }
   
 };
 

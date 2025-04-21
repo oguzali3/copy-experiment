@@ -15,6 +15,8 @@ import { PortfolioValueChart } from "./PortfolioValueChart";
 import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
 import portfolioApi from "@/services/portfolioApi";
 import { PortfolioVisibility } from "@/constants/portfolioVisibility";
+import { PortfolioTransactionHistory } from "./PortfolioTransactionHistory";
+import { SellPositionDialog } from "./dialogs/SellPositionDialog";
 
 interface PortfolioViewProps {
   portfolio: Portfolio;
@@ -29,6 +31,7 @@ interface PortfolioViewProps {
   onDeletePosition: (ticker: string) => void | Promise<void>;
   marketStatus: 'open' | 'closed' | 'pre-market' | 'after-hours';
   isViewOnly?: boolean;
+  onSellPosition: (ticker: string, shares: number, price: number) => void | Promise<void>;
 }
 
 export const PortfolioView = ({
@@ -43,12 +46,15 @@ export const PortfolioView = ({
   onDeletePosition,
   marketStatus,
   isViewOnly = false,
+  onSellPosition
 }: PortfolioViewProps) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddingTicker, setIsAddingTicker] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [excludedTickers, setExcludedTickers] = useState<string[]>([]);
+  const [isSellPositionOpen, setIsSellPositionOpen] = useState(false);
+  const [selectedPosition, setSelectedPosition] = useState<Stock | null>(null);
   
   // Memoize portfolio state to reduce unnecessary re-renders
   const portfolioState = useMemo(() => {
@@ -229,6 +235,33 @@ export const PortfolioView = ({
       stock => !excludedTickers.includes(stock.ticker)
     );
   }, [portfolioState.stocks, excludedTickers]);
+  const handleSellPositionClick = (stock: Stock) => {
+    setSelectedPosition(stock);
+    setIsSellPositionOpen(true);
+  };
+  
+  // Add a handler for selling a position
+  const handleSellPosition = async (ticker: string, shares: number, price: number) => {
+    try {
+      // If selling all shares, just use the delete handler
+      if (shares === selectedPosition?.shares) {
+        await onDeletePosition(ticker);
+        toast.success(`Sold entire position of ${ticker}`);
+        return;
+      }
+      
+      // Otherwise update the position with reduced shares
+      if (selectedPosition) {
+        const newShares = selectedPosition.shares - shares;
+        await onUpdatePosition(ticker, newShares, selectedPosition.avgPrice);
+        toast.success(`Sold ${shares} shares of ${ticker}`);
+      }
+    } catch (error) {
+      console.error("Error selling position:", error);
+      toast.error("Failed to sell position");
+      throw error;
+    }
+  };
 
   // Log portfolio updates for debugging
   useEffect(() => {
@@ -320,7 +353,7 @@ export const PortfolioView = ({
       {/* Add the performance chart with stable chartKey and excluded tickers */}
       <div className="bg-white p-6 rounded-lg shadow-sm">
         {portfolioState.id ? (
-          <PortfolioValueChart
+          <PortfolioPerformanceChart
             key={`value-chart-${chartKey}`}
             portfolioId={portfolioState.id}
             portfolio={portfolioState}
@@ -368,6 +401,7 @@ export const PortfolioView = ({
                 }
               });
             }}
+            onSellPosition={handleSellPositionClick}
           />
         ) : (
           <div className="bg-white p-10 rounded-lg shadow-sm text-center">
@@ -470,8 +504,19 @@ export const PortfolioView = ({
             onOpenChange={setIsAddingTicker}
             onAddPosition={handleAddPosition}
           />
+          
+          <SellPositionDialog
+            isOpen={isSellPositionOpen}
+            onOpenChange={setIsSellPositionOpen}
+            position={selectedPosition}
+            onSellPosition={handleSellPosition}
+          />
+        
         </>
       )}
+      <PortfolioTransactionHistory portfolioId={portfolioState.id} />
+
     </div>
+    
   );
 };

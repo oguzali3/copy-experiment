@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowUpIcon, ArrowDownIcon, Trash2, Check, X, ArrowUpDown, Search } from "lucide-react";
+import { ArrowUpIcon, ArrowDownIcon, Trash2, Check, X, ArrowUpDown, Search, DollarSign } from "lucide-react";
 import { Stock } from "./types";
 import { useState, useEffect } from "react";
 import { 
@@ -26,13 +26,20 @@ interface PortfolioTableProps {
   onUpdatePosition: (ticker: string, shares: number, avgPrice: number) => void;
   excludedTickers?: string[]; // Add this line
   onToggleExclude?: (ticker: string) => void; // Add this line
+  onSellPosition?: (stock: Stock) => void;
 }
 
 type SortField = 'ticker' | 'name' | 'shares' | 'avgPrice' | 'currentPrice' | 
                  'marketValue' | 'percentOfPortfolio' | 'gainLoss' | 'gainLossPercent';
 type SortDirection = 'asc' | 'desc';
 
-export const PortfolioTable = ({ stocks, onDeletePosition, onUpdatePosition }: PortfolioTableProps) => {
+export const PortfolioTable = ({ stocks,
+  onDeletePosition,
+  onUpdatePosition,
+  excludedTickers = [],
+  onToggleExclude,
+  onSellPosition 
+}: PortfolioTableProps) => {
   const [editingStock, setEditingStock] = useState<string | null>(null);
   const [editValues, setEditValues] = useState({ shares: 0, avgPrice: 0 });
   const [sortField, setSortField] = useState<SortField>('marketValue');
@@ -327,13 +334,24 @@ export const PortfolioTable = ({ stocks, onDeletePosition, onUpdatePosition }: P
                       </Button>
                     </div>
                   ) : (
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => onDeletePosition(stock.ticker)}
-                    >
-                      <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-500" />
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => onSellPosition && onSellPosition(stock)}
+                        title="Sell position"
+                      >
+                        <DollarSign className="h-4 w-4 text-gray-500 hover:text-amber-500" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => onDeletePosition(stock.ticker)}
+                        title="Delete position"
+                      >
+                        <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-500" />
+                      </Button>
+                    </div>
                   )}
                 </TableCell>
               </TableRow>

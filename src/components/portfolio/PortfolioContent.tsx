@@ -621,6 +621,48 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       handleUpdatePortfolioName(updatedPortfolio.id, updatedPortfolio.name);
     }
   };
+  const handleSellPosition = async (portfolioId: string, ticker: string, shares: number, sellPrice: number) => {
+    setIsUpdating(true);
+    try {
+      // Find current portfolio and position
+      const currentPortfolio = portfolios.find(p => p.id === portfolioId);
+      if (!currentPortfolio) throw new Error("Portfolio not found");
+      
+      const currentPosition = currentPortfolio.stocks.find(s => s.ticker === ticker);
+      if (!currentPosition) throw new Error("Position not found");
+      
+      // Check if selling entire position
+      if (shares >= currentPosition.shares) {
+        // If selling all, just delete the position
+        await handleDeletePosition(portfolioId, ticker);
+        toast.success(`Sold entire position of ${ticker}`);
+      } else {
+        // Otherwise update with new share count
+        const newShares = currentPosition.shares - shares;
+        await handleUpdatePosition(portfolioId, ticker, newShares, currentPosition.avgPrice);
+        toast.success(`Sold ${shares} shares of ${ticker}`);
+      }
+      
+      // Refresh portfolio data
+      const refreshedPortfolio = await portfolioApi.getPortfolioById(portfolioId);
+      updateLocalPortfolio(refreshedPortfolio);
+      
+    } catch (error) {
+      console.error('Error selling position:', error);
+      toast.error("Failed to sell position");
+      
+      try {
+        // Refresh portfolio data on error
+        const refreshedPortfolio = await portfolioApi.getPortfolioById(portfolioId);
+        updateLocalPortfolio(refreshedPortfolio);
+      } catch (err) {
+        console.error('Error refreshing portfolio after sell error:', err);
+      }
+    } finally {
+      setIsUpdating(false);
+    }
+  }
+  
 
   // Handle loading state
   if (loading) {
@@ -753,6 +795,11 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
             if (!selectedPortfolio) return;
             handleDeletePosition(selectedPortfolio.id, ticker);
           }}
+          onSellPosition={(ticker, shares, price) => {
+            if (!selectedPortfolio) return;
+            handleSellPosition(selectedPortfolio.id, ticker, shares, price);
+          }}
+          
         />
       ) : (
         <div className="text-center py-10">

@@ -263,7 +263,6 @@ export const PortfolioPerformanceChart = ({
         portfolioId,
         timeframe,
         exclusions: exclSig,
-
       };
     } catch (err) {
       console.error('Failed to fetch portfolio performance:', err);
