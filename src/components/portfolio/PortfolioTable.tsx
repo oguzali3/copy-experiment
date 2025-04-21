@@ -19,10 +19,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// In PortfolioTable.tsx
 interface PortfolioTableProps {
   stocks: Stock[];
   onDeletePosition: (ticker: string) => void;
   onUpdatePosition: (ticker: string, shares: number, avgPrice: number) => void;
+  excludedTickers?: string[]; // Add this line
+  onToggleExclude?: (ticker: string) => void; // Add this line
 }
 
 type SortField = 'ticker' | 'name' | 'shares' | 'avgPrice' | 'currentPrice' | 

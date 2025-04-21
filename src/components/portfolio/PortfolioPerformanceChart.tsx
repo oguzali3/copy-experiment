@@ -21,6 +21,7 @@ interface PortfolioPerformanceChartProps {
   className?: string;
   portfolio?: Portfolio;
   onUpdatePortfolio?: (portfolio: Portfolio) => void;
+  excludedTickers?: string[]; // Add this line
 }
 
 // Defining timeframe type with additional short timeframes
@@ -30,7 +31,8 @@ export const PortfolioPerformanceChart = ({
   portfolioId,
   className = '',
   portfolio,
-  onUpdatePortfolio
+  onUpdatePortfolio,
+  excludedTickers = []
 }: PortfolioPerformanceChartProps) => {
   // Update default timeframe and add the new timeframe options
   const [timeframe, setTimeframe] = useState<TimeframeType>('5D');
@@ -51,11 +53,13 @@ export const PortfolioPerformanceChart = ({
   // Keep track of last portfolio and timeframe to prevent unnecessary refetching
   const lastRequest = useRef<{
     portfolioId: string | null;
-    timeframe: TimeframeType | null;
+     timeframe: TimeframeType | null;
+     exclusions: string;           // ← new
   }>({
-    portfolioId: null,
-    timeframe: null
-  });
+     portfolioId: null,
+     timeframe:  null,
+     exclusions: '',               // canonicalised list
+    });
 
   // Helper function to format dates based on timeframe
   const formatDateForDisplay = useCallback((dateString: string, tf: TimeframeType): string => {
@@ -106,10 +110,11 @@ export const PortfolioPerformanceChart = ({
     // Skip if we're already loading or if portfolio ID is missing
     if (!portfolioId || requestInProgress.current) return;
     
-    // Check if this is a duplicate request for the same data
+    const exclSig = excludedTickers.slice().sort().join(',');   // e.g. "AAPL,AMZN"
     if (
-      lastRequest.current.portfolioId === portfolioId && 
-      lastRequest.current.timeframe === timeframe &&
+      lastRequest.current.portfolioId === portfolioId &&
+      lastRequest.current.timeframe  === timeframe &&
+      lastRequest.current.exclusions === exclSig &&
       data.length > 0
     ) {
       console.log('Skipping duplicate performance request');
@@ -179,12 +184,14 @@ export const PortfolioPerformanceChart = ({
             new Date().setDate(new Date().getDate() - 5)
           ).toISOString().split('T')[0];
       }
-      
+      console.log(`Fetching portfolio performance with excluded tickers:`, excludedTickers);
+
       // Fetch performance data from API
       const response = await portfolioApi.getPortfolioPerformance(
         portfolioId,
         startDate,
-        endDate
+        endDate,
+        excludedTickers.length > 0 ? excludedTickers : undefined
       );
       
       if (!response || !response.data) {
@@ -254,7 +261,9 @@ export const PortfolioPerformanceChart = ({
       // Update the last request ref
       lastRequest.current = {
         portfolioId,
-        timeframe
+        timeframe,
+        exclusions: exclSig,
+
       };
     } catch (err) {
       console.error('Failed to fetch portfolio performance:', err);
@@ -263,13 +272,14 @@ export const PortfolioPerformanceChart = ({
       // Reset last request on error
       lastRequest.current = {
         portfolioId: null,
-        timeframe: null
+        timeframe: null,
+        exclusions: exclSig,
       };
     } finally {
       setLoading(false);
       requestInProgress.current = false;
     }
-  }, [portfolioId, timeframe, formatDateForDisplay, portfolio, onUpdatePortfolio]);
+  }, [portfolioId, timeframe, data.length, excludedTickers, formatDateForDisplay, portfolio, onUpdatePortfolio]);
 
   useEffect(() => {
     if (portfolio && timeframe === '1D' && portfolio.totalValue > 0) {
@@ -299,11 +309,13 @@ export const PortfolioPerformanceChart = ({
         
         setData(chartData);
         setNoDataAvailable(false);
-        
+        const exclSig = excludedTickers.slice().sort().join(',');   // e.g. "AAPL,AMZN"
+
         // Update the last request ref
         lastRequest.current = {
           portfolioId,
-          timeframe
+          timeframe,
+          exclusions: exclSig,
         };
         
         // Don't proceed with API fetch
@@ -313,7 +325,7 @@ export const PortfolioPerformanceChart = ({
     
     // Otherwise, proceed with normal API fetch
     fetchPortfolioPerformance();
-  }, [portfolio, portfolioId, timeframe, fetchPortfolioPerformance, formatDateForDisplay]);
+  }, [portfolio, portfolioId, timeframe, excludedTickers, fetchPortfolioPerformance, formatDateForDisplay]);
 
   const formatCurrency = (value: number): string => {
     if (value === undefined || isNaN(value)) {

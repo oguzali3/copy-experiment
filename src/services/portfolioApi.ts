@@ -541,37 +541,85 @@ const portfolioApi = {
   },
 
   // Refresh portfolio prices
-  refreshPrices: async (portfolioId: string): Promise<Portfolio> => {
-    return requestQueue.add(async () => {
-      try {
-        invalidatePortfolioCache(portfolioId);
-        
-        const response = await apiClient.post<PortfolioResponseDto>(
-          `/portfolios/${portfolioId}/refresh`, 
-          {},
-          {
-            headers: {
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0'
-            }
-          }
-        );
-        
-        const portfolio = mapToPortfolio(response.data);
-        return standardizePortfolioData(portfolio);
-      } catch (error) {
-        console.error('Error refreshing portfolio prices:', error);
-        let errorMessage = 'Failed to refresh portfolio prices';
-        if (error.response?.data?.message) {
-          errorMessage = Array.isArray(error.response.data.message) 
-            ? error.response.data.message.join(', ') 
-            : error.response.data.message;
-        }
-        throw new Error(errorMessage);
+refreshPrices: async (portfolioId: string, excludedTickers?: string[]): Promise<Portfolio> => {
+  return requestQueue.add(async () => {
+    try {
+      console.log("refreshPrices called with excluded tickers:", excludedTickers);
+      
+      // Create request body
+      const requestBody: Record<string, any> = {};
+      
+      // Only add excludedTickers to request body if we have some to exclude
+      if (excludedTickers && excludedTickers.length > 0) {
+        requestBody.excludedTickers = excludedTickers;
+        console.log("Adding excludedTickers to request body:", excludedTickers);
       }
-    });
-  },
+      
+      // Invalidate cache
+      invalidatePortfolioCache(portfolioId);
+      
+      // Make the API call
+      const response = await apiClient.post<PortfolioResponseDto>(
+        `/portfolios/${portfolioId}/refresh`, 
+        requestBody,
+        {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        }
+      );
+      
+      const portfolio = mapToPortfolio(response.data);
+      return standardizePortfolioData(portfolio);
+    } catch (error) {
+      console.error('Error refreshing portfolio prices:', error);
+      throw new Error('Failed to refresh portfolio prices');
+    }
+  });
+}, 
+getPortfolioHistoryWithExclusions: async (
+  portfolioId: string,
+  startDate?: string,
+  endDate?: string,
+  interval: 'daily' | 'weekly' | 'monthly' = 'daily',
+  excludedTickers?: string[]
+): Promise<PortfolioHistoryResponse> => {
+  try {
+    // Create parameters for the request
+    const params: Record<string, any> = { 
+      startDate, 
+      endDate, 
+      interval,
+      _t: Date.now() // Add timestamp to prevent caching
+    };
+    
+    // Only add excludedTickers parameter if we have tickers to exclude
+    if (excludedTickers && excludedTickers.length > 0) {
+      params.excludedTickers = excludedTickers.join(',');
+      console.log("Adding excludedTickers parameter:", params.excludedTickers);
+    }
+    
+    // Set headers to prevent caching
+    const headers = { 
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    };
+    
+    // Make the API call
+    const response = await apiClient.get<PortfolioHistoryResponse>(
+      `/portfolios/${portfolioId}/history`,
+      { params, headers }
+    );
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching portfolio history with exclusions:', error);
+    throw error;
+  }
+},
   
   // Light refresh of portfolio (without DB update)
   getLightRefreshPortfolio: async (portfolioId: string): Promise<Portfolio> => {
@@ -623,20 +671,47 @@ const portfolioApi = {
     }
   },
   
-  // Get portfolio performance data
   getPortfolioPerformance: async (
     portfolioId: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    excludedTickers?: string[],
   ): Promise<PortfolioPerformanceResponse> => {
     try {
-      const params = { startDate, endDate, _t: Date.now() };
-      const headers = { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' };
+      console.log("getPortfolioPerformance called with excluded tickers:", excludedTickers);
       
+      // Create parameters for the request
+      const params: Record<string, any> = { 
+        startDate, 
+        endDate,
+        _t: Date.now() // Add timestamp to prevent caching
+      };
+      
+      // Only add excludedTickers parameter if we have tickers to exclude
+      if (excludedTickers && excludedTickers.length > 0) {
+        params.excludedTickers = excludedTickers.join(',');
+        console.log("Adding excludedTickers parameter:", params.excludedTickers);
+      }
+      
+      console.log("Final request params:", params);
+      
+      // Set headers to prevent caching
+      const headers = { 
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      };
+      
+      // Make the API call
       const response = await apiClient.get<PortfolioPerformanceResponse>(
         `/portfolios/${portfolioId}/performance`,
         { params, headers }
       );
+      console.log("API call getPortfolioPerformance with excluded tickers:", excludedTickers);
+      console.log("Forming request:", {
+        endpoint: `/portfolios/${portfolioId}/performance`,
+        params
+      });
       
       return response.data;
     } catch (error) {
@@ -646,16 +721,41 @@ const portfolioApi = {
   },
   
   // Get portfolio history
+  // In portfolioApi.ts
   getPortfolioHistory: async (
     portfolioId: string,
     startDate?: string,
     endDate?: string,
-    interval: 'daily' | 'weekly' | 'monthly' = 'daily'
+    interval: 'daily' | 'weekly' | 'monthly' = 'daily',
+    excludedTickers?: string[]
   ): Promise<PortfolioHistoryResponse> => {
     try {
-      const params = { startDate, endDate, interval, _t: Date.now() };
-      const headers = { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' };
+      console.log("API call getPortfolioHistory with excluded tickers:", excludedTickers);
       
+      // Build parameters
+      const params: Record<string, any> = { 
+        startDate, 
+        endDate, 
+        interval, 
+        _t: Date.now() 
+      };
+      
+      // Only add excludedTickers parameter if we have tickers to exclude
+      if (excludedTickers && excludedTickers.length > 0) {
+        params.excludedTickers = excludedTickers.join(',');
+        console.log("Adding excludedTickers parameter:", params.excludedTickers);
+      }
+      
+      console.log("Final history request params:", params);
+      
+      // Set headers to prevent caching
+      const headers = { 
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      };
+      
+      // Make the API call
       const response = await apiClient.get<PortfolioHistoryResponse>(
         `/portfolios/${portfolioId}/history`,
         { params, headers }

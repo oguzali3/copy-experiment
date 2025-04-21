@@ -364,19 +364,15 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       setIsUpdating(false);
     }
   };
+  
 
-  const handleRefreshPrices = useCallback(async (portfolioId: string): Promise<void> => {
-    if (isUpdating) {
-      console.log('Already updating, skipping refresh request');
-      return;
-    }
-    
+  const handleRefreshPrices = async (portfolioId: string, excludedTickers?: string[]): Promise<void> => {
     setIsUpdating(true);
     try {
-      console.log(`Starting full refresh for portfolio ${portfolioId}`);
+      console.log(`Starting full refresh for portfolio ${portfolioId} with excluded tickers:`, excludedTickers);
       
-      // Use the new API for refreshing prices
-      const refreshedPortfolio = await portfolioApi.refreshPrices(portfolioId);
+      // Use the new API for refreshing prices with excluded tickers
+      const refreshedPortfolio = await portfolioApi.refreshPrices(portfolioId, excludedTickers);
       
       // Update the specific portfolio
       setPortfolios(prev => 
@@ -385,10 +381,8 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
       
       // Update refresh time
       setLastRefreshTime(new Date());
-      priceRefreshService.recordRefresh(portfolioId);
       
       toast.success("Stock prices refreshed successfully");
-      
     } catch (error) {
       console.error('Error refreshing prices:', error);
       toast.error("Failed to refresh stock prices");
@@ -396,7 +390,8 @@ const PortfolioContent = ({ portfolioId, portfolios, setPortfolios }: PortfolioC
     } finally {
       setIsUpdating(false);
     }
-  }, [isUpdating, setPortfolios]);
+  };
+  
 
   const updateLocalPortfolio = useCallback((updatedPortfolio: Portfolio) => {
     // Sanitize the portfolio data first

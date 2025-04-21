@@ -20,6 +20,7 @@ interface PortfolioValueChartProps {
   className?: string;
   portfolio?: Portfolio;
   onUpdatePortfolio?: (portfolio: Portfolio) => void;
+  excludedTickers?: string[]; // Add this line
 }
 type TimeframeType = '1D' | '5D' | '15D' | '1M' | '3M' | '6M' | '1Y' | 'ALL';
 
@@ -27,7 +28,8 @@ export const PortfolioValueChart = ({
   portfolioId,
   className = '',
   portfolio,
-  onUpdatePortfolio
+  onUpdatePortfolio,
+  excludedTickers = []
 }: PortfolioValueChartProps) => {
   // State definitions
   const [timeframe, setTimeframe] = useState<TimeframeType>('5D');
@@ -45,12 +47,14 @@ export const PortfolioValueChart = ({
   // Refs for request tracking
   const requestInProgress = useRef(false);
   const lastRequest = useRef<{
-    portfolioId: string | null;
-    timeframe: TimeframeType | null;
-  }>({
-    portfolioId: null,
-    timeframe: null
-  });
+      portfolioId: string | null;
+       timeframe: TimeframeType | null;
+       exclusions: string;           // ← new
+    }>({
+       portfolioId: null,
+       timeframe:  null,
+       exclusions: '',               // canonicalised list
+      });
   const formatDateForDisplay = (dateString: string, timeframe: TimeframeType): string => {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
@@ -89,11 +93,13 @@ export const PortfolioValueChart = ({
   const fetchPortfolioHistory = useCallback(async () => {
     // Skip if we're already loading or if portfolio ID is missing
     if (!portfolioId || requestInProgress.current) return;
-    
+    const exclSig = excludedTickers.slice().sort().join(',');   // e.g. "AAPL,AMZN"
+
     // Check if this is a duplicate request for the same data
     if (
-      lastRequest.current.portfolioId === portfolioId && 
-      lastRequest.current.timeframe === timeframe &&
+      lastRequest.current.portfolioId === portfolioId &&
+      lastRequest.current.timeframe  === timeframe &&
+      lastRequest.current.exclusions === exclSig &&
       data.length > 0
     ) {
       console.log('Skipping duplicate history request');
@@ -164,12 +170,12 @@ export const PortfolioValueChart = ({
       // Log request info for debugging
       console.log(`Fetching history for portfolio ${portfolioId} from ${startDate} to ${endDate} (${interval})`);
       
-      // Fetch historical data from API
-      const response = await portfolioApi.getPortfolioHistory(
+      const response = await portfolioApi.getPortfolioHistoryWithExclusions(
         portfolioId,
         startDate,
         endDate,
-        interval
+        interval,
+        excludedTickers.length > 0 ? excludedTickers : undefined
       );
       
       if (!response || !response.data || response.data.length === 0) {
@@ -201,7 +207,8 @@ export const PortfolioValueChart = ({
       // Update the last request ref
       lastRequest.current = {
         portfolioId,
-        timeframe
+        timeframe,
+        exclusions: exclSig,
       };
     } catch (error) {
       console.error('Failed to fetch portfolio history:', error);
@@ -209,14 +216,15 @@ export const PortfolioValueChart = ({
       
       // Reset last request on error
       lastRequest.current = {
-        portfolioId: null,
-        timeframe: null
+        portfolioId,
+        timeframe,
+        exclusions: exclSig,
       };
     } finally {
       setLoading(false);
       requestInProgress.current = false;
     }
-  }, [portfolioId, timeframe, formatDateForDisplay]);
+  }, [portfolioId, timeframe, formatDateForDisplay, excludedTickers]);
 
   // Effect to trigger fetch on dependencies change
   useEffect(() => {
