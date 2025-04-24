@@ -332,8 +332,12 @@ const fetchPriceData = async (ticker: string) => {
   });
   
   try {
-    // Determine time range more precisely based on the selected periods
+    // Get the periods we want to display based on slider
     const selectedPeriods = timePeriods.slice(sliderValue[0], sliderValue[1] + 1);
+    
+    if (debug) {
+      console.log('Selected periods for price data:', selectedPeriods);
+    }
     
     // Extract years from selected periods
     const years = selectedPeriods
@@ -357,73 +361,17 @@ const fetchPriceData = async (ticker: string) => {
     // Find min and max years
     const minYear = Math.min(...years);
     const maxYear = Math.max(...years);
-    const yearRange = maxYear - minYear + 1;
     
     if (debug) {
-      console.log(`Detected year range: ${minYear} to ${maxYear} (${yearRange} years)`);
+      console.log(`Using year range: ${minYear} to ${maxYear}`);
     }
     
-    // Determine appropriate timeframe based on year range
-// Determine appropriate timeframe based on year range
-let timeframe: string;
-
-switch (yearRange) {
-  case 1:
-    timeframe = "1Y";
-    break;
-  case 2:
-    timeframe = "2Y";
-    break;
-  case 3:
-    timeframe = "3Y";
-    break;
-  case 4:
-    timeframe = "4Y";
-    break;
-  case 5:
-    timeframe = "5Y";
-    break;
-  case 6:
-    timeframe = "6Y";
-    break;
-  case 7:
-    timeframe = "7Y";
-    break;
-  case 8:
-    timeframe = "8Y";
-    break;
-  case 9:
-    timeframe = "9Y";
-    break;
-  case 10:
-    timeframe = "10Y";
-    break;
-  case 11:
-    timeframe = "11Y";
-    break;
-  case 12:
-    timeframe = "12Y";
-    break;
-  case 13:
-    timeframe = "13Y";
-    break;
-  case 14:
-    timeframe = "14Y";
-    break;
-  case 15:
-    timeframe = "15Y";
-    break;
-  default:
-    // If more than 15 years, use MAX
-    timeframe = "MAX";
-    break;
-}
+    // Convert years to full dates
+    // Start on January 1st of the min year, end on December 31st of the max year
+    const startDate = `${minYear}-01-01`;
+    const endDate = `${maxYear}-12-31`;
     
-    if (debug) {
-      console.log(`Selected timeframe for price data: ${timeframe}`);
-    }
-    
-    return fetchPriceDataWithTimeframe(ticker, timeframe);
+    return fetchPriceDataByDateRange(ticker, startDate, endDate);
   } catch (err) {
     console.error(`Error in fetchPriceData for ${ticker}:`, err);
     
@@ -447,10 +395,54 @@ switch (yearRange) {
   }
 };
 
-// Helper function to fetch price data with specific timeframe
+// New function to fetch price data by date range
+const fetchPriceDataByDateRange = async (ticker: string, startDate: string, endDate: string) => {
+  try {
+    if (debug) {
+      console.log(`Fetching price data for ${ticker} from ${startDate} to ${endDate}`);
+    }
+    
+    // Call the new API endpoint specifically for date range queries
+    const { data, error } = await supabase.functions.invoke('fetch-stock-price-by-date-range', {
+      body: { symbol: ticker, startDate, endDate }
+    });
+    
+    if (error) throw error;
+    
+    if (debug) {
+      console.log(`Fetched ${data.length} price data points for ${ticker} using date range method`);
+    }
+    
+    // Store the price data in the company object
+    setSelectedCompanies(prev => {
+      const updatedCompanies = [...prev];
+      const companyIndex = updatedCompanies.findIndex(c => c.ticker === ticker);
+      
+      if (companyIndex !== -1) {
+        updatedCompanies[companyIndex] = {
+          ...updatedCompanies[companyIndex],
+          priceData: data,
+          isLoading: false
+        };
+      }
+      
+      return updatedCompanies;
+    });
+    
+    return data;
+  } catch (err) {
+    console.error(`Error fetching price data by date range for ${ticker}:`, err);
+    
+    // If date range method fails, fall back to timeframe method
+    console.log(`Falling back to timeframe method for ${ticker}`);
+    return fetchPriceDataWithTimeframe(ticker, "5Y");
+  }
+};
+
+// Keep the original timeframe function entirely unchanged
 const fetchPriceDataWithTimeframe = async (ticker: string, timeframe: string) => {
   try {
-    // Call your API endpoint
+    // Call your existing API endpoint - No changes to this part
     const { data, error } = await supabase.functions.invoke('fetch-stock-chart', {
       body: { symbol: ticker, timeframe }
     });

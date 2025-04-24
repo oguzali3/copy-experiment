@@ -101,15 +101,32 @@ const calculateResponsiveTypography = (containerWidth) => {
 };
 
 // Custom tooltip component
-const CustomTooltip = ({ active, payload, label, fontSize }: TooltipProps<number, string> & { fontSize: number }) => {
+// Enhanced CustomTooltip component that shows both financial metrics and price data
+const CustomTooltip = ({ 
+  active, 
+  payload, 
+  label, 
+  fontSize,
+  data,                   // Add the financial data array
+  processedPriceData,     // Add the price data array
+  colorMap,               // Add color map for consistent colors
+  metrics                 // Add metrics for proper display names
+}: TooltipProps<number, string> & { 
+  fontSize: number,
+  data: any[],
+  processedPriceData: any[],
+  colorMap: Record<string, string>,
+  metrics: string[]
+}) => {
   if (!active || !payload || payload.length === 0) return null;
   
-  // Check if this is a daily price point
-  const isDaily = label && typeof label === 'string' && label.includes('-');
+  // Determine if we're hovering over a price point or a financial data point
+  // Price data has dates with hyphens (e.g., "2022-03-15"), financial data doesn't
+  const isHoveringOverPrice = label && typeof label === 'string' && label.includes('-');
   
+  // Format the label display
   let displayLabel = label;
-  if (isDaily) {
-    // Format date for daily data
+  if (isHoveringOverPrice) {
     try {
       const date = new Date(label);
       displayLabel = date.toLocaleDateString('en-US', {
@@ -123,11 +140,60 @@ const CustomTooltip = ({ active, payload, label, fontSize }: TooltipProps<number
     }
   }
   
+  // Prepare the tooltip entries
+  // Start with whatever payload is already active
+  const tooltipEntries = [...payload];
+  
+  // Now add any missing data
+  if (isHoveringOverPrice) {
+    // If hovering over price, we're already showing price data
+    // No need to do anything special here, as price is already in the payload
+  } else {
+    // If hovering over financial data, find and add the nearest price point
+    // Only add price if it's one of the selected metrics and not already in payload
+    const priceMetric = metrics.find(m => m.toLowerCase() === 'price');
+    const hasPriceInPayload = tooltipEntries.some(entry => entry.name?.toLowerCase() === 'price');
+    
+    if (priceMetric && !hasPriceInPayload && processedPriceData.length > 0) {
+      // Extract year from financial data label
+      const year = parseInt(label);
+      
+      if (!isNaN(year)) {
+        // Find price data points for this year
+        const pricePointsInYear = processedPriceData.filter(point => {
+          try {
+            const pointDate = new Date(point.time);
+            return pointDate.getFullYear() === year;
+          } catch (e) {
+            return false;
+          }
+        });
+        
+        // If we have price data for this year, use the middle point or calculate average
+        if (pricePointsInYear.length > 0) {
+          // Use the middle point as representative or fall back to average
+          const midIndex = Math.floor(pricePointsInYear.length / 2);
+          const representativePrice = pricePointsInYear[midIndex]?.price || 
+            (pricePointsInYear.reduce((sum, p) => sum + p.price, 0) / pricePointsInYear.length);
+          
+          // Add to tooltip entries
+          tooltipEntries.push({
+            name: priceMetric,
+            value: representativePrice,
+            color: colorMap[priceMetric] || '#ff7300',
+            // Add dataKey for correct formatting
+            dataKey: 'price'
+          });
+        }
+      }
+    }
+  }
+  
   return (
     <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md" style={{ fontSize: `${fontSize}px` }}>
       <p className="font-medium text-gray-800">{displayLabel}</p>
       <div className="mt-2 space-y-1">
-        {payload.map((entry, index) => {
+        {tooltipEntries.map((entry, index) => {
           // Skip empty values
           if (entry.value === null || entry.value === undefined) return null;
           
@@ -188,7 +254,7 @@ const CustomTooltip = ({ active, payload, label, fontSize }: TooltipProps<number
           
           // For price, format as currency
           const formattedDisplay = isPrice 
-            ? `$${formattedValue.toFixed(2)}` 
+            ? `${formattedValue.toFixed(2)}` 
             : `${formattedValue}${suffix}`;
           
           return (
@@ -206,7 +272,6 @@ const CustomTooltip = ({ active, payload, label, fontSize }: TooltipProps<number
     </div>
   );
 };
-
 // Helper function to format raw IDs into display names
 const formatRawMetricId = (id: string): string => {
   if (!id) return 'Unknown Metric';
@@ -1182,7 +1247,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
 {
   //Secondary X-Axis for price data - No longer needed since we're using the financial x-axis
   <XAxis 
-    dataKey="period" 
+    dataKey="time" 
     xAxisId="price"
     data={processedPriceData}
     hide={true}
@@ -1224,8 +1289,17 @@ export const MetricChart: React.FC<MetricChartProps> = ({
               />
             )}
             
-            <Tooltip content={<CustomTooltip fontSize={typography.tooltipSize} />} />
-            
+            <Tooltip 
+          content={
+            <CustomTooltip 
+              fontSize={typography.tooltipSize}
+              data={data}
+              processedPriceData={processedPriceData}
+              colorMap={colorMap}
+              metrics={metrics}
+            />
+            } 
+/>
             <Legend 
               formatter={(value, entry, index) => {
                 return (
