@@ -170,29 +170,25 @@ export const PortfolioValueChart = ({
       // Log request info for debugging
       console.log(`Fetching history for portfolio ${portfolioId} from ${startDate} to ${endDate} (${interval})`);
       
-      const response = await portfolioApi.getPortfolioHistoryWithExclusions(
+      const response = await portfolioApi.getPortfolioPerformance(
         portfolioId,
         startDate,
         endDate,
-        interval,
         excludedTickers.length > 0 ? excludedTickers : undefined
       );
       
-      if (!response || !response.data || response.data.length === 0) {
+      if (!response || !response.data || !response.data.dates || !response.data.portfolioValues) {
         setNoDataAvailable(true);
         setData([]);
         return;
       }
       
       // Process the data to ensure all values are numeric
-      const processedData = response.data.map(item => ({
-        date: item.date,
-        value: ensureNumber(item.value),
-        dayChange: ensureNumber(item.dayChange),
-        dayChangePercent: ensureNumber(item.dayChangePercent),
-        displayDate: formatDateForDisplay(item.date, timeframe)
-      })).filter(item => item.date); // Filter out any items with invalid dates
-      
+      const processedData = response.data.dates.map((date, index) => ({
+        date,
+        value: ensureNumber(response.data.portfolioValues[index]),
+        displayDate: formatDateForDisplay(date, timeframe)
+      })).filter(item => item.date);
       // Check for valid data
       const hasValidData = processedData.some(item => item.value > 0);
       

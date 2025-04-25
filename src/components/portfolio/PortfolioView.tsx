@@ -104,8 +104,8 @@ export const PortfolioView = ({
 
   // Add a unique key for summary cards to force a refresh when portfolio changes
   const summaryKey = useMemo(() => 
-    `summary-${portfolioState.id}-${portfolioState.totalValue}-${lastRefreshTime?.getTime() || 0}-${excludedTickers.join(',')}`,
-    [portfolioState.id, portfolioState.totalValue, lastRefreshTime, excludedTickers]
+    `summary-${portfolioState.id}-${portfolioState.totalValue}-${lastRefreshTime?.getTime() || 0}`,
+    [portfolioState.id, portfolioState.totalValue, lastRefreshTime]
   );
 
   // Handler for when excluded tickers change in the allocation chart
@@ -318,7 +318,7 @@ export const PortfolioView = ({
         totalValue={portfolioState.totalValue}
         dayChange={portfolioState.dayChange}
         dayChangePercent={portfolioState.dayChangePercent}
-        stocks={filteredStocks} // Use filtered stocks here to reflect exclusions
+        stocks={portfolioState.stocks} // Use filtered stocks here to reflect exclusions
         previousDayValue={portfolioState.previousDayValue}
       />
 

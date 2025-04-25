@@ -23,7 +23,7 @@ type Transaction = {
   type: string;
   ticker: string;
   shares: number;
-  price: number;
+  priceAtTransaction: number;
   amount: number;
   tradeDate: string;
 };
@@ -168,7 +168,7 @@ export const PortfolioTransactionHistory: React.FC<PortfolioTransactionHistoryPr
                       </TableCell>
                       <TableCell className="font-medium">{transaction.ticker}</TableCell>
                       <TableCell className="text-right">{transaction.shares.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(transaction.price)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(transaction.priceAtTransaction)}</TableCell>
                       <TableCell className="text-right font-medium">
                         {formatCurrency(transaction.amount)}
                       </TableCell>

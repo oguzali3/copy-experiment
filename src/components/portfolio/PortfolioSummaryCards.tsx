@@ -26,7 +26,18 @@ const PortfolioSummaryCards: FC<PortfolioSummaryCardsProps> = memo(({
     // Normalize input values
     const safeTotal = ensureNumber(totalValue);
     const safePrevious = ensureNumber(previousDayValue) || safeTotal;
-    
+    // Log input values
+    console.group('PortfolioSummaryCards - Day Change Calculation');
+    console.log('Raw inputs:');
+    console.log('totalValue:', totalValue, typeof totalValue);
+    console.log('previousDayValue:', previousDayValue, typeof previousDayValue);
+    console.log('dayChange from backend:', dayChange, typeof dayChange);
+    console.log('dayChangePercent from backend:', dayChangePercent, typeof dayChangePercent);
+
+    // Log normalized values
+    console.log('\nNormalized inputs:');
+    console.log('safeTotal:', safeTotal);
+    console.log('safePrevious:', safePrevious);
     // Calculate change values
     const calculatedChange = safeTotal - safePrevious;
     let calculatedPercent = 0;
@@ -34,7 +45,11 @@ const PortfolioSummaryCards: FC<PortfolioSummaryCardsProps> = memo(({
     if (safePrevious > 0) {
       calculatedPercent = (calculatedChange / safePrevious) * 100;
     }
-    
+        // Log calculated values
+    console.log('\nCalculated values:');
+    console.log('calculatedChange:', calculatedChange);
+    console.log('calculatedPercent:', calculatedPercent);
+
     // Use provided values if valid, otherwise use calculated ones
     const finalDayChange = ensureNumber(dayChange) || calculatedChange;
     const finalDayChangePercent = ensureNumber(dayChangePercent) || calculatedPercent;
@@ -48,7 +63,11 @@ const PortfolioSummaryCards: FC<PortfolioSummaryCardsProps> = memo(({
     const sortedStocks = [...validStocks].sort((a, b) => 
       ensureNumber(b.marketValue) - ensureNumber(a.marketValue)
     );
-    
+    // Log final values
+    console.log('\nFinal values:');
+    console.log('finalDayChange:', finalDayChange);
+    console.log('finalDayChangePercent:', finalDayChangePercent);
+    console.groupEnd();
     const topPositions = sortedStocks.slice(0, 3);
     
     return {

@@ -46,13 +46,27 @@ export const ensureNumber = (val: any): number => {
     
     console.log(`Portfolio ${portfolioData.id} - API value: ${reportedTotalValue}, Calculated: ${calculatedTotalValue}, Using: ${totalValue}`);
     
+    // Get the previous day value from the API
     const previousDayValue = ensureNumber(portfolioData.previousDayValue);
     
-    // Recalculate day change values using the consistent total value
-    const dayChange = totalValue - previousDayValue;
-    const dayChangePercent = previousDayValue > 0 
-      ? (dayChange / previousDayValue) * 100
+    // Get the reported day change values from the API
+    const reportedDayChange = ensureNumber(portfolioData.dayChange);
+    const reportedDayChangePercent = ensureNumber(portfolioData.dayChangePercent);
+    
+    // Calculate our own values for fallback
+    const calculatedDayChange = totalValue - previousDayValue;
+    const calculatedDayChangePercent = previousDayValue > 0 
+      ? (calculatedDayChange / previousDayValue) * 100
       : 0;
+    
+    // Use backend values if they exist and are non-zero, otherwise use calculated values
+    const dayChange = (reportedDayChange !== 0) ? reportedDayChange : calculatedDayChange;
+    const dayChangePercent = (reportedDayChangePercent !== 0) ? reportedDayChangePercent : calculatedDayChangePercent;
+    
+    // Log when there's a significant discrepancy
+    if (Math.abs(calculatedDayChange - reportedDayChange) > 1 && reportedDayChange !== 0) {
+      console.log(`Portfolio ${portfolioData.id}: Day change discrepancy - Backend: ${reportedDayChange}, Calculated: ${calculatedDayChange}`);
+    }
       
     // Calculate percentage of portfolio for each position using the correct total
     const calculatedPositions = positions.map(position => ({
@@ -74,4 +88,4 @@ export const ensureNumber = (val: any): number => {
         ? { positions: calculatedPositions } 
         : { stocks: calculatedPositions })
     };
-  };
+};

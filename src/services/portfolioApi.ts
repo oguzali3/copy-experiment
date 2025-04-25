@@ -102,7 +102,7 @@ interface PortfolioTransaction {
   type: string;
   ticker: string;
   shares: number;
-  price: number;
+  priceAtTransaction: number;
   amount: number;
   tradeDate: string;
 }
@@ -273,10 +273,15 @@ const mapToPortfolio = (dto: PortfolioResponseDto): Portfolio => {
     name: dto.name,
     totalValue: totalValue,
     previousDayValue: ensureNumber(dto.previousDayValue),
-    dayChange: totalValue - ensureNumber(dto.previousDayValue),
-    dayChangePercent: ensureNumber(dto.previousDayValue) > 0 
-      ? ((totalValue - ensureNumber(dto.previousDayValue)) / ensureNumber(dto.previousDayValue)) * 100 
-      : 0,
+    // Use backend values if provided and non-zero
+    dayChange: ensureNumber(dto.dayChange) !== 0 
+      ? ensureNumber(dto.dayChange) 
+      : (totalValue - ensureNumber(dto.previousDayValue)),
+    dayChangePercent: ensureNumber(dto.dayChangePercent) !== 0
+      ? ensureNumber(dto.dayChangePercent)
+      : (ensureNumber(dto.previousDayValue) > 0 
+          ? ((totalValue - ensureNumber(dto.previousDayValue)) / ensureNumber(dto.previousDayValue)) * 100 
+          : 0),
     lastPriceUpdate: dto.lastPriceUpdate ? new Date(dto.lastPriceUpdate) : null,
     stocks: stocks,
     visibility: dto.visibility,
@@ -588,6 +593,10 @@ refreshPrices: async (portfolioId: string, excludedTickers?: string[]): Promise<
     }
   });
 }, 
+/**
+ * @deprecated Use getPortfolioPerformance() instead which provides portfolioValues that can be used for the same purpose.
+ * This method will be removed in a future release.
+ */
 getPortfolioHistoryWithExclusions: async (
   portfolioId: string,
   startDate?: string,
@@ -729,8 +738,10 @@ getPortfolioHistoryWithExclusions: async (
     }
   },
   
-  // Get portfolio history
-  // In portfolioApi.ts
+  /**
+ * @deprecated Use getPortfolioPerformance() instead which provides portfolioValues that can be used for the same purpose.
+ * This method will be removed in a future release.
+ */
   getPortfolioHistory: async (
     portfolioId: string,
     startDate?: string,
