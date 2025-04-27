@@ -39,6 +39,9 @@ interface CompanyData {
   name: string;
   metricData: any[];
   priceData?: any[]; // Add this new property
+  marketCapData?: any[]; // For market cap data
+  marketData?: Record<string, any[]>; // New field for all market data types
+
   isLoading: boolean;
   error: string | null;
 }
@@ -76,7 +79,47 @@ const [period, setPeriod] = useState<'annual' | 'quarter'>('annual');
 const hasPriceMetric = () => {
   return selectedMetrics.some(metric => metric.id === "price");
 };
+const isMarketDataMetric = (metricId: string) => {
+  // List of all market data metrics
+  const marketDataMetrics = [
+    'price', 
+    'marketCapDaily', 
+    'peRatioDaily', 
+    'psRatioDaily', 
+    'pfcfRatioDaily', 
+    'pcfRatioDaily', 
+    'pbRatioDaily', 
+    'fcfYieldDaily'
+  ];
+  
+  return marketDataMetrics.includes(metricId);
+};
 
+// Get all selected market data metrics
+const getSelectedMarketDataMetrics = () => {
+  return selectedMetrics
+    .filter(metric => isMarketDataMetric(metric.id))
+    .map(metric => metric.id);
+};
+
+// Get market data for a specific metric and company
+const getMarketData = (company: CompanyData, metricId: string) => {
+  // Check if we have market data for this company and metric
+  if (company.marketData && company.marketData[metricId]) {
+    return company.marketData[metricId];
+  }
+  
+  // For backward compatibility
+  if (metricId === 'price' && company.priceData) {
+    return company.priceData;
+  }
+  
+  if (metricId === 'marketCapDaily' && company.marketCapData) {
+    return company.marketCapData;
+  }
+  
+  return [];
+};
 // Dynamic time periods
 const [timePeriods, setTimePeriods] = useState<string[]>(getDefaultTimePeriods('annual'));
 // Use computed default for slider value
@@ -355,7 +398,7 @@ const fetchPriceData = async (ticker: string) => {
     // If no valid years found, use a default timeframe
     if (years.length === 0) {
       console.warn("No valid years found in selected periods, using default timeframe");
-      return fetchPriceDataWithTimeframe(ticker, "5Y");
+      return fetchPriceDataWithDefaultTimeframe(ticker);
     }
     
     // Find min and max years
@@ -371,7 +414,7 @@ const fetchPriceData = async (ticker: string) => {
     const startDate = `${minYear}-01-01`;
     const endDate = `${maxYear}-12-31`;
     
-    return fetchPriceDataByDateRange(ticker, startDate, endDate);
+    return fetchPriceDataFromBackend(ticker, startDate, endDate);
   } catch (err) {
     console.error(`Error in fetchPriceData for ${ticker}:`, err);
     
@@ -395,22 +438,83 @@ const fetchPriceData = async (ticker: string) => {
   }
 };
 
-// New function to fetch price data by date range
-const fetchPriceDataByDateRange = async (ticker: string, startDate: string, endDate: string) => {
+// New method to fetch price data from our backend API
+const fetchPriceDataFromBackend = async (ticker: string, startDate: string, endDate: string) => {
   try {
-    if (debug) {
+
       console.log(`Fetching price data for ${ticker} from ${startDate} to ${endDate}`);
+
+    
+    // Call our new backend API endpoint
+    const url = `${API_BASE_URL}/market-data/${ticker}?metric=price&startDate=${startDate}&endDate=${endDate}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch price data: ${response.statusText}`);
     }
     
-    // Call the new API endpoint specifically for date range queries
-    const { data, error } = await supabase.functions.invoke('fetch-stock-price-by-date-range', {
-      body: { symbol: ticker, startDate, endDate }
+    const data = await response.json();
+    
+    if (debug) {
+      console.log(`Fetched ${data.length} price data points for ${ticker} using backend API`);
+    }
+    
+    // Process the data to match the expected format
+    const processedData = data.map(item => ({
+      time: item.date,
+      price: item.value,
+      // Add other fields if available
+      open: item.open,
+      high: item.high,
+      low: item.low,
+      volume: item.volume
+    }));
+    
+    // Store the price data in the company object
+    setSelectedCompanies(prev => {
+      const updatedCompanies = [...prev];
+      const companyIndex = updatedCompanies.findIndex(c => c.ticker === ticker);
+      
+      if (companyIndex !== -1) {
+        updatedCompanies[companyIndex] = {
+          ...updatedCompanies[companyIndex],
+          priceData: processedData,
+          isLoading: false
+        };
+      }
+      
+      return updatedCompanies;
+    });
+    
+    return processedData;
+  } catch (err) {
+    console.error(`Error fetching price data from backend for ${ticker}:`, err);
+    
+    // If backend method fails, fall back to the timeframe method
+    console.log(`Falling back to timeframe method for ${ticker}`);
+    return fetchPriceDataWithDefaultTimeframe(ticker);
+  }
+};
+
+// Method for fallback using a default timeframe
+const fetchPriceDataWithDefaultTimeframe = async (ticker: string) => {
+  try {
+    // Use a default timeframe (last 5 years)
+    const timeframe = "5Y";
+    
+    if (debug) {
+      console.log(`Fetching price data for ${ticker} with default timeframe ${timeframe}`);
+    }
+    
+    // Call the existing edge function as a fallback
+    const { data, error } = await supabase.functions.invoke('fetch-stock-chart', {
+      body: { symbol: ticker, timeframe }
     });
     
     if (error) throw error;
     
     if (debug) {
-      console.log(`Fetched ${data.length} price data points for ${ticker} using date range method`);
+      console.log(`Fetched ${data.length} price data points for ${ticker} using edge function fallback`);
     }
     
     // Store the price data in the company object
@@ -431,11 +535,25 @@ const fetchPriceDataByDateRange = async (ticker: string, startDate: string, endD
     
     return data;
   } catch (err) {
-    console.error(`Error fetching price data by date range for ${ticker}:`, err);
+    console.error(`Error fetching price data for ${ticker} using fallback:`, err);
     
-    // If date range method fails, fall back to timeframe method
-    console.log(`Falling back to timeframe method for ${ticker}`);
-    return fetchPriceDataWithTimeframe(ticker, "5Y");
+    // Update error state for this company
+    setSelectedCompanies(prev => {
+      const updatedCompanies = [...prev];
+      const companyIndex = updatedCompanies.findIndex(c => c.ticker === ticker);
+      
+      if (companyIndex !== -1) {
+        updatedCompanies[companyIndex] = {
+          ...updatedCompanies[companyIndex],
+          isLoading: false,
+          error: `Failed to fetch price data: ${err.message}`
+        };
+      }
+      
+      return updatedCompanies;
+    });
+    
+    return null;
   }
 };
 
@@ -516,6 +634,173 @@ useEffect(() => {
     });
   }
 }, [hasPriceMetric()]);
+const fetchMarketDataFromBackend = async (ticker: string, metricId: string, startDate: string, endDate: string) => {
+  try {
+    console.log(`Fetching ${metricId} data for ${ticker} from ${startDate} to ${endDate}`);
+
+    // Call our backend API endpoint
+    const url = `${API_BASE_URL}/market-data/${ticker}?metric=${metricId}&startDate=${startDate}&endDate=${endDate}`;
+    const response = await fetch(url);
+    console.log(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${metricId} data: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    // Process the data to match the expected format
+    const processedData = data.map(item => ({
+      time: item.date,
+      [metricId]: item.value, // Store under the metric ID key
+      // Keep other fields as well if they exist
+      date: item.date,
+      value: item.value,
+      // Add any additional properties that might be in the response
+
+    }));
+    console.log(processedData);
+
+    // Store the data in the company object
+    setSelectedCompanies(prev => {
+      const updatedCompanies = [...prev];
+      const companyIndex = updatedCompanies.findIndex(c => c.ticker === ticker);
+      
+      if (companyIndex !== -1) {
+        // Create or update the marketData object
+        const currentMarketData = updatedCompanies[companyIndex].marketData || {};
+        
+        updatedCompanies[companyIndex] = {
+          ...updatedCompanies[companyIndex],
+          marketData: {
+            ...currentMarketData,
+            [metricId]: processedData
+          },
+          isLoading: false
+        };
+        
+        // For backward compatibility, also update specific fields
+        if (metricId === 'price') {
+          updatedCompanies[companyIndex].priceData = processedData;
+        } else if (metricId === 'marketCapDaily') {
+          updatedCompanies[companyIndex].marketCapData = processedData;
+        }
+      }
+      
+      return updatedCompanies;
+    });
+    
+    return processedData;
+  } catch (err) {
+    console.error(`Error fetching ${metricId} data from backend for ${ticker}:`, err);
+    
+    // Update error state for this company
+    setSelectedCompanies(prev => {
+      const updatedCompanies = [...prev];
+      const companyIndex = updatedCompanies.findIndex(c => c.ticker === ticker);
+      
+      if (companyIndex !== -1) {
+        updatedCompanies[companyIndex] = {
+          ...updatedCompanies[companyIndex],
+          isLoading: false,
+          error: `Failed to fetch ${metricId} data: ${err.message}`
+        };
+      }
+      
+      return updatedCompanies;
+    });
+    
+    return null;
+  }
+};
+const fetchMarketData = async (ticker: string, metricId: string) => {
+  // Update loading state for this company
+  const companyIndex = selectedCompanies.findIndex(c => c.ticker === ticker);
+  if (companyIndex === -1) return;
+  
+  setSelectedCompanies(prev => {
+    const updatedCompanies = [...prev];
+    updatedCompanies[companyIndex] = {
+      ...updatedCompanies[companyIndex],
+      isLoading: true
+    };
+    return updatedCompanies;
+  });
+  
+  try {
+    // Get the periods we want to display based on slider
+    const selectedPeriods = timePeriods.slice(sliderValue[0], sliderValue[1] + 1);
+    
+    // Extract years from selected periods
+    const years = selectedPeriods
+      .map(period => {
+        // Try direct year format first (e.g., "2022")
+        const directYear = parseInt(period);
+        if (!isNaN(directYear)) return directYear;
+        
+        // Try to extract year from other formats (e.g., "Q1 2022")
+        const match = period.match(/\b(20\d{2})\b/);
+        return match ? parseInt(match[1]) : null;
+      })
+      .filter(year => year !== null);
+    
+    // If no valid years found, use a default timeframe
+    if (years.length === 0) {
+      console.warn(`No valid years found in selected periods for ${metricId}, using default timeframe`);
+      
+      // For price, we have an existing fallback
+      if (metricId === 'price') {
+        return fetchPriceDataWithDefaultTimeframe(ticker);
+      }
+      
+      // For other metrics, use a default date range
+      const now = new Date();
+      const fiveYearsAgo = new Date();
+      fiveYearsAgo.setFullYear(now.getFullYear() - 5);
+      
+      const startDate = fiveYearsAgo.toISOString().split('T')[0];
+      const endDate = now.toISOString().split('T')[0];
+      
+      return fetchMarketDataFromBackend(ticker, metricId, startDate, endDate);
+    }
+    
+    // Find min and max years
+    const minYear = Math.min(...years);
+    const maxYear = Math.max(...years);
+    // Convert years to full dates
+    console.log(maxYear)
+    const startDate = `${minYear}-01-01`;
+    let endDate = `${maxYear}-12-31`;
+    if (maxYear=== 2024 || maxYear=== 2025 ){ 
+      const now = new Date();
+
+      endDate = now.toISOString().split('T')[0];
+  }
+
+    return fetchMarketDataFromBackend(ticker, metricId, startDate, endDate);
+  } catch (err) {
+    console.error(`Error in fetchMarketData for ${ticker} (${metricId}):`, err);
+    
+    // Update error state for this company
+    setSelectedCompanies(prev => {
+      const updatedCompanies = [...prev];
+      const companyIndex = updatedCompanies.findIndex(c => c.ticker === ticker);
+      
+      if (companyIndex !== -1) {
+        updatedCompanies[companyIndex] = {
+          ...updatedCompanies[companyIndex],
+          isLoading: false,
+          error: `Failed to fetch ${metricId} data: ${err.message}`
+        };
+      }
+      
+      return updatedCompanies;
+    });
+    
+    return null;
+  }
+};
+
+
 // Modified: Fetch data for all companies
 const fetchMetricData = async (companyIndex: number) => {
   const company = selectedCompanies[companyIndex];
@@ -536,8 +821,8 @@ const fetchMetricData = async (companyIndex: number) => {
   try {
     // Fetch data for each selected metric (except price which is handled separately)
     const promises = selectedMetrics
-      .filter(metric => metric.id !== 'price') // Skip price metric
-      .map(async (metric) => {
+    .filter(metric => !isMarketDataMetric(metric.id))
+    .map(async (metric) => {
         const mappedPeriod = period === 'quarter' ? 'quarter' : 'annual';
         // Add a limit parameter to ensure we get enough years of data
         const url = `${API_BASE_URL}/metric-data/${company.ticker}?metric=${metric.id}&period=${mappedPeriod}&limit=15`;        
@@ -665,7 +950,184 @@ const fetchMetricData = async (companyIndex: number) => {
     });
   }
 };
+const fetchMarketCapData = async (ticker: string) => {
+  // Update loading state for this company
+  const companyIndex = selectedCompanies.findIndex(c => c.ticker === ticker);
+  if (companyIndex === -1) return;
+  
+  setSelectedCompanies(prev => {
+    const updatedCompanies = [...prev];
+    updatedCompanies[companyIndex] = {
+      ...updatedCompanies[companyIndex],
+      isLoading: true
+    };
+    return updatedCompanies;
+  });
+  
+  try {
+    // Get the periods we want to display based on slider
+    const selectedPeriods = timePeriods.slice(sliderValue[0], sliderValue[1] + 1);
+    
+    if (debug) {
+      console.log('Selected periods for market cap data:', selectedPeriods);
+    }
+    
+    // Extract years from selected periods
+    const years = selectedPeriods
+      .map(period => {
+        // Try direct year format first (e.g., "2022")
+        const directYear = parseInt(period);
+        if (!isNaN(directYear)) return directYear;
+        
+        // Try to extract year from other formats (e.g., "Q1 2022")
+        const match = period.match(/\b(20\d{2})\b/);
+        return match ? parseInt(match[1]) : null;
+      })
+      .filter(year => year !== null);
+    
+    // If no valid years found, use a default timeframe
+    if (years.length === 0) {
+      console.warn("No valid years found in selected periods, using default timeframe");
+      return null;
+    }
+    
+    // Find min and max years
+    const minYear = Math.min(...years);
+    const maxYear = Math.max(...years);
+    
+    if (debug) {
+      console.log(`Using year range: ${minYear} to ${maxYear}`);
+    }
+    
+    // Convert years to full dates
+    // Start on January 1st of the min year, end on December 31st of the max year
+    const startDate = `${minYear}-01-01`;
+    const endDate = `${maxYear}-12-31`;
+    
+    // Call our backend API endpoint
+    const url = `${API_BASE_URL}/market-data/${ticker}?metric=marketcap&startDate=${startDate}&endDate=${endDate}`;
+    
+    if (debug) {
+      console.log(`Fetching market cap data from: ${url}`);
+    }
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch market cap data: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (debug) {
+      console.log(`Fetched ${data.length} market cap data points for ${ticker}`);
+    }
+    
+    // Process the data to match the expected format
+    const processedData = data.map(item => ({
+      time: item.date,
+      marketCap: item.value,
+      // Preserve any additional data
+      price: item.price,
+      numberOfShares: item.numberOfShares
+    }));
+    
+    // Store the market cap data in the company object
+    setSelectedCompanies(prev => {
+      const updatedCompanies = [...prev];
+      const companyIndex = updatedCompanies.findIndex(c => c.ticker === ticker);
+      
+      if (companyIndex !== -1) {
+        updatedCompanies[companyIndex] = {
+          ...updatedCompanies[companyIndex],
+          marketCapData: processedData,
+          isLoading: false
+        };
+      }
+      
+      return updatedCompanies;
+    });
+    return processedData;
+  } catch (err) {
+    console.error(`Error in fetchMarketCapData for ${ticker}:`, err);
+    
+    // Update error state for this company
+    setSelectedCompanies(prev => {
+      const updatedCompanies = [...prev];
+      const companyIndex = updatedCompanies.findIndex(c => c.ticker === ticker);
+      
+      if (companyIndex !== -1) {
+        updatedCompanies[companyIndex] = {
+          ...updatedCompanies[companyIndex],
+          isLoading: false,
+          error: `Failed to fetch market cap data: ${err.message}`
+        };
+      }
+      
+      return updatedCompanies;
+    });
+    
+    return null;
+  }
+};
 
+// Check if a selected metric is a market cap metric
+const hasMarketCapMetric = () => {
+  return selectedMetrics.some(metric => metric.id === "marketCapDaily");
+};
+// Effect to fetch all market data metrics when they're selected
+useEffect(() => {
+  // Get all selected market data metrics
+  const marketDataMetrics = getSelectedMarketDataMetrics();
+  
+  // If we have companies and market data metrics selected
+  if (selectedCompanies.length > 0 && marketDataMetrics.length > 0) {
+    // For each company
+    selectedCompanies.forEach(company => {
+      // For each market data metric
+      marketDataMetrics.forEach(metricId => {
+        // Check if we already have data for this metric
+        const hasData = company.marketData && company.marketData[metricId];
+        
+        // Only fetch if we don't have data yet
+        if (!hasData) {
+          fetchMarketData(company.ticker, metricId);
+        }
+      });
+    });
+  }
+}, [selectedMetrics, selectedCompanies.length]);
+
+// Effect to refetch market data when time range changes
+useEffect(() => {
+  // Get all selected market data metrics
+  const marketDataMetrics = getSelectedMarketDataMetrics();
+  
+  // Only refetch if we have companies and market data metrics selected
+  if (selectedCompanies.length > 0 && marketDataMetrics.length > 0) {
+    // For each company
+    selectedCompanies.forEach(company => {
+      // For each market data metric
+      marketDataMetrics.forEach(metricId => {
+        // Refetch data for the new time range
+        fetchMarketData(company.ticker, metricId);
+      });
+    });
+  }
+}, [sliderValue, timePeriods]);
+// Add a useEffect to fetch market cap data when selected
+useEffect(() => {
+  // If market cap metric is selected and we have companies
+  if (hasMarketCapMetric() && selectedCompanies.length > 0) {
+    // Fetch market cap data for each company
+    selectedCompanies.forEach(company => {
+      // Only fetch if we don't already have market cap data for this company
+      if (!company.marketCapData) {
+        fetchMarketCapData(company.ticker);
+      }
+    });
+  }
+}, [hasMarketCapMetric(), selectedCompanies.length]);
 // Call fetchMetricData for each company when companies, metrics, or period changes
 useEffect(() => {
   if (selectedCompanies.length > 0 && selectedMetrics.length > 0) {
@@ -675,6 +1137,15 @@ useEffect(() => {
     });
   }
 }, [selectedCompanies.length, selectedMetrics, period]);
+useEffect(() => {
+  // Only refetch if we have companies, market cap metric is selected, and sliderValue has changed
+  if (selectedCompanies.length > 0 && hasMarketCapMetric()) {
+    // Re-fetch market cap data for each company
+    selectedCompanies.forEach(company => {
+      fetchMarketCapData(company.ticker);
+    });
+  }
+}, [sliderValue, timePeriods]);
 
 // Transform financial data for the chart for a specific company
 const getChartData = (companyData: any[]) => {
@@ -1211,7 +1682,11 @@ return (
                   metricSettings={metricSettings}
                   metricLabels={metricLabels}
                   dailyPriceData={hasPriceMetric() && company.priceData ? company.priceData : []}
-
+                  // Pass all market data metrics in a single object
+                  dailyMarketData={getSelectedMarketDataMetrics().reduce((acc, metricId) => ({
+                    ...acc,
+                    [metricId]: getMarketData(company, metricId)
+                  }), {})}
                   selectedPeriods={getChartData(company.metricData)?.selectedPeriods || []}
                   sliderValue={sliderValue}
                   timePeriods={timePeriods}                  />

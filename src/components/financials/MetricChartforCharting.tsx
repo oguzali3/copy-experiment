@@ -381,6 +381,10 @@ interface DailyPricePoint {
   time: string;
   price: number;
 }
+interface MarketDataPoint {
+  time: string;
+  [key: string]: any; // This allows for any market data metric (price, peRatio, etc.)
+}
 
 interface MetricChartProps {
   data: any[]; // Your processed data array
@@ -403,6 +407,7 @@ interface MetricChartProps {
   statisticalLines?: StatisticReferenceLine[]; // New prop
   // Add daily price data property
   dailyPriceData?: DailyPricePoint[];
+  dailyMarketData?: Record<string, MarketDataPoint[]>; //
   selectedPeriods?: string[]; // Add this new prop for selected time periods
   sliderValue?: [number, number];
   timePeriods?: string[];
@@ -423,6 +428,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({
   directLegends,
   statisticalLines = [], // Default to empty array
   dailyPriceData = [], // Default to empty array
+  dailyMarketData = {}, // New prop with default empty object
+
   selectedPeriods = [],
   sliderValue = [0, 0],
   timePeriods = []
@@ -455,11 +462,20 @@ export const MetricChart: React.FC<MetricChartProps> = ({
   
   // Split metrics by chart type for proper rendering order
   const lineMetrics = metrics.filter(metric => metricTypes[metric] === 'line' || isPriceMetric(metric));
-  
+  const isMarketDataMetric = (metricId: string): boolean => {
+    return metricId.toLowerCase() === 'price' || 
+           metricId.toLowerCase() === 'marketcapdaily' ||
+           metricId.toLowerCase() === 'peratiodaily' ||
+           metricId.toLowerCase() === 'psratiodaily' ||
+           metricId.toLowerCase() === 'pfcfratiodaily' ||
+           metricId.toLowerCase() === 'pcfratiodaily' ||
+           metricId.toLowerCase() === 'pbratiodaily' ||
+           metricId.toLowerCase() === 'fcfyielddaily';
+  };
   // For bar metrics, we now need to handle both regular and stacked bars
   const barMetrics = metrics.filter(metric => {
     // Exclude price metric from bar metrics
-    if (isPriceMetric(metric)) return false;
+    if (isMarketDataMetric(metric)) return false;
     
     // Include both 'bar' type and 'stacked' type that aren't in stackedMetrics (not enough to stack)
     return metricTypes[metric] === 'bar' || 
@@ -468,12 +484,13 @@ export const MetricChart: React.FC<MetricChartProps> = ({
   
   // Get metrics that should be rendered as stacked bars
   const effectiveStackedMetrics = stackedMetrics.length >= 2 ? stackedMetrics : [];
-  
+
   // Identify percentage metrics for secondary Y-axis
   const percentageMetrics = metrics.filter(metric => isPercentageMetric(metric));
   const normalMetrics = metrics.filter(metric => !isPercentageMetric(metric) && !isPriceMetric(metric));
   const priceMetrics = metrics.filter(metric => isPriceMetric(metric));
-  
+  const marketDataMetrics = metrics.filter(metric => isMarketDataMetric(metric));
+
   // Generate default title if none provided
   const chartTitle = title || `${companyName || ticker} - Financial Metrics`;
   
@@ -537,7 +554,33 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     // Cleanup
     return () => window.removeEventListener('resize', updateDimensions);
   }, [data.length, barMetrics.length, effectiveStackedMetrics.length]);
+  // Check if a metric is a market data metric
+
+
+// Process all market data for chart rendering
+const processedMarketData = useMemo(() => {
+  const result: Record<string, any[]> = {};
   
+  // Process regular price data for backward compatibility
+  if (hasPriceMetric && dailyPriceData.length > 0) {
+    result.price = dailyPriceData.map(point => ({
+      ...point,
+      period: point.time // Important: Use period as key to match financial data's x-axis
+    }));
+  }
+  
+  // Process all other market data metrics
+  Object.entries(dailyMarketData).forEach(([metricId, dataPoints]) => {
+    if (dataPoints && dataPoints.length > 0) {
+      result[metricId] = dataPoints.map(point => ({
+        ...point,
+        period: point.time // Add period key for consistency
+      }));
+    }
+  });
+  
+  return result;
+}, [dailyPriceData, dailyMarketData, hasPriceMetric]);
   // Calculate metrics stats for total change and CAGR
   const metricsStats = useMemo(() => {
     if (!data || !data.length || !metrics.length) return {};
@@ -701,7 +744,77 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     const selectedPeriods = timePeriods.slice(sliderValue[0], sliderValue[1] + 1);
     return selectedPeriods;
   }, [timePeriods, sliderValue]);
+  // Function to get filtered market data for a specific metric
+const getFilteredMarketData = (metricId: string) => {
+  if (!processedMarketData[metricId] || processedMarketData[metricId].length === 0) {
+    return [];
+  }
   
+  // Create a date range from selectedPeriods
+  let startDate = null;
+  let endDate = null;
+  
+  // Process the selectedPeriods to determine date range
+  selectedPeriods.forEach(period => {
+    // Try to parse as a year (like "2021")
+    const yearMatch = parseInt(period);
+    if (!isNaN(yearMatch)) {
+      const periodStart = new Date(yearMatch, 0, 1); // Jan 1
+      const periodEnd = new Date(yearMatch, 11, 31); // Dec 31
+      
+      if (!startDate || periodStart < startDate) startDate = periodStart;
+      if (!endDate || periodEnd > endDate) endDate = periodEnd;
+    } else {
+      // Try to extract a year from other formats (like "Q1 2021")
+      const yearExtract = period.match(/\b(20\d{2})\b/);
+      if (yearExtract) {
+        const year = parseInt(yearExtract[1]);
+        
+        // For quarters, extract the quarter number
+        const quarterMatch = period.match(/Q(\d)/i);
+        if (quarterMatch) {
+          const quarter = parseInt(quarterMatch[1]);
+          const startMonth = (quarter - 1) * 3; // Q1=0, Q2=3, Q3=6, Q4=9
+          const endMonth = startMonth + 2; // Last month of quarter
+          
+          const periodStart = new Date(year, startMonth, 1);
+          const periodEnd = new Date(year, endMonth, 31);
+          
+          if (!startDate || periodStart < startDate) startDate = periodStart;
+          if (!endDate || periodEnd > endDate) endDate = periodEnd;
+        } else {
+          // If we just have a year, use the whole year
+          const periodStart = new Date(year, 0, 1);
+          const periodEnd = new Date(year, 11, 31);
+          
+          if (!startDate || periodStart < startDate) startDate = periodStart;
+          if (!endDate || periodEnd > endDate) endDate = periodEnd;
+        }
+      }
+    }
+  });
+  
+  // If we couldn't determine date range, show all data
+  if (!startDate || !endDate) {
+    return processedMarketData[metricId].map(point => ({
+      ...point,
+      period: point.time
+    }));
+  }
+  
+  // Filter market data to the date range
+  return processedMarketData[metricId].filter(point => {
+    try {
+      const pointDate = new Date(point.time);
+      return pointDate >= startDate && pointDate <= endDate;
+    } catch (e) {
+      return false;
+    }
+  }).map(point => ({
+    ...point,
+    period: point.time
+  }));
+};
   const getFilteredPriceData = useMemo(() => {
     if (!hasPriceData || !hasPriceMetric || dailyPriceData.length === 0) {
       return [];
@@ -850,12 +963,14 @@ export const MetricChart: React.FC<MetricChartProps> = ({
   
   // Function to determine if we need a third axis for price
   const needsPriceAxis = priceMetrics.length > 0 && (normalMetrics.length > 0 || percentageMetrics.length > 0);
-  
+  const needsMarketDataAxis = marketDataMetrics.length > 0 && (normalMetrics.length > 0 || percentageMetrics.length > 0);
+
   // Determine how many axes we need
   const axesCount = 
     (normalMetrics.length > 0 ? 1 : 0) + 
     (percentageMetrics.length > 0 && normalMetrics.length > 0 ? 1 : 0) + 
-    (priceMetrics.length > 0 && (normalMetrics.length > 0 || percentageMetrics.length > 0) ? 1 : 0);
+    (marketDataMetrics.length > 0 && (normalMetrics.length > 0 || percentageMetrics.length > 0) ? 1 : 0);
+    ;
   
   // Generate reference lines for statistics
   const renderReferenceLines = () => {
@@ -983,7 +1098,15 @@ export const MetricChart: React.FC<MetricChartProps> = ({
       );
     });
   };
-  
+  const formatMarketDataYAxis = (value: number) => {
+    // For price, use currency format
+    if (hasPriceMetric) {
+      return `$${value.toFixed(2)}`;
+    }
+    
+    // For ratios, just show the number with 2 decimal places
+    return value.toFixed(2);
+  };
   // Generate the subtitle based on metrics
   const getSubtitle = () => {
     // If directLegends are provided, extract just the metric portions for the subtitle
@@ -1065,7 +1188,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
   // The common data accessor function for chart components
   const getDataAccessor = (metric: string) => {
     // Special case for price data
-    if (isPriceMetric(metric)) {
+    if (isMarketDataMetric(metric)) {
       return (entry: any) => {
         // Try to get price directly from entry if it exists
         if (entry.price !== undefined) {
@@ -1119,7 +1242,36 @@ export const MetricChart: React.FC<MetricChartProps> = ({
     
     return [Math.max(0, min - padding), max + padding];
   };
-  
+  const getMarketDataDomain = () => {
+    // If no market data metrics, return default range
+    if (marketDataMetrics.length === 0) return [0, 100];
+    
+    // Find min and max values for all market data metrics
+    let min = Infinity;
+    let max = -Infinity;
+    
+    // Check all market data
+    Object.entries(processedMarketData).forEach(([metricId, dataPoints]) => {
+      if (!marketDataMetrics.includes(metricId)) return;
+      
+      dataPoints.forEach((point: any) => {
+        const value = parseFloat(point[metricId]);
+        if (!isNaN(value)) {
+          min = Math.min(min, value);
+          max = Math.max(max, value);
+        }
+      });
+    });
+    
+    // If no valid data found, return default
+    if (min === Infinity || max === -Infinity) return [0, 100];
+    
+    // Add padding (10% of the range)
+    const range = max - min;
+    const padding = range * 0.1;
+    
+    return [Math.max(0, min - padding), max + padding];
+  };
   // Get domain for price axis
   const getPriceDomain = () => {
     // If no price metrics or price data, return default range
@@ -1275,8 +1427,19 @@ export const MetricChart: React.FC<MetricChartProps> = ({
                 domain={getPercentageDomain()}
               />
             )}
-            
-            {/* Tertiary Y-axis for price */}
+            {/* Tertiary Y-axis for market data */}
+          {needsMarketDataAxis && (
+            <YAxis 
+              yAxisId="marketData"
+              orientation={needsDualAxes ? "right" : "right"}
+              axisLine={true}
+              tickFormatter={formatMarketDataYAxis}
+              tick={{ fontSize: typography.tickSize }}
+              domain={getMarketDataDomain()}
+              dx={needsDualAxes ? 55 : 0}
+            />
+          )}
+            {/* Tertiary Y-axis for price
             {needsPriceAxis && (
               <YAxis 
                 yAxisId="price"
@@ -1287,7 +1450,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
                 domain={getPriceDomain()}
                 dx={needsDualAxes ? 55 : 0}
               />
-            )}
+            )} */}
             
             <Tooltip 
           content={
@@ -1406,7 +1569,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
             })}
             
             {/* Render LINE metrics (higher z-index) */}
-            {lineMetrics.filter(metric => !isPriceMetric(metric)).map((metric, index) => {
+            {lineMetrics.filter(metric => !isMarketDataMetric(metric)).map((metric, index) => {
               const color = colorMap[metric];
               const visibilityIndex = barMetrics.length + index;
     
@@ -1453,24 +1616,32 @@ export const MetricChart: React.FC<MetricChartProps> = ({
             
 
 
-{/* Render full continuous price line using secondary axis */}
-{hasPriceMetric && hasPriceData && priceMetrics.map((metric) => (
+{/* Render market data metrics as line charts */}
+{metrics.filter(isMarketDataMetric).map((metricId) => {
+  const marketDataPoints = getFilteredMarketData(metricId);
+  
+  if (!marketDataPoints || marketDataPoints.length === 0) {
+    return null;
+  }
+  
+  return (
     <Line 
-    key="price-data"
-    data={getFilteredPriceData}
-    dataKey="price"
-    xAxisId="price"
-    yAxisId="price"
-    name={metric}
-    stroke={colorMap[metric] || '#ff7300'}
-    strokeWidth={2}
-    dot={false}
-    activeDot={{ r: 4 }}
-    isAnimationActive={false}
-    connectNulls={true}
-    zIndex={20}
-  />
-))}
+      key={`market-data-${metricId}`}
+      data={marketDataPoints}
+      dataKey={metricId} // Use the metric ID as the data key
+      xAxisId="price" // Use the price xAxis for consistent rendering
+      yAxisId="marketData" // Use the dedicated market data axis
+      name={metricId} // We'll enhance the name display in the legend formatter
+      stroke={colorMap[metricId] || '#ff7300'} // Use the color map for consistent colors
+      strokeWidth={2}
+      dot={false} // Disable dots for better performance with large datasets
+      activeDot={{ r: 4 }} // Show dots on hover
+      isAnimationActive={false} // Disable animation for better performance
+      connectNulls={true} // Connect points even with null values in between
+      zIndex={20} // Keep line charts on top
+    />
+  );
+})}
             
             {/* Render reference lines */}
             {renderReferenceLines()}
