@@ -4,7 +4,7 @@
 import { FollowerData, PortfolioData, ProfileData } from "@/components/profile/types";
 
 // Define API base URL
-const API_URL = 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_URL;
 
 // Custom error class to preserve API error responses
 export class APIError extends Error {

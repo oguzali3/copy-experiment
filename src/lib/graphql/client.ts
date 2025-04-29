@@ -10,7 +10,7 @@ const REFRESH_TOKEN_KEY = 'auth_refresh_token';
 
 // Create an HTTP link to your GraphQL server
 const httpLink = createHttpLink({
-  uri: 'http://localhost:4000/graphql',
+  uri: import.meta.env.VITE_GRAPHQL_URL,
 });
 
 // Error handling link

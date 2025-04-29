@@ -39,10 +39,15 @@ import PortfolioPricingManager from "./components/payment/PortfolioPricingManage
 import PortfolioSubscriptionPage from "./components/payment/PortfolioSubscriptionPage";
 import PortfolioAccessView from "./components/portfolio/PortfolioAccessView";
 import PortfolioBrowser from "./components/portfolio/PortfolioBrowser";
+const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
-// Initialize Stripe for entire app
-const stripePromise = loadStripe('pk_test_51R7ffjP03K9QaBZcwxbAeRRzovFMa6kq1MlOZSDRSX76mPfadRRKvGxTIlPMx0AokZUDcq2tFa4tgGS2fSVbdgee00oedNBEHg');
+if (!stripeKey) {
+  console.error("⚠️ Stripe publishable key is missing! Check your .env file.");
+  // You might want to handle this case in your UI
+}
 
+// Only initialize Stripe if we have a key
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

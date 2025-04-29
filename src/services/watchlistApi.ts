@@ -9,8 +9,6 @@ import { AddStockRequest, CreateWatchlistRequest, MetricInfo, UpdateWatchlistReq
 import apiClient from '@/utils/apiClient'; // Import the shared apiClient
 import { getUserData } from '@/services/auth.service'; // Import getUserData from auth service
 
-const API_URL = 'http://localhost:4000';
-
 // Request deduplication system (similar to portfolioApi)
 const pendingRequests = new Map<string, Promise<any>>();
 const requestCache = new Map<string, {data: any, timestamp: number}>();

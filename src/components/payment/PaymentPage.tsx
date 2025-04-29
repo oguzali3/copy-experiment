@@ -16,9 +16,15 @@ import PaymentAPI from "@/services/paymentApi";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, CreditCard } from "lucide-react";
 
-// Initialize Stripe with your publishable key
-// Near the top of PaymentPage.tsx and ManageSubscriptionComponent.tsx
-const stripePromise = loadStripe('pk_test_51R7ffjP03K9QaBZcwxbAeRRzovFMa6kq1MlOZSDRSX76mPfadRRKvGxTIlPMx0AokZUDcq2tFa4tgGS2fSVbdgee00oedNBEHg');
+const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+if (!stripeKey) {
+  console.error("⚠️ Stripe publishable key is missing! Check your .env file.");
+  // You might want to handle this case in your UI
+}
+
+// Only initialize Stripe if we have a key
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 interface SubscriptionPlan {
   id: string;

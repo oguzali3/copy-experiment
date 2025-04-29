@@ -166,7 +166,7 @@ export const AuthService = {
   // Google sign in
   async signInWithGoogle() {
     // Redirect to backend OAuth endpoint
-    window.location.href = "http://localhost:4000/auth/sso/google/callback";
+    window.location.href = `${import.meta.env.VITE_URL}/auth/sso/google/callback`;
   },
 
   // Handle SSO callback from NestJS backend

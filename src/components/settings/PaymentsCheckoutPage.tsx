@@ -41,8 +41,15 @@ const SUBSCRIPTION_PLANS = {
   }
 };
 
-// Initialize Stripe with your publishable key (use your actual key in production)
-const stripePromise = loadStripe('pk_test_your_key_here');
+const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+if (!stripeKey) {
+  console.error("⚠️ Stripe publishable key is missing! Check your .env file.");
+  // You might want to handle this case in your UI
+}
+
+// Only initialize Stripe if we have a key
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 // Mock payment methods
 const MOCK_PAYMENT_METHODS = [

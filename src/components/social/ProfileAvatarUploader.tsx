@@ -98,7 +98,7 @@ export const ProfileAvatarUploader: React.FC<ProfileAvatarUploaderProps> = ({
   username,
   size = 'xl',
   className,
-  apiUrl = 'http://localhost:4000',
+  apiUrl = import.meta.env.VITE_URL,
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [isCropperOpen, setIsCropperOpen] = useState(false);

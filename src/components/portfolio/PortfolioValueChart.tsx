@@ -1,4 +1,4 @@
-// Enhanced PortfolioValueChart component
+// Enhanced PortfolioValueChart component with intraday data support
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
@@ -10,7 +10,7 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
-import portfolioApi from '@/services/portfolioApi';
+import portfolioApi, { IntradayResponse } from '@/services/portfolioApi';
 import { Loader2 } from 'lucide-react';
 import { Portfolio } from './types';
 import { ensureNumber } from '@/utils/portfolioDataUtils';
@@ -20,7 +20,7 @@ interface PortfolioValueChartProps {
   className?: string;
   portfolio?: Portfolio;
   onUpdatePortfolio?: (portfolio: Portfolio) => void;
-  excludedTickers?: string[]; // Add this line
+  excludedTickers?: string[];
 }
 type TimeframeType = '1D' | '5D' | '15D' | '1M' | '3M' | '6M' | '1Y' | 'ALL';
 
@@ -48,13 +48,14 @@ export const PortfolioValueChart = ({
   const requestInProgress = useRef(false);
   const lastRequest = useRef<{
       portfolioId: string | null;
-       timeframe: TimeframeType | null;
-       exclusions: string;           // ← new
+      timeframe: TimeframeType | null;
+      exclusions: string;
     }>({
-       portfolioId: null,
-       timeframe:  null,
-       exclusions: '',               // canonicalised list
-      });
+      portfolioId: null,
+      timeframe: null,
+      exclusions: '',
+    });
+
   const formatDateForDisplay = (dateString: string, timeframe: TimeframeType): string => {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
@@ -63,8 +64,11 @@ export const PortfolioValueChart = ({
     
     switch (timeframe) {
       case '1D':
-        return new Intl.DateTimeFormat('en-US', { 
-          hour: 'numeric', minute: 'numeric', hour12: true 
+        return new Intl.DateTimeFormat('en-US', {
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: true,
+          timeZone: 'America/New_York' // Specify US Eastern Time Zone
         }).format(date);
       case '5D':
       case '15D':
@@ -89,16 +93,109 @@ export const PortfolioValueChart = ({
         return dateString;
     }
   };
+  const fetchIntradayData = useCallback(async () => {
+    if (!portfolioId || requestInProgress.current) return;
+    const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+
+    const exclSig = excludedTickers.slice().sort().join(',');
+
+    // Duplicate request check remains the same
+    if (
+      lastRequest.current.portfolioId === portfolioId &&
+      lastRequest.current.timeframe === timeframe &&
+      lastRequest.current.exclusions === exclSig &&
+      data.length > 0
+    ) {
+      console.log('Skipping duplicate intraday request');
+      return;
+    }
+
+    requestInProgress.current = true;
+    setLoading(true);
+    setError(null);
+    setNoDataAvailable(false);
+
+    try {
+      console.log(`Fetching intraday data for portfolio ${portfolioId} excluding:`, excludedTickers); // Log exclusions
+
+      // --- Pass excludedTickers to the API call ---
+      const responseData = await portfolioApi.getPortfolioIntraday(
+          portfolioId,
+          excludedTickers,
+          today
+      ) as IntradayResponse;
+      // --- End Change ---
+
+      // ... (rest of the function remains the same: checking response, processing data, setting state) ...
+
+      if (!responseData || !responseData.data || !Array.isArray(responseData.data)) {
+        setNoDataAvailable(true);
+        setData([]);
+         lastRequest.current = { portfolioId, timeframe, exclusions: exclSig };
+        return;
+      }
+
+      const processedData = responseData.data.map(item => ({
+        date: item.timestamp,
+        value: ensureNumber(item.value),
+        displayDate: formatDateForDisplay(item.timestamp, timeframe)
+      }));
+
+      //  let lastUniqueIndex = processedData.length - 1;
+      //  if (lastUniqueIndex >=0) {
+      //      const lastValue = processedData[lastUniqueIndex]?.value;
+      //      while (lastUniqueIndex > 0 &&
+      //             processedData[lastUniqueIndex - 1]?.value === lastValue) {
+      //        lastUniqueIndex--;
+      //      }
+      //  } else {
+      //      lastUniqueIndex = -1;
+      //  }
+
+      //  const filteredData = lastUniqueIndex < processedData.length - 1 && lastUniqueIndex !== -1
+      //    ? [...processedData.slice(0, lastUniqueIndex + 1), processedData[processedData.length - 1]]
+      //    : processedData;
+
+
+      const dataToSet = processedData; // Use the unfiltered data
+      console.log(`Setting chart data with ${dataToSet.length} points.`); // <-- Add this log
+   console.log("First point:", dataToSet[0]);                          // <-- Add this log
+   console.log("Last point:", dataToSet[dataToSet.length - 1]);       // <-- Add this log
+
+      const hasValidData = dataToSet.some(item => item.value > 0);
+      if (!hasValidData) {
+        setNoDataAvailable(true);
+        setData([]);
+      } else {
+        setData(dataToSet); // Set the data without the aggressive filtering
+        setNoDataAvailable(false);
+      }
+
+      lastRequest.current = {
+        portfolioId,
+        timeframe,
+        exclusions: exclSig,
+      };
+    } catch (error) {
+      console.error('Failed to fetch intraday data:', error);
+      setError('Failed to load intraday portfolio data.');
+      lastRequest.current = { portfolioId, timeframe, exclusions: exclSig };
+    } finally {
+      setLoading(false);
+      requestInProgress.current = false;
+    }
+  }, [portfolioId, timeframe, excludedTickers]); // Keep excludedTickers in dependency array
+
   // Enhanced fetch function with improved validation
   const fetchPortfolioHistory = useCallback(async () => {
     // Skip if we're already loading or if portfolio ID is missing
     if (!portfolioId || requestInProgress.current) return;
-    const exclSig = excludedTickers.slice().sort().join(',');   // e.g. "AAPL,AMZN"
+    const exclSig = excludedTickers.slice().sort().join(',');
 
     // Check if this is a duplicate request for the same data
     if (
       lastRequest.current.portfolioId === portfolioId &&
-      lastRequest.current.timeframe  === timeframe &&
+      lastRequest.current.timeframe === timeframe &&
       lastRequest.current.exclusions === exclSig &&
       data.length > 0
     ) {
@@ -220,15 +317,21 @@ export const PortfolioValueChart = ({
       setLoading(false);
       requestInProgress.current = false;
     }
-  }, [portfolioId, timeframe, formatDateForDisplay, excludedTickers]);
+  }, [portfolioId, timeframe, excludedTickers]);
 
   // Effect to trigger fetch on dependencies change
   useEffect(() => {
     if (portfolioId) {
-      console.log(`Triggering portfolio history fetch for ${portfolioId} with timeframe ${timeframe}`);
-      fetchPortfolioHistory();
+      console.log(`Triggering portfolio data fetch for ${portfolioId} with timeframe ${timeframe}`);
+      
+      // Use appropriate data fetch method based on timeframe
+      if (timeframe === '1D') {
+        fetchIntradayData();
+      } else {
+        fetchPortfolioHistory();
+      }
     }
-  }, [portfolioId, timeframe, fetchPortfolioHistory]);
+  }, [portfolioId, timeframe, fetchPortfolioHistory, fetchIntradayData]);
 
   // Helper function to format currency values
   const formatCurrency = (value: number): string => {
@@ -272,28 +375,48 @@ export const PortfolioValueChart = ({
     return !isNaN(d.getTime()) && (d.getDay() === 0 || d.getDay() === 6);
   };
 
+  // Helper to determine if a time is after market hours
+  const isAfterMarketHours = (dateString: string) => {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return false;
+    
+    // Market closes at 4:00 PM ET (16:00)
+    // Check if this time is after 16:00
+    const hours = date.getUTCHours();
+    return hours >= 20; // 4:00 PM ET is 20:00 UTC (during standard time)
+  };
+
   // Custom tooltip component with improved validation
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload || !payload.length) {
       return null;
     }
-    
+
     const dataPoint = payload[0]?.payload;
     if (!dataPoint) return null;
-    
-    const isWeekendDate = dataPoint.date && isWeekend(dataPoint.date);
+
+    // --- Add console log for debugging ---
+    // console.log("Tooltip Data:", {
+    //     label: label, // What label is Recharts providing?
+    //     payload: payload, // What's the full payload?
+    //     dataPoint: dataPoint, // What's in the specific data point?
+    //     displayTime: dataPoint.displayDate // What is the calculated displayDate?
+    // });
+    // --- End console log ---
+
+    const displayTime = dataPoint.displayDate;
     const value = payload[0]?.value;
-    
+    const isWeekendDate = dataPoint.date && isWeekend(dataPoint.date);
+    const isAfterHours = dataPoint.date && isAfterMarketHours(dataPoint.date);
+
+
     return (
       <div className="bg-white border border-gray-200 rounded-md p-2 shadow-sm">
-        <div className="text-sm">Date: {label}</div>
+         {/* Make sure you are definitely using displayTime here */}
+        <div className="text-sm">Time: {displayTime}</div>
         <div className="text-sm font-medium">{typeof value === 'number' ? formatCurrency(value) : 'N/A'}</div>
-        {isWeekendDate && (
-          <div className="text-xs text-gray-500">
-            Weekend value (based on Friday's data)
-          </div>
-        )}
+        {/* ... other conditional text ... */}
       </div>
     );
   };
@@ -309,6 +432,41 @@ export const PortfolioValueChart = ({
     if (data.length === 0) return 0;
     const latest = data[data.length - 1]?.value;
     return typeof latest === 'number' && !isNaN(latest) ? latest : 0;
+  };
+
+  // Adjust tick formatting for X axis based on timeframe
+  const formatXAxisTick = (value: string) => { // Now 'value' will be the ISO string (e.g., "2025-04-25T13:30:00.000Z")
+    if (timeframe === '1D') {
+      const date = new Date(value); // Parse the ISO string
+      if (isNaN(date.getTime())) return ''; // Return empty string for invalid dates
+
+      // Format to show hour in Eastern Time
+      return new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        // minute: 'numeric', // Optional: Add minutes if needed
+        hour12: true,
+        timeZone: 'America/New_York' // Ensure formatting uses ET
+      }).format(date);
+    }
+    // For other timeframes, 'value' is likely the displayDate already,
+    // but it might be safer to format based on the original 'date' prop if available
+    // For simplicity, we'll assume the 'value' is okay for non-1D here.
+    // If you see issues with other timeframes, adjust this part.
+    return value;
+  };
+
+  // Configure X axis tick intervals
+  const getXAxisTickInterval = () => {
+    if (timeframe === '1D') {
+      // For intraday data, show fewer ticks
+      return 60; // Show a tick every 60 minutes (or data points)
+    } else if (timeframe === '5D' || timeframe === '15D') {
+      return 1;
+    } else if (timeframe === '1M' || timeframe === '3M') {
+      return 7;
+    } else {
+      return 30;
+    }
   };
 
   return (
@@ -389,7 +547,7 @@ export const PortfolioValueChart = ({
             <p className="text-red-500">{error}</p>
             <button 
               className="mt-2 text-blue-500 underline"
-              onClick={() => fetchPortfolioHistory()} // Retry with the same params
+              onClick={() => timeframe === '1D' ? fetchIntradayData() : fetchPortfolioHistory()}
             >
               Try Again
             </button>
@@ -406,14 +564,15 @@ export const PortfolioValueChart = ({
               margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-              <XAxis 
-                dataKey="displayDate"
+              <XAxis
+                dataKey="displayDate"  // Change this from "date" to "displayDate"
                 stroke="#6B7280"
                 tick={{ fill: '#374151' }}
                 axisLine={{ stroke: '#E5E7EB' }}
                 tickLine={false}
                 tickMargin={10}
-                minTickGap={30}
+                minTickGap={timeframe === '1D' ? 80 : 30}
+                interval={getXAxisTickInterval()}  // This is fine, the function exists
               />
               <YAxis
                 stroke="#6B7280"
@@ -439,7 +598,9 @@ export const PortfolioValueChart = ({
       </div>
       
       <div className="text-xs text-gray-500 text-center">
-        This chart shows total portfolio value over time, including deposits and withdrawals.
+        {timeframe === '1D' 
+          ? "This chart shows minute-by-minute portfolio value throughout the trading day." 
+          : "This chart shows total portfolio value over time, including deposits and withdrawals."}
       </div>
     </div>
   );

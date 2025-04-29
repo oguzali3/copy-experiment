@@ -18,7 +18,7 @@ import { FollowersTab } from '@/components/profile/tabs/FollowersTab';
 import { FollowingTab } from '@/components/profile/tabs/FollowingTab';
 
 // Define API base URL
-const API_URL = 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_URL;
 
 type TabType = 'portfolios' | 'followers' | 'following';
 

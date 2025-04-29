@@ -104,7 +104,17 @@ interface PortfolioTransaction {
   shares: number;
   priceAtTransaction: number;
   amount: number;
-  tradeDate: string;
+  timestamp: string;
+}
+export interface IntradayDataPoint {
+  timestamp: string;
+  value: number;
+}
+
+export interface IntradayResponse {
+  portfolioId: string;
+  date: string;
+  data: IntradayDataPoint[];
 }
 
 // Request deduplication and caching system
@@ -722,7 +732,7 @@ getPortfolioHistoryWithExclusions: async (
       
       // Make the API call
       const response = await apiClient.get<PortfolioPerformanceResponse>(
-        `/portfolios/${portfolioId}/performance`,
+        `/portfolio-history/${portfolioId}/performance`,
         { params, headers }
       );
       console.log("API call getPortfolioPerformance with excluded tickers:", excludedTickers);
@@ -842,6 +852,52 @@ getPortfolioHistoryWithExclusions: async (
       return response.data;
     } catch (error) {
       console.error('Error fetching portfolio transactions:', error);
+      throw error;
+    }
+  },
+  getPortfolioIntraday: async (
+    portfolioId: string,
+    excludedTickers?: string[],
+    date?: string
+  ): Promise<IntradayResponse> => {
+    try {
+      const params: Record<string, any> = {
+         _t: Date.now()
+      };
+      if (date) {
+        params.date = date;
+      }
+      if (excludedTickers && excludedTickers.length > 0) {
+          params.excludedTickers = excludedTickers.join(',');
+          console.log(`[portfolioApi] Fetching intraday for ${portfolioId} excluding: ${params.excludedTickers}`);
+      } else {
+          console.log(`[portfolioApi] Fetching intraday for ${portfolioId} with no exclusions.`);
+      }
+
+      const response = await apiClient.get<IntradayResponse>( // <-- Specify expected response data type
+          `/portfolio-history/${portfolioId}/intraday`,
+          {
+              params: params,
+              headers: {
+                  'Cache-Control': 'no-cache, no-store, must-revalidate',
+                  'Pragma': 'no-cache',
+                  'Expires': '0'
+              }
+          }
+      );
+
+      // Basic validation (optional but recommended)
+      if (!response.data || typeof response.data !== 'object' || !response.data.data || !Array.isArray(response.data.data)) {
+           console.error('Invalid intraday response structure:', response.data);
+           throw new Error('Received invalid data structure for intraday history.');
+      }
+
+
+      return response.data; // Now TypeScript knows response.data should be IntradayResponse
+    } catch (error) {
+      console.error('Error fetching intraday data:', error);
+      // Consider returning a default error structure or re-throwing
+      // For now, re-throwing is consistent with previous code
       throw error;
     }
   },

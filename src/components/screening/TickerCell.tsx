@@ -20,7 +20,7 @@ export const TickerCell = React.memo(({ symbol, onClick }: TickerCellProps) => {
     <div className="flex items-center gap-2">
       {hasLogo ? (
         <img
-          src={`http://localhost:4000/company-logos/${encodeURIComponent(symbol)}`}
+          src={`${import.meta.env.VITE_URL}/company-logos/${encodeURIComponent(symbol)}`}
           alt={`${symbol} logo`}
           className="w-8 h-8 rounded object-contain bg-gray-50"
           loading="lazy"

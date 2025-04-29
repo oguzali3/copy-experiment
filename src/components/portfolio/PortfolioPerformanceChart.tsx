@@ -1,4 +1,4 @@
-// Fixed PortfolioPerformanceChart.tsx
+// Modified code for PortfolioPerformanceChart.tsx to filter non-trading days for all timeframes
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
@@ -21,10 +21,9 @@ interface PortfolioPerformanceChartProps {
   className?: string;
   portfolio?: Portfolio;
   onUpdatePortfolio?: (portfolio: Portfolio) => void;
-  excludedTickers?: string[]; // Add this line
+  excludedTickers?: string[];
 }
 
-// Defining timeframe type with additional short timeframes
 type TimeframeType = '1D' | '5D' | '15D' | '1M' | '3M' | '6M' | '1Y' | 'ALL';
 
 export const PortfolioPerformanceChart = ({ 
@@ -34,40 +33,92 @@ export const PortfolioPerformanceChart = ({
   onUpdatePortfolio,
   excludedTickers = []
 }: PortfolioPerformanceChartProps) => {
-  // Update default timeframe and add the new timeframe options
   const [timeframe, setTimeframe] = useState<TimeframeType>('5D');
   const [data, setData] = useState<Array<{
     date: string;
     performanceValue: number;
     performancePercent: number;
     displayDate: string;
+    isMarketClosed?: boolean;
+    isBeforeNonTrading?: boolean; // Flag for points before non-trading periods
+    isAfterNonTrading?: boolean;  // Flag for points after non-trading periods
   }>>([]);
-  const [showPercent, setShowPercent] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [noDataAvailable, setNoDataAvailable] = useState(false);
   
-  // Use a ref to track if a request is in progress to prevent duplicate requests
   const requestInProgress = useRef(false);
   
-  // Keep track of last portfolio and timeframe to prevent unnecessary refetching
   const lastRequest = useRef<{
     portfolioId: string | null;
-     timeframe: TimeframeType | null;
-     exclusions: string;           // ← new
+    timeframe: TimeframeType | null;
+    exclusions: string;
   }>({
-     portfolioId: null,
-     timeframe:  null,
-     exclusions: '',               // canonicalised list
-    });
+    portfolioId: null,
+    timeframe: null,
+    exclusions: '',
+  });
 
-  // Helper function to format dates based on timeframe
+  // Helper function to determine if a date is a weekend
+  const isWeekend = useCallback((dateString: string) => {
+    const date = new Date(dateString);
+    return date.getDay() === 0 || date.getDay() === 6; // 0 = Sunday, 6 = Saturday
+  }, []);
+
+  // Helper function to determine if a date is a US market holiday
+  const isHoliday = useCallback((dateString: string) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate();
+    
+    // New Year's Day (observed on Monday if Jan 1 is Sunday)
+    if ((month === 0 && day === 1) || 
+        (month === 0 && day === 2 && date.getDay() === 1)) return true;
+    
+    // Martin Luther King Jr. Day (3rd Monday in January)
+    if (month === 0 && date.getDay() === 1 && day >= 15 && day <= 21) return true;
+    
+    // Presidents Day (3rd Monday in February)
+    if (month === 1 && date.getDay() === 1 && day >= 15 && day <= 21) return true;
+    
+    // Memorial Day (last Monday in May)
+    if (month === 4 && date.getDay() === 1 && day >= 25) return true;
+    
+    // Juneteenth (June 19, observed on Monday if falls on Sunday, Friday if falls on Saturday)
+    if ((month === 5 && day === 19) || 
+        (month === 5 && day === 20 && date.getDay() === 1) || 
+        (month === 5 && day === 18 && date.getDay() === 5)) return true;
+    
+    // Independence Day (July 4, observed accordingly)
+    if ((month === 6 && day === 4) || 
+        (month === 6 && day === 5 && date.getDay() === 1) || 
+        (month === 6 && day === 3 && date.getDay() === 5)) return true;
+    
+    // Labor Day (1st Monday in September)
+    if (month === 8 && date.getDay() === 1 && day <= 7) return true;
+    
+    // Thanksgiving (4th Thursday in November)
+    if (month === 10 && date.getDay() === 4 && day >= 22 && day <= 28) return true;
+    
+    // Christmas (December 25, observed accordingly)
+    if ((month === 11 && day === 25) || 
+        (month === 11 && day === 26 && date.getDay() === 1) || 
+        (month === 11 && day === 24 && date.getDay() === 5)) return true;
+    
+    return false;
+  }, []);
+
+  // Combined function to check if markets are closed for a given date
+  const isMarketClosed = useCallback((dateString: string) => {
+    return isWeekend(dateString) || isHoliday(dateString);
+  }, [isWeekend, isHoliday]);
+
   const formatDateForDisplay = useCallback((dateString: string, tf: TimeframeType): string => {
     const date = new Date(dateString);
     
     switch (tf) {
       case '1D':
-        // Format as "10:30 AM"
         return new Intl.DateTimeFormat('en-US', { 
           hour: 'numeric', 
           minute: 'numeric',
@@ -75,7 +126,6 @@ export const PortfolioPerformanceChart = ({
         }).format(date);
       case '5D':
       case '15D':
-        // Format as "Mar 10" or with weekday for shorter periods
         return new Intl.DateTimeFormat('en-US', { 
           weekday: 'short', 
           month: 'short', 
@@ -83,20 +133,17 @@ export const PortfolioPerformanceChart = ({
         }).format(date);
       case '1M':
       case '3M':
-        // Format as "Apr 15"
         return new Intl.DateTimeFormat('en-US', { 
           month: 'short', 
           day: 'numeric' 
         }).format(date);
       case '6M':
       case '1Y':
-        // Format as "Apr 2023"
         return new Intl.DateTimeFormat('en-US', { 
           month: 'short', 
           year: 'numeric' 
         }).format(date);
       case 'ALL':
-        // Format as "2023"
         return new Intl.DateTimeFormat('en-US', { 
           year: 'numeric' 
         }).format(date);
@@ -105,15 +152,13 @@ export const PortfolioPerformanceChart = ({
     }
   }, []);
 
-  // Function to fetch portfolio performance data
   const fetchPortfolioPerformance = useCallback(async () => {
-    // Skip if we're already loading or if portfolio ID is missing
     if (!portfolioId || requestInProgress.current) return;
     
-    const exclSig = excludedTickers.slice().sort().join(',');   // e.g. "AAPL,AMZN"
+    const exclSig = excludedTickers.slice().sort().join(',');
     if (
       lastRequest.current.portfolioId === portfolioId &&
-      lastRequest.current.timeframe  === timeframe &&
+      lastRequest.current.timeframe === timeframe &&
       lastRequest.current.exclusions === exclSig &&
       data.length > 0
     ) {
@@ -121,60 +166,50 @@ export const PortfolioPerformanceChart = ({
       return;
     }
     
-    // Mark request as in progress
     requestInProgress.current = true;
     setLoading(true);
     setError(null);
     setNoDataAvailable(false);
     
     try {
-      // Calculate date range based on timeframe
-      const endDate = new Date().toISOString().split('T')[0]; // Today
+      const endDate = new Date().toISOString().split('T')[0];
       let startDate: string;
       
       switch (timeframe) {
         case '1D':
-          // Today only
           startDate = endDate;
           break;
         case '5D':
-          // 5 days ago
           startDate = new Date(
             new Date().setDate(new Date().getDate() - 5)
           ).toISOString().split('T')[0];
           break;
         case '15D':
-          // 15 days ago
           startDate = new Date(
             new Date().setDate(new Date().getDate() - 15)
           ).toISOString().split('T')[0];
           break;
         case '1M':
-          // 1 month ago
           startDate = new Date(
             new Date().setMonth(new Date().getMonth() - 1)
           ).toISOString().split('T')[0];
           break;
         case '3M':
-          // 3 months ago
           startDate = new Date(
             new Date().setMonth(new Date().getMonth() - 3)
           ).toISOString().split('T')[0];
           break;
         case '6M':
-          // 6 months ago
           startDate = new Date(
             new Date().setMonth(new Date().getMonth() - 6)
           ).toISOString().split('T')[0];
           break;
         case '1Y':
-          // 1 year ago
           startDate = new Date(
             new Date().setFullYear(new Date().getFullYear() - 1)
           ).toISOString().split('T')[0];
           break;
         case 'ALL':
-          // 5 years ago or from beginning
           startDate = new Date(
             new Date().setFullYear(new Date().getFullYear() - 5)
           ).toISOString().split('T')[0];
@@ -186,7 +221,6 @@ export const PortfolioPerformanceChart = ({
       }
       console.log(`Fetching portfolio performance with excluded tickers:`, excludedTickers);
 
-      // Fetch performance data from API
       const response = await portfolioApi.getPortfolioPerformance(
         portfolioId,
         startDate,
@@ -200,10 +234,8 @@ export const PortfolioPerformanceChart = ({
         return;
       }
       
-      // Extract and process the data
       const { dates, portfolioValues, performanceValues, performancePercent } = response.data;
       
-      // Check if we actually have non-zero performance data
       const hasNonZeroData = 
         performanceValues.some(val => ensureNumber(val) !== 0) || 
         performancePercent.some(val => ensureNumber(val) !== 0);
@@ -212,33 +244,64 @@ export const PortfolioPerformanceChart = ({
         setNoDataAvailable(true);
         setData([]);
       } else {
-        // Filter out points with invalid data and create dataset
-        const validDataPoints = dates.map((date, index) => ({
+        // First create dataset with market closed flag
+        const initialDataPoints = dates.map((date, index) => ({
           date,
           performanceValue: ensureNumber(performanceValues[index]),
           performancePercent: ensureNumber(performancePercent[index]),
-          displayDate: formatDateForDisplay(date, timeframe)
-        })).filter(point => {
-          // Only include points with valid date
-          return point.date;
+          displayDate: formatDateForDisplay(date, timeframe),
+          isMarketClosed: isMarketClosed(date)
+        }));
+        
+        // Filter out market closed days
+        const tradingDays = initialDataPoints.filter(point => !point.isMarketClosed);
+        
+        if (tradingDays.length === 0) {
+          setNoDataAvailable(true);
+          setData([]);
+          return;
+        }
+        
+        // Now mark points before/after non-trading periods
+        const dataPointsWithFlags = tradingDays.map((point, index, array) => {
+          if (index === 0) {
+            return { ...point, isAfterNonTrading: true };
+          }
+          
+          if (index === array.length - 1) {
+            return { ...point, isBeforeNonTrading: true };
+          }
+          
+          // Check if there's a gap between this point and the previous one
+          const currentDate = new Date(point.date);
+          const prevDate = new Date(array[index - 1].date);
+          
+          // Calculate day difference (more than 1 day means non-trading days in between)
+          const dayDiff = Math.floor((currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          // Check if there's a gap before the next point
+          const nextDate = new Date(array[index + 1].date);
+          const nextDayDiff = Math.floor((nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          return {
+            ...point,
+            isAfterNonTrading: dayDiff > 1,
+            isBeforeNonTrading: nextDayDiff > 1
+          };
         });
         
-        // Only update state if we have valid data
-        if (validDataPoints.length > 0) {
-          setData(validDataPoints);
+        if (dataPointsWithFlags.length > 0) {
+          setData(dataPointsWithFlags);
           setNoDataAvailable(false);
           
-          // If we have updated portfolio data, use it to update the portfolio
-          if (validDataPoints.length > 0 && portfolio && onUpdatePortfolio) {
-            const latestPoint = validDataPoints[validDataPoints.length - 1];
+          if (portfolio && onUpdatePortfolio) {
+            const latestPoint = dataPointsWithFlags[dataPointsWithFlags.length - 1];
             const latestValue = portfolioValues[portfolioValues.length - 1];
             const previousValue = portfolioValues.length > 1 ? portfolioValues[portfolioValues.length - 2] : portfolioValues[0];
             
-            // Check if there's a significant difference in values
             if (Math.abs(latestValue - ensureNumber(portfolio.totalValue)) > 0.5) {
               console.log(`Performance data shows updated value: ${latestValue} vs current ${portfolio.totalValue}`);
               
-              // Create updated portfolio with the latest value
               const updatedPortfolio = {
                 ...portfolio,
                 totalValue: latestValue,
@@ -247,7 +310,6 @@ export const PortfolioPerformanceChart = ({
                 dayChangePercent: previousValue > 0 ? ((latestValue - previousValue) / previousValue) * 100 : 0
               };
               
-              // Call the update function
               console.log("Updating portfolio with latest performance data");
               onUpdatePortfolio(updatedPortfolio);
             }
@@ -258,7 +320,6 @@ export const PortfolioPerformanceChart = ({
         }
       }
       
-      // Update the last request ref
       lastRequest.current = {
         portfolioId,
         timeframe,
@@ -268,7 +329,6 @@ export const PortfolioPerformanceChart = ({
       console.error('Failed to fetch portfolio performance:', err);
       setError('Failed to load portfolio performance data.');
       
-      // Reset last request on error
       lastRequest.current = {
         portfolioId: null,
         timeframe: null,
@@ -278,23 +338,18 @@ export const PortfolioPerformanceChart = ({
       setLoading(false);
       requestInProgress.current = false;
     }
-  }, [portfolioId, timeframe, data.length, excludedTickers, formatDateForDisplay, portfolio, onUpdatePortfolio]);
+  }, [portfolioId, timeframe, data.length, excludedTickers, formatDateForDisplay, portfolio, onUpdatePortfolio, isMarketClosed]);
 
   useEffect(() => {
     if (portfolio && timeframe === '1D' && portfolio.totalValue > 0) {
-      // For 1D timeframe, we can derive performance data from the portfolio itself
-      
-      // Convert values to numbers to ensure consistency
       const totalInvestment = portfolio.stocks.reduce((sum, stock) => 
         sum + (ensureNumber(stock.shares) * ensureNumber(stock.avgPrice)), 0);
       const currentValue = ensureNumber(portfolio.totalValue);
       
       if (currentValue > 0 && totalInvestment > 0) {
-        // Calculate performance
         const performanceValue = currentValue - totalInvestment;
         const performancePercent = (performanceValue / totalInvestment) * 100;
         
-        // Create a single-point dataset for today
         const today = new Date().toISOString().split('T')[0];
         
         const chartData = [
@@ -302,29 +357,27 @@ export const PortfolioPerformanceChart = ({
             date: today,
             performanceValue,
             performancePercent,
-            displayDate: formatDateForDisplay(today, timeframe)
+            displayDate: formatDateForDisplay(today, timeframe),
+            isMarketClosed: isMarketClosed(today)
           }
         ];
         
         setData(chartData);
         setNoDataAvailable(false);
-        const exclSig = excludedTickers.slice().sort().join(',');   // e.g. "AAPL,AMZN"
+        const exclSig = excludedTickers.slice().sort().join(',');
 
-        // Update the last request ref
         lastRequest.current = {
           portfolioId,
           timeframe,
           exclusions: exclSig,
         };
         
-        // Don't proceed with API fetch
         return;
       }
     }
     
-    // Otherwise, proceed with normal API fetch
     fetchPortfolioPerformance();
-  }, [portfolio, portfolioId, timeframe, excludedTickers, fetchPortfolioPerformance, formatDateForDisplay]);
+  }, [portfolio, portfolioId, timeframe, excludedTickers, fetchPortfolioPerformance, formatDateForDisplay, isMarketClosed]);
 
   const formatCurrency = (value: number): string => {
     if (value === undefined || isNaN(value)) {
@@ -348,13 +401,7 @@ export const PortfolioPerformanceChart = ({
     return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
   };
 
-  // Get current performance value
   const currentPerformance = data.length > 0 ? data[data.length - 1] : null;
-  
-  const isWeekend = (date: string) => {
-    const d = new Date(date);
-    return d.getDay() === 0 || d.getDay() === 6;
-  };
   
   // Custom tooltip component
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -364,35 +411,31 @@ export const PortfolioPerformanceChart = ({
     }
     
     const dataPoint = payload[0].payload;
-    const isWeekendDate = dataPoint && isWeekend(dataPoint.date);
     
     return (
       <div className="bg-white border border-gray-200 rounded-md p-2 shadow-sm">
-        <div className="text-sm">Date: {label}</div>
+        <div className="text-sm">Date: {dataPoint.displayDate}</div>
         <div className="text-sm font-medium">
-          {showPercent 
-            ? `${payload[0].value.toFixed(2)}%` 
-            : formatCurrency(payload[0].value)
-          }
+            ${payload[0].value.toFixed(2)}%
         </div>
-        {isWeekendDate && (
+        {(dataPoint.isBeforeNonTrading || dataPoint.isAfterNonTrading) && (
           <div className="text-xs text-gray-500">
-            Weekend value (based on Friday's data)
+            {dataPoint.isBeforeNonTrading && dataPoint.isAfterNonTrading 
+              ? 'Trading day surrounded by non-trading days'
+              : dataPoint.isBeforeNonTrading 
+                ? 'Last trading day before weekend/holiday' 
+                : 'First trading day after weekend/holiday'}
           </div>
         )}
       </div>
     );
   };
   
-  // Function to handle timeframe button clicks
   const handleTimeframeChange = (newTimeframe: TimeframeType) => {
-    if (newTimeframe === timeframe) return; // Skip if same timeframe
-    
-    // Update timeframe state - will trigger useEffect
+    if (newTimeframe === timeframe) return;
     setTimeframe(newTimeframe);
   };
   
-  // Calculate latest performance
   const getLatestPerformance = () => {
     if (!currentPerformance) return { value: 0, percent: 0 };
     
@@ -403,6 +446,42 @@ export const PortfolioPerformanceChart = ({
   };
   
   const { value, percent } = getLatestPerformance();
+
+  // Custom dot component to show special dots before/after non-trading days
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const CustomDot = (props: any) => {
+    const { cx, cy, payload, value } = props;
+    
+    // For active dots (when hovering), use a larger dot
+    if (props.active) {
+      return (
+        <circle 
+          cx={cx} 
+          cy={cy} 
+          r={6} 
+          fill="#10B981" 
+          stroke="white" 
+          strokeWidth={2} 
+        />
+      );
+    }
+    
+    // Show smaller dots for points before/after non-trading days
+    if (payload.isBeforeNonTrading || payload.isAfterNonTrading) {
+      return (
+        <circle 
+          cx={cx} 
+          cy={cy} 
+          r={2} 
+          fill="#10B981" 
+          opacity={0.6}
+        />
+      );
+    }
+    
+    // No dots for regular points
+    return null;
+  };
   
   return (
     <div className={`space-y-4 ${className}`}>
@@ -412,27 +491,13 @@ export const PortfolioPerformanceChart = ({
           {!loading && currentPerformance && (
             <div className="text-sm">
               <span className={`font-medium ${percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {showPercent 
-                  ? formatPercent(percent)
-                  : formatCurrency(value)
-                }
+                {formatPercent(percent)}
               </span>
-              <button 
-                className="ml-2 text-xs text-blue-500 underline"
-                onClick={() => setShowPercent(!showPercent)}
-              >
-                Show {showPercent ? 'Value' : 'Percent'}
-              </button>
             </div>
           )}
         </div>
         <div className="flex flex-wrap space-x-1 text-sm">
-          <button 
-            className={`px-2 py-1 rounded ${timeframe === '1D' ? 'bg-blue-500 text-white' : 'text-blue-600'}`}
-            onClick={() => handleTimeframeChange('1D')}
-          >
-            1D
-          </button>
+          
           <button 
             className={`px-2 py-1 rounded ${timeframe === '5D' ? 'bg-blue-500 text-white' : 'text-blue-600'}`}
             onClick={() => handleTimeframeChange('5D')}
@@ -488,7 +553,7 @@ export const PortfolioPerformanceChart = ({
             <p className="text-red-500">{error}</p>
             <button 
               className="mt-2 text-blue-500 underline"
-              onClick={() => fetchPortfolioPerformance()} // This will trigger a retry
+              onClick={() => fetchPortfolioPerformance()}
             >
               Try Again
             </button>
@@ -519,7 +584,7 @@ export const PortfolioPerformanceChart = ({
                 tick={{ fill: '#374151' }}
                 axisLine={{ stroke: '#E5E7EB' }}
                 tickLine={false}
-                tickFormatter={(value) => showPercent ? `${value}%` : formatCurrency(value)}
+                tickFormatter={(value) => `${value}%`}
                 domain={['auto', 'auto']}
                 tickMargin={10}
               />
@@ -531,11 +596,13 @@ export const PortfolioPerformanceChart = ({
               />
               <Line
                 type="monotone"
-                dataKey={showPercent ? "performancePercent" : "performanceValue"}
+                dataKey="performancePercent"
                 stroke="#10B981"
                 strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 6, fill: '#10B981', stroke: 'white', strokeWidth: 2 }}
+                dot={CustomDot}
+                activeDot={{ r: 6, fill: "#10B981", stroke: "white", strokeWidth: 2 }}
+                connectNulls={true}
+                isAnimationActive={false}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -544,6 +611,8 @@ export const PortfolioPerformanceChart = ({
       
       <div className="text-xs text-gray-500 text-center">
         This chart shows true portfolio performance excluding the effect of deposits and withdrawals.
+        Non-trading days (weekends and holidays) are excluded from the chart.
+        Small dots indicate trading days before or after weekends/holidays.
       </div>
     </div>
   );

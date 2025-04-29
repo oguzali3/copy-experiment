@@ -24,9 +24,15 @@ import {
 import apiClient from '@/utils/apiClient';
 import PaymentAPI from '@/services/paymentApi';
 
-// Initialize Stripe with your publishable key
-// Replace this with your actual publishable key
-const stripePromise = loadStripe('pk_test_51R7ffjP03K9QaBZcwxbAeRRzovFMa6kq1MlOZSDRSX76mPfadRRKvGxTIlPMx0AokZUDcq2tFa4tgGS2fSVbdgee00oedNBEHg');
+const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+if (!stripeKey) {
+  console.error("⚠️ Stripe publishable key is missing! Check your .env file.");
+  // You might want to handle this case in your UI
+}
+
+// Only initialize Stripe if we have a key
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 // Payment form component that collects card details
 const PaymentForm = ({ onSubscribe, planType, price, currency = 'USD', isProcessing }) => {

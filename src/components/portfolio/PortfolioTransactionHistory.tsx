@@ -25,7 +25,7 @@ type Transaction = {
   shares: number;
   priceAtTransaction: number;
   amount: number;
-  tradeDate: string;
+  timestamp: string;
 };
 
 export const PortfolioTransactionHistory: React.FC<PortfolioTransactionHistoryProps> = ({ 
@@ -152,7 +152,7 @@ export const PortfolioTransactionHistory: React.FC<PortfolioTransactionHistoryPr
                   {transactions.map((transaction) => (
                     <TableRow key={transaction.id} className="hover:bg-gray-50">
                       <TableCell className="font-medium">
-                        {formatDate(transaction.tradeDate)}
+                        {formatDate(transaction.timestamp)}
                       </TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
