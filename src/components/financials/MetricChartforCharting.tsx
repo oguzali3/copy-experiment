@@ -1377,7 +1377,15 @@ const getFilteredMarketData = (metricId: string) => {
             barCategoryGap={chartDimensions.barCategoryGap}
           >
           <CartesianGrid stroke="#e0e0e0" strokeWidth={0.5} />
-
+          {
+  //Secondary X-Axis for price data - No longer needed since we're using the financial x-axis
+  <XAxis 
+    dataKey="time" 
+    xAxisId="price"
+    data={processedPriceData}
+    hide={true}
+  />
+}
           {/* Primary X-Axis for financial metrics - visible */}
           <XAxis 
             dataKey="period" 
@@ -1396,15 +1404,7 @@ const getFilteredMarketData = (metricId: string) => {
             }}
           />
             {/* Secondary X-Axis for price data - hidden */}
-{
-  //Secondary X-Axis for price data - No longer needed since we're using the financial x-axis
-  <XAxis 
-    dataKey="time" 
-    xAxisId="price"
-    data={processedPriceData}
-    hide={true}
-  />
-}
+
             {/* Primary Y-axis - normal values */}
             {normalMetrics.length > 0 && (
               <YAxis 
@@ -1619,7 +1619,7 @@ const getFilteredMarketData = (metricId: string) => {
 {/* Render market data metrics as line charts */}
 {metrics.filter(isMarketDataMetric).map((metricId) => {
   const marketDataPoints = getFilteredMarketData(metricId);
-  
+  console.log(marketDataPoints);
   if (!marketDataPoints || marketDataPoints.length === 0) {
     return null;
   }
