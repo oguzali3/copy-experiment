@@ -262,5 +262,11 @@ export const calculateMetricValue = (
       .replace(/Sg And A/g, 'SG&A')
       .replace(/Pp And E/g, 'PP&E')
       .replace(/Ev/g, 'EV')
-      .replace(/Pe /g, 'P/E ');
+      .replace(/Pe /g, 'P/E ')
+      .replace(/Pb /g, 'P/B ')
+      .replace(/Pfcf /g, 'P/FCF ')
+      .replace(/Pcf /g, 'P/OCF ')
+      .replace(/Ps /g, 'P/S ');
+
+      
   };

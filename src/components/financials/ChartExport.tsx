@@ -21,7 +21,10 @@ interface DailyPricePoint {
   time: string;
   price: number;
 }
-
+interface MarketDataPoint {
+  time: string;
+  [key: string]: any; // This allows for any market data metric (price, peRatio, etc.)
+}
 interface ChartExportProps {
   data: any[]; // The processed data for the chart
   metrics: string[]; // Metrics to display
@@ -38,6 +41,8 @@ interface ChartExportProps {
   labelVisibilityArray?: boolean[]; // New prop: array of visibility flags
   dailyPriceData?: DailyPricePoint[]; // Add this property for price data
   selectedPeriods?: string[];
+  dailyMarketData?: Record<string, MarketDataPoint[]>; //
+
   sliderValue?: [number, number];
   timePeriods?: string[];
 }
@@ -58,6 +63,8 @@ const ChartExport: React.FC<ChartExportProps> = ({
   directLegends = [],
   statisticalLines = [], // Default to empty array
   dailyPriceData = [], // Add default empty array for price data
+  dailyMarketData = [], // Add default empty array for price data
+
   selectedPeriods = [],
   sliderValue = [0, 0],
   timePeriods = []
@@ -739,6 +746,8 @@ const ChartExport: React.FC<ChartExportProps> = ({
                     directLegends={directLegends}
                     statisticalLines={statisticalLines}
                     dailyPriceData={dailyPriceData}
+                    dailyMarketData={dailyMarketData}
+
                     selectedPeriods={selectedPeriods}
                     sliderValue={sliderValue}
                     timePeriods={timePeriods}

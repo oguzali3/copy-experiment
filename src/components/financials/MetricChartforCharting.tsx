@@ -362,7 +362,9 @@ const isPercentageMetric = (metricId: string): boolean => {
 const isPriceMetric = (metricId: string): boolean => {
   return metricId.toLowerCase() === 'price';
 };
-
+const isMcapMetric = (metricId: string): boolean => {
+  return metricId.toLowerCase() === 'marketcapdaily';
+};
 // Calculate CAGR - Compound Annual Growth Rate
 const calculateCAGR = (startValue: number, endValue: number, years: number): number => {
   if (startValue <= 0 || endValue <= 0 || years <= 0) return 0;
@@ -489,6 +491,8 @@ export const MetricChart: React.FC<MetricChartProps> = ({
   const percentageMetrics = metrics.filter(metric => isPercentageMetric(metric));
   const normalMetrics = metrics.filter(metric => !isPercentageMetric(metric) && !isPriceMetric(metric));
   const priceMetrics = metrics.filter(metric => isPriceMetric(metric));
+  const McapMetric = metrics.filter(metric => isMcapMetric(metric));
+
   const marketDataMetrics = metrics.filter(metric => isMarketDataMetric(metric));
 
   // Generate default title if none provided
@@ -891,12 +895,25 @@ const getFilteredMarketData = (metricId: string) => {
     return filteredData;
     
   }, [dailyPriceData, hasPriceData, hasPriceMetric, selectedPeriods]); // Include selectedPeriods in dependencies
+  const marketDataDisplayNames = {
+    'price': 'Price',
+    'marketCapDaily': 'Market Cap',
+    'peRatioDaily': 'P/E Ratio',
+    'psRatioDaily': 'P/S Ratio',
+    'pfcfRatioDaily': 'P/FCF Ratio',
+    'pcfRatioDaily': 'P/CF Ratio',
+    'pbRatioDaily': 'P/B Ratio',
+    'fcfYieldDaily': 'FCF Yield'
+  };
   
   // Custom legend formatter with total change and CAGR
   const legendFormatter = (value: string) => {
     // Special case for price
     if (isPriceMetric(value)) {
       return `${ticker} - Price`;
+    }
+      if (isMarketDataMetric(value)) {
+      return `${ticker} - ${marketDataDisplayNames[value] || value}`;
     }
     
     const stats = metricsStats[value];
@@ -963,7 +980,9 @@ const getFilteredMarketData = (metricId: string) => {
   
   // Function to determine if we need a third axis for price
   const needsPriceAxis = priceMetrics.length > 0 && (normalMetrics.length > 0 || percentageMetrics.length > 0);
-  const needsMarketDataAxis = marketDataMetrics.length > 0 && (normalMetrics.length > 0 || percentageMetrics.length > 0);
+  const needsMcapAxis = McapMetric.length > 0 && (normalMetrics.length > 0 || percentageMetrics.length > 0);
+
+  const needsMarketDataAxis = priceMetrics.length > 0 || McapMetric.length > 0 && (normalMetrics.length > 0 || percentageMetrics.length > 0);
 
   // Determine how many axes we need
   const axesCount = 
@@ -1369,7 +1388,7 @@ const getFilteredMarketData = (metricId: string) => {
             margin={{ 
               top: 20,
               // Adjust right margin based on number of Y-axes
-              right: axesCount >= 3 ? 80 : (axesCount >= 2 ? 60 : 10),
+              right: axesCount >= 3 ? 30 : (axesCount >= 2 ? 20 : 10),
               left: 10, 
               bottom: 20 + (typography.legendSize - 12) * 5 // Adjust bottom margin based on legend size
             }}
@@ -1377,15 +1396,15 @@ const getFilteredMarketData = (metricId: string) => {
             barCategoryGap={chartDimensions.barCategoryGap}
           >
           <CartesianGrid stroke="#e0e0e0" strokeWidth={0.5} />
-          {
-  //Secondary X-Axis for price data - No longer needed since we're using the financial x-axis
+          {metrics.filter(isMarketDataMetric).map((metricId) => (
   <XAxis 
+    key={`xaxis-${metricId}`}
     dataKey="time" 
-    xAxisId="price"
-    data={processedPriceData}
+    xAxisId={`${metricId}-axis`}  // Use unique ID for each metric's axis
     hide={true}
   />
-}
+))}
+
           {/* Primary X-Axis for financial metrics - visible */}
           <XAxis 
             dataKey="period" 
@@ -1436,9 +1455,11 @@ const getFilteredMarketData = (metricId: string) => {
               tickFormatter={formatMarketDataYAxis}
               tick={{ fontSize: typography.tickSize }}
               domain={getMarketDataDomain()}
-              dx={needsDualAxes ? 55 : 0}
+              dx={needsDualAxes ? 1 : 0}
+              hide={false}
             />
           )}
+
             {/* Tertiary Y-axis for price
             {needsPriceAxis && (
               <YAxis 
@@ -1457,7 +1478,7 @@ const getFilteredMarketData = (metricId: string) => {
             <CustomTooltip 
               fontSize={typography.tooltipSize}
               data={data}
-              processedPriceData={processedPriceData}
+              //processedPriceData={processedPriceData}
               colorMap={colorMap}
               metrics={metrics}
             />
@@ -1617,20 +1638,24 @@ const getFilteredMarketData = (metricId: string) => {
 
 
 {/* Render market data metrics as line charts */}
+{/* Render market data metrics as line charts */}
 {metrics.filter(isMarketDataMetric).map((metricId) => {
   const marketDataPoints = getFilteredMarketData(metricId);
-  console.log(marketDataPoints);
+  
   if (!marketDataPoints || marketDataPoints.length === 0) {
     return null;
   }
+  const isRatio = isPercentageMetric(metricId);
+  const isMcap = isMcapMetric(metricId);
   
+  const yAxisId = isRatio ? "percentage" : "marketData";
   return (
     <Line 
       key={`market-data-${metricId}`}
       data={marketDataPoints}
       dataKey={metricId} // Use the metric ID as the data key
-      xAxisId="price" // Use the price xAxis for consistent rendering
-      yAxisId="marketData" // Use the dedicated market data axis
+      xAxisId={`${metricId}-axis`} // Use the metric-specific xAxis
+      yAxisId={yAxisId} // Use the dedicated market data axis
       name={metricId} // We'll enhance the name display in the legend formatter
       stroke={colorMap[metricId] || '#ff7300'} // Use the color map for consistent colors
       strokeWidth={2}

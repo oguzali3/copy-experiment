@@ -1661,7 +1661,10 @@ return (
                       metricLabels={metricLabels}
                       fileName={`${company.ticker}-financial-metrics`}
                       dailyPriceData={hasPriceMetric() && company.priceData ? company.priceData : []}
-
+                      dailyMarketData={getSelectedMarketDataMetrics().reduce((acc, metricId) => ({
+                        ...acc,
+                        [metricId]: getMarketData(company, metricId)
+                      }), {})}
                       selectedPeriods={getChartData(company.metricData)?.selectedPeriods || []}
                       sliderValue={sliderValue}
                       timePeriods={timePeriods}      
@@ -1701,7 +1704,7 @@ return (
                 {getTableData(company.metricData) && getTableData(company.metricData).length > 0 && (
                   <FinancialDataTable
                     data={getTableData(company.metricData)}
-                    metrics={getVisibleMetrics()}
+                    metrics={getVisibleMetrics().filter(metric => !isMarketDataMetric(metric))}
                     metricVisibility={metricVisibility}
                     company={company.name}
                   />
