@@ -99,93 +99,86 @@ const calculateResponsiveTypography = (containerWidth) => {
     iconSize: Math.max(8, Math.min(16, Math.round(10 * scaleFactor))) // Legend icon size
   };
 };
-
+const isMarketDataMetric = (metricId: string): boolean => {
+  return metricId.toLowerCase() === 'price' || 
+         metricId.toLowerCase() === 'marketcapdaily' ||
+         metricId.toLowerCase() === 'peratiodaily' ||
+         metricId.toLowerCase() === 'psratiodaily' ||
+         metricId.toLowerCase() === 'pfcfratiodaily' ||
+         metricId.toLowerCase() === 'pcfratiodaily' ||
+         metricId.toLowerCase() === 'pbratiodaily' ||
+         metricId.toLowerCase() === 'fcfyielddaily';
+};
 // Custom tooltip component
 // Enhanced CustomTooltip component that shows both financial metrics and price data
+// Enhanced CustomTooltip component that shows both financial metrics and market data
 const CustomTooltip = ({ 
   active, 
   payload, 
   label, 
   fontSize,
-  data,                   // Add the financial data array
-  processedPriceData,     // Add the price data array
-  colorMap,               // Add color map for consistent colors
-  metrics                 // Add metrics for proper display names
+  data,                   // Financial data array
+  colorMap,               // Color map for consistent colors
+  metrics                 // Metrics for proper display names
 }: TooltipProps<number, string> & { 
   fontSize: number,
   data: any[],
-  processedPriceData: any[],
   colorMap: Record<string, string>,
   metrics: string[]
 }) => {
   if (!active || !payload || payload.length === 0) return null;
   
-  // Determine if we're hovering over a price point or a financial data point
-  // Price data has dates with hyphens (e.g., "2022-03-15"), financial data doesn't
-  const isHoveringOverPrice = label && typeof label === 'string' && label.includes('-');
+  // Determine if we're hovering over a market data point or a financial data point
+  const isHoveringOverMarketData = label && typeof label === 'string' && label.includes('-');
   
   // Format the label display
   let displayLabel = label;
-  if (isHoveringOverPrice) {
-    try {
-      const date = new Date(label);
-      displayLabel = date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch (e) {
-      // In case of parsing error, use the label as is
-      displayLabel = label;
-    }
-  }
   
-  // Prepare the tooltip entries
-  // Start with whatever payload is already active
+  // Prepare the tooltip entries starting with current payload
   const tooltipEntries = [...payload];
-  
-  // Now add any missing data
-  if (isHoveringOverPrice) {
-    // If hovering over price, we're already showing price data
-    // No need to do anything special here, as price is already in the payload
-  } else {
-    // If hovering over financial data, find and add the nearest price point
-    // Only add price if it's one of the selected metrics and not already in payload
-    const priceMetric = metrics.find(m => m.toLowerCase() === 'price');
-    const hasPriceInPayload = tooltipEntries.some(entry => entry.name?.toLowerCase() === 'price');
+
+  // If hovering over market data, find and add the financial data for the corresponding year/quarter
+  if (isHoveringOverMarketData && data && data.length > 0) {
+    // Extract year from the date
+    const pointDate = new Date(label);
+    const pointYear = pointDate.getFullYear();
+    const pointQuarter = Math.floor(pointDate.getMonth() / 3) + 1;
     
-    if (priceMetric && !hasPriceInPayload && processedPriceData.length > 0) {
-      // Extract year from financial data label
-      const year = parseInt(label);
+    // Find matching financial data entry
+    const matchingPeriod = data.find(entry => {
+      // Check if period is a direct year match
+      if (entry.period === pointYear.toString()) {
+        return true;
+      }
       
-      if (!isNaN(year)) {
-        // Find price data points for this year
-        const pricePointsInYear = processedPriceData.filter(point => {
-          try {
-            const pointDate = new Date(point.time);
-            return pointDate.getFullYear() === year;
-          } catch (e) {
-            return false;
-          }
-        });
-        
-        // If we have price data for this year, use the middle point or calculate average
-        if (pricePointsInYear.length > 0) {
-          // Use the middle point as representative or fall back to average
-          const midIndex = Math.floor(pricePointsInYear.length / 2);
-          const representativePrice = pricePointsInYear[midIndex]?.price || 
-            (pricePointsInYear.reduce((sum, p) => sum + p.price, 0) / pricePointsInYear.length);
-          
-          // Add to tooltip entries
-          tooltipEntries.push({
-            name: priceMetric,
-            value: representativePrice,
-            color: colorMap[priceMetric] || '#ff7300',
-            // Add dataKey for correct formatting
-            dataKey: 'price'
-          });
+      // Check for quarterly data (e.g., "Q1 2023")
+      if (typeof entry.period === 'string' && entry.period.includes(pointYear.toString())) {
+        // For quarterly data, also match the quarter if possible
+        if (entry.period.toLowerCase().includes(`q${pointQuarter}`)) {
+          return true;
         }
       }
+      
+      return false;
+    });
+    
+    // If matching financial data found, add its metrics to the tooltip
+    if (matchingPeriod) {
+      metrics.filter(metric => !isMarketDataMetric(metric)).forEach(metric => {
+        const metricData = matchingPeriod.metrics?.find((m: any) => m.name === metric);
+        
+        if (metricData && metricData.value !== null && metricData.value !== undefined) {
+          tooltipEntries.push({
+            name: metric,
+            value: metricData.value,
+            color: colorMap[metric],
+            dataKey: metric,
+            payload: {
+              isPercentage: { [metric]: isPercentageMetric(metric) }
+            }
+          });
+        }
+      });
     }
   }
   
@@ -230,27 +223,7 @@ const CustomTooltip = ({
           }
           
           // Get the proper display name for the metric
-          let displayName;
-          try {
-            // First check if we can use name property directly
-            const metricId = String(entry.name || '');
-            
-            // Handle special case for price values
-            if (isPrice) {
-              displayName = 'Price';
-            } else {
-              // Try through the utilities first
-              displayName = getLocalMetricDisplayName(metricId);
-              
-              // If display name is same as ID (lookup failed), apply same formatting as legend
-              if (displayName === metricId) {
-                displayName = formatRawMetricId(metricId);
-              }
-            }
-          } catch (error) {
-            // Last resort fallback
-            displayName = formatRawMetricId(String(entry.name || 'Unknown'));
-          }
+          let displayName = getLocalMetricDisplayName(String(entry.name || ''));
           
           // For price, format as currency
           const formattedDisplay = isPrice 
@@ -464,16 +437,7 @@ export const MetricChart: React.FC<MetricChartProps> = ({
   
   // Split metrics by chart type for proper rendering order
   const lineMetrics = metrics.filter(metric => metricTypes[metric] === 'line' || isPriceMetric(metric));
-  const isMarketDataMetric = (metricId: string): boolean => {
-    return metricId.toLowerCase() === 'price' || 
-           metricId.toLowerCase() === 'marketcapdaily' ||
-           metricId.toLowerCase() === 'peratiodaily' ||
-           metricId.toLowerCase() === 'psratiodaily' ||
-           metricId.toLowerCase() === 'pfcfratiodaily' ||
-           metricId.toLowerCase() === 'pcfratiodaily' ||
-           metricId.toLowerCase() === 'pbratiodaily' ||
-           metricId.toLowerCase() === 'fcfyielddaily';
-  };
+
   // For bar metrics, we now need to handle both regular and stacked bars
   const barMetrics = metrics.filter(metric => {
     // Exclude price metric from bar metrics
@@ -976,13 +940,13 @@ const getFilteredMarketData = (metricId: string) => {
   };
   
   // Function to determine if we need multiple Y-axes
-  const needsDualAxes = percentageMetrics.length > 0 && normalMetrics.length > 0;
+  const needsDualAxes = percentageMetrics.length > 0 ;
   
   // Function to determine if we need a third axis for price
   const needsPriceAxis = priceMetrics.length > 0 && (normalMetrics.length > 0 || percentageMetrics.length > 0);
   const needsMcapAxis = McapMetric.length > 0 && (normalMetrics.length > 0 || percentageMetrics.length > 0);
 
-  const needsMarketDataAxis = priceMetrics.length > 0 || McapMetric.length > 0 && (normalMetrics.length > 0 || percentageMetrics.length > 0);
+  const needsMarketDataAxis = priceMetrics.length > 0 || McapMetric.length > 0 ;
 
   // Determine how many axes we need
   const axesCount = 
