@@ -41,6 +41,7 @@ interface CompanyData {
   priceData?: any[]; // Add this new property
   marketCapData?: any[]; // For market cap data
   marketData?: Record<string, any[]>; // New field for all market data types
+  marketDataStats?: Record<string, any>; // Add this new property
 
   isLoading: boolean;
   error: string | null;
@@ -459,15 +460,14 @@ const fetchPriceDataFromBackend = async (ticker: string, startDate: string, endD
       console.log(`Fetched ${data.length} price data points for ${ticker} using backend API`);
     }
     
-    // Process the data to match the expected format
     const processedData = data.map(item => ({
       time: item.date,
-      price: item.value,
-      // Add other fields if available
-      open: item.open,
-      high: item.high,
-      low: item.low,
-      volume: item.volume
+      price: item.value, // Store under the metric ID key
+      // Keep other fields as well if they exist
+      date: item.date,
+      value: item.value,
+      // Add any additional properties from the response
+      bookValuePerShare: item.bookValuePerShare
     }));
     
     // Store the price data in the company object
@@ -611,29 +611,8 @@ const fetchPriceDataWithTimeframe = async (ticker: string, timeframe: string) =>
   }
 };
 
-// Add this effect to refetch price data when the time range changes
-useEffect(() => {
-  // Only refetch if we have companies, price metric is selected, and sliderValue has changed
-  if (selectedCompanies.length > 0 && hasPriceMetric()) {
-    // Re-fetch price data for each company
-    selectedCompanies.forEach(company => {
-      fetchPriceData(company.ticker);
-    });
-  }
-}, [sliderValue, timePeriods]);
-// Add an additional effect to fetch price data when price metric is selected
-useEffect(() => {
-  // If price metric is selected and we have companies
-  if (hasPriceMetric() && selectedCompanies.length > 0) {
-    // Fetch price data for each company
-    selectedCompanies.forEach(company => {
-      // Only fetch if we don't already have price data for this company
-      if (!company.priceData) {
-        fetchPriceData(company.ticker);
-      }
-    });
-  }
-}, [hasPriceMetric()]);
+
+
 const fetchMarketDataFromBackend = async (ticker: string, metricId: string, startDate: string, endDate: string) => {
   try {
     console.log(`Fetching ${metricId} data for ${ticker} from ${startDate} to ${endDate}`);
@@ -647,7 +626,12 @@ const fetchMarketDataFromBackend = async (ticker: string, metricId: string, star
       throw new Error(`Failed to fetch ${metricId} data: ${response.statusText}`);
     }
     
-    const data = await response.json();
+    const responseData = await response.json();
+    
+    // Handle new response structure with data array and statistics
+    const data = responseData.data || [];
+    const statistics = responseData.statistics || null;
+    
     // Process the data to match the expected format
     const processedData = data.map(item => ({
       time: item.date,
@@ -655,10 +639,10 @@ const fetchMarketDataFromBackend = async (ticker: string, metricId: string, star
       // Keep other fields as well if they exist
       date: item.date,
       value: item.value,
-      // Add any additional properties that might be in the response
-
+      // Add any additional properties from the response
     }));
-    console.log(processedData);
+    
+    console.log(`Processed ${processedData.length} data points for ${metricId}`);
 
     // Store the data in the company object
     setSelectedCompanies(prev => {
@@ -675,21 +659,21 @@ const fetchMarketDataFromBackend = async (ticker: string, metricId: string, star
             ...currentMarketData,
             [metricId]: processedData
           },
+          // Also store statistics in a new property
+          marketDataStats: {
+            ...(updatedCompanies[companyIndex].marketDataStats || {}),
+            [metricId]: statistics
+          },
           isLoading: false
         };
         
-        // For backward compatibility, also update specific fields
-        if (metricId === 'price') {
-          updatedCompanies[companyIndex].priceData = processedData;
-        } else if (metricId === 'marketCapDaily') {
-          updatedCompanies[companyIndex].marketCapData = processedData;
-        }
       }
       
       return updatedCompanies;
     });
     
-    return processedData;
+    // Return both data and statistics
+    return { data: processedData, statistics };
   } catch (err) {
     console.error(`Error fetching ${metricId} data from backend for ${ticker}:`, err);
     

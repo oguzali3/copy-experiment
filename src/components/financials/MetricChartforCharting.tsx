@@ -649,12 +649,13 @@ const processedMarketData = useMemo(() => {
       // Skip if no settings enabled for this metric
       const settings = metricSettings[metricId];
       if (!settings) return;
-      
+
       // Only proceed if any statistic is enabled
       if (settings.average || settings.median || settings.min || settings.max) {
         // Extract values for this metric
         const values: number[] = [];
-        
+        console.log("marketdatastats", metricId);
+
         data.forEach(item => {
           let metricValue = null;
           
