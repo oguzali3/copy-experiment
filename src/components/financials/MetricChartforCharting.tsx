@@ -324,6 +324,10 @@ const formatPriceYAxis = (value: number) => {
 // Check if a metric name suggests it's a percentage
 const isPercentageMetric = (metricId: string): boolean => {
   const lowerMetricId = metricId.toLowerCase();
+  if (lowerMetricId.includes('daily')) {
+    return false;
+  }
+
   return lowerMetricId.includes('percent') || 
          lowerMetricId.includes('margin') || 
          lowerMetricId.includes('ratio') ||
@@ -947,7 +951,7 @@ const getFilteredMarketData = (metricId: string) => {
   const needsPriceAxis = priceMetrics.length > 0 && (normalMetrics.length > 0 || percentageMetrics.length > 0);
   const needsMcapAxis = McapMetric.length > 0 && (normalMetrics.length > 0 || percentageMetrics.length > 0);
 
-  const needsMarketDataAxis = priceMetrics.length > 0 || McapMetric.length > 0 ;
+  const needsMarketDataAxis = priceMetrics.length > 0 || McapMetric.length > 0 || marketDataMetrics.length > 0 ;
 
   // Determine how many axes we need
   const axesCount = 
@@ -1085,7 +1089,7 @@ const getFilteredMarketData = (metricId: string) => {
   const formatMarketDataYAxis = (value: number) => {
     // For price, use currency format
     if (hasPriceMetric) {
-      return `$${value.toFixed(2)}`;
+      return `${value.toFixed(2)}`;
     }
     
     // For ratios, just show the number with 2 decimal places
@@ -1394,7 +1398,7 @@ const getFilteredMarketData = (metricId: string) => {
               <YAxis 
                 yAxisId="normal"
                 orientation="left"
-                axisLine={true}
+                axisLine={false}
                 tickFormatter={formatYAxis}
                 tick={{ fontSize: typography.tickSize }}
               />
@@ -1405,7 +1409,7 @@ const getFilteredMarketData = (metricId: string) => {
               <YAxis 
                 yAxisId="percentage"
                 orientation="right"
-                axisLine={true}
+                axisLine={false}
                 tickFormatter={formatPercentageYAxis}
                 tick={{ fontSize: typography.tickSize }}
                 domain={getPercentageDomain()}
@@ -1416,7 +1420,7 @@ const getFilteredMarketData = (metricId: string) => {
             <YAxis 
               yAxisId="marketData"
               orientation={needsDualAxes ? "right" : "right"}
-              axisLine={true}
+              axisLine={false}
               tickFormatter={formatMarketDataYAxis}
               tick={{ fontSize: typography.tickSize }}
               domain={getMarketDataDomain()}
