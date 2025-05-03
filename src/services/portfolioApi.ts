@@ -962,7 +962,44 @@ getPortfolioHistoryWithExclusions: async (
         throw error;
       }
     });
+  },
+  // Add this method to portfolioApi.ts
+getPortfoliosByVisibility: async (visibility: PortfolioVisibility): Promise<PortfolioResponseDto[]> => {
+  try {
+    // Use the existing getBasicPortfoliosByVisibility method as the foundation
+    let visibilityParam: 'public' | 'paid';
+    
+    if (visibility === PortfolioVisibility.PUBLIC) {
+      visibilityParam = 'public';
+    } else if (visibility === PortfolioVisibility.PAID) {
+      visibilityParam = 'paid';
+    } else {
+      throw new Error(`Cannot fetch portfolios with visibility: ${visibility}`);
+    }
+    
+    const response = await portfolioApi.getBasicPortfoliosByVisibility(visibilityParam);
+    
+    // Convert the basic portfolio info to the full portfolio response format
+    return response.map(portfolio => ({
+      id: portfolio.id,
+      name: portfolio.name,
+      description: portfolio.description || '',
+      visibility: portfolio.visibility,
+      userId: portfolio.userId,
+      totalValue: portfolio.totalValue,
+      dayChange: portfolio.lastDayChange,
+      dayChangePercent: portfolio.lastDayChange,
+      positions: [],
+      createdAt: portfolio.createdAt.toString(),
+      updatedAt: new Date().toString(),
+      previousDayValue: 0,
+      lastPriceUpdate: null
+    }));
+  } catch (error) {
+    console.error(`Error getting portfolios by visibility ${visibility}:`, error);
+    return [];
   }
+}
   
 };
 

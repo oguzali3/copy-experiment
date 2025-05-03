@@ -1,0 +1,50 @@
+# docker-compose.yml - For managing the frontend development container
+
+version: "3.8" # Specifies the Docker Compose version
+
+services:
+  # Define the service for your frontend development environment
+  frontend-dev:
+    # Build instructions:
+    # Use the current directory (.) as the build context
+    # Use the Dockerfile.dev file for build instructions
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    # Optional: Assign a specific name to the container for easier identification
+    container_name: biggr-frontend-dev
+    # Port mapping:
+    # Map port 5173 on your host machine to port 5173 inside the container
+    # Allows you to access the Vite server via http://localhost:5173
+    ports:
+      - "5173:5173"
+    # Volume mounts for live development:
+    volumes:
+      # Mount your local 'src' directory into '/app/src' in the container.
+      # Changes made locally in 'src' will immediately reflect inside the container,
+      # allowing Vite's Hot Module Replacement (HMR) to work.
+      - ./src:/app/src
+      # Mount other key files/directories that you might edit during development
+      # and want changes reflected without rebuilding the image.
+      - ./public:/app/public
+      - ./index.html:/app/index.html
+      - ./vite.config.ts:/app/vite.config.ts
+      - ./tailwind.config.js:/app/tailwind.config.js
+      - ./postcss.config.js:/app/postcss.config.js
+      # Use an anonymous volume for node_modules. This prevents your local
+      # node_modules (if any) from overwriting the ones installed inside
+      # the container during the 'npm install' step in Dockerfile.dev.
+      # It ensures the container uses its own isolated dependencies.
+      - /app/node_modules
+    # Environment variables needed by your React/Vite app during development
+    environment:
+      - NODE_ENV=development
+      # Define environment variables prefixed with VITE_ as needed by your app.
+      # These can be overridden by creating a local '.env' file in this directory.
+      - VITE_API_BASE_URL=http://localhost:4000 # Example: Point to local backend or backend container
+      - VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_key_here # Example: Use your actual test key
+      # Add any other VITE_* variables your application requires
+    # Keeps stdin open, allowing interaction if needed (less common for frontend dev)
+    stdin_open: true
+    # Allocates a pseudo-TTY, helps keep the container running smoothly
+    tty: true

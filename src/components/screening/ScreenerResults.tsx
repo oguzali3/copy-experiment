@@ -62,7 +62,14 @@ export const ScreenerResults = ({
         excludeExchanges
       );
 
-      const response = await fetch('http://localhost:4000/graphql', {
+      const graphqlUrl = import.meta.env.VITE_GRAPHQL_URL;
+
+      // Optional fallback for development
+      if (!graphqlUrl) {
+        console.warn("GraphQL URL not found in environment variables, using default");
+      }
+
+      const response = await fetch(graphqlUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

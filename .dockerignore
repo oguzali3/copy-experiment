@@ -1,0 +1,48 @@
+# .dockerignore for Frontend Development
+
+# Git files
+.git
+.gitignore
+
+# Docker files (don't include themselves in the context)
+Dockerfile
+Dockerfile.*
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml
+
+# Dependency directories (these will be installed inside the container)
+# Avoids copying potentially large local node_modules
+node_modules
+
+# Production build output (not needed for dev server)
+dist
+build
+.next
+out
+
+# Environment files (should be injected or mounted, not baked into image)
+.env*
+*.env
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Test reports & cache
+coverage
+.cache
+.parcel-cache
+.vite
+
+# IDE directories
+.idea
+.vscode

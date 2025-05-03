@@ -1,0 +1,38 @@
+# Dockerfile.dev - For running the Vite development server
+
+# Use a specific LTS Node.js version on Alpine for smaller size
+# Match the Node version you use locally if possible (e.g., 18 or 20)
+# Using 20 to be consistent with the backend example
+FROM node:23-alpine
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy package.json and the appropriate lock file first
+# This leverages Docker's layer caching effectively
+COPY package.json ./
+# --- IMPORTANT: Uncomment the lock file matching your package manager ---
+# COPY package-lock.json ./
+# COPY yarn.lock ./ 
+# COPY pnpm-lock.yaml ./
+
+# Install all dependencies (including devDependencies needed for the dev server)
+# Use 'npm ci' if you have package-lock.json for faster, more reliable installs
+# Use '--frozen-lockfile' for yarn or pnpm if using their lock files
+RUN npm install 
+# Or: RUN npm ci
+# Or: RUN yarn install --frozen-lockfile
+# Or: RUN pnpm install --frozen-lockfile
+
+# Copy the rest of your frontend application code into the container
+# This includes src/, public/, vite.config.ts, tailwind.config.js, etc.
+COPY . .
+
+# Vite's default port is 5173. Expose this port from the container.
+# Ensure your vite.config.ts includes server: { port: 5173, host: true } or similar
+# The 'host: true' (or 'host: 0.0.0.0') is crucial for accessibility outside the container.
+EXPOSE 5173
+
+# The default command to start the Vite development server when the container runs.
+# Your 'npm run dev' script in package.json MUST include the '--host' flag.
+CMD ["npm", "run", "dev"]
