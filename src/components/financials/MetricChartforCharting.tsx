@@ -1620,7 +1620,7 @@ const getFilteredMarketData = (metricId: string) => {
       data={marketDataPoints}
       dataKey={metricId} // Use the metric ID as the data key
       xAxisId={`${metricId}-axis`} // Use the metric-specific xAxis
-      yAxisId={yAxisId} // Use the dedicated market data axis
+      yAxisId="marketData" // Use the dedicated market data axis
       name={metricId} // We'll enhance the name display in the legend formatter
       stroke={colorMap[metricId] || '#ff7300'} // Use the color map for consistent colors
       strokeWidth={2}
