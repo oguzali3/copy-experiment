@@ -40,3 +40,24 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Fix for recharts dot and line alignment during export */
+.recharts-dot circle, 
+.recharts-line-dot, 
+.recharts-line-dots circle, 
+.recharts-symbols {
+  transform: none !important;
+  vector-effect: non-scaling-stroke !important;
+  position: absolute !important;
+}
+
+.recharts-line-curve {
+  vector-effect: non-scaling-stroke !important;
+  transform: none !important;
+}
+
+/* Fix for legend alignment */
+.recharts-legend-item-text {
+  display: inline-block !important;
+  vertical-align: middle !important;
+}

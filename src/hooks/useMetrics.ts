@@ -1,67 +1,131 @@
-
-import { useState, useEffect } from "react";
-import { INCOME_STATEMENT_METRICS, calculateMetricValue } from "@/utils/metricDefinitions";
+import { useState, useEffect, useCallback } from "react";
+import {
+  ALL_METRICS,
+  INCOME_STATEMENT_METRICS,
+  BALANCE_SHEET_METRICS,
+  CASH_FLOW_METRICS,
+  KEY_METRICS,
+  FINANCIAL_RATIO_METRICS,
+  getMetricFormat,
+} from "@/utils/metricDefinitions";
 
 export const useMetrics = (ticker: string) => {
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
-  const [metricTypes, setMetricTypes] = useState<Record<string, 'bar' | 'line'>>({});
+  const [metricTypes, setMetricTypes] = useState<
+    Record<string, "bar" | "line">
+  >({});
 
+  // Reset selected metrics when ticker changes
   useEffect(() => {
     setSelectedMetrics([]);
     setMetricTypes({});
   }, [ticker]);
 
-  const handleMetricTypeChange = (metric: string, type: 'bar' | 'line') => {
-    setMetricTypes(prev => ({
-      ...prev,
-      [metric]: type
-    }));
-  };
+  // Set default chart type for newly selected metrics
+  useEffect(() => {
+    // Only handle metrics that don't already have a type set
+    const newMetrics = selectedMetrics.filter(
+      (metric) => metricTypes[metric] === undefined
+    );
 
-  const handleMetricsReorder = (newOrder: string[]) => {
-    setSelectedMetrics(newOrder);
-  };
+    if (newMetrics.length === 0) return;
 
-  const getMetricData = (combinedData: any[], timePeriods: string[], sliderValue: number[]) => {
-    if (!selectedMetrics.length || !combinedData?.length) return [];
+    const updatedTypes = { ...metricTypes };
 
-    const startYear = timePeriods[sliderValue[0]];
-    const endYear = timePeriods[sliderValue[1]];
-    
-    const filteredData = combinedData.filter(item => {
-      if (item.period === 'TTM') {
-        return endYear === 'TTM';
+    newMetrics.forEach((metric) => {
+      // Default to bar for currency metrics and line for percentage/ratio metrics
+      const format = getMetricFormat(metric);
+      if (format === "percentage" || format === "ratio") {
+        updatedTypes[metric] = "line";
+      } else {
+        updatedTypes[metric] = "bar";
       }
-      const year = parseInt(item.period);
-      const startYearInt = parseInt(startYear);
-      const endYearInt = endYear === 'TTM' ? 
-        parseInt(timePeriods[timePeriods.length - 2]) : 
-        parseInt(endYear);
-      
-      return year >= startYearInt && year <= endYearInt;
     });
 
-    return filteredData.map((item, index) => {
-      const point: Record<string, any> = { period: item.period };
-      const previousItem = filteredData[index + 1];
-      
-      selectedMetrics.forEach(metric => {
-        const metricDef = INCOME_STATEMENT_METRICS.find(m => m.id === metric);
-        if (metricDef) {
-          point[metric] = calculateMetricValue(metricDef, item, previousItem);
-        }
-      });
-      
-      return point;
+    setMetricTypes(updatedTypes);
+  }, [selectedMetrics, metricTypes]);
+
+  // Memoize handlers to prevent recreating them on every render
+  const handleMetricTypeChange = useCallback(
+    (metric: string, type: "bar" | "line") => {
+      setMetricTypes((prev) => ({
+        ...prev,
+        [metric]: type,
+      }));
+    },
+    []
+  );
+
+  const handleAddMetric = useCallback((metricId: string) => {
+    if (!metricId) return;
+
+    setSelectedMetrics((prev) => {
+      if (prev.includes(metricId)) return prev;
+      return [...prev, metricId];
     });
-  };
+  }, []);
+
+  const handleRemoveMetric = useCallback((metricId: string) => {
+    if (!metricId) return;
+
+    setSelectedMetrics((prev) => prev.filter((id) => id !== metricId));
+
+    // Also remove from metric types
+    setMetricTypes((prev) => {
+      const updated = { ...prev };
+      delete updated[metricId];
+      return updated;
+    });
+  }, []);
+
+  const handleToggleMetric = useCallback((metricId: string) => {
+    if (!metricId) return;
+
+    setSelectedMetrics((prev) => {
+      if (prev.includes(metricId)) {
+        return prev.filter((id) => id !== metricId);
+      } else {
+        return [...prev, metricId];
+      }
+    });
+  }, []);
+
+  // Get metrics specific to a financial statement type - memoized to prevent recreation
+  const getMetricsBySource = useCallback(
+    (
+      source:
+        | "income-statement"
+        | "balance-sheet"
+        | "cash-flow"
+        | "key-metrics"
+        | "financial-ratios"
+    ) => {
+      switch (source) {
+        case "income-statement":
+          return INCOME_STATEMENT_METRICS.map((m) => m.id);
+        case "balance-sheet":
+          return BALANCE_SHEET_METRICS.map((m) => m.id);
+        case "cash-flow":
+          return CASH_FLOW_METRICS.map((m) => m.id);
+        case "key-metrics":
+          return KEY_METRICS.map((m) => m.id);
+        case "financial-ratios":
+          return FINANCIAL_RATIO_METRICS.map((m) => m.id);
+        default:
+          return [];
+      }
+    },
+    []
+  );
 
   return {
     selectedMetrics,
     setSelectedMetrics,
     metricTypes,
     handleMetricTypeChange,
-    handleMetricsReorder,
-    getMetricData
+    handleAddMetric,
+    handleRemoveMetric,
+    handleToggleMetric,
+    getMetricsBySource,
   };
 };

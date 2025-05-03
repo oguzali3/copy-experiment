@@ -3,37 +3,44 @@ import { fetchFinancialData } from "@/utils/financialApi";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { CashFlowTable } from "./CashFlowTable";
+import { FinancialRatiosTable } from "./FinancialRatiosTable";
 import { useMemo } from "react";
 
-interface CashFlowProps {
+interface FinancialRatiosProps {
   timeFrame: "annual" | "quarterly" | "ttm";
+  ticker: string;
   selectedMetrics: string[];
   onMetricsChange: (metrics: string[]) => void;
-  ticker: string;
 }
 
-export const CashFlow = ({ 
+export const FinancialRatios = ({ 
   timeFrame,
-  selectedMetrics, 
-  onMetricsChange,
-  ticker 
-}: CashFlowProps) => {
+  ticker,
+  selectedMetrics,
+  onMetricsChange
+}: FinancialRatiosProps) => {
   // Fetch quarterly data if timeFrame is quarterly or ttm
   const { data: quarterlyData, isLoading: isQuarterlyLoading, error: quarterlyError } = useQuery({
-    queryKey: ['cash-flow', ticker, 'quarter'],
-    queryFn: () => fetchFinancialData('cash-flow-statement', ticker, 'quarter'),
+    queryKey: ['financial-ratios', ticker, 'quarter'],
+    queryFn: () => fetchFinancialData('financial-ratios', ticker, 'quarter'),
     enabled: !!ticker && (timeFrame === 'quarterly' || timeFrame === 'ttm'),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch annual data for comparisons
   const { data: annualData, isLoading: isAnnualLoading, error: annualError } = useQuery({
-    queryKey: ['cash-flow', ticker, 'annual'],
-    queryFn: () => fetchFinancialData('cash-flow-statement', ticker, 'annual'),
+    queryKey: ['financial-ratios', ticker, 'annual'],
+    queryFn: () => fetchFinancialData('financial-ratios', ticker, 'annual'),
     enabled: !!ticker,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  const handleMetricToggle = (metricId: string) => {
+    const newMetrics = selectedMetrics.includes(metricId)
+      ? selectedMetrics.filter(id => id !== metricId)
+      : [...selectedMetrics, metricId];
+    onMetricsChange(newMetrics);
+  };
 
   // Process and combine data based on timeFrame
   const { processedData, isLoading, error } = useMemo(() => {
@@ -41,7 +48,7 @@ export const CashFlow = ({
       if (isAnnualLoading) return { isLoading: true, error: null, processedData: [] };
       if (annualError) return { isLoading: false, error: annualError, processedData: [] };
       if (!annualData || !Array.isArray(annualData) || annualData.length === 0) {
-        return { isLoading: false, error: new Error(`No annual cash flow data for ${ticker}`), processedData: [] };
+        return { isLoading: false, error: new Error(`No annual financial ratios data for ${ticker}`), processedData: [] };
       }
 
       // Sort annual data
@@ -57,7 +64,7 @@ export const CashFlow = ({
       if (isQuarterlyLoading) return { isLoading: true, error: null, processedData: [] };
       if (quarterlyError) return { isLoading: false, error: quarterlyError, processedData: [] };
       if (!quarterlyData || !Array.isArray(quarterlyData) || quarterlyData.length === 0) {
-        return { isLoading: false, error: new Error(`No quarterly cash flow data for ${ticker}`), processedData: [] };
+        return { isLoading: false, error: new Error(`No quarterly financial ratios data for ${ticker}`), processedData: [] };
       }
 
       // Sort quarterly data ensuring TTM comes first
@@ -66,7 +73,7 @@ export const CashFlow = ({
         if (b.period === 'TTM') return 1;
         return new Date(b.date).getTime() - new Date(a.date).getTime();
       });
-      console.log('Cash flow results:', sortedData);
+
       return { 
         processedData: sortedData.slice(0, 60),
         isLoading: false, 
@@ -80,7 +87,7 @@ export const CashFlow = ({
       
       // Check quarterly data
       if (!quarterlyData || !Array.isArray(quarterlyData) || quarterlyData.length === 0) {
-        return { isLoading: false, error: new Error(`No quarterly cash flow data for ${ticker}`), processedData: [] };
+        return { isLoading: false, error: new Error(`No quarterly financial ratios data for ${ticker}`), processedData: [] };
       }
 
       // Find TTM data
@@ -125,7 +132,7 @@ export const CashFlow = ({
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          {error ? (error as Error).message : `No cash flow data available for ${ticker}.`}
+          {error ? (error as Error).message : `No financial ratios data available for ${ticker}.`}
         </AlertDescription>
       </Alert>
     );
@@ -133,10 +140,11 @@ export const CashFlow = ({
 
   return (
     <div className="space-y-6">
-      <CashFlowTable 
+      <FinancialRatiosTable 
         data={processedData}
+        ticker={ticker}
         selectedMetrics={selectedMetrics}
-        onMetricsChange={onMetricsChange}
+        onMetricToggle={handleMetricToggle}
         timeFrame={timeFrame}
       />
     </div>

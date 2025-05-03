@@ -1,180 +1,276 @@
-import { 
-  filterOutTTM, 
-  filterByTimeRange, 
-  sortChronologically 
-} from './financialTransformers/dataFilters';
-import {
-  transformIncomeStatementMetrics,
-  transformBalanceSheetMetrics,
-  transformTTMData,
-  transformCashFlowMetrics
-} from './financialTransformers/metricTransformers';
-import { calculateMetricStatistics } from './financialTransformers/metricCalculations';
-
-const isCashFlowMetric = (metric: string) => {
-  const cashFlowMetrics = [
-    "operatingCashFlow", "investingCashFlow", "financingCashFlow", 
-    "netCashFlow", "freeCashFlow", "capitalExpenditure", 
-    "investmentsInPropertyPlantAndEquipment", "depreciationAndAmortization",
-    "stockBasedCompensation", "deferredIncomeTax", "otherNonCashItems",
-    "changeInWorkingCapital", "accountsReceivables", "inventory",
-    "accountsPayables", "otherWorkingCapital", "netCashProvidedByOperatingActivities",
-    "acquisitionsNet", "purchasesOfInvestments", "salesMaturitiesOfInvestments",
-    "otherInvestingActivites", "netCashUsedForInvestingActivites", "debtRepayment",
-    "commonStockIssued", "commonStockRepurchased", "dividendsPaid",
-    "otherFinancingActivites", "netCashUsedProvidedByFinancingActivities",
-    "effectOfForexChangesOnCash", "netChangeInCash", "cashAtEndOfPeriod",
-    "cashAtBeginningOfPeriod", "netIncome"
-  ];
-  return cashFlowMetrics.includes(metric);
-};
-
-const isBalanceSheetMetric = (metric: string) => {
-  const balanceSheetMetrics = [
-    "totalAssets", "totalLiabilities", "totalEquity", "cashAndCashEquivalents",
-    "shortTermInvestments", "netReceivables", "inventory", "propertyPlantAndEquipment",
-    "goodwill", "intangibleAssets", "longTermInvestments", "shortTermDebt",
-    "accountsPayable", "deferredRevenue", "longTermDebt", "retainedEarnings",
-    "cashAndShortTermInvestments"
-  ];
-  return balanceSheetMetrics.includes(metric);
-};
-
-const formatQuarterPeriod = (date: string) => {
-  const dateObj = new Date(date);
-  const year = dateObj.getFullYear();
-  const month = dateObj.getMonth();
-  const quarter = Math.floor(month / 3) + 1;
-  return `Q${quarter} ${year}`;
-};
+// financialDataTransform.ts
+import { getMetricFormat } from "@/utils/metricDefinitions";
 
 export const transformFinancialData = (
-  financialData: any,
-  balanceSheetData: any,
-  cashFlowData: any,
+  incomeStatementData: any[],
+  balanceSheetData: any[],
+  cashFlowData: any[],
+  keyMetricsData: any[] = [],
+  financialRatiosData: any[] = [],
   selectedMetrics: string[],
   timePeriods: string[],
   sliderValue: number[],
   ticker: string,
-  timeFrame: 'annual' | 'quarterly' | 'ttm' = 'annual'
+  timeFrame: "annual" | "quarterly" | "ttm"
 ) => {
   if (!selectedMetrics.length) return [];
 
-  const startYear = timePeriods[sliderValue[0]];
-  const endYear = timePeriods[sliderValue[1]];
-
-  // Format cash flow data to match the expected structure
-  const formattedCashFlowData = Array.isArray(cashFlowData) 
-    ? cashFlowData.map(item => ({
-        ...item,
-        period: timeFrame === 'quarterly' 
-          ? formatQuarterPeriod(item.date)
-          : (item.calendarYear || (item.period === 'TTM' ? 'TTM' : item.date?.split('-')[0]))
-      }))
-    : [];
-
-  console.log('Formatted Cash Flow Data:', formattedCashFlowData);
-
-  // Handle different data structures based on timeFrame
-  let periodData;
-  if (timeFrame === 'quarterly') {
-    // Ensure financialData is treated as an array for quarterly data
-    periodData = Array.isArray(financialData) 
-      ? financialData.map(item => ({
-          ...item,
-          period: formatQuarterPeriod(item.date)
-        }))
-      : [];
-  } else {
-    // Handle annual data structure
-    periodData = (financialData[ticker]?.annual?.filter((item: any) => item.period !== 'TTM') || []);
+  // Pre-filter data based on timeFrame
+  if (timeFrame === 'ttm') {
+    // For TTM mode - only keep annual data and TTM entries
+    const filterDataForTTM = (data: any[]) => {
+      if (!data?.length) return [];
+      
+      return data.filter(item => {
+        // Keep TTM items
+        if (item.period === 'TTM') return true;
+        
+        // Filter out quarterly data
+        if (item.period && item.period.includes('Q')) return false;
+        
+        // For other items, check if they have a date and extract year
+        if (item.date) {
+          const year = new Date(item.date).getFullYear();
+          if (!isNaN(year)) {
+            return true;
+          }
+        }
+        
+        // For items without dates, only keep those with 4-digit year periods
+        if (item.period && /^\d{4}$/.test(item.period)) {
+          return true;
+        }
+        
+        // Exclude anything else
+        return false;
+      });
+    };
+    
+    // Filter all data sources
+    incomeStatementData = filterDataForTTM(incomeStatementData);
+    balanceSheetData = filterDataForTTM(balanceSheetData);
+    cashFlowData = filterDataForTTM(cashFlowData);
+    keyMetricsData = filterDataForTTM(keyMetricsData);
+    financialRatiosData = filterDataForTTM(financialRatiosData);
+  }
+  else if (timeFrame === 'quarterly') {
+    // For quarterly mode - exclude TTM entries
+    const filterDataForQuarterly = (data: any[]) => {
+      if (!data?.length) return [];
+      
+      return data.filter(item => {
+        // Filter out TTM items
+        if (item.period === 'TTM') return false;
+        
+        // Keep only items with quarterly periods or date-based quarters
+        if (item.period && item.period.includes('Q')) return true;
+        
+        if (item.date) {
+          // Keep items with dates, they'll be formatted as quarters later
+          return true;
+        }
+        
+        // Exclude other items
+        return false;
+      });
+    };
+    
+    // Filter all data sources to remove TTM entries in quarterly view
+    incomeStatementData = filterDataForQuarterly(incomeStatementData);
+    balanceSheetData = filterDataForQuarterly(balanceSheetData);
+    cashFlowData = filterDataForQuarterly(cashFlowData);
+    keyMetricsData = filterDataForQuarterly(keyMetricsData);
+    financialRatiosData = filterDataForQuarterly(financialRatiosData);
   }
 
-  const periodBalanceSheet = (balanceSheetData || []).map((item: any) => ({
-    ...item,
-    period: timeFrame === 'quarterly' ? formatQuarterPeriod(item.date) : item.period
-  }));
+  // Extract data from all data sources
+  const extractedData: Record<string, Record<string, any>> = {};
 
-  // Transform data based on metric types
-  let transformedData = periodData.map((item: any) => {
-    const period = item.period;
-    let periodData: Record<string, any> = { period };
+  // Helper function to determine if a period should be included based on timeFrame
+  const shouldIncludePeriod = (periodKey: string): boolean => {
+    // In quarterly mode, exclude TTM
+    if (timeFrame === 'quarterly' && periodKey === 'TTM') {
+      return false;
+    }
+    
+    // In TTM mode, only include TTM and year periods (no quarters)
+    if (timeFrame === 'ttm') {
+      if (periodKey === 'TTM') return true;
+      if (periodKey.includes('Q')) return false;
+      return /^\d{4}$/.test(periodKey); // Only include 4-digit years
+    }
+    
+    // In annual mode, include all periods
+    return true;
+  };
 
-    selectedMetrics.forEach(metric => {
-      if (isBalanceSheetMetric(metric)) {
-        const balanceSheetItem = periodBalanceSheet.find((bs: any) => bs.period === period);
-        if (balanceSheetItem) {
-          periodData[metric] = typeof balanceSheetItem[metric] === 'string'
-            ? parseFloat(balanceSheetItem[metric].replace(/,/g, ''))
-            : balanceSheetItem[metric];
-        }
-      } else if (isCashFlowMetric(metric)) {
-        const cashFlowItem = formattedCashFlowData.find((cf: any) => cf.period === period);
-        if (cashFlowItem) {
-          periodData[metric] = typeof cashFlowItem[metric] === 'string'
-            ? parseFloat(cashFlowItem[metric].replace(/,/g, ''))
-            : cashFlowItem[metric];
-        }
+  // Helper function to process each data source
+  const processDataSource = (
+    data: any[], 
+    dataType: 'income-statement' | 'balance-sheet' | 'cash-flow' | 'key-metrics' | 'financial-ratios'
+  ) => {
+    if (!data?.length) return;
+    
+    data.forEach(item => {
+      // Determine the period key
+      let periodKey: string;
+      
+      if (item.period === 'TTM') {
+        periodKey = 'TTM';
+      } else if (timeFrame === 'quarterly' && item.date) {
+        // For quarterly data, format as Q1 2023, etc.
+        const date = new Date(item.date);
+        const quarter = Math.floor((date.getMonth() + 3) / 3);
+        periodKey = `Q${quarter} ${date.getFullYear()}`;
+      } else if (item.date) {
+        // For annual data, just use the year
+        const date = new Date(item.date);
+        periodKey = date.getFullYear().toString();
       } else {
-        // Income statement metrics
-        periodData[metric] = typeof item[metric] === 'string'
-          ? parseFloat(item[metric].replace(/,/g, ''))
-          : item[metric];
+        // If no date, use existing period if it exists
+        periodKey = item.period || 'Unknown';
       }
-
-      // Ensure all metrics have a value
-      if (periodData[metric] === undefined) {
-        periodData[metric] = 0;
+      
+      // Check if this period should be included based on timeFrame
+      if (!shouldIncludePeriod(periodKey)) {
+        return;
       }
-    });
-
-    return periodData;
-  });
-
-  // Add TTM data if it exists and is selected
-  if (endYear === 'TTM') {
-    const ttmIncomeStatement = timeFrame === 'quarterly'
-      ? Array.isArray(financialData) 
-        ? financialData.find((item: any) => item.period === 'TTM')
-        : null
-      : financialData[ticker]?.annual?.find((item: any) => item.period === 'TTM');
-
-    const ttmBalanceSheet = balanceSheetData?.find((item: any) => item.period === 'TTM');
-    const ttmCashFlow = formattedCashFlowData?.find((item: any) => item.period === 'TTM');
-
-    if (ttmIncomeStatement || ttmBalanceSheet || ttmCashFlow) {
-      const ttmData: Record<string, any> = { period: 'TTM' };
-
-      selectedMetrics.forEach(metric => {
-        if (isBalanceSheetMetric(metric) && ttmBalanceSheet) {
-          ttmData[metric] = typeof ttmBalanceSheet[metric] === 'string'
-            ? parseFloat(ttmBalanceSheet[metric].replace(/,/g, ''))
-            : ttmBalanceSheet[metric];
-        } else if (isCashFlowMetric(metric) && ttmCashFlow) {
-          ttmData[metric] = typeof ttmCashFlow[metric] === 'string'
-            ? parseFloat(ttmCashFlow[metric].replace(/,/g, ''))
-            : ttmCashFlow[metric];
-        } else if (ttmIncomeStatement) {
-          ttmData[metric] = typeof ttmIncomeStatement[metric] === 'string'
-            ? parseFloat(ttmIncomeStatement[metric].replace(/,/g, ''))
-            : ttmIncomeStatement[metric];
-        }
-
-        if (ttmData[metric] === undefined) {
-          ttmData[metric] = 0;
+      
+      // Initialize period data if it doesn't exist
+      if (!extractedData[periodKey]) {
+        extractedData[periodKey] = { period: periodKey };
+      }
+      
+      // Copy all metrics from this item to the period data
+      Object.keys(item).forEach(key => {
+        if (key !== 'date' && key !== 'period' && key !== 'reportedCurrency' && 
+            key !== 'fillingDate' && key !== 'acceptedDate' && key !== 'calendarYear' && 
+            key !== 'symbol') {
+          
+          // Store source of the metric to handle potential duplicates
+          extractedData[periodKey][`${key}_${dataType}`] = item[key];
+          
+          // Also store without source for backward compatibility
+          if (!extractedData[periodKey][key]) {
+            extractedData[periodKey][key] = item[key];
+          }
         }
       });
+    });
+  };
+  
+  // Process all data sources
+  processDataSource(incomeStatementData, 'income-statement');
+  processDataSource(balanceSheetData, 'balance-sheet');
+  processDataSource(cashFlowData, 'cash-flow');
+  processDataSource(keyMetricsData, 'key-metrics');
+  processDataSource(financialRatiosData, 'financial-ratios');
+  
+  // Log extracted periods
+  console.log('Extracted data periods:', Object.keys(extractedData));
+  
+  // Convert to array and sort
+  let transformedData = Object.values(extractedData);
+  
+  // Sort based on time frame
+  if (timeFrame === 'quarterly') {
+    // For quarterly, sort in ascending order (oldest to newest)
+    transformedData = transformedData.sort((a, b) => {
+      // Extract year and quarter for comparison
+      const aMatches = a.period.match(/Q(\d+)\s+(\d+)/);
+      const bMatches = b.period.match(/Q(\d+)\s+(\d+)/);
+      
+      if (!aMatches || !bMatches) return 0;
+      
+      const [, aQuarter, aYear] = aMatches;
+      const [, bQuarter, bYear] = bMatches;
+      
+      // Compare years first
+      if (aYear !== bYear) {
+        return parseInt(aYear) - parseInt(bYear); // Ascending
+      }
+      
+      // Then compare quarters
+      return parseInt(aQuarter) - parseInt(bQuarter); // Ascending
+    });
+  } else {
+    // For annual and TTM, sort in ascending order (oldest to newest)
+    transformedData = transformedData.sort((a, b) => {
+      // TTM handling
+      if (a.period === 'TTM') return 1;
+      if (b.period === 'TTM') return -1;
+      
+      // Annual data (years)
+      return parseInt(a.period) - parseInt(b.period); // Ascending
+    });
+  }
+  
+  // Final check of transformed data periods
+  console.log(`${timeFrame} mode - Transformed periods:`, transformedData.map(item => item.period));
 
-      transformedData = [ttmData, ...transformedData];
+  // Filter data to only include the selected time periods from slider
+  if (timePeriods.length && sliderValue?.length === 2) {
+    const startIdx = Math.min(sliderValue[0], sliderValue[1]);
+    const endIdx = Math.max(sliderValue[0], sliderValue[1]);
+    
+    if (startIdx >= 0 && endIdx < timePeriods.length) {
+      const selectedPeriods = timePeriods.slice(startIdx, endIdx + 1);
+      
+      console.log('Selected periods from slider:', selectedPeriods);
+      
+      transformedData = transformedData.filter(item => selectedPeriods.includes(item.period));
+      
+      console.log('Data after period filtering:', 
+        transformedData.map(item => item.period)
+      );
     }
   }
 
-  // Filter and sort data
-  transformedData = filterByTimeRange(transformedData, startYear, endYear);
-  transformedData = sortChronologically(transformedData);
-
-  console.log('Final Transformed Data:', transformedData);
-
-  // Calculate statistics
-  return calculateMetricStatistics(transformedData, selectedMetrics);
+  // Filter out any metrics that weren't selected
+  const filteredData = transformedData.map(item => {
+    const filteredItem: Record<string, any> = { period: item.period };
+    
+    selectedMetrics.forEach(metric => {
+      // Check for the metric in all variants (with source suffix and without)
+      const sourceVariants = [
+        metric, 
+        `${metric}_income-statement`, 
+        `${metric}_balance-sheet`, 
+        `${metric}_cash-flow`,
+        `${metric}_key-metrics`,
+        `${metric}_financial-ratios`
+      ];
+      
+      // Find the first available variant
+      for (const variant of sourceVariants) {
+        if (item[variant] !== undefined) {
+          // Parse value to number if possible
+          let value = item[variant];
+          if (typeof value === 'string') {
+            // Remove any non-numeric characters except decimal point and minus
+            const numericValue = value.replace(/[^0-9.-]/g, '');
+            if (numericValue !== '') {
+              value = parseFloat(numericValue);
+            }
+          }
+          
+          // Format based on metric type
+          const format = getMetricFormat(metric);
+          if (format === 'percentage' && typeof value === 'number' && !metric.includes('Growth')) {
+            // Convert decimal percentages to actual percentages (e.g., 0.15 -> 15)
+            if (value < 1 && value > -1) {
+              value = value * 100;
+            }
+          }
+          
+          filteredItem[metric] = value;
+          break;
+        }
+      }
+    });
+    
+    return filteredItem;
+  });
+  
+  return filteredData;
 };

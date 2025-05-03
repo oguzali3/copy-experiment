@@ -1,13 +1,28 @@
 export const calculateTTMGrowth = (current: any, annualData: any[]) => {
-  if (!current || !Array.isArray(annualData) || annualData.length < 2) return null;
+  if (!current) return null;
+  if (!Array.isArray(annualData) || annualData.length < 2) return null;
 
-  const currentRevenue = parseFloat(String(current.revenue).replace(/[^0-9.-]+/g, ""));
-  const mostRecentAnnualRevenue = parseFloat(String(annualData[0].revenue).replace(/[^0-9.-]+/g, ""));
-  const previousAnnualRevenue = parseFloat(String(annualData[1].revenue).replace(/[^0-9.-]+/g, ""));
+  // Safely extract revenue values with error handling
+  const getCurrentValue = (item: any, field: string) => {
+    try {
+      if (!item) return 0;
+      const value = item[field];
+      if (value === undefined || value === null) return 0;
+      
+      if (typeof value === 'number') return value;
+      return parseFloat(String(value).replace(/[^0-9.-]+/g, "")) || 0;
+    } catch (error) {
+      console.warn(`Error parsing ${field} value:`, error);
+      return 0;
+    }
+  };
 
-  console.log('TTM Revenue:', currentRevenue);
-  console.log('Most Recent Annual Revenue:', mostRecentAnnualRevenue);
-  console.log('Previous Annual Revenue:', previousAnnualRevenue);
+  const currentRevenue = getCurrentValue(current, 'revenue');
+  const mostRecentAnnualRevenue = getCurrentValue(annualData[0], 'revenue');
+  const previousAnnualRevenue = getCurrentValue(annualData[1], 'revenue');
+
+  // Avoid division by zero
+  if (previousAnnualRevenue === 0) return null;
 
   // Check if TTM matches most recent fiscal year (within 0.1% tolerance)
   const revenueDiff = Math.abs(currentRevenue - mostRecentAnnualRevenue);
@@ -15,13 +30,11 @@ export const calculateTTMGrowth = (current: any, annualData: any[]) => {
 
   if (revenueDiff <= tolerance) {
     // Use fiscal year growth rate
-    const growthRate = ((mostRecentAnnualRevenue - previousAnnualRevenue) / previousAnnualRevenue) * 100;
-    console.log('Using fiscal year growth rate:', growthRate);
+    const growthRate = ((mostRecentAnnualRevenue - previousAnnualRevenue) / Math.abs(previousAnnualRevenue)) * 100;
     return growthRate;
   }
 
   // Calculate TTM growth against previous year
-  const growthRate = ((currentRevenue - previousAnnualRevenue) / previousAnnualRevenue) * 100;
-  console.log('Using TTM growth rate:', growthRate);
+  const growthRate = ((currentRevenue - previousAnnualRevenue) / Math.abs(previousAnnualRevenue)) * 100;
   return growthRate;
 };

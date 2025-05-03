@@ -90,7 +90,7 @@ class StockWebSocket {
       this.ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
-          console.log('WebSocket message received:', message);
+          //console.log('WebSocket message received:', message);
           
           if (message.event === 'login') {
             this.handleLoginResponse(message);

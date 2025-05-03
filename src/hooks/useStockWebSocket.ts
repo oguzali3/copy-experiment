@@ -1,20 +1,22 @@
-
-import { useState, useEffect } from 'react';
-import { getWebSocket } from '@/services/websocket';
+import { useState, useEffect } from "react";
+import { getWebSocket } from "@/services/websocket";
 
 export const useStockWebSocket = (symbol?: string) => {
   const [price, setPrice] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!symbol) return;
+    if (!ticker) return;
 
-    let isSubscribed = true;
-    let cleanup: (() => void) | undefined;
+    console.log(`Setting up WebSocket for ${ticker}`);
 
-    const handlePrice = (data: any) => {
-      if (!isSubscribed) return;
-      if (data.lp) {
-        setPrice(data.lp);
+    const handleUpdate = (data: any) => {
+      //console.log(`Received WebSocket data for ${ticker}:`, data);
+      // Update price based on last trade price or latest quote
+      const newPrice = data.lp || data.ap;
+      if (newPrice) {
+        //console.log(`Updating price for ${ticker} from ${price} to ${newPrice}`);
+        setPrice(newPrice);
+        setLastUpdate(new Date(data.t));
       }
     };
 
@@ -28,7 +30,7 @@ export const useStockWebSocket = (symbol?: string) => {
           ws.unsubscribe(symbol, handlePrice);
         };
       } catch (error) {
-        console.error('WebSocket setup failed:', error);
+        console.error("WebSocket setup failed:", error);
       }
     };
 
