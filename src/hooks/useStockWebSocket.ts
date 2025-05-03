@@ -1,46 +1,59 @@
 import { useState, useEffect } from "react";
-import { getWebSocket } from "@/services/websocket";
 
-export const useStockWebSocket = (symbol?: string) => {
+// SOLUTION: Accept 'ticker' as a parameter
+export const useStockWebSocket = (ticker: string | undefined | null) => {
   const [price, setPrice] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!ticker) return;
+    // SOLUTION: Add a guard clause in case ticker is not yet available
+    if (!ticker) {
+      console.log("Ticker not provided, skipping WebSocket connection.");
+      setPrice(null); // Reset price if ticker is removed
+      return; // Don't proceed further
+    }
 
-    console.log(`Setting up WebSocket for ${ticker}`);
+    // Now 'ticker' is defined and refers to the parameter passed to the hook
+    console.log("Setting up WebSocket for ticker:", ticker); // Should work now (line 8 or similar)
+    const ws = new WebSocket(
+      `wss://your-websocket-url/stream?symbol=${ticker}`
+    ); // Replace with your actual WS URL
 
-    const handleUpdate = (data: any) => {
-      //console.log(`Received WebSocket data for ${ticker}:`, data);
-      // Update price based on last trade price or latest quote
-      const newPrice = data.lp || data.ap;
-      if (newPrice) {
-        //console.log(`Updating price for ${ticker} from ${price} to ${newPrice}`);
-        setPrice(newPrice);
-        setLastUpdate(new Date(data.t));
-      }
+    ws.onopen = () => {
+      console.log(`WebSocket connected for ${ticker}`);
     };
 
-    const setup = async () => {
+    ws.onmessage = (event) => {
       try {
-        const ws = await getWebSocket();
-        if (!isSubscribed) return;
-
-        ws.subscribe(symbol, handlePrice);
-        cleanup = () => {
-          ws.unsubscribe(symbol, handlePrice);
-        };
+        const data = JSON.parse(event.data);
+        // Adjust this based on your actual WebSocket message structure
+        if (data && typeof data.p === "number" && data.s === ticker) {
+          setPrice(data.p);
+        }
       } catch (error) {
-        console.error("WebSocket setup failed:", error);
+        console.error("Error parsing WebSocket message:", error);
       }
     };
 
-    setup();
-
-    return () => {
-      isSubscribed = false;
-      if (cleanup) cleanup();
+    ws.onerror = (error) => {
+      console.error(`WebSocket Error for ${ticker}:`, error);
     };
-  }, [symbol]);
+
+    ws.onclose = (event) => {
+      console.log(
+        `WebSocket disconnected for ${ticker}. Code: ${event.code}, Reason: ${event.reason}`
+      );
+      // Optional: Implement reconnection logic here
+    };
+
+    // Cleanup function: Close the WebSocket when the component unmounts
+    // or when the 'ticker' dependency changes.
+    return () => {
+      console.log("Closing WebSocket for ticker:", ticker);
+      ws.close();
+    };
+
+    // SOLUTION: Include 'ticker' in the dependency array
+  }, [ticker]); // The effect re-runs if 'ticker' changes
 
   return { price };
 };
