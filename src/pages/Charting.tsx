@@ -31,8 +31,7 @@ getPeriodIdentifier
 import SimplifiedChartExport from "@/components/financials/SimplifiedChartExport";
 
 // API base URL
-const API_BASE_URL = "http://localhost:4000/api/analysis";
-
+const API_BASE_URL = `${import.meta.env.VITE_URL}/api/analysis`;
 // Define a new interface for company data
 interface CompanyData {
   ticker: string;
