@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-
+const API_BASE_URL = import.meta.env.VITE_URL;
 export const useFinancialData = (ticker: string, period: 'annual' | 'quarter' = 'annual') => {
   const { data: rawData, isLoading, error } = useQuery({
     queryKey: ['financial-data', ticker, period],
@@ -14,7 +14,7 @@ export const useFinancialData = (ticker: string, period: 'annual' | 'quarter' = 
         // Map the period to match backend expectations
         const mappedPeriod = period === 'annual' ? 'annual' : 'quarter';
         const response = await fetch(
-          `http://localhost:4000/api/analysis/income-statement/${ticker}?period=${mappedPeriod}`
+          `${API_BASE_URL}/api/analysis/income-statement/${ticker}?period=${mappedPeriod}`
         );
 
         if (!response.ok) {

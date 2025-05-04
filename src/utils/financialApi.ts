@@ -51,7 +51,9 @@ export async function fetchFinancialData(
       };
 
       const mappedEndpoint = endpointMap[endpoint];
-      const url = `http://localhost:4000/api/analysis/${mappedEndpoint}/${symbol}?period=${mappedPeriod}`;
+      const API_BASE_URL = import.meta.env.VITE_URL;
+
+      const url = `${API_BASE_URL}/api/analysis/${mappedEndpoint}/${symbol}?period=${mappedPeriod}`;
       
       // Only log in development and reduce frequency
       if (process.env.NODE_ENV !== 'production') {
