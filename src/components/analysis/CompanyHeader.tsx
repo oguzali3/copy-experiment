@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { UserCircle } from "lucide-react";
+import { UserCircle, ChartBarIcon } from "lucide-react";
 import { useStockWebSocket } from "@/hooks/useStockWebSocket";
 
 interface CompanyHeaderProps {
@@ -16,6 +16,14 @@ export const CompanyHeader = ({ name, ticker, price: initialPrice, change, chang
   
   // Use live price if available, otherwise fall back to initial price
   const displayPrice = livePrice?.toFixed(2) || initialPrice;
+  
+  // Determine if change is positive or negative
+  const isPositive = parseFloat(change) >= 0;
+  const changeColor = isPositive ? 'bg-green-500' : 'bg-red-500';
+  
+  // Calculate bar widths - the main bar based on the change percentage
+  const changePercentValue = parseFloat(changePercent);
+  const mainBarWidth = Math.min(Math.abs(changePercentValue) * 3, 100); // Scale the bar, max 100px
 
   return (
     <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm">
@@ -25,8 +33,16 @@ export const CompanyHeader = ({ name, ticker, price: initialPrice, change, chang
       </div>
       <div className="text-right">
         <div className="text-2xl font-bold text-gray-900">${displayPrice}</div>
-        <div className={`flex items-center justify-end ${parseFloat(change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-          <span>{change} ({changePercent}%)</span>
+        <div className="flex flex-col items-end space-y-1">
+          <span className={`${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+            {change} ({changePercent}%)
+          </span>
+          <div className="flex items-center space-x-1">
+            {/* Long bar */}
+            <div className="h-2 bg-black rounded-full" style={{ width: `${mainBarWidth}px` }}></div>
+            {/* Short bar */}
+            <div className="h-2 bg-black rounded-full" style={{ width: `${mainBarWidth * 0.6}px` }}></div>
+          </div>
         </div>
       </div>
     </div>
