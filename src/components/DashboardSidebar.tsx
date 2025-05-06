@@ -1,4 +1,3 @@
-
 import { 
   LayoutDashboard,
   LineChart, 
@@ -80,8 +79,8 @@ export const DashboardSidebar = () => {
   return (
     <div 
       className={cn(
-        "fixed left-0 top-0 z-30 flex h-screen flex-col bg-[#F8F8F8] transition-all duration-300 ease-in-out",
-        isHovered ? "w-64 shadow-lg" : "w-16"
+        "h-screen bg-[#F8F8F8] transition-all duration-300 ease-in-out",
+        isHovered ? "w-64" : "w-16"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
