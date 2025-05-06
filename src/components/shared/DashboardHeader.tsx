@@ -20,7 +20,7 @@ export const DashboardHeader = () => {
       <div className="flex items-center gap-3 ml-auto">
         <Button
           variant="ghost"
-          className="text-gray-600 hover:bg-gray-100"
+          className="text-gray-600 hover:bg-[#eef1f5] hover:text-[#077dfa]"
           onClick={() => navigate('/feed')}
         >
           <Users className="h-4 w-4 mr-2" />

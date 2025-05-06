@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { UserCircle, Settings, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -35,10 +36,10 @@ export const ProfileMenu = () => {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="text-white hover:bg-[#077dfa] w-12 h-16 flex flex-col items-center justify-center gap-1 [&_svg]:!text-white hover:[&_svg]:!text-white"
+          className="text-gray-600 hover:bg-[#eef1f5] hover:text-[#077dfa] w-12 h-16 flex flex-col items-center justify-center gap-1"
         >
           <UserCircle className="h-9 w-9" />
-          <span className="text-xs text-white/80">Profile</span>
+          <span className="text-xs text-gray-600">Profile</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">

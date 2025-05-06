@@ -1,3 +1,4 @@
+
 import { 
   LayoutDashboard,
   LineChart, 
@@ -79,19 +80,19 @@ export const DashboardSidebar = () => {
   return (
     <div 
       className={cn(
-        "h-screen bg-[#F8F8F8] transition-all duration-300 ease-in-out",
+        "h-screen bg-white transition-all duration-300 ease-in-out border-r",
         isHovered ? "w-64" : "w-16"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Logo Section */}
-      <div className="flex items-center justify-center h-16 px-4">
+      <div className="flex items-center justify-center h-16 px-4 border-b">
         <div className={cn(
           "overflow-hidden transition-all duration-300 flex items-center",
           isHovered ? "justify-start w-full" : "justify-center"
         )}>
-          <div className="flex-shrink-0 bg-black rounded-md w-8 h-8 flex items-center justify-center" />
+          <div className="flex-shrink-0 bg-[#077dfa] rounded-md w-8 h-8 flex items-center justify-center" />
           {isHovered && (
             <span className="ml-3 font-semibold text-gray-800 whitespace-nowrap overflow-hidden transition-opacity duration-300">
               TradePro
@@ -112,12 +113,15 @@ export const DashboardSidebar = () => {
               className={cn(
                 "flex items-center px-3 py-3 rounded-md text-sm font-medium transition-all",
                 isActive 
-                  ? "bg-[#eef1f5] text-black" 
-                  : "text-gray-600 hover:bg-[#eef1f5] hover:text-black",
+                  ? "bg-[#eef1f5] text-[#077dfa]" 
+                  : "text-gray-600 hover:bg-[#eef1f5] hover:text-[#077dfa]",
                 isHovered ? "justify-start" : "justify-center"
               )}
             >
-              <item.icon className="h-5 w-5 flex-shrink-0" />
+              <item.icon className={cn(
+                "h-5 w-5 flex-shrink-0",
+                isActive ? "text-[#077dfa]" : ""
+              )} />
               <span 
                 className={cn(
                   "ml-3 whitespace-nowrap transition-opacity duration-300",
@@ -137,12 +141,15 @@ export const DashboardSidebar = () => {
           className={cn(
             "flex items-center px-3 py-3 rounded-md text-sm font-medium transition-all",
             location.pathname === '/portfolio' 
-              ? "bg-[#eef1f5] text-black" 
-              : "text-gray-600 hover:bg-[#eef1f5] hover:text-black",
+              ? "bg-[#eef1f5] text-[#077dfa]" 
+              : "text-gray-600 hover:bg-[#eef1f5] hover:text-[#077dfa]",
             isHovered ? "justify-start" : "justify-center"
           )}
         >
-          <PieChart className="h-5 w-5 flex-shrink-0" />
+          <PieChart className={cn(
+            "h-5 w-5 flex-shrink-0",
+            location.pathname === '/portfolio' ? "text-[#077dfa]" : ""
+          )} />
           <span 
             className={cn(
               "ml-3 whitespace-nowrap transition-opacity duration-300",
@@ -159,7 +166,7 @@ export const DashboardSidebar = () => {
         <button
           onClick={handleLogout}
           className={cn(
-            "flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-[#eef1f5] hover:text-black transition-all",
+            "flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-[#eef1f5] hover:text-[#077dfa] transition-all",
             isHovered ? "justify-start" : "justify-center"
           )}
         >
