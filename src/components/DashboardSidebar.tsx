@@ -92,9 +92,9 @@ export const DashboardSidebar = () => {
           "overflow-hidden transition-all duration-300 flex items-center",
           isHovered ? "justify-start w-full" : "justify-center"
         )}>
-          <div className="flex-shrink-0 w-8 h-8 flex flex-col items-center justify-center space-y-1">
-            <div className="bg-black h-1.5 w-8 rounded-sm"></div>
-            <div className="bg-black h-1.5 w-5 rounded-sm"></div>
+          <div className="flex-shrink-0 w-8 h-8 flex flex-row items-end justify-center space-x-1">
+            <div className="bg-black h-4 w-1.5 rounded-sm"></div>
+            <div className="bg-black h-6 w-1.5 rounded-sm"></div>
           </div>
           {isHovered && (
             <span className="ml-3 font-semibold text-gray-800 whitespace-nowrap overflow-hidden transition-opacity duration-300">
