@@ -260,36 +260,24 @@ export const TopCompanies = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold text-[#111827]">Featured Companies</h2>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Track and analyze top companies in real-time</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="transition-all duration-300 hover:shadow-md"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 transition-all duration-700 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Refreshing...' : 'Refresh'}
-          </Button>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Featured Companies</h2>
+          <p className="text-sm text-gray-500">
+            Monitor market performance for leading companies
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Monitor market performance and key metrics for leading companies
-        </p>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="transition-all duration-200 hover:bg-gray-100"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 mr-2 transition-all duration-700 ${isRefreshing ? 'animate-spin' : ''}`} />
+          {isRefreshing ? 'Refreshing...' : 'Refresh'}
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -297,11 +285,11 @@ export const TopCompanies = () => {
         <CompanySearch onCompanySelect={handleCompanySelect} />
       </div>
 
-      <Card className="overflow-hidden rounded-lg border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md">
+      <Card className="overflow-hidden rounded-lg border-gray-200 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
             <CompanyTableHeader sortConfig={sortConfig} onSort={handleSort} />
-            <tbody className="divide-y divide-gray-200">
+            <tbody>
               {companies.map((company, index) => (
                 <CompanyTableRow
                   key={company.ticker}
@@ -320,10 +308,10 @@ export const TopCompanies = () => {
       </Card>
 
       {companies.length === 0 && (
-        <div className="flex flex-col items-center justify-center p-8 text-center">
-          <p className="text-lg font-medium text-gray-900">No companies added yet</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Use the search above to add companies to your watchlist
+        <div className="flex flex-col items-center justify-center p-6 text-center">
+          <p className="text-base font-medium text-gray-700">No companies added yet</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Use the search above to add companies to your list
           </p>
         </div>
       )}
