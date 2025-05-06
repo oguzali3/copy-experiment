@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { UserCircle } from "lucide-react";
 import { useStockWebSocket } from "@/hooks/useStockWebSocket";
@@ -25,7 +26,7 @@ export const CompanyHeader = ({ name, ticker, price: initialPrice, change, chang
       <div className="text-right">
         <div className="text-2xl font-bold text-gray-900">${displayPrice}</div>
         <div className={`flex items-center justify-end ${parseFloat(change) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-          <span>{change} ({changePercent})</span>
+          <span>{change} ({changePercent}%)</span>
         </div>
       </div>
     </div>
