@@ -85,7 +85,7 @@ export const DashboardSidebar = () => {
             <div className="bg-black h-4 w-1.5 rounded-sm"></div>
             <div className="bg-black h-6 w-1.5 rounded-sm"></div>
           </div>
-          {isHovered && <span className="ml-3 font-semibold text-gray-800 whitespace-nowrap overflow-hidden transition-opacity duration-300">Biggr</span>}
+          {isHovered && <span className="ml-3 font-semibold text-gray-800 whitespace-nowrap overflow-hidden transition-opacity duration-300 text-lg">Biggr</span>}
         </div>
       </div>
 
