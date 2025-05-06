@@ -27,7 +27,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
     )}>
       <td className="pl-4 py-3">
         <div className="flex items-center">
-          <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden mr-3 flex-shrink-0">
+          <div className="w-8 h-8 rounded-md bg-gray-900 flex items-center justify-center overflow-hidden mr-3 flex-shrink-0">
             {company.logoUrl ? (
               <img
                 src={company.logoUrl}
@@ -39,7 +39,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
                 }}
               />
             ) : (
-              <span className="text-gray-500 font-semibold text-xs">
+              <span className="text-gray-200 font-semibold text-xs">
                 {company.ticker.substring(0, 2)}
               </span>
             )}
