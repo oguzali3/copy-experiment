@@ -1,49 +1,39 @@
 
 import { 
-  BarChart3, 
+  LayoutDashboard,
   LineChart, 
   List, 
   Settings, 
-  PieChart, 
+  PieChart,
   Home,
   Filter,
-  Building,
+  LogOut,
   UserRound,
   Users
 } from "lucide-react";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar
-} from "@/components/ui/sidebar";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUser } from '@supabase/auth-helpers-react';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 const menuItems = [
-  { title: "Dashboard", icon: Home, path: "/dashboard" },
-  { title: "Analysis", icon: BarChart3, path: "/analysis" },
-  { title: "Charting", icon: LineChart, path: "/charting" },
+  { title: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+  { title: "Analysis", icon: LineChart, path: "/analysis" },
   { title: "Screening", icon: Filter, path: "/screening" },
   { title: "Watchlists", icon: List, path: "/watchlists" },
   { title: "Feed", icon: Users, path: "/feed" },
-  // Portfolio is handled separately now
   { title: "Profile", icon: UserRound, path: "/profile" },
   { title: "Settings", icon: Settings, path: "/settings" },
 ];
 
 export const DashboardSidebar = () => {
-  const { toggleSidebar, state } = useSidebar();
   const user = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
   const [defaultPortfolioId, setDefaultPortfolioId] = useState<string | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     const fetchDefaultPortfolio = async () => {
@@ -82,62 +72,130 @@ export const DashboardSidebar = () => {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
   return (
-    <Sidebar 
-      className="bg-[#191d25] border-r-0 transition-all duration-300 dark:bg-[#1c1c20]" 
-      collapsible="icon"
+    <div 
+      className={cn(
+        "fixed left-0 top-0 z-30 flex h-screen flex-col bg-[#F8F8F8] transition-all duration-300 ease-in-out",
+        isHovered ? "w-64 shadow-lg" : "w-16"
+      )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <div 
-        className="p-4 flex items-center cursor-pointer" 
-        onClick={toggleSidebar}
-      >
-        <Building className="h-8 w-8 text-white shrink-0" />
-        <span className={`ml-2 text-lg font-semibold text-white transition-opacity duration-300 ${state === 'collapsed' ? 'opacity-0' : 'opacity-100'}`}>
-          TradePro
-        </span>
+      {/* Logo Section */}
+      <div className="flex items-center justify-center h-16 px-4">
+        <div className={cn(
+          "overflow-hidden transition-all duration-300 flex items-center",
+          isHovered ? "justify-start w-full" : "justify-center"
+        )}>
+          <div className="flex-shrink-0 bg-black rounded-md w-8 h-8 flex items-center justify-center" />
+          {isHovered && (
+            <span className="ml-3 font-semibold text-gray-800 whitespace-nowrap overflow-hidden transition-opacity duration-300">
+              TradePro
+            </span>
+          )}
+        </div>
       </div>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className={`text-white/70 transition-opacity duration-300 ${state === 'collapsed' ? 'opacity-0' : 'opacity-100'}`}>
-            Menu
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    className="text-white/80 hover:text-white hover:bg-white/10 transition-all duration-300"
-                    tooltip={state === 'collapsed' ? item.title : undefined}
-                    asChild
-                  >
-                    <Link to={item.path}>
-                      <item.icon className="h-4 w-4" />
-                      <span className={`transition-opacity duration-300 ${state === 'collapsed' ? 'opacity-0' : 'opacity-100'}`}>
-                        {item.title}
-                      </span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-              {/* Portfolio menu item */}
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  className="text-white/80 hover:text-white hover:bg-white/10 transition-all duration-300"
-                  tooltip={state === 'collapsed' ? "Portfolio" : undefined}
-                  asChild
-                >
-                  <a href="#" onClick={handlePortfolioClick}>
-                    <PieChart className="h-4 w-4" />
-                    <span className={`transition-opacity duration-300 ${state === 'collapsed' ? 'opacity-0' : 'opacity-100'}`}>
-                      Portfolio
-                    </span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+
+      {/* Navigation Menu */}
+      <nav className="flex-1 px-2 py-4 space-y-1">
+        {menuItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          
+          return (
+            <Link
+              key={item.title}
+              to={item.path}
+              className={cn(
+                "flex items-center px-3 py-3 rounded-md text-sm font-medium transition-all",
+                isActive 
+                  ? "bg-[#eef1f5] text-black" 
+                  : "text-gray-600 hover:bg-[#eef1f5] hover:text-black",
+                isHovered ? "justify-start" : "justify-center"
+              )}
+            >
+              <item.icon className="h-5 w-5 flex-shrink-0" />
+              <span 
+                className={cn(
+                  "ml-3 whitespace-nowrap transition-opacity duration-300",
+                  isHovered ? "opacity-100" : "opacity-0 hidden"
+                )}
+              >
+                {item.title}
+              </span>
+            </Link>
+          );
+        })}
+
+        {/* Portfolio Menu Item */}
+        <a
+          href="#"
+          onClick={handlePortfolioClick}
+          className={cn(
+            "flex items-center px-3 py-3 rounded-md text-sm font-medium transition-all",
+            location.pathname === '/portfolio' 
+              ? "bg-[#eef1f5] text-black" 
+              : "text-gray-600 hover:bg-[#eef1f5] hover:text-black",
+            isHovered ? "justify-start" : "justify-center"
+          )}
+        >
+          <PieChart className="h-5 w-5 flex-shrink-0" />
+          <span 
+            className={cn(
+              "ml-3 whitespace-nowrap transition-opacity duration-300",
+              isHovered ? "opacity-100" : "opacity-0 hidden"
+            )}
+          >
+            Portfolio
+          </span>
+        </a>
+      </nav>
+
+      {/* User Section */}
+      <div className="p-3 mt-auto">
+        <button
+          onClick={handleLogout}
+          className={cn(
+            "flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-[#eef1f5] hover:text-black transition-all",
+            isHovered ? "justify-start" : "justify-center"
+          )}
+        >
+          <LogOut className="h-5 w-5 flex-shrink-0" />
+          <span 
+            className={cn(
+              "ml-3 whitespace-nowrap transition-opacity duration-300",
+              isHovered ? "opacity-100" : "opacity-0 hidden"
+            )}
+          >
+            Logout
+          </span>
+        </button>
+
+        {user && (
+          <div className={cn(
+            "flex items-center mt-3 py-2 px-3 rounded-md",
+            isHovered ? "justify-start" : "justify-center"
+          )}>
+            <Avatar className="h-8 w-8 flex-shrink-0">
+              <AvatarImage src={user.user_metadata?.avatar_url} />
+              <AvatarFallback className="bg-gray-200 text-gray-700">
+                {user.user_metadata?.full_name?.[0] || user.email?.[0] || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            {isHovered && (
+              <div className="ml-3 overflow-hidden">
+                <p className="text-xs font-medium text-gray-800 truncate">
+                  {user.user_metadata?.full_name || user.email}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
