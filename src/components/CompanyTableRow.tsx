@@ -22,15 +22,17 @@ interface CompanyTableRowProps {
 }
 
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
-  // Generate some dummy sparkline data if none exists
-  const sparkData = company.sparklineData || Array(20)
-    .fill(0)
-    .map((_, i) => ({
-      time: `${i}:00`,
-      price: company.isPositive 
-        ? 100 + Math.random() * 10 * (i / 20) 
-        : 110 - Math.random() * 10 * (i / 20)
-    }));
+  // Generate some dummy sparkline data if none exists or if it's empty
+  const sparkData = (company.sparklineData && company.sparklineData.length > 0)
+    ? company.sparklineData
+    : Array(20)
+      .fill(0)
+      .map((_, i) => ({
+        time: `${i}:00`,
+        price: company.isPositive 
+          ? 100 + Math.random() * 10 * (i / 20) 
+          : 110 - Math.random() * 10 * (i / 20)
+      }));
 
   return (
     <tr className={cn(

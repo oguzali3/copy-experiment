@@ -1,11 +1,10 @@
-
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useCallback } from "react";
 import { MetricsSearch } from "./MetricsSearch";
 import { CompanySearch } from "./CompanySearch";
 import { CompanyTableHeader } from "./CompanyTableHeader";
 import { CompanyTableRow } from "./CompanyTableRow";
-import { fetchFinancialData, fetchBatchQuotes, formatMarketCap } from "@/utils/financialApi";
+import { fetchFinancialData, fetchBatchQuotes, formatMarketCap, fetchIntradayData } from "@/utils/financialApi";
 import { toast } from "sonner";
 import { RefreshCw, Info } from "lucide-react";
 import { Button } from "./ui/button";
@@ -26,6 +25,7 @@ type Company = {
   isPositive: boolean;
   currency: string;
   logoUrl?: string;
+  sparklineData?: Array<{ time: string, price: number }>;
 };
 
 const initialCompanies: Company[] = [
@@ -85,19 +85,36 @@ export const TopCompanies = () => {
         throw new Error('No quote data received');
       }
 
-      const updatedCompanies = companies.map(company => {
+      // Fetch intraday data for each company
+      const updatedCompanies = await Promise.all(companies.map(async company => {
         const quote = quotes.find(q => q.symbol === company.ticker);
         if (!quote) return company;
 
-        return {
-          ...company,
-          price: quote.price.toFixed(2),
-          change: `${quote.changesPercentage.toFixed(2)}%`,
-          isPositive: quote.changesPercentage >= 0,
-          marketCap: formatMarketCap(quote.marketCap),
-          // Keep existing currency and logo as they don't change frequently
-        };
-      });
+        // Fetch intraday data for sparkline chart
+        try {
+          const intradayData = await fetchIntradayData(company.ticker);
+          
+          return {
+            ...company,
+            price: quote.price.toFixed(2),
+            change: `${quote.changesPercentage.toFixed(2)}%`,
+            isPositive: quote.changesPercentage >= 0,
+            marketCap: formatMarketCap(quote.marketCap),
+            sparklineData: intradayData,
+            // Keep existing currency and logo as they don't change frequently
+          };
+        } catch (error) {
+          console.error(`Error fetching intraday data for ${company.ticker}:`, error);
+          // Return company with updated quote but without sparkline data
+          return {
+            ...company,
+            price: quote.price.toFixed(2),
+            change: `${quote.changesPercentage.toFixed(2)}%`,
+            isPositive: quote.changesPercentage >= 0,
+            marketCap: formatMarketCap(quote.marketCap),
+          };
+        }
+      }));
 
       setCompanies(updatedCompanies);
       toast.success('Prices updated successfully');
@@ -124,15 +141,32 @@ export const TopCompanies = () => {
             const profile = profileData[0];
             
             if (quote && profile) {
-              return {
-                ...company,
-                price: quote.price.toFixed(2),
-                change: `${quote.changesPercentage.toFixed(2)}%`,
-                isPositive: quote.changesPercentage >= 0,
-                marketCap: formatMarketCap(quote.marketCap),
-                currency: profile.currency || 'USD',
-                logoUrl: profile.image || undefined
-              };
+              // Fetch intraday data for sparkline chart
+              try {
+                const intradayData = await fetchIntradayData(company.ticker);
+                
+                return {
+                  ...company,
+                  price: quote.price.toFixed(2),
+                  change: `${quote.changesPercentage.toFixed(2)}%`,
+                  isPositive: quote.changesPercentage >= 0,
+                  marketCap: formatMarketCap(quote.marketCap),
+                  currency: profile.currency || 'USD',
+                  logoUrl: profile.image || undefined,
+                  sparklineData: intradayData
+                };
+              } catch (error) {
+                console.error(`Error fetching intraday data for ${company.ticker}:`, error);
+                return {
+                  ...company,
+                  price: quote.price.toFixed(2),
+                  change: `${quote.changesPercentage.toFixed(2)}%`,
+                  isPositive: quote.changesPercentage >= 0,
+                  marketCap: formatMarketCap(quote.marketCap),
+                  currency: profile.currency || 'USD',
+                  logoUrl: profile.image || undefined
+                };
+              }
             }
             return company;
           } catch (error) {
@@ -195,6 +229,15 @@ export const TopCompanies = () => {
         const profile = profileData[0];
         
         if (quote && profile) {
+          // Fetch intraday data for the new company
+          let sparklineData;
+          try {
+            sparklineData = await fetchIntradayData(newCompany.ticker);
+          } catch (error) {
+            console.error(`Error fetching intraday data for ${newCompany.ticker}:`, error);
+            // Continue without sparkline data if fetch fails
+          }
+          
           const formattedCompany: Company = {
             ...newCompany,
             rank: companies.length + 1,
@@ -203,7 +246,8 @@ export const TopCompanies = () => {
             isPositive: quote.changesPercentage >= 0,
             marketCap: formatMarketCap(quote.marketCap),
             currency: profile.currency || 'USD',
-            logoUrl: profile.image || undefined
+            logoUrl: profile.image || undefined,
+            sparklineData: sparklineData
           };
           
           setCompanies(prev => {
