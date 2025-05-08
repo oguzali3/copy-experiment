@@ -22,7 +22,7 @@ interface CompanyTableRowProps {
 }
 
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
-  // Generate some dummy sparkline data if none exists or if it's empty
+  // Generate normalized sparkline data or use the provided data
   const sparkData = (company.sparklineData && company.sparklineData.length > 0)
     ? company.sparklineData
     : Array(20)
@@ -33,6 +33,18 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
           ? 100 + Math.random() * 10 * (i / 20) 
           : 110 - Math.random() * 10 * (i / 20)
       }));
+
+  // Find min and max values for proper scaling
+  const prices = sparkData.map(d => d.price);
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const priceRange = maxPrice - minPrice;
+  
+  // Create a normalized domain with some padding for better visualization
+  const yDomain = [
+    minPrice - (priceRange * 0.1), 
+    maxPrice + (priceRange * 0.1)
+  ];
 
   return (
     <tr className={cn(
@@ -70,7 +82,10 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       <td className="px-4 py-1 w-24">
         <div className="h-10">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={sparkData}>
+            <AreaChart 
+              data={sparkData} 
+              margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+            >
               <defs>
                 <linearGradient id={`colorPrice${company.ticker}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={company.isPositive ? '#22c55e' : '#ef4444'} stopOpacity={0.2}/>
@@ -83,7 +98,10 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
                 stroke={company.isPositive ? '#22c55e' : '#ef4444'} 
                 strokeWidth={1.5}
                 fillOpacity={1}
-                fill={`url(#colorPrice${company.ticker})`} 
+                fill={`url(#colorPrice${company.ticker})`}
+                isAnimationActive={false}
+                dot={false}
+                domain={yDomain}
               />
             </AreaChart>
           </ResponsiveContainer>
