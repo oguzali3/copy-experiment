@@ -1,3 +1,4 @@
+
 import { EmailSignup } from "@/components/EmailSignup";
 import { StockChart } from "@/components/StockChart";
 import { LiveStockData } from "@/components/LiveStockData";
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useEffect, useRef } from "react";
+import { DashboardPreview } from "@/components/DashboardPreview";
 
 const Index = () => {
   const decorativeElementsRef = useRef<HTMLDivElement>(null);
@@ -50,6 +52,13 @@ const Index = () => {
         <p className="text-xl md:text-2xl mb-8 text-[#111827] max-w-2xl mx-auto font-sans">
           Advanced stock analysis and research tools powered by real-time data and AI insights
         </p>
+        
+        {/* Dashboard Preview */}
+        <div className="max-w-4xl mx-auto mb-12 mt-8 relative z-10 transition-transform duration-300 hover:transform hover:scale-[1.02]">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl -z-10 blur-lg"></div>
+          <DashboardPreview />
+          <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-[70%] h-10 bg-black/20 dark:bg-black/40 blur-xl rounded-full -z-10"></div>
+        </div>
         
         {/* Decorative Elements */}
         <div ref={decorativeElementsRef} className="absolute inset-0 pointer-events-none">
@@ -116,7 +125,7 @@ const Index = () => {
         </div>
 
         {/* CTA Button */}
-        <div className="flex justify-center mb-12 relative z-10">
+        <div className="flex justify-center mb-12 relative z-10 mt-6">
           <Button size="lg" className="text-lg px-8 bg-[#1EAEDB] hover:bg-[#1EAEDB]/90 text-white font-sans">
             Get Started
           </Button>
