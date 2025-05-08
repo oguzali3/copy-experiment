@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useCallback } from "react";
 import { MetricsSearch } from "./MetricsSearch";
@@ -263,8 +264,8 @@ export const TopCompanies = () => {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Featured Companies</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Featured Companies</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Monitor market performance for leading companies
           </p>
         </div>
@@ -273,7 +274,7 @@ export const TopCompanies = () => {
           size="sm"
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="transition-all duration-200 hover:bg-gray-100"
+          className="transition-all duration-200 hover:bg-gray-100 dark:bg-[#2b2b35] dark:text-white dark:border-gray-700 dark:hover:bg-gray-800"
         >
           <RefreshCw className={`h-3.5 w-3.5 mr-2 transition-all duration-700 ${isRefreshing ? 'animate-spin' : ''}`} />
           {isRefreshing ? 'Refreshing...' : 'Refresh'}
@@ -285,7 +286,7 @@ export const TopCompanies = () => {
         <CompanySearch onCompanySelect={handleCompanySelect} />
       </div>
 
-      <Card className="overflow-hidden rounded-lg border-gray-200 shadow-sm">
+      <Card className="overflow-hidden rounded-lg border-gray-200 dark:border-gray-800 shadow-sm dark:bg-[#2b2b35]">
         <div className="overflow-x-auto">
           <table className="w-full">
             <CompanyTableHeader sortConfig={sortConfig} onSort={handleSort} />
@@ -308,9 +309,9 @@ export const TopCompanies = () => {
       </Card>
 
       {companies.length === 0 && (
-        <div className="flex flex-col items-center justify-center p-6 text-center">
-          <p className="text-base font-medium text-gray-700">No companies added yet</p>
-          <p className="text-sm text-gray-500 mt-1">
+        <div className="flex flex-col items-center justify-center p-6 text-center dark:text-gray-400">
+          <p className="text-base font-medium text-gray-700 dark:text-gray-300">No companies added yet</p>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
             Use the search above to add companies to your list
           </p>
         </div>

@@ -61,14 +61,14 @@ const SortableIndexCard = ({ index }: { index: IndexData }) => {
       ref={setNodeRef} 
       style={style}
       className={cn(
-        "p-4 hover:shadow-lg transition-shadow", 
-        isDragging && "shadow-lg"
+        "p-4 hover:shadow-lg transition-shadow dark:bg-[#2b2b35] dark:border-gray-800", 
+        isDragging && "shadow-lg dark:shadow-gray-900/50"
       )}
     >
       <div className="flex justify-between items-start">
         <div>
-          <h3 className="font-semibold text-[#111827]">{index.name}</h3>
-          <p className="text-2xl font-bold mt-1">{index.value}</p>
+          <h3 className="font-semibold text-[#111827] dark:text-gray-100">{index.name}</h3>
+          <p className="text-2xl font-bold mt-1 dark:text-white">{index.value}</p>
         </div>
         <div className="flex gap-2">
           <div className={`flex items-center ${index.isPositive ? 'text-success' : 'text-warning'}`}>
@@ -80,7 +80,7 @@ const SortableIndexCard = ({ index }: { index: IndexData }) => {
             <span className="font-medium">{index.change}</span>
           </div>
           <button
-            className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 touch-none"
+            className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 touch-none"
             {...attributes}
             {...listeners}
           >
@@ -167,16 +167,16 @@ export const MarketIndices = () => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-[#111827]">Market Indices</h2>
+      <h2 className="text-2xl font-bold text-[#111827] dark:text-white">Market Indices</h2>
       {loading ? (
         // Loading skeletons
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array(6).fill(0).map((_, i) => (
-            <Card key={i} className="p-4">
+            <Card key={i} className="p-4 dark:bg-[#2b2b35] dark:border-gray-800">
               <div className="space-y-2">
-                <Skeleton className="h-6 w-24" />
-                <Skeleton className="h-8 w-32" />
-                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-6 w-24 dark:bg-gray-800" />
+                <Skeleton className="h-8 w-32 dark:bg-gray-800" />
+                <Skeleton className="h-4 w-16 dark:bg-gray-800" />
               </div>
             </Card>
           ))}

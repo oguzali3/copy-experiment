@@ -22,8 +22,8 @@ interface CompanyTableRowProps {
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
   return (
     <tr className={cn(
-      "border-b border-gray-100 text-xs", 
-      index % 2 === 0 ? "bg-white" : "bg-gray-50"
+      "border-b border-gray-100 dark:border-gray-800 text-xs", 
+      index % 2 === 0 ? "bg-white dark:bg-[#2b2b35]" : "bg-gray-50 dark:bg-[#232328]"
     )}>
       <td className="pl-4 py-3">
         <div className="flex items-center">
@@ -45,15 +45,15 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
             )}
           </div>
           <div>
-            <div className="font-semibold text-gray-900">{company.ticker}</div>
-            <div className="text-gray-500 text-xs">NasdaqGS:{company.ticker}</div>
+            <div className="font-semibold text-gray-900 dark:text-white">{company.ticker}</div>
+            <div className="text-gray-500 dark:text-gray-400 text-xs">NasdaqGS:{company.ticker}</div>
           </div>
         </div>
       </td>
-      <td className="px-4 py-3 text-gray-700">{company.name}</td>
-      <td className="px-4 py-3 text-right text-gray-900 font-medium">{company.marketCap}</td>
-      <td className="px-4 py-3 text-right text-gray-900 font-medium">{company.price}</td>
-      <td className={`px-4 py-3 text-right font-medium ${company.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{company.name}</td>
+      <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-medium">{company.marketCap}</td>
+      <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-medium">{company.price}</td>
+      <td className={`px-4 py-3 text-right font-medium ${company.isPositive ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
         {company.change}
       </td>
       <td className="pr-4 py-3 text-right">
@@ -61,7 +61,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 text-gray-400 hover:text-gray-700"
+            className="h-6 w-6 text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-300"
           >
             <Edit className="h-3.5 w-3.5" />
           </Button>
@@ -69,7 +69,7 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
             variant="ghost"
             size="icon"
             onClick={() => onRemove(company.ticker)}
-            className="h-6 w-6 text-gray-400 hover:text-red-600"
+            className="h-6 w-6 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-500"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
