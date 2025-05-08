@@ -28,23 +28,36 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
     : Array(20)
       .fill(0)
       .map((_, i) => {
-        // Create more realistic zigzag patterns by adding noise and multiple sine waves
-        const baseValue = company.isPositive ? 100 : 110;
-        const trend = company.isPositive 
-          ? i / 20 * 10  // Upward trend
-          : -i / 20 * 10; // Downward trend
+        // Set base value and overall trend direction
+        const baseValue = 100;
+        const trendFactor = company.isPositive ? 0.15 : -0.15;
         
-        // Add noise and volatility
-        const volatility = 4; // Higher value = more zigzags
-        const noise = (Math.random() - 0.5) * volatility;
+        // Create overall trend line with some randomness
+        let trendValue = baseValue * (1 + (trendFactor * i / 20));
         
-        // Add sine waves with different frequencies for more realistic movements
-        const sinWave1 = Math.sin(i / 3) * 2;
-        const sinWave2 = Math.sin(i / 1.5) * 1;
+        // Add volatility with more pronounced zigzags
+        const volatility = 6; // Higher number = more zigzags
+        
+        // Create multiple waves with different frequencies and amplitudes
+        const wave1 = Math.sin(i / 2) * (volatility * 0.6);
+        const wave2 = Math.sin(i / 1.3) * (volatility * 0.4);
+        const wave3 = Math.cos(i / 3.7) * (volatility * 0.3);
+        
+        // Add some random noise for natural movement
+        const noise = (Math.random() - 0.5) * volatility * 0.5;
+        
+        // Add a sudden spike somewhere in the middle (for some tickers)
+        const spikeLocation = 10 + Math.floor(Math.random() * 5);
+        const hasSpike = Math.random() > 0.7; // 30% chance of having a spike
+        const spikeValue = hasSpike && i === spikeLocation ? 
+          (company.isPositive ? volatility * 1.5 : -volatility * 1.5) : 0;
+        
+        // Combine all factors
+        const finalPrice = trendValue + wave1 + wave2 + wave3 + noise + spikeValue;
         
         return {
           time: `${i}:00`,
-          price: baseValue + trend + noise + sinWave1 + sinWave2
+          price: finalPrice
         };
       });
 
