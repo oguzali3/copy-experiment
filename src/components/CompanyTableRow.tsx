@@ -27,12 +27,26 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
     ? company.sparklineData
     : Array(20)
       .fill(0)
-      .map((_, i) => ({
-        time: `${i}:00`,
-        price: company.isPositive 
-          ? 100 + Math.random() * 10 * (i / 20) 
-          : 110 - Math.random() * 10 * (i / 20)
-      }));
+      .map((_, i) => {
+        // Create more realistic zigzag patterns by adding noise and multiple sine waves
+        const baseValue = company.isPositive ? 100 : 110;
+        const trend = company.isPositive 
+          ? i / 20 * 10  // Upward trend
+          : -i / 20 * 10; // Downward trend
+        
+        // Add noise and volatility
+        const volatility = 4; // Higher value = more zigzags
+        const noise = (Math.random() - 0.5) * volatility;
+        
+        // Add sine waves with different frequencies for more realistic movements
+        const sinWave1 = Math.sin(i / 3) * 2;
+        const sinWave2 = Math.sin(i / 1.5) * 1;
+        
+        return {
+          time: `${i}:00`,
+          price: baseValue + trend + noise + sinWave1 + sinWave2
+        };
+      });
 
   // Find min and max values for proper scaling
   const prices = sparkData.map(d => d.price);
@@ -101,7 +115,6 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
                 fill={`url(#colorPrice${company.ticker})`}
                 isAnimationActive={false}
                 dot={false}
-                domain={yDomain}
               />
             </AreaChart>
           </ResponsiveContainer>
