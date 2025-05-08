@@ -1,3 +1,4 @@
+
 import { Search } from "lucide-react";
 import {
   Command,
@@ -67,31 +68,32 @@ export const MetricsSearch = ({ onMetricSelect }: MetricsSearchProps) => {
     <div className="relative w-full">
       <Button 
         variant="outline" 
-        className="w-full justify-start text-left font-normal"
+        className="w-full justify-start text-left font-normal dark:bg-[#2b2b35] dark:border-gray-700 dark:text-gray-200"
         onClick={() => setOpen(true)}
       >
         <Search className="mr-2 h-4 w-4" />
         <span>Search metrics...</span>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <Command className="rounded-lg border shadow-md">
+        <Command className="rounded-lg border shadow-md dark:bg-[#2b2b35] dark:border-gray-700">
           <CommandInput 
             placeholder="Search metrics..." 
             value={searchQuery}
             onValueChange={setSearchQuery}
+            className="dark:bg-[#2b2b35] dark:text-gray-200"
           />
-          <CommandList>
-            <CommandEmpty>No metrics found.</CommandEmpty>
+          <CommandList className="dark:bg-[#2b2b35]">
+            <CommandEmpty className="dark:text-gray-400">No metrics found.</CommandEmpty>
             {filteredCategories.map((category) => (
-              <CommandGroup key={category.name} heading={category.name}>
+              <CommandGroup key={category.name} heading={category.name} className="dark:text-gray-300">
                 {category.metrics.map((metric) => (
                   <CommandItem
                     key={metric.id}
-                    className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer"
+                    className="flex items-center px-4 py-2 hover:bg-accent cursor-pointer dark:hover:bg-gray-800"
                     onSelect={() => handleMetricSelect(metric.id)}
                   >
                     <div>
-                      <p className="text-sm font-medium">{metric.name}</p>
+                      <p className="text-sm font-medium dark:text-gray-200">{metric.name}</p>
                       <p className="text-xs text-muted-foreground">{metric.description}</p>
                     </div>
                   </CommandItem>

@@ -99,17 +99,17 @@ export const SocialSearch = () => {
     <div ref={containerRef} className="relative w-full max-w-xl">
       <form onSubmit={handleSearch}>
         <div className="relative">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setShowResults(true)}
             onKeyDown={handleKeyDown}
-            className="w-full pl-9 pr-4"
+            className="w-full pl-9 pr-4 dark:bg-[#2b2b35] dark:text-gray-200 dark:border-gray-700"
             placeholder="Search profiles, posts, or $symbols..."
           />
           {isLoading && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-500" />
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-500 dark:text-gray-400" />
           )}
         </div>
       </form>

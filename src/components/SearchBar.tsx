@@ -1,3 +1,4 @@
+
 import { useSearch } from "@/hooks/useSearch";
 import { SearchInput } from "./search/SearchInput";
 import { SearchResults } from "./search/SearchResults";
@@ -58,7 +59,7 @@ export const SearchBar = ({ onStockSelect }: SearchBarProps) => {
       />
 
       {isOpen && (searchQuery.length > 0 || isLoading) && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border max-h-[400px] overflow-y-auto z-50">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#2b2b35] rounded-lg shadow-lg border dark:border-gray-700 max-h-[400px] overflow-y-auto z-50">
           <SearchResults
             results={results}
             onSelect={handleSelect}
