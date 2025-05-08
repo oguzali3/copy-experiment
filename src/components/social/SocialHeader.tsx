@@ -23,9 +23,9 @@ export const SocialHeader = () => {
   };
 
   return (
-    <div className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200">
+    <div className="sticky top-0 z-50 bg-white/80 dark:bg-[#1c1c20]/80 dark:border-gray-800 backdrop-blur-sm border-b border-gray-200">
       <div className="px-4 h-14 flex items-center gap-4">
-        <h1 className="text-xl font-semibold min-w-[100px]">{getPageTitle()}</h1>
+        <h1 className="text-xl font-semibold min-w-[100px] dark:text-white">{getPageTitle()}</h1>
         <SocialSearch />
       </div>
     </div>

@@ -38,7 +38,7 @@ export const SocialSidebar = () => {
   const user = useUser();
 
   return (
-    <div className="flex flex-col items-center py-4 h-full">
+    <div className="flex flex-col items-center py-4 h-full border-r dark:bg-[#1c1c20] dark:border-gray-800">
       <div className="mb-4">
         <Button 
           variant="ghost" 
@@ -58,12 +58,12 @@ export const SocialSidebar = () => {
                   variant="ghost"
                   size="icon"
                   onClick={() => navigate(item.path)}
-                  className="w-12 h-12 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800"
+                  className="w-12 h-12 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 dark:text-gray-300"
                 >
                   <item.icon className="h-6 w-6" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">
+              <TooltipContent side="right" className="dark:bg-gray-800 dark:text-gray-200">
                 <p>{item.title}</p>
               </TooltipContent>
             </Tooltip>
@@ -82,7 +82,7 @@ export const SocialSidebar = () => {
                 <span className="text-white text-2xl">+</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">
+            <TooltipContent side="right" className="dark:bg-gray-800 dark:text-gray-200">
               <p>Create Post</p>
             </TooltipContent>
           </Tooltip>
@@ -101,13 +101,13 @@ export const SocialSidebar = () => {
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.user_metadata?.avatar_url} />
-                    <AvatarFallback>
+                    <AvatarFallback className="dark:bg-gray-700 dark:text-gray-300">
                       <User className="h-4 w-4" />
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">
+              <TooltipContent side="right" className="dark:bg-gray-800 dark:text-gray-200">
                 <p>{user.user_metadata?.full_name || 'Profile'}</p>
               </TooltipContent>
             </Tooltip>

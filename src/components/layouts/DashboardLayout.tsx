@@ -9,7 +9,7 @@ export const DashboardLayout = () => {
       <DashboardSidebar />
       <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out">
         <DashboardHeader />
-        <main className="flex-1 p-6 space-y-6 overflow-y-auto bg-gray-50">
+        <main className="flex-1 p-6 space-y-6 overflow-y-auto bg-gray-50 dark:bg-[#1c1c20]">
           <Outlet />
         </main>
       </div>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -88,7 +89,7 @@ export const Header = () => {
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-in-out",
-        isScrolled ? "bg-background/95 backdrop-blur-sm border-b" : "bg-transparent",
+        isScrolled ? "bg-background/95 backdrop-blur-sm border-b dark:bg-[#1c1c20]/95 dark:border-gray-800" : "bg-transparent",
         show ? "translate-y-0" : "-translate-y-full"
       )}
     >
@@ -101,13 +102,13 @@ export const Header = () => {
 
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#product" className="text-black hover:text-[#077dfa] transition-colors">
+            <a href="#product" className="text-black hover:text-[#077dfa] transition-colors dark:text-gray-200 dark:hover:text-[#077dfa]">
               Product
             </a>
-            <a href="#pricing" className="text-black hover:text-[#077dfa] transition-colors">
+            <a href="#pricing" className="text-black hover:text-[#077dfa] transition-colors dark:text-gray-200 dark:hover:text-[#077dfa]">
               Pricing
             </a>
-            <a href="#about" className="text-black hover:text-[#077dfa] transition-colors">
+            <a href="#about" className="text-black hover:text-[#077dfa] transition-colors dark:text-gray-200 dark:hover:text-[#077dfa]">
               About Us
             </a>
           </nav>
@@ -118,7 +119,7 @@ export const Header = () => {
               <>
                 <Button 
                   variant="ghost" 
-                  className="hidden md:inline-flex"
+                  className="hidden md:inline-flex dark:text-gray-200 dark:hover:bg-gray-800"
                   onClick={() => navigate("/dashboard")}
                 >
                   Dashboard
@@ -134,7 +135,7 @@ export const Header = () => {
               <>
                 <Button 
                   variant="ghost" 
-                  className="hidden md:inline-flex"
+                  className="hidden md:inline-flex dark:text-gray-200 dark:hover:bg-gray-800"
                   onClick={() => navigate("/signin")}
                 >
                   Sign In
