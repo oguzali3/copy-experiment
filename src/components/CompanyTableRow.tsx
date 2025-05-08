@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Edit } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { Area, AreaChart, ResponsiveContainer } from "recharts";
 
 interface CompanyTableRowProps {
   company: {
@@ -14,12 +15,23 @@ interface CompanyTableRowProps {
     change: string;
     isPositive: boolean;
     logoUrl?: string;
+    sparklineData?: Array<{ time: string, price: number }>;
   };
   index: number;
   onRemove: (ticker: string) => void;
 }
 
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
+  // Generate some dummy sparkline data if none exists
+  const sparkData = company.sparklineData || Array(20)
+    .fill(0)
+    .map((_, i) => ({
+      time: `${i}:00`,
+      price: company.isPositive 
+        ? 100 + Math.random() * 10 * (i / 20) 
+        : 110 - Math.random() * 10 * (i / 20)
+    }));
+
   return (
     <tr className={cn(
       "border-b border-gray-100 dark:border-gray-800 text-xs", 
@@ -53,6 +65,28 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{company.name}</td>
       <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-medium">{company.marketCap}</td>
       <td className="px-4 py-3 text-right text-gray-900 dark:text-white font-medium">{company.price}</td>
+      <td className="px-4 py-1 w-24">
+        <div className="h-10">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={sparkData}>
+              <defs>
+                <linearGradient id={`colorPrice${company.ticker}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={company.isPositive ? '#22c55e' : '#ef4444'} stopOpacity={0.2}/>
+                  <stop offset="95%" stopColor={company.isPositive ? '#22c55e' : '#ef4444'} stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <Area 
+                type="monotone" 
+                dataKey="price" 
+                stroke={company.isPositive ? '#22c55e' : '#ef4444'} 
+                strokeWidth={1.5}
+                fillOpacity={1}
+                fill={`url(#colorPrice${company.ticker})`} 
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </td>
       <td className={`px-4 py-3 text-right font-medium ${company.isPositive ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
         {company.change}
       </td>

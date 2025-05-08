@@ -43,6 +43,7 @@ export const CompanyTableHeader = ({ sortConfig, onSort }: CompanyTableHeaderPro
           Price
           {getSortIcon("price")}
         </th>
+        <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600 dark:text-gray-400">Chart</th>
         <th 
           className="px-4 py-2 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-800 dark:hover:text-gray-200"
           onClick={() => onSort("change")}
