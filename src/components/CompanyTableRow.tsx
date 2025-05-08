@@ -22,44 +22,52 @@ interface CompanyTableRowProps {
 }
 
 export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowProps) => {
-  // Generate normalized sparkline data or use the provided data
-  const sparkData = (company.sparklineData && company.sparklineData.length > 0)
-    ? company.sparklineData
-    : Array(20)
-      .fill(0)
-      .map((_, i) => {
-        // Set base value and overall trend direction
-        const baseValue = 100;
-        const trendFactor = company.isPositive ? 0.15 : -0.15;
-        
-        // Create overall trend line with some randomness
-        let trendValue = baseValue * (1 + (trendFactor * i / 20));
-        
-        // Add volatility with more pronounced zigzags
-        const volatility = 6; // Higher number = more zigzags
-        
-        // Create multiple waves with different frequencies and amplitudes
-        const wave1 = Math.sin(i / 2) * (volatility * 0.6);
-        const wave2 = Math.sin(i / 1.3) * (volatility * 0.4);
-        const wave3 = Math.cos(i / 3.7) * (volatility * 0.3);
-        
-        // Add some random noise for natural movement
-        const noise = (Math.random() - 0.5) * volatility * 0.5;
-        
-        // Add a sudden spike somewhere in the middle (for some tickers)
-        const spikeLocation = 10 + Math.floor(Math.random() * 5);
-        const hasSpike = Math.random() > 0.7; // 30% chance of having a spike
-        const spikeValue = hasSpike && i === spikeLocation ? 
-          (company.isPositive ? volatility * 1.5 : -volatility * 1.5) : 0;
-        
-        // Combine all factors
-        const finalPrice = trendValue + wave1 + wave2 + wave3 + noise + spikeValue;
-        
-        return {
-          time: `${i}:00`,
-          price: finalPrice
-        };
-      });
+  // Generate sparkline data with much more realistic patterns
+  const sparkData = Array(50)
+    .fill(0)
+    .map((_, i) => {
+      // Set base value (make it look like it's the actual stock price)
+      const basePrice = parseFloat(company.price.replace(/[^0-9.]/g, '')) || 100;
+      
+      // More extreme volatility for zigzags
+      const volatility = basePrice * 0.02; // 2% of base price for volatility
+      
+      // Make the line mostly flat with occasional movements
+      // This creates the flat-line look with small movements seen in the screenshot
+      
+      // Determine pattern type (mostly flat with minor movements)
+      const flatLine = basePrice + (Math.random() * 0.004 - 0.002) * basePrice;
+      
+      // Add a few key movement points (1-3 significant movements in the chart)
+      const numKeyPoints = 3;
+      const keyPointsPositions = Array(numKeyPoints).fill(0).map(() => Math.floor(Math.random() * 50));
+      const isKeyPoint = keyPointsPositions.includes(i);
+      
+      // Create small movement for key points
+      const keyPointMovement = isKeyPoint 
+        ? (company.isPositive ? 1 : -1) * volatility * (0.5 + Math.random() * 0.5)
+        : 0;
+      
+      // Add subtle noise throughout
+      const noise = (Math.random() * 0.3 - 0.15) * volatility * 0.2;
+      
+      // For positive/negative trends, add slight slope
+      const trendFactor = company.isPositive ? 0.01 : -0.01;
+      const trendComponent = basePrice * trendFactor * i / 50;
+      
+      // Combine all factors
+      let finalPrice = flatLine + keyPointMovement + noise + trendComponent;
+      
+      // If it's near the beginning or end, make sure it aligns with the trend
+      if (i < 3 || i > 47) {
+        finalPrice = basePrice + trendComponent + noise * 0.5;
+      }
+      
+      return {
+        time: `${i}:00`,
+        price: finalPrice
+      };
+    });
 
   // Find min and max values for proper scaling
   const prices = sparkData.map(d => d.price);
@@ -69,8 +77,8 @@ export const CompanyTableRow = ({ company, index, onRemove }: CompanyTableRowPro
   
   // Create a normalized domain with some padding for better visualization
   const yDomain = [
-    minPrice - (priceRange * 0.1), 
-    maxPrice + (priceRange * 0.1)
+    minPrice - (priceRange * 0.05), 
+    maxPrice + (priceRange * 0.05)
   ];
 
   return (
