@@ -53,7 +53,7 @@ const Index = () => {
           Advanced stock analysis and research tools powered by real-time data and AI insights
         </p>
         
-        {/* Dashboard Preview */}
+        {/* Interactive Dashboard Preview */}
         <div className="max-w-4xl mx-auto mb-12 mt-8 relative z-10 transition-transform duration-300 hover:transform hover:scale-[1.02]">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl -z-10 blur-lg"></div>
           <DashboardPreview />
